@@ -1,0 +1,35 @@
+# --- Segredos e configuração local ---
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+# config.js é gerado do .env (contém URL/chave do projeto)
+config.js
+*.pem
+*.key
+
+# --- Ferramentas locais (a permissão salva pode conter chaves coladas) ---
+.claude/
+
+# --- Dependências ---
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# --- Logs e temporários ---
+*.log
+npm-debug.log*
+*.tmp
+*.temp
+*.bak
+*.swp
+~$*
+
+# --- Sistema operacional / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
