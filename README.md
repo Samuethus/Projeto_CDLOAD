@@ -32,7 +32,7 @@ python scripts/gerar_config.py
 python -m http.server 8080
 ```
 
-Abra <http://localhost:8080/> e clique no arquivo `.html` (o app precisa de HTTP; `localhost` permite a câmera do leitor de código de barras). Sem `config.js`, o app roda em **modo demonstração** (dados em memória; login `admin@example.com` / `demo1234`).
+Abra <http://localhost:8080/> (o app precisa de HTTP; `localhost` permite a câmera do leitor de código de barras). Sem `config.js`, o app roda em **modo demonstração** (dados em memória; login `admin@example.com` / `demo1234`).
 
 ## Login
 
@@ -43,7 +43,7 @@ Supabase Auth: senha com hash e sessão por token. O administrador cadastra a pe
 1. Crie o repositório e envie o código (`git init`, confira com `git status --ignored` que `.env` e `config.js` **não** aparecem, e faça o commit/push na branch `main`).
 2. No GitHub: **Settings > Secrets and variables > Actions** > crie `SUPABASE_URL`, `SUPABASE_ANON_KEY` (só a anon/publishable) e `ADMIN_EMAIL`.
 3. **Settings > Pages > Source: GitHub Actions**.
-4. Cada push em `main` roda [.github/workflows/deploy.yml](.github/workflows/deploy.yml), que publica só o HTML (como `index.html`) e o `config.js` gerado. Scripts, SQL e docs não vão para o site.
+4. Cada push em `main` roda [.github/workflows/deploy.yml](.github/workflows/deploy.yml), que publica só o `index.html` e o `config.js` gerado. Scripts, SQL e docs não vão para o site.
 5. Coloque o endereço do Pages em Supabase > Authentication > URL Configuration.
 
 A câmera ao vivo exige HTTPS, que o GitHub Pages já fornece.
@@ -51,7 +51,7 @@ A câmera ao vivo exige HTTPS, que o GitHub Pages já fornece.
 ## Estrutura
 
 ```
-CDLoad · Núcleo de Inteligência (003).html   o app
+index.html               o app
 config.js                gerado pelo script (ignorado pelo Git)
 scripts/gerar_config.py  gera o config.js (.env ou variáveis de ambiente)
 supabase/                SQL de segurança (RLS) e passo a passo

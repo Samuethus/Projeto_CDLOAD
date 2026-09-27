@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Publica somente o HTML (como index.html) e o config.js gerado a partir dos secrets.
+      # Publica somente o index.html e o config.js gerado a partir dos secrets.
       # .env, scripts, SQL e docs NÃO vão para o site.
       - name: Montar o site
         env:
@@ -32,7 +32,7 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
         run: |
           mkdir _site
-          cp "CDLoad · Núcleo de Inteligência (003).html" _site/index.html
+          cp index.html _site/index.html
           python3 scripts/gerar_config.py _site
           touch _site/.nojekyll
 
