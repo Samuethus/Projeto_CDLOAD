@@ -870,6 +870,19 @@
     .cam-alert-actions{width:100%;justify-content:flex-end;}
   }
 
+  /* ---- Botões do topo (Entrada / Saída / Novo Produto) ---- */
+  .wa-stock-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .wa-stock-actions .wa-stock-action-symbol{display:none;}
+  @media (max-width:640px){
+    #page-estoque .wa-topcard{flex-direction:column;align-items:stretch;}
+    #page-estoque .wa-topcard-left{width:100%;}
+    .wa-stock-actions{width:100%;}
+    .wa-stock-actions .wa-btn{flex:1;justify-content:center;padding:10px 0;}
+    .wa-stock-actions .wa-stock-action-icon,
+    .wa-stock-actions .wa-stock-action-label{display:none;}
+    .wa-stock-actions .wa-stock-action-symbol{display:inline-block;font-size:19px;font-weight:700;line-height:1;}
+  }
+
   /* ---- KPIs ---- */
   .wa-stock-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
   @media (max-width:900px){ .wa-stock-kpis{grid-template-columns:repeat(2,1fr);} }
@@ -878,10 +891,9 @@
   .wa-stock-kpi-value{font-size:24px;font-weight:700;color:var(--wa-text);margin-top:6px;font-variant-numeric:tabular-nums;}
   .wa-stock-kpi-value.warn{color:var(--wa-pending-text);}
 
-  /* ---- Card de leitura de código de barras ---- */
-  .wa-scan-card{padding:20px 24px;margin-bottom:24px;overflow:visible;}
-  .wa-scan-card-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
-  .wa-scan-card-title{font-size:14px;font-weight:700;color:var(--wa-text);}
+  /* ---- Leitura de código de barras (sem box: fica embutida na página) ---- */
+  .wa-scan-bar{margin-bottom:24px;}
+  .wa-scan-bar .wa-view-toggle{margin-bottom:12px;}
   .wa-scan-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   .wa-scan-input{position:relative;flex:1;min-width:220px;}
   .wa-scan-input svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--wa-text-muted);stroke-width:2;pointer-events:none;}
@@ -1745,14 +1757,21 @@
               <div class="wa-topcard-sub">Cada setor tem seu próprio estoque — cadastros, entradas e saídas usam sempre o setor selecionado.</div>
             </div>
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-              Nova Movimentação
+          <div class="wa-stock-actions" id="waStockActions">
+            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'entrada')" title="Entrada">
+              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span class="wa-stock-action-label">Entrada</span>
+              <span class="wa-stock-action-symbol" aria-hidden="true">+</span>
             </button>
-            <button class="wa-btn wa-btn-primary" onclick="waOpenProductModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Novo Produto
+            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'saida')" title="Saída">
+              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span class="wa-stock-action-label">Saída</span>
+              <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
+            </button>
+            <button class="wa-btn wa-btn-primary" onclick="waOpenProductModal()" title="Novo Produto">
+              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span class="wa-stock-action-label">Novo Produto</span>
+              <span class="wa-stock-action-symbol" aria-hidden="true">↺</span>
             </button>
           </div>
         </div>
@@ -1777,17 +1796,11 @@
         </div>
 
         <!-- Leitura de código de barras: leitor USB/Bluetooth (teclado + Enter) ou câmera -->
-        <div class="wa-card wa-scan-card">
-          <div class="wa-scan-card-top">
-            <div>
-              <div class="wa-scan-card-title">Leitura de código de barras</div>
-              <div class="wa-topcard-sub">Bipe com o leitor USB/Bluetooth, digite o código e pressione Enter, ou use a câmera.</div>
-            </div>
-            <div class="wa-view-toggle" id="waScanModeToggle">
-              <button type="button" class="wa-view-toggle-btn active" data-mode="consulta">Consultar</button>
-              <button type="button" class="wa-view-toggle-btn" data-mode="entrada">Entrada</button>
-              <button type="button" class="wa-view-toggle-btn" data-mode="saida">Saída</button>
-            </div>
+        <div class="wa-scan-bar">
+          <div class="wa-view-toggle" id="waScanModeToggle">
+            <button type="button" class="wa-view-toggle-btn active" data-mode="consulta">Consultar</button>
+            <button type="button" class="wa-view-toggle-btn" data-mode="entrada">Entrada</button>
+            <button type="button" class="wa-view-toggle-btn" data-mode="saida">Saída</button>
           </div>
           <div class="wa-scan-row">
             <div class="wa-scan-input">
