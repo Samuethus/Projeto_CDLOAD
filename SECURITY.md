@@ -19,7 +19,7 @@ App **100% front-end**: tudo o que está no HTML/JS chega ao navegador de qualqu
 
 ## Obrigatório antes de publicar
 
-1. Executar, nesta ordem, `supabase/schema_estoque.sql` e depois o passo a passo de [supabase/LEIA-ME.md](supabase/LEIA-ME.md) (Auth com confirmação de e-mail + `seguranca_rls.sql`). Rodar só o schema deixa o Estoque sem nenhum acesso, nem do `anon` — proposital, até o RLS ser aplicado.
+1. Executar, nesta ordem, `supabase/schema_estoque.sql`, `supabase/schema_relatorios.sql` e depois o passo a passo de [supabase/LEIA-ME.md](supabase/LEIA-ME.md) (Auth com confirmação de e-mail + `seguranca_rls.sql`). Rodar só os schemas deixa Estoque e Relatórios sem nenhum acesso, nem do `anon` — proposital, até o RLS ser aplicado.
 2. **Trocar as senhas antigas** (as de `usuarios.senha` e `cdload2026`), pois foram expostas.
 3. Cadastrar os secrets no GitHub (só a chave anon/publishable).
 4. Em Authentication > Providers > Email, considere desativar "Allow new users to sign up" (ou usar apenas **Invite user**) — o cadastro aberto não dá acesso a dados, mas permite criar contas descartáveis e disparar e-mails de confirmação para terceiros.

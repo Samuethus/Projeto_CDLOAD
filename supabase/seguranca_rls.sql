@@ -79,7 +79,7 @@ declare
   t text;
   pol record;
 begin
-  foreach t in array array['campanhas','usuarios','clipping_news','local','cadastro_de_produtos','movimentacoes_estoque']
+  foreach t in array array['campanhas','usuarios','clipping_news','local','cadastro_de_produtos','movimentacoes_estoque','relatorios_arquivos']
   loop
     for pol in select policyname from pg_policies where schemaname = 'public' and tablename = t loop
       execute format('drop policy %I on public.%I', pol.policyname, t);
@@ -137,6 +137,30 @@ create policy mov_insert on public.movimentacoes_estoque for insert to authentic
     and (usuario_email is null or lower(usuario_email) = lower(auth.jwt() ->> 'email'))
   );
 create policy mov_delete on public.movimentacoes_estoque for delete to authenticated using (public.cdl_admin());
+
+-- relatorios_arquivos: seção "relatorios" lê e envia; o autor não pode
+-- ser forjado; remover um material (e o arquivo correspondente no
+-- Storage, apagado pelo app logo em seguida) fica só para Administrador.
+create policy relatorios_select on public.relatorios_arquivos for select to authenticated using (public.cdl_secao('relatorios'));
+create policy relatorios_insert on public.relatorios_arquivos for insert to authenticated
+  with check (
+    public.cdl_secao('relatorios')
+    and (usuario_email is null or lower(usuario_email) = lower(auth.jwt() ->> 'email'))
+  );
+create policy relatorios_delete on public.relatorios_arquivos for delete to authenticated using (public.cdl_admin());
+
+-- Storage do módulo Relatórios (bucket "relatorios"): mesmo controle de
+-- acesso da tabela acima — ler/enviar exige a seção; remover é só admin.
+drop policy if exists relatorios_storage_select on storage.objects;
+drop policy if exists relatorios_storage_insert on storage.objects;
+drop policy if exists relatorios_storage_delete on storage.objects;
+
+create policy relatorios_storage_select on storage.objects for select to authenticated
+  using (bucket_id = 'relatorios' and public.cdl_secao('relatorios'));
+create policy relatorios_storage_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'relatorios' and public.cdl_secao('relatorios'));
+create policy relatorios_storage_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'relatorios' and public.cdl_admin());
 
 -- ---------- 5. Conferência (rode e leia o resultado) ----------
 -- Deve listar o administrador com cargo 'Administrador' e status 'Ativo'.

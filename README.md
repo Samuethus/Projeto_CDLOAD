@@ -1,6 +1,6 @@
 # CDLoad · Núcleo de Inteligência
 
-Painel web estático (HTML único, sem build) com Campanhas, Clipping News, Usuários e Estoque, usando o Supabase (Auth + banco com RLS).
+Painel web estático (HTML único, sem build) com Campanhas, Clipping News, Relatórios, Usuários e Estoque, usando o Supabase (Auth + banco com RLS + Storage).
 
 ## Antes de publicar
 
