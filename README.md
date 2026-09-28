@@ -2,6 +2,8 @@
 
 Painel web estático (HTML único, sem build) com Campanhas, Clipping News, Relatórios, Usuários e Estoque, usando o Supabase (Auth + banco com RLS + Storage).
 
+O Clipping News é alimentado automaticamente pelo Google Notícias ("CDL Cuiabá" e "Câmara de Dirigentes Lojistas de Cuiabá"), com a coleta rodando no próprio Supabase: ver [supabase/schema_clipping.sql](supabase/schema_clipping.sql).
+
 ## Antes de publicar
 
 1. Siga [supabase/LEIA-ME.md](supabase/LEIA-ME.md): configurar o Auth e rodar [supabase/seguranca_rls.sql](supabase/seguranca_rls.sql). **Sem isso o banco continua aberto.**
