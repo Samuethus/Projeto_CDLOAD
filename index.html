@@ -866,12 +866,27 @@
   a.wa-clip-title-text:hover{color:var(--wa-primary);text-decoration:underline;}
   .wa-clip-meta{font-size:11px;color:#94a3b8;margin-bottom:12px;}
 
-  /* ---- Coleta no Google Notícias: status e botão "Buscar notícias" ---- */
-  .wa-clip-status{font-size:12.5px;color:var(--wa-text-muted);margin:-6px 0 16px;}
+  /* ---- Coleta no Google Notícias: total + última atualização ---- */
+  .wa-clip-status{font-size:12.5px;color:var(--wa-text-muted);text-align:right;margin:-6px 0 16px;}
   .wa-clip-status[hidden]{display:none;}
-  #waClipRefreshBtn:disabled{opacity:.7;cursor:wait;}
-  #waClipRefreshBtn.loading svg{animation:wa-clip-spin 1s linear infinite;}
-  @keyframes wa-clip-spin{to{transform:rotate(360deg);}}
+
+  /* ---- Barra de filtros em linha única (padrão wa-stock-filters) ---- */
+  #page-clipping .wa-stock-filters .wa-sort-group,
+  #page-clipping .wa-stock-filters .wa-sort-pills{flex:0 0 auto;flex-wrap:nowrap;}
+  @media (max-width:1500px){
+    #page-clipping .wa-stock-filters{gap:8px;}
+    #page-clipping .wa-stock-filters .wa-sort-label{display:none;}
+    #page-clipping .wa-stock-filters .wa-sort-pills{gap:6px;}
+    #page-clipping .wa-stock-filters .wa-sort-pill{padding:7px 11px;}
+    #page-clipping .wa-stock-filters .wa-clip-search,
+    #page-clipping .wa-stock-filters .filter-select{min-width:84px;}
+  }
+  @media (max-width:1320px){
+    #page-clipping .wa-stock-filters .filter-divider{display:none;}
+    #page-clipping .wa-stock-filters .btn{padding:10px 14px;}
+    #page-clipping .wa-stock-filters .wa-clip-search,
+    #page-clipping .wa-stock-filters .filter-select{min-width:72px;}
+  }
   .wa-clip-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
   .wa-clip-pill{
     font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:9999px;white-space:nowrap;
@@ -1352,7 +1367,7 @@
       <!-- CLIPPING NEWS -->
       <section class="page" id="page-clipping">
 
-        <div class="filter-bar">
+        <div class="filter-bar wa-stock-filters">
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="waClipSearch" placeholder="Buscar por título, resumo ou fonte...">
@@ -1398,10 +1413,6 @@
           <button class="btn btn-clear" id="waClipClearBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             Limpar
-          </button>
-          <button class="btn btn-export" id="waClipRefreshBtn" title="Busca agora no Google Notícias: &quot;CDL Cuiabá&quot; e &quot;Câmara de Dirigentes Lojistas de Cuiabá&quot;">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            <span>Buscar notícias</span>
           </button>
           <button class="btn btn-export" id="waClipExportBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
@@ -3887,7 +3898,6 @@
     const waClipGrid = document.getElementById('waClipGrid');
     const waClipSupabaseBanner = document.getElementById('waClipSupabaseBanner');
     if(waClipSupabaseBanner) waClipSupabaseBanner.hidden = supabaseReady;
-    const waClipRefreshBtn = document.getElementById('waClipRefreshBtn');
     const waClipStatus = document.getElementById('waClipStatus');
     // Coleta automática: pg_cron a cada 30 min (supabase/schema_clipping.sql).
     // Ao abrir a seção, dispara uma coleta se a última tiver mais de 1 hora.
@@ -4056,42 +4066,28 @@
       }
       const last = data && data[0];
       clipLastRun = last ? new Date(last.finalizado_em || last.iniciado_em) : null;
+      if(last && last.erros) console.warn('Última coleta do Clipping com falhas:', last.erros);
       const total = clippingNews.length;
-      let text = `${total} ${total === 1 ? 'notícia' : 'notícias'} · Google Notícias: "CDL Cuiabá" e "Câmara de Dirigentes Lojistas de Cuiabá"`;
-      if(clipLastRun){
-        text += ` · Atualizado em ${clipLastRun.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-        if(last.erros) text += ' (com falhas na última busca)';
-      }
+      let text = `${total} ${total === 1 ? 'notícia' : 'notícias'}`;
+      if(clipLastRun) text += ` · Atualizado em ${clipLastRun.toLocaleDateString('pt-BR')}`;
       waClipStatus.textContent = text;
       waClipStatus.hidden = false;
     }
 
-    // Busca agora no Google Notícias (função clipping_coletar no Supabase).
-    async function refreshClippingFromGoogle(silent){
-      if(!supabaseReady){
-        if(!silent) alert('A busca no Google Notícias exige o Supabase configurado.');
-        return;
-      }
+    // Busca no Google Notícias em segundo plano (função clipping_coletar no Supabase).
+    async function refreshClippingFromGoogle(){
       if(clipRefreshing) return;
       clipRefreshing = true;
-      waClipRefreshBtn.disabled = true;
-      waClipRefreshBtn.classList.add('loading');
       try{
         const { data, error } = await supabaseClient.rpc('clipping_coletar');
         if(error){
           console.error('Erro ao buscar notícias no Google Notícias:', error);
-          if(!silent) alert('Erro ao buscar notícias no Google Notícias: ' + error.message);
           return;
         }
         if(data && data.erros) console.warn('Coleta do Clipping com falhas:', data.erros);
-        if(!silent && data && data.erros && !data.encontradas){
-          alert('O Google Notícias não respondeu agora. A coleta automática tentará de novo em até 30 minutos.');
-        }
         await loadClippingNews();
       } finally {
         clipRefreshing = false;
-        waClipRefreshBtn.disabled = false;
-        waClipRefreshBtn.classList.remove('loading');
       }
     }
 
@@ -4099,7 +4095,7 @@
       if(!supabaseReady) return;
       await loadClippingNews();
       if(!clipLastRun || Date.now() - clipLastRun.getTime() > CLIP_AUTO_REFRESH_MS){
-        refreshClippingFromGoogle(true);
+        refreshClippingFromGoogle();
       }
     }
 
@@ -4194,7 +4190,6 @@
       await loadClippingNews();
     };
 
-    waClipRefreshBtn.addEventListener('click', () => refreshClippingFromGoogle(false));
     waClipSearch.addEventListener('input', renderClippingNews);
     waClipMonthFilter.addEventListener('change', renderClippingNews);
     waClipCategoryFilter.addEventListener('change', renderClippingNews);
