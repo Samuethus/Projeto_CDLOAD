@@ -933,12 +933,6 @@
   .wa-cam-reader{width:100%;min-height:240px;border-radius:12px;overflow:hidden;background:#0F172A;}
   .wa-cam-reader video{width:100% !important;display:block;}
   .wa-cam-status{font-size:12px;color:var(--wa-text-muted);margin-top:12px;text-align:center;}
-
-  /* ---- Relatórios ---- */
-  .wa-field input[type="file"]{
-    width:100%;border:1px solid var(--wa-border);border-radius:10px;
-    padding:8px 14px;font-family:inherit;font-size:13.5px;color:var(--wa-text);background:#fff;
-  }
 </style>
 </head>
 <body>
@@ -1222,7 +1216,7 @@
 
         <!-- ===== MODAL: NOVO ARQUIVO ===== -->
         <div class="wa-modal-overlay" id="waReportModal">
-          <div class="wa-modal wa-modal-sm" style="max-width:520px;">
+          <div class="wa-modal wa-modal-lg">
             <div class="wa-modal-header">
               <div class="wa-modal-header-left">
                 <div class="wa-modal-icon">
@@ -1235,30 +1229,44 @@
               </div>
               <button class="wa-modal-close" onclick="waCloseReportModal()">&times;</button>
             </div>
+
             <div class="wa-modal-body">
+              <h3 class="wa-step-title">1. Dados do Arquivo</h3>
               <div class="wa-field">
                 <label for="waReportTitulo">Título</label>
                 <input type="text" id="waReportTitulo" placeholder="Ex: CAGED - Abril">
               </div>
-              <div class="wa-field-row" style="align-items:flex-start;">
-                <div class="wa-field" style="flex:1;">
+              <div class="wa-form-grid">
+                <div class="wa-field">
                   <label for="waReportCategoria">Categoria</label>
                   <input type="text" id="waReportCategoria" list="waReportCategoriaList" placeholder="Ex: CAGED">
                   <datalist id="waReportCategoriaList"></datalist>
                 </div>
-                <div class="wa-field" style="flex:1;">
+                <div class="wa-field">
                   <label for="waReportDataPublicacao">Data de publicação</label>
                   <input type="date" id="waReportDataPublicacao">
                 </div>
               </div>
               <div class="wa-field">
-                <label for="waReportArquivo">Arquivo</label>
-                <input type="file" id="waReportArquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg">
+                <label for="waReportArquivoNome">Arquivo</label>
+                <div class="wa-input-with-btn">
+                  <input type="text" id="waReportArquivoNome" placeholder="Nenhum arquivo selecionado" readonly style="cursor:pointer;">
+                  <button type="button" class="wa-btn wa-btn-outline" id="waReportArquivoBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Selecionar
+                  </button>
+                </div>
+                <input type="file" id="waReportArquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" hidden>
+                <div class="wa-empty-hint">Formatos aceitos: PDF, Word, Excel, PowerPoint e imagens (PNG/JPG).</div>
               </div>
             </div>
-            <div class="wa-modal-footer">
-              <button class="wa-btn wa-btn-outline" onclick="waCloseReportModal()">Cancelar</button>
-              <button class="wa-btn wa-btn-primary" id="waReportSaveBtn" onclick="waSaveReport()">Enviar</button>
+
+            <div class="wa-wizard-footer">
+              <span class="wa-wizard-steps">Etapa 1 de 1</span>
+              <div style="display:flex;gap:10px;">
+                <button class="wa-btn wa-btn-outline" onclick="waCloseReportModal()">Cancelar</button>
+                <button class="wa-btn wa-btn-primary" id="waReportSaveBtn" onclick="waSaveReport()">Enviar Arquivo</button>
+              </div>
             </div>
           </div>
         </div>
@@ -5074,7 +5082,15 @@
     const waReportCategoriaList = document.getElementById('waReportCategoriaList');
     const waReportDataPublicacao = document.getElementById('waReportDataPublicacao');
     const waReportArquivo = document.getElementById('waReportArquivo');
+    const waReportArquivoNome = document.getElementById('waReportArquivoNome');
     const waReportSaveBtn = document.getElementById('waReportSaveBtn');
+
+    waReportArquivoNome.addEventListener('click', () => waReportArquivo.click());
+    document.getElementById('waReportArquivoBtn').addEventListener('click', () => waReportArquivo.click());
+    waReportArquivo.addEventListener('change', () => {
+      const f = waReportArquivo.files[0];
+      waReportArquivoNome.value = f ? `${f.name} (${fmtBytes(f.size)})` : '';
+    });
 
     const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     const ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
@@ -5186,6 +5202,7 @@
       waReportCategoria.value = '';
       waReportDataPublicacao.value = '';
       waReportArquivo.value = '';
+      waReportArquivoNome.value = '';
       waReportModal.classList.add('open');
     };
 
@@ -5250,7 +5267,7 @@
         waCloseReportModal();
       } finally {
         waReportSaveBtn.disabled = false;
-        waReportSaveBtn.textContent = 'Enviar';
+        waReportSaveBtn.textContent = 'Enviar Arquivo';
       }
     };
 
