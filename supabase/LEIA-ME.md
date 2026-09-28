@@ -18,10 +18,11 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 
 ## Clipping News (Google Notícias)
 
-- Palavras-chave: `"CDL Cuiabá"` e `"Câmara de Dirigentes Lojistas de Cuiabá"` (frase exata). Para mudar, edite o array `termos` em `clipping_coletar()` e rode o arquivo de novo.
+- Palavras-chave: `"CDL Cuiabá"`, `"Câmara de Dirigentes Lojistas de Cuiabá"` e `"Fundação CDL Cuiabá"` (frase exata). Para mudar, edite a função `clipping_palavras_chave()` e rode o arquivo de novo (vale para a busca e para a verificação).
 - A coleta roda sozinha a cada 30 minutos (`pg_cron`), e a seção dispara uma busca rápida (últimos 7 dias) ao ser aberta se a última tiver mais de 1 hora.
 - **Portal:** cada notícia é ligada ao portal pelo domínio do site (`clipping_portais`), com um nome padrão por portal — o filtro "Portal" nunca repete o mesmo veículo com grafias diferentes. Para padronizar o nome de um portal novo, inclua-o na lista `insert into public.clipping_portais` do SQL e rode de novo.
-- **Imagens:** a cada 10 minutos, `clipping_processar_imagens()` descobre o link direto de até 8 matérias e a imagem de capa delas. Sem imagem, o app mostra uma arte gerada pela categoria. Clicar na imagem (ou no título) abre a matéria no portal; clicar no nome do portal abre o site dele.
+- **Verificação e imagens:** a cada 5 minutos, `clipping_verificar_materias()` abre até 10 matérias novas e só libera no app as que **citam uma palavra-chave** no título ou no texto corrido. Menção só em links ("Leia também", "Mais lidas"), menus, barras laterais e rodapés não conta: a notícia fica `descartada`. Página que não abre após 3 tentativas fica `nao_verificavel` (também não aparece). Na mesma leitura guarda o link direto e a imagem de capa; sem imagem, o app mostra uma arte gerada pela categoria. Clicar na imagem (ou no título) abre a matéria no portal; clicar no nome do portal abre o site dele.
+- Conferir a verificação: `select verificacao, count(*) from clipping_news where origem = 'google_news' group by 1;`
 - Categoria, plataforma e sentimento são estimados pelo título e pelo veículo; corrija pelo botão **Editar** do card (a edição não é sobrescrita pelas próximas coletas).
 - Remover uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
 - Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.

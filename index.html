@@ -2460,6 +2460,8 @@
        link_original     text,          -- matéria no portal (resolvido do link do Google)
        imagem_url        text,          -- capa da matéria (og:image); sem ela, arte pelo tema
        imagem_status     text, imagem_tentativas integer,
+       verificacao       text,          -- 'confirmada' = a matéria cita a palavra-chave (só essas aparecem)
+       verificada_em     timestamptz,
        created_at        timestamptz not null default now(),
        updated_at        timestamptz not null default now()
      );
@@ -4143,6 +4145,9 @@
         .from('clipping_news')
         .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,portal:clipping_portais(nome,url)')
         .eq('oculta', false)
+        // Do Google, só as matérias que citam a palavra-chave no texto
+        // (clipping_verificar_materias); as cadastradas à mão sempre aparecem.
+        .or('origem.neq.google_news,verificacao.eq.confirmada')
         .order('data_publicacao', { ascending: false })
         .order('publicado_em', { ascending: false, nullsFirst: false });
 
