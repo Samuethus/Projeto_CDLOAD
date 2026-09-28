@@ -11,18 +11,22 @@
 -- LOGO DEPOIS deste. Rodar só este arquivo deixa o Estoque inutilizável
 -- (e é proposital: nunca deixamos o `anon` com acesso, nem por um instante).
 --
---   cadastro_de_produtos   → cadastro por setor (código de barras único
---                            dentro de cada setor; cada setor tem o seu
---                            próprio estoque do mesmo produto)
+--   cadastro_de_produtos   → catálogo único (código de barras único no
+--                            catálogo inteiro); `setor` aqui é só o setor
+--                            de origem, informativo, fixo após o cadastro
 --   movimentacoes_estoque  → origem (1º lançamento, único por produto),
---                            entradas e saídas
---   vw_estoque_saldo       → saldo por produto = origem + entradas − saídas
+--                            entradas e saídas — cada lançamento informa
+--                            o setor onde aconteceu, o que permite
+--                            redistribuir estoque entre setores (saída
+--                            num setor + entrada em outro)
+--   vw_estoque_saldo       → saldo por produto + setor = origem + entradas
+--                            − saídas daquele setor
 -- =====================================================================
 
 create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------------
--- 1. Cadastro de produtos
+-- 1. Cadastro de produtos (catálogo único, `setor` = setor de origem)
 -- ---------------------------------------------------------------------
 create table if not exists public.cadastro_de_produtos (
   id              uuid primary key default gen_random_uuid(),
@@ -40,24 +44,36 @@ create table if not exists public.cadastro_de_produtos (
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_setor_valido') then
+  -- Em bancos migrados de uma coluna `categoria` livre, pode haver valor
+  -- fora da lista padrão — nesse caso avisa e pula em vez de falhar aqui.
+  -- Corrija os dados e rode este script de novo.
+  if exists (select 1 from public.cadastro_de_produtos where setor not in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço')) then
+    raise notice 'cadastro_de_produtos tem setor(es) fora da lista padrão — restrição cadastro_de_produtos_setor_valido NÃO foi criada. Valores encontrados: %',
+      (select string_agg(distinct setor, ', ') from public.cadastro_de_produtos where setor not in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'));
+  elsif not exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_setor_valido') then
     alter table public.cadastro_de_produtos
       add constraint cadastro_de_produtos_setor_valido
       check (setor in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_setor_codigo_key') then
+  -- Substitui a unicidade antiga (setor, código) — hoje o código de
+  -- barras é único no catálogo inteiro, não mais por setor.
+  if exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_setor_codigo_key') then
+    alter table public.cadastro_de_produtos drop constraint cadastro_de_produtos_setor_codigo_key;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_codigo_key') then
     alter table public.cadastro_de_produtos
-      add constraint cadastro_de_produtos_setor_codigo_key unique (setor, codigo_barras);
+      add constraint cadastro_de_produtos_codigo_key unique (codigo_barras);
   end if;
 end $$;
 
 -- ---------------------------------------------------------------------
--- 2. Movimentações: origem / entrada / saída
+-- 2. Movimentações: origem / entrada / saída — cada uma tem o seu setor
 -- ---------------------------------------------------------------------
 create table if not exists public.movimentacoes_estoque (
   id             uuid primary key default gen_random_uuid(),
   produto_id     uuid not null references public.cadastro_de_produtos(id) on delete cascade,
   tipo           text not null check (tipo in ('origem', 'entrada', 'saida')),
+  setor          text not null,
   quantidade     numeric(14,3) not null,
   observacao     text,
   usuario_email  text,
@@ -66,6 +82,15 @@ create table if not exists public.movimentacoes_estoque (
     (tipo = 'origem' and quantidade >= 0) or (tipo <> 'origem' and quantidade > 0)
   )
 );
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'movimentacoes_estoque_setor_valido') then
+    alter table public.movimentacoes_estoque
+      add constraint movimentacoes_estoque_setor_valido
+      check (setor in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'));
+  end if;
+end $$;
 
 create index if not exists movimentacoes_estoque_produto_idx
   on public.movimentacoes_estoque (produto_id, created_at desc);
@@ -90,12 +115,14 @@ create trigger trg_cadastro_de_produtos_updated_at
   before update on public.cadastro_de_produtos
   for each row execute function public.estoque_set_updated_at();
 
--- O setor é fixo após o cadastro: o estoque (e o histórico) pertence a ele.
+-- O setor de origem é fixo após o cadastro (é o registro histórico de onde
+-- o produto entrou pela primeira vez) — para movimentar entre setores
+-- depois, usa-se entrada/saída, que têm o seu próprio setor.
 create or replace function public.estoque_bloqueia_troca_setor()
 returns trigger language plpgsql as $$
 begin
   if new.setor is distinct from old.setor then
-    raise exception 'O setor de um produto não pode ser alterado após o cadastro.';
+    raise exception 'O setor de origem de um produto não pode ser alterado após o cadastro.';
   end if;
   return new;
 end;
@@ -107,23 +134,26 @@ create trigger trg_cadastro_de_produtos_setor_fixo
   for each row execute function public.estoque_bloqueia_troca_setor();
 
 -- ---------------------------------------------------------------------
--- 4. Integridade do saldo
---    • saída maior que o saldo disponível → bloqueada
---    • remoção de entrada que deixaria o saldo negativo → bloqueada
+-- 4. Integridade do saldo (agora por produto + setor)
+--    • saída maior que o saldo disponível NAQUELE SETOR → bloqueada
+--    • remoção de entrada que deixaria o saldo do setor negativo → bloqueada
 --    • origem só é removida junto com o produto (cascade)
 -- ---------------------------------------------------------------------
 create or replace function public.estoque_valida_saldo()
 returns trigger language plpgsql as $$
 declare
   v_produto uuid;
+  v_setor   text;
   v_saldo   numeric;
 begin
   if tg_op = 'INSERT' then
     if new.tipo <> 'saida' then return new; end if;
     v_produto := new.produto_id;
+    v_setor := new.setor;
   else
     if old.tipo = 'saida' then return old; end if;
     v_produto := old.produto_id;
+    v_setor := old.setor;
   end if;
 
   -- Serializa movimentações concorrentes do mesmo produto.
@@ -140,15 +170,15 @@ begin
   select coalesce(sum(case when tipo = 'saida' then -quantidade else quantidade end), 0)
     into v_saldo
     from public.movimentacoes_estoque
-   where produto_id = v_produto;
+   where produto_id = v_produto and setor = v_setor;
 
   if tg_op = 'INSERT' and v_saldo - new.quantidade < 0 then
-    raise exception 'Saldo insuficiente: saldo atual %, saída solicitada %', v_saldo, new.quantidade
+    raise exception 'Saldo insuficiente em %: saldo atual %, saída solicitada %', v_setor, v_saldo, new.quantidade
       using errcode = 'check_violation';
   end if;
 
   if tg_op = 'DELETE' and v_saldo - old.quantidade < 0 then
-    raise exception 'Remover esta entrada deixaria o saldo negativo (saldo atual %).', v_saldo
+    raise exception 'Remover esta entrada deixaria o saldo de % negativo (saldo atual %).', v_setor, v_saldo
       using errcode = 'check_violation';
   end if;
 
@@ -162,21 +192,22 @@ create trigger trg_movimentacoes_estoque_valida_saldo
   for each row execute function public.estoque_valida_saldo();
 
 -- ---------------------------------------------------------------------
--- 5. Saldo por produto (security_invoker: respeita o RLS de quem consulta)
+-- 5. Saldo por produto + setor (security_invoker: respeita o RLS de
+--    quem consulta). Um produto pode ter uma linha por setor onde já
+--    teve alguma movimentação.
 -- ---------------------------------------------------------------------
 create or replace view public.vw_estoque_saldo
 with (security_invoker = true) as
 select
-  p.id as produto_id,
+  m.produto_id,
+  m.setor,
   coalesce(sum(case when m.tipo = 'saida' then -m.quantidade else m.quantidade end), 0) as saldo,
   coalesce(sum(m.quantidade) filter (where m.tipo = 'origem'), 0)  as quantidade_origem,
   coalesce(sum(m.quantidade) filter (where m.tipo = 'entrada'), 0) as total_entradas,
   coalesce(sum(m.quantidade) filter (where m.tipo = 'saida'), 0)   as total_saidas,
-  max(m.created_at) as ultima_movimentacao,
-  p.setor
-from public.cadastro_de_produtos p
-left join public.movimentacoes_estoque m on m.produto_id = p.id
-group by p.id;
+  max(m.created_at) as ultima_movimentacao
+from public.movimentacoes_estoque m
+group by m.produto_id, m.setor;
 
 -- ---------------------------------------------------------------------
 -- 6. RLS ligado, SEM policies — bloqueia geral até seguranca_rls.sql
