@@ -1910,7 +1910,7 @@
             </div>
             <div>
               <div class="wa-topcard-title">Controle de Estoque</div>
-              <div class="wa-topcard-sub">Cada setor tem seu próprio estoque — cadastros, entradas e saídas usam sempre o setor selecionado.</div>
+              <div class="wa-topcard-sub">Catálogo único de produtos — cada entrada e saída informa o setor, permitindo redistribuir o estoque entre setores.</div>
             </div>
           </div>
           <div class="wa-stock-actions" id="waStockActions">
@@ -2079,6 +2079,7 @@
                 <tr>
                   <th>Data / hora</th>
                   <th>Produto</th>
+                  <th>Setor</th>
                   <th>Tipo</th>
                   <th style="text-align:right;">Quantidade</th>
                   <th>Observação</th>
@@ -2123,7 +2124,7 @@
               </div>
               <div class="wa-form-grid">
                 <div class="wa-field">
-                  <label for="waProdSetor">Setor</label>
+                  <label for="waProdSetor">Setor de origem</label>
                   <select id="waProdSetor">
                     <option value="Escritório">Escritório</option>
                     <option value="Almoxarifado">Almoxarifado</option>
@@ -2131,7 +2132,7 @@
                     <option value="Institucional">Institucional</option>
                     <option value="Espaço">Espaço</option>
                   </select>
-                  <div class="wa-empty-hint" id="waProdSetorHint" hidden>O setor não muda após o cadastro — o estoque pertence a ele.</div>
+                  <div class="wa-empty-hint" id="waProdSetorHint" hidden>Setor onde entrou a quantidade inicial — não muda após o cadastro. Para movimentar entre setores depois, use Entrada/Saída.</div>
                 </div>
                 <div class="wa-field">
                   <label for="waProdUnidade">Unidade</label>
@@ -2209,11 +2210,23 @@
                   </button>
                 </div>
               </div>
-              <div class="wa-field">
-                <label>Tipo</label>
-                <div class="wa-toggle-group" id="waMovTipoGroup">
-                  <button type="button" class="wa-toggle-chip selected" data-tipo="entrada">Entrada</button>
-                  <button type="button" class="wa-toggle-chip" data-tipo="saida">Saída</button>
+              <div class="wa-form-grid" style="margin-bottom:0;">
+                <div class="wa-field">
+                  <label>Tipo</label>
+                  <div class="wa-toggle-group" id="waMovTipoGroup">
+                    <button type="button" class="wa-toggle-chip selected" data-tipo="entrada">Entrada</button>
+                    <button type="button" class="wa-toggle-chip" data-tipo="saida">Saída</button>
+                  </div>
+                </div>
+                <div class="wa-field">
+                  <label for="waMovSetor">Setor</label>
+                  <select id="waMovSetor">
+                    <option value="Escritório">Escritório</option>
+                    <option value="Almoxarifado">Almoxarifado</option>
+                    <option value="RH">RH</option>
+                    <option value="Institucional">Institucional</option>
+                    <option value="Espaço">Espaço</option>
+                  </select>
                 </div>
               </div>
               <div class="wa-field">
@@ -4042,12 +4055,17 @@
     });
 
     // ---------------- Estoque (produtos · origem / entradas / saídas) ----------------
-    // Produtos em `cadastro_de_produtos`; todo lançamento em
-    // `movimentacoes_estoque` (tipo origem | entrada | saida). O saldo vem
-    // da view `vw_estoque_saldo` — nunca é gravado direto no produto.
-    // Cada produto pertence a um setor: o mesmo código de barras pode
-    // existir em setores diferentes, cada um com o seu próprio saldo.
+    // Produtos em `cadastro_de_produtos` (catálogo único — código de barras
+    // não se repete); todo lançamento em `movimentacoes_estoque` (tipo
+    // origem | entrada | saida), cada um com o seu próprio setor. O saldo
+    // por produto + setor vem da view `vw_estoque_saldo` — nunca é
+    // gravado direto no produto. O `setor` do produto é só o setor de
+    // origem (onde entrou a quantidade inicial no cadastro); entradas e
+    // saídas depois disso podem acontecer em qualquer setor, permitindo
+    // redistribuir o estoque entre eles (ex: saída do Escritório + entrada
+    // em outro setor).
     const STOCK_SETORES = ['Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'];
+    const STOCK_SETOR_TODOS = 'Todos';
     const STOCK_SETOR_STORAGE_KEY = 'cdload_estoque_setor';
 
     const FALLBACK_PRODUCTS = [
@@ -4055,26 +4073,27 @@
       { id: 'p2', codigo_barras: '2000000000022', nome: 'Caneta esferográfica azul (cx 50)', setor: 'Escritório', unidade: 'CX', estoque_minimo: 3, preco_custo: 42, descricao: '', ativo: true },
       { id: 'p3', codigo_barras: '2000000000039', nome: 'Café torrado e moído 500g', setor: 'Almoxarifado', unidade: 'UN', estoque_minimo: 10, preco_custo: 18.9, descricao: '', ativo: true },
       { id: 'p4', codigo_barras: '2000000000046', nome: 'Copo descartável 180ml (pct 100)', setor: 'Almoxarifado', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.4, descricao: '', ativo: true },
-      { id: 'p5', codigo_barras: '2000000000053', nome: 'Detergente neutro 500ml', setor: 'Espaço', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, descricao: '', ativo: true },
-      { id: 'p6', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', setor: 'RH', unidade: 'PC', estoque_minimo: 5, preco_custo: 27.5, descricao: '', ativo: true }
+      { id: 'p5', codigo_barras: '2000000000053', nome: 'Detergente neutro 500ml', setor: 'Espaço', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, descricao: '', ativo: true }
     ];
     const FALLBACK_MOVEMENTS = [
-      { id: 'm1', produto_id: 'p1', tipo: 'origem', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
-      { id: 'm2', produto_id: 'p2', tipo: 'origem', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
-      { id: 'm3', produto_id: 'p3', tipo: 'origem', quantidade: 12, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:10:00' },
-      { id: 'm4', produto_id: 'p4', tipo: 'origem', quantidade: 30, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:15:00' },
-      { id: 'm5', produto_id: 'p5', tipo: 'origem', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
-      { id: 'm6', produto_id: 'p1', tipo: 'saida', quantidade: 25, observacao: 'Requisição do setor comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
-      { id: 'm7', produto_id: 'p3', tipo: 'saida', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
-      { id: 'm8', produto_id: 'p4', tipo: 'entrada', quantidade: 10, observacao: 'NF 4521', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
-      { id: 'm9', produto_id: 'p6', tipo: 'origem', quantidade: 8, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:25:00' }
+      { id: 'm1', produto_id: 'p1', tipo: 'origem', setor: 'Escritório', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
+      { id: 'm2', produto_id: 'p2', tipo: 'origem', setor: 'Escritório', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
+      { id: 'm3', produto_id: 'p3', tipo: 'origem', setor: 'Almoxarifado', quantidade: 12, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:10:00' },
+      { id: 'm4', produto_id: 'p4', tipo: 'origem', setor: 'Almoxarifado', quantidade: 30, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:15:00' },
+      { id: 'm5', produto_id: 'p5', tipo: 'origem', setor: 'Espaço', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
+      { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', quantidade: 25, observacao: 'Requisição do setor comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
+      { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
+      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, observacao: 'NF 4521', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
+      // Redistribuição interna: sai do Escritório e entra no RH (mesmo produto, dois setores).
+      { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', quantidade: 10, observacao: 'Transferência interna para o RH', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
+      { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'RH', quantidade: 10, observacao: 'Transferência interna do Escritório', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' }
     ];
 
-    let currentSetor = STOCK_SETORES[0];
+    let currentSetor = STOCK_SETOR_TODOS;
     try {
       const saved = localStorage.getItem(STOCK_SETOR_STORAGE_KEY);
-      if(STOCK_SETORES.includes(saved)) currentSetor = saved;
-    } catch(e){ /* sem storage: começa no primeiro setor */ }
+      if(saved === STOCK_SETOR_TODOS || STOCK_SETORES.includes(saved)) currentSetor = saved;
+    } catch(e){ /* sem storage: começa em "Todos" */ }
 
     let stockProducts = [];
     let stockMovements = [];
@@ -4138,6 +4157,7 @@
     const waMovSub = document.getElementById('waMovSub');
     const waMovProduto = document.getElementById('waMovProduto');
     const waMovTipoGroup = document.getElementById('waMovTipoGroup');
+    const waMovSetor = document.getElementById('waMovSetor');
     const waMovQtd = document.getElementById('waMovQtd');
     const waMovObs = document.getElementById('waMovObs');
     const waMovSummary = document.getElementById('waMovSummary');
@@ -4165,20 +4185,29 @@
       const d = new Date(iso);
       return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
-    function saldoOf(id){ return stockBalances.get(id) || 0; }
-    function situacaoOf(p){
+    // Saldo por produto + setor: stockBalances é um Map<produto_id, Map<setor, saldo>>.
+    // Sem setor (ou STOCK_SETOR_TODOS), soma o saldo de todos os setores.
+    function saldoOf(id, setor){
+      const bySetor = stockBalances.get(id);
+      if(!bySetor) return 0;
+      if(!setor || setor === STOCK_SETOR_TODOS){
+        let total = 0;
+        bySetor.forEach(v => { total += v; });
+        return total;
+      }
+      return bySetor.get(setor) || 0;
+    }
+    function situacaoOf(p, setor){
       if(!p.ativo) return 'inativo';
-      const s = saldoOf(p.id);
+      const s = saldoOf(p.id, setor);
       if(s <= 0) return 'zerado';
       if(p.estoque_minimo > 0 && s <= p.estoque_minimo) return 'baixo';
       return 'ok';
     }
-    function setorProducts(){
-      return stockProducts.filter(p => p.setor === currentSetor);
-    }
-    function findProductByCode(code, setor){
-      const s = setor || currentSetor;
-      return stockProducts.find(p => p.codigo_barras === code && p.setor === s) || null;
+    // Catálogo único: a lista de produtos não é mais filtrada por setor —
+    // o setor só afeta qual saldo/quais movimentações são exibidos.
+    function findProductByCode(code){
+      return stockProducts.find(p => p.codigo_barras === code) || null;
     }
     // Na tabela `cadastro_de_produtos` do Supabase o setor fica na coluna `categoria`.
     const STOCK_SETOR_COL = 'categoria';
@@ -4191,10 +4220,12 @@
       });
     }
     function recomputeFallbackBalances(){
-      stockBalances = new Map(stockProducts.map(p => [p.id, 0]));
+      stockBalances = new Map();
       stockMovements.forEach(m => {
         const delta = m.tipo === 'saida' ? -m.quantidade : m.quantidade;
-        stockBalances.set(m.produto_id, (stockBalances.get(m.produto_id) || 0) + delta);
+        if(!stockBalances.has(m.produto_id)) stockBalances.set(m.produto_id, new Map());
+        const bySetor = stockBalances.get(m.produto_id);
+        bySetor.set(m.setor, (bySetor.get(m.setor) || 0) + delta);
       });
     }
 
@@ -4234,7 +4265,7 @@
       }
       const [prodRes, saldoRes, movRes, userRes] = await Promise.all([
         supabaseClient.from('cadastro_de_produtos').select('*').order('nome', { ascending: true }),
-        supabaseClient.from('vw_estoque_saldo').select('produto_id,saldo'),
+        supabaseClient.from('vw_estoque_saldo').select('produto_id,setor,saldo'),
         supabaseClient.from('movimentacoes_estoque').select('*').order('created_at', { ascending: false }).limit(500),
         supabaseClient.from('usuarios').select('nome,email').order('nome', { ascending: true })
       ]);
@@ -4246,19 +4277,28 @@
         alert('Erro ao carregar estoque do Supabase: ' + error.message + '\n\nVerifique se supabase/schema_estoque.sql e supabase/seguranca_rls.sql já foram executados, e se este usuário tem a seção Estoque liberada.');
       }
       stockProducts = (prodRes.data || []).map(normalizeProduct);
-      stockBalances = new Map((saldoRes.data || []).map(r => [r.produto_id, Number(r.saldo) || 0]));
+      stockBalances = new Map();
+      (saldoRes.data || []).forEach(r => {
+        if(!stockBalances.has(r.produto_id)) stockBalances.set(r.produto_id, new Map());
+        stockBalances.get(r.produto_id).set(r.setor, Number(r.saldo) || 0);
+      });
       stockMovements = (movRes.data || []).map(m => Object.assign({}, m, { quantidade: Number(m.quantidade) || 0 }));
       renderStock();
     }
 
     // ---------------- Renderização ----------------
     function setCurrentSetor(setor){
-      if(!STOCK_SETORES.includes(setor) || setor === currentSetor) return;
+      if((setor !== STOCK_SETOR_TODOS && !STOCK_SETORES.includes(setor)) || setor === currentSetor) return;
       currentSetor = setor;
       try { localStorage.setItem(STOCK_SETOR_STORAGE_KEY, setor); } catch(e){ /* opcional */ }
       waScanFeedback.hidden = true;
       waStockSearch.value = '';
       renderStock();
+    }
+
+    // Movimentações do setor atualmente filtrado (todas, se "Todos").
+    function setorMovements(){
+      return currentSetor === STOCK_SETOR_TODOS ? stockMovements : stockMovements.filter(m => m.setor === currentSetor);
     }
 
     // Nome do colaborador (tabela `usuarios`) a partir do e-mail gravado na movimentação
@@ -4276,15 +4316,15 @@
     }
 
     function refreshStockFilterOptions(){
-      waStockSetorSelect.innerHTML = STOCK_SETORES.map(s => `<option value="${stockEsc(s)}">${stockEsc(s)}</option>`).join('');
+      waStockSetorSelect.innerHTML = [STOCK_SETOR_TODOS, ...STOCK_SETORES].map(s => `<option value="${stockEsc(s)}">${stockEsc(s)}</option>`).join('');
       waStockSetorSelect.value = currentSetor;
 
-      const prods = setorProducts().slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      // Catálogo único: a lista de produtos do filtro não muda com o setor.
+      const prods = stockProducts.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
       fillSelect(waStockProductFilter, 'Produto', prods.map(p => ({ value: p.id, label: `${p.nome} (${p.codigo_barras})` })));
       fillSelect(waStockUnitFilter, 'Unidade', [...new Set(prods.map(p => p.unidade).filter(Boolean))].sort().map(u => ({ value: u, label: u })));
 
-      const ids = new Set(prods.map(p => p.id));
-      const setorMovs = stockMovements.filter(m => ids.has(m.produto_id));
+      const setorMovs = setorMovements();
       const colabs = new Map(stockUsers.filter(u => u.email).map(u => [u.email.toLowerCase(), u.nome || u.email]));
       setorMovs.forEach(m => { if(m.usuario_email && !colabs.has(m.usuario_email.toLowerCase())) colabs.set(m.usuario_email.toLowerCase(), m.usuario_email); });
       fillSelect(waStockUserFilter, 'Colaborador', [...colabs].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).map(([value, label]) => ({ value, label })));
@@ -4301,12 +4341,11 @@
     });
 
     function renderStockKpis(){
-      const ativos = setorProducts().filter(p => p.ativo);
-      const itens = ativos.reduce((sum, p) => sum + Math.max(saldoOf(p.id), 0), 0);
-      const baixo = ativos.filter(p => { const s = situacaoOf(p); return s === 'baixo' || s === 'zerado'; }).length;
+      const ativos = stockProducts.filter(p => p.ativo);
+      const itens = ativos.reduce((sum, p) => sum + Math.max(saldoOf(p.id, currentSetor), 0), 0);
+      const baixo = ativos.filter(p => { const s = situacaoOf(p, currentSetor); return s === 'baixo' || s === 'zerado'; }).length;
       const hoje = new Date().toDateString();
-      const setorIds = new Set(setorProducts().map(p => p.id));
-      const movHoje = stockMovements.filter(m => setorIds.has(m.produto_id) && new Date(m.created_at).toDateString() === hoje).length;
+      const movHoje = setorMovements().filter(m => new Date(m.created_at).toDateString() === hoje).length;
       document.getElementById('waStockKpiProdutos').textContent = ativos.length.toLocaleString('pt-BR');
       document.getElementById('waStockKpiItens').textContent = fmtQty(itens);
       const baixoEl = document.getElementById('waStockKpiBaixo');
@@ -4320,11 +4359,13 @@
       const situacao = waStockStatusFilter.value;
       const produto = waStockProductFilter.value;
       const unidade = waStockUnitFilter.value;
-      const list = setorProducts().filter(p => {
+      // Catálogo único: o filtro de setor não esconde produtos, só muda o
+      // saldo/situação exibidos (ver situacaoOf abaixo).
+      const list = stockProducts.filter(p => {
         if(term && !(p.nome.toLowerCase().includes(term) || p.codigo_barras.toLowerCase().includes(term))) return false;
         if(produto && p.id !== produto) return false;
         if(unidade && p.unidade !== unidade) return false;
-        if(situacao && situacaoOf(p) !== situacao) return false;
+        if(situacao && situacaoOf(p, currentSetor) !== situacao) return false;
         return true;
       });
       return list.sort((a, b) => {
@@ -4341,8 +4382,8 @@
       const colab = waStockUserFilter.value;
       const ano = waStockYearFilter.value;
       const mes = waStockMonthFilter.value;
-      const byId = new Map(setorProducts().map(p => [p.id, p]));
-      const list = stockMovements.filter(m => {
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const list = setorMovements().filter(m => {
         const p = byId.get(m.produto_id);
         if(!p) return false;
         if(tipo && m.tipo !== tipo) return false;
@@ -4351,7 +4392,7 @@
         if(ano && String(m.created_at).slice(0, 4) !== ano) return false;
         if(mes && String(m.created_at).slice(5, 7) !== mes) return false;
         if(term){
-          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.observacao || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
+          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.observacao || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -4373,11 +4414,11 @@
       const list = getFilteredProducts();
       waStockCount.textContent = `${list.length} produto${list.length === 1 ? '' : 's'} · ${currentSetor}`;
       if(!list.length){
-        waStockTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="7">${setorProducts().length ? 'Nenhum produto encontrado com os filtros atuais.' : `Nenhum produto cadastrado no setor ${stockEsc(currentSetor)}. Bipe um código ou clique em "Novo Produto".`}</td></tr>`;
+        waStockTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="7">${stockProducts.length ? 'Nenhum produto encontrado com os filtros atuais.' : 'Nenhum produto cadastrado. Bipe um código ou clique em "Novo Produto".'}</td></tr>`;
         return;
       }
       waStockTableBody.innerHTML = list.map(p => {
-        const sit = SITUACAO[situacaoOf(p)];
+        const sit = SITUACAO[situacaoOf(p, currentSetor)];
         const moveBtns = p.ativo ? `
             <button class="wa-icon-btn" title="Registrar entrada" onclick="waOpenMovModal('${p.id}','entrada')">${ICON_PLUS}</button>
             <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>` : '';
@@ -4389,7 +4430,7 @@
               ${p.descricao ? `<div class="wa-td-sub">${stockEsc(p.descricao)}</div>` : ''}
             </td>
             <td>${stockEsc(p.unidade)}</td>
-            <td class="wa-td-num">${fmtQty(saldoOf(p.id))}</td>
+            <td class="wa-td-num">${fmtQty(saldoOf(p.id, currentSetor))}</td>
             <td class="wa-td-num" style="font-weight:400;color:var(--wa-text-muted);">${fmtQty(p.estoque_minimo)}</td>
             <td><span class="wa-badge ${sit.cls}">${sit.label}</span></td>
             <td class="wa-table-actions">
@@ -4406,7 +4447,7 @@
       const list = getFilteredMovements();
       waStockCount.textContent = `${list.length} movimentaç${list.length === 1 ? 'ão' : 'ões'} · ${currentSetor}`;
       if(!list.length){
-        waMovTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="7">Nenhuma movimentação encontrada no setor ${stockEsc(currentSetor)}.</td></tr>`;
+        waMovTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="8">Nenhuma movimentação encontrada${currentSetor === STOCK_SETOR_TODOS ? '' : ` no setor ${stockEsc(currentSetor)}`}.</td></tr>`;
         return;
       }
       const byId = new Map(stockProducts.map(p => [p.id, p]));
@@ -4421,6 +4462,7 @@
               ${p ? stockEsc(p.nome) : '<span class="wa-empty-hint">Produto removido</span>'}
               ${p ? `<div class="wa-td-sub">${stockEsc(p.codigo_barras)}</div>` : ''}
             </td>
+            <td>${stockEsc(m.setor)}</td>
             <td><span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span></td>
             <td class="wa-td-num ${qtyCls}">${sign}${fmtQty(m.quantidade)} ${p ? stockEsc(p.unidade) : ''}</td>
             <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
@@ -4463,17 +4505,12 @@
 
       const p = findProductByCode(code);
       if(!p){
-        // Já existe em outro setor? Reaproveita os dados como modelo — o
-        // estoque deste setor começa do zero, com a sua própria origem.
-        const other = stockProducts.find(x => x.codigo_barras === code);
-        showScanFeedback('warn', other
-          ? `Código ${code} existe no setor ${other.setor}, mas não no setor ${currentSetor} — confirme o cadastro para criar o estoque deste setor.`
-          : `Código ${code} não cadastrado no setor ${currentSetor} — preencha os dados para cadastrar o produto.`);
-        waOpenProductModal(null, code, other);
+        showScanFeedback('warn', `Código ${code} não cadastrado — preencha os dados para cadastrar o produto.`);
+        waOpenProductModal(null, code);
         return;
       }
       if(scanMode === 'consulta'){
-        showScanFeedback('ok', `${p.nome} · saldo ${fmtQty(saldoOf(p.id))} ${p.unidade} · ${SITUACAO[situacaoOf(p)].label}`);
+        showScanFeedback('ok', `${p.nome} · saldo ${fmtQty(saldoOf(p.id, currentSetor))} ${p.unidade} · ${SITUACAO[situacaoOf(p, currentSetor)].label}`);
         waStockSearch.value = code;
         setStockTab('produtos');
         return;
@@ -4743,7 +4780,7 @@
       openCameraScanner((code) => {
         stockBeep();
         const p = findProductByCode(code.trim());
-        if(!p){ alert(`Código ${code} não cadastrado no setor ${currentSetor}. Cadastre o produto neste setor antes de movimentar.`); return; }
+        if(!p){ alert(`Código ${code} não cadastrado. Cadastre o produto antes de movimentar.`); return; }
         if(!p.ativo){ alert(`${p.nome} está inativo.`); return; }
         waMovProduto.value = p.id;
         updateMovSummary();
@@ -4753,26 +4790,23 @@
     };
 
     // ---------------- CRUD: Produtos ----------------
-    // template: produto do mesmo código em outro setor, usado só para
-    // pré-preencher nome/unidade/custo/descrição num cadastro novo.
-    window.waOpenProductModal = async function(id, presetCode, template){
+    window.waOpenProductModal = async function(id, presetCode){
       editingProductId = id || null;
       const p = stockProducts.find(x => x.id === editingProductId);
-      const src = p || template || null;
 
       document.getElementById('waProductModalTitle').textContent = p ? 'Editar Produto' : 'Novo Produto';
-      document.getElementById('waProductModalSub').textContent = p ? `Atualize os dados cadastrais do produto · ${p.setor}` : 'Cadastro do produto e lançamento de origem do estoque';
+      document.getElementById('waProductModalSub').textContent = p ? `Atualize os dados cadastrais do produto · origem em ${p.setor}` : 'Cadastro do produto e lançamento de origem do estoque';
       document.getElementById('waProdSaveBtn').textContent = p ? 'Salvar Alterações' : 'Salvar Produto';
 
       waProdCodigo.value = p ? p.codigo_barras : (presetCode || '');
-      waProdNome.value = src ? src.nome : '';
-      waProdSetor.value = p ? p.setor : currentSetor;
+      waProdNome.value = p ? p.nome : '';
+      waProdSetor.value = p ? p.setor : (currentSetor === STOCK_SETOR_TODOS ? STOCK_SETORES[0] : currentSetor);
       waProdSetor.disabled = !!p;
       waProdSetorHint.hidden = !p;
-      waProdUnidade.value = src ? src.unidade : 'UN';
+      waProdUnidade.value = p ? p.unidade : 'UN';
       waProdMinimo.value = p ? p.estoque_minimo : '';
-      waProdCusto.value = src && src.preco_custo != null ? src.preco_custo : '';
-      waProdDescricao.value = src ? (src.descricao || '') : '';
+      waProdCusto.value = p && p.preco_custo != null ? p.preco_custo : '';
+      waProdDescricao.value = p ? (p.descricao || '') : '';
       waProdQtdInicial.value = '';
       waProdStatus.value = p && !p.ativo ? 'false' : 'true';
 
@@ -4790,7 +4824,7 @@
           origem = data;
         }
         waProdOrigemText.textContent = origem
-          ? `${fmtQty(origem.quantidade)} ${p.unidade} em ${fmtDateTimeBR(origem.created_at)}`
+          ? `${fmtQty(origem.quantidade)} ${p.unidade} em ${p.setor} · ${fmtDateTimeBR(origem.created_at)}`
           : 'Sem lançamento de origem registrado.';
       }
     };
@@ -4813,12 +4847,12 @@
       }
       const setor = waProdSetor.value;
       if(!STOCK_SETORES.includes(setor)){
-        alert('Selecione o setor do produto.');
+        alert('Selecione o setor de origem do produto.');
         return;
       }
-      const dup = stockProducts.find(p => p.codigo_barras === codigo && p.setor === setor && p.id !== editingProductId);
+      const dup = stockProducts.find(p => p.codigo_barras === codigo && p.id !== editingProductId);
       if(dup){
-        alert(`O código ${codigo} já está cadastrado no setor ${setor} para "${dup.nome}".`);
+        alert(`O código ${codigo} já está cadastrado para "${dup.nome}".`);
         return;
       }
       const minimo = waProdMinimo.value === '' ? 0 : Number(waProdMinimo.value);
@@ -4838,9 +4872,9 @@
         descricao: waProdDescricao.value.trim() || null,
         ativo: waProdStatus.value === 'true'
       };
-      // O setor só é gravado no cadastro: depois disso o estoque pertence a ele.
+      // O setor de origem só é gravado no cadastro: depois disso não muda mais.
       if(!editingProductId) payload[supabaseReady ? STOCK_SETOR_COL : 'setor'] = setor;
-      const origemPayload = { tipo: 'origem', quantidade: qtdInicial, observacao: 'Lançamento inicial (origem)', usuario_email: currentUserEmail() };
+      const origemPayload = { tipo: 'origem', setor, quantidade: qtdInicial, observacao: 'Lançamento inicial (origem)', usuario_email: currentUserEmail() };
 
       if(!supabaseReady){
         if(editingProductId){
@@ -4874,12 +4908,8 @@
 
       const wasEditing = !!editingProductId;
       waCloseProductModal();
-      if(!wasEditing && setor !== currentSetor){
-        currentSetor = setor;
-        try { localStorage.setItem(STOCK_SETOR_STORAGE_KEY, setor); } catch(e){ /* opcional */ }
-      }
       await loadStock();
-      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado no setor ${setor} com saldo inicial de ${fmtQty(qtdInicial)} ${payload.unidade}.`);
+      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · origem em ${setor} com saldo inicial de ${fmtQty(qtdInicial)} ${payload.unidade}.`);
     };
 
     window.waDeleteProduct = async function(id){
@@ -4928,10 +4958,11 @@
         waMovSummary.classList.remove('over');
         return;
       }
-      const saldo = saldoOf(p.id);
+      const setor = waMovSetor.value;
+      const saldo = saldoOf(p.id, setor);
       const q = Number(waMovQtd.value) || 0;
       const apos = movTipo === 'saida' ? saldo - q : saldo + q;
-      waMovSummary.textContent = `Saldo atual: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}`;
+      waMovSummary.textContent = `Saldo atual em ${setor}: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}`;
       waMovSummary.classList.toggle('over', apos < 0);
     }
 
@@ -4939,20 +4970,22 @@
       btn.addEventListener('click', () => setMovTipo(btn.dataset.tipo));
     });
     waMovProduto.addEventListener('change', updateMovSummary);
+    waMovSetor.addEventListener('change', updateMovSummary);
     waMovQtd.addEventListener('input', updateMovSummary);
     waMovQtd.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
 
     window.waOpenMovModal = function(produtoId, tipo){
-      const ativos = setorProducts().filter(p => p.ativo);
+      const ativos = stockProducts.filter(p => p.ativo);
       if(!ativos.length){
-        alert(`Cadastre um produto ativo no setor ${currentSetor} antes de registrar movimentações.`);
+        alert('Cadastre um produto ativo antes de registrar movimentações.');
         return;
       }
-      waMovSub.textContent = `Entrada ou saída no estoque do setor ${currentSetor}`;
+      waMovSub.textContent = 'Escolha o setor e registre a entrada ou saída — dá pra redistribuir entre setores lançando uma saída num e uma entrada em outro.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
+      waMovSetor.value = currentSetor !== STOCK_SETOR_TODOS ? currentSetor : STOCK_SETORES[0];
       waMovQtd.value = '1';
       waMovObs.value = '';
       setMovTipo(tipo || 'entrada');
@@ -4969,17 +5002,20 @@
 
     window.waSaveMovement = async function(){
       const p = stockProducts.find(x => x.id === waMovProduto.value);
+      const setor = waMovSetor.value;
       const q = Number(waMovQtd.value);
       if(!p){ alert('Selecione o produto.'); return; }
+      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o setor.'); return; }
       if(!(q > 0)){ alert('Informe uma quantidade maior que zero.'); return; }
-      if(movTipo === 'saida' && q > saldoOf(p.id)){
-        alert(`Saldo insuficiente: ${p.nome} tem ${fmtQty(saldoOf(p.id))} ${p.unidade} em estoque.`);
+      if(movTipo === 'saida' && q > saldoOf(p.id, setor)){
+        alert(`Saldo insuficiente em ${setor}: ${p.nome} tem ${fmtQty(saldoOf(p.id, setor))} ${p.unidade} em estoque.`);
         return;
       }
 
       const payload = {
         produto_id: p.id,
         tipo: movTipo,
+        setor,
         quantidade: q,
         observacao: waMovObs.value.trim() || null,
         usuario_email: currentUserEmail()
@@ -4998,7 +5034,7 @@
 
       waCloseMovModal();
       await loadStock();
-      showScanFeedback('ok', `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada · ${p.nome} · saldo ${fmtQty(saldoOf(p.id))} ${p.unidade}`);
+      showScanFeedback('ok', `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`);
     };
 
     window.waDeleteMovement = async function(id){
@@ -5012,8 +5048,8 @@
         alert('O lançamento de origem só pode ser removido junto com o produto.');
         return;
       }
-      if(m.tipo === 'entrada' && saldoOf(m.produto_id) - m.quantidade < 0){
-        alert('Não é possível remover esta entrada: o saldo do produto ficaria negativo.');
+      if(m.tipo === 'entrada' && saldoOf(m.produto_id, m.setor) - m.quantidade < 0){
+        alert(`Não é possível remover esta entrada: o saldo do produto em ${m.setor} ficaria negativo.`);
         return;
       }
       if(!confirm(`Remover esta ${MOV_LABEL[m.tipo].toLowerCase()} de ${fmtQty(m.quantidade)}? O saldo do produto será recalculado.`)) return;
@@ -5057,15 +5093,15 @@
       };
       let rows, filename;
       if(stockTab === 'produtos'){
-        rows = [['Setor', 'Código de barras', 'Produto', 'Unidade', 'Saldo', 'Estoque mínimo', 'Preço de custo', 'Situação']]
-          .concat(getFilteredProducts().map(p => [p.setor, p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p)].label]));
+        rows = [['Setor de origem', 'Código de barras', 'Produto', 'Unidade', `Saldo (${currentSetor})`, 'Estoque mínimo', 'Preço de custo', 'Situação']]
+          .concat(getFilteredProducts().map(p => [p.setor, p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p, currentSetor)].label]));
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
         rows = [['Data/hora', 'Setor', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Usuário']]
           .concat(getFilteredMovements().map(m => {
             const p = byId.get(m.produto_id) || {};
-            return [fmtDateTimeBR(m.created_at), p.setor || '', p.codigo_barras || '', p.nome || '', MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
+            return [fmtDateTimeBR(m.created_at), m.setor || '', p.codigo_barras || '', p.nome || '', MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_movimentacoes_${currentSetor}.csv`;
       }
