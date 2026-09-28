@@ -1152,22 +1152,6 @@
           </div>
         </div>
 
-        <div class="wa-topcard">
-          <div class="wa-topcard-left">
-            <div class="wa-topcard-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            </div>
-            <div>
-              <div class="wa-topcard-title">Relatórios</div>
-              <div class="wa-topcard-sub">Materiais produzidos pelo setor, disponíveis para consulta e download.</div>
-            </div>
-          </div>
-          <button class="wa-btn wa-btn-primary" onclick="waOpenReportModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Novo Relatório
-          </button>
-        </div>
-
         <div class="filter-bar wa-stock-filters">
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -1175,6 +1159,9 @@
           </div>
           <select class="filter-select" id="waReportCategoryFilter">
             <option value="">Categoria</option>
+          </select>
+          <select class="filter-select" id="waReportYearFilter">
+            <option value="">Ano</option>
           </select>
           <select class="filter-select" id="waReportMonthFilter">
             <option value="">Mês</option>
@@ -1197,6 +1184,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             Limpar
           </button>
+          <button class="wa-btn wa-btn-primary" onclick="waOpenReportModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Novo Arquivo
+          </button>
         </div>
 
         <div class="wa-sort-row">
@@ -1218,7 +1209,7 @@
                 <tr>
                   <th>Arquivo</th>
                   <th>Categoria</th>
-                  <th>Competência</th>
+                  <th>Publicado em</th>
                   <th style="text-align:right;">Tamanho</th>
                   <th>Enviado em</th>
                   <th class="wa-table-actions">Ações</th>
@@ -1229,7 +1220,7 @@
           </div>
         </div>
 
-        <!-- ===== MODAL: NOVO RELATÓRIO ===== -->
+        <!-- ===== MODAL: WIZARD DE NOVO ARQUIVO (2 ETAPAS) ===== -->
         <div class="wa-modal-overlay" id="waReportModal">
           <div class="wa-modal wa-modal-sm" style="max-width:520px;">
             <div class="wa-modal-header">
@@ -1238,36 +1229,52 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                 </div>
                 <div>
-                  <div class="wa-modal-title">Novo Relatório</div>
-                  <div class="wa-modal-sub">Envie um material do setor para a equipe consultar</div>
+                  <div class="wa-modal-title">Novo Arquivo</div>
+                  <div class="wa-modal-sub">Envie um material do setor em 2 etapas</div>
                 </div>
               </div>
               <button class="wa-modal-close" onclick="waCloseReportModal()">&times;</button>
             </div>
+
             <div class="wa-modal-body">
-              <div class="wa-field">
-                <label for="waReportTitulo">Título</label>
-                <input type="text" id="waReportTitulo" placeholder="Ex: CAGED - Abril">
-              </div>
-              <div class="wa-field-row" style="align-items:flex-start;">
-                <div class="wa-field" style="flex:1;">
-                  <label for="waReportCategoria">Categoria</label>
-                  <input type="text" id="waReportCategoria" list="waReportCategoriaList" placeholder="Ex: CAGED">
-                  <datalist id="waReportCategoriaList"></datalist>
+
+              <!-- ETAPA 1: Informações do material -->
+              <div id="waReportStep1">
+                <h3 class="wa-step-title">1. Informações do material</h3>
+                <div class="wa-field">
+                  <label for="waReportTitulo">Título</label>
+                  <input type="text" id="waReportTitulo" placeholder="Ex: CAGED - Abril">
                 </div>
-                <div class="wa-field" style="flex:1;">
-                  <label for="waReportCompetencia">Competência</label>
-                  <input type="text" id="waReportCompetencia" placeholder="Ex: Abril/2026">
+                <div class="wa-field-row" style="align-items:flex-start;">
+                  <div class="wa-field" style="flex:1;">
+                    <label for="waReportCategoria">Categoria</label>
+                    <input type="text" id="waReportCategoria" list="waReportCategoriaList" placeholder="Ex: CAGED">
+                    <datalist id="waReportCategoriaList"></datalist>
+                  </div>
+                  <div class="wa-field" style="flex:1;">
+                    <label for="waReportDataPublicacao">Data de publicação</label>
+                    <input type="date" id="waReportDataPublicacao">
+                  </div>
                 </div>
               </div>
-              <div class="wa-field">
-                <label for="waReportArquivo">Arquivo</label>
-                <input type="file" id="waReportArquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg">
+
+              <!-- ETAPA 2: Arquivo -->
+              <div id="waReportStep2" style="display:none;">
+                <h3 class="wa-step-title">2. Arquivo</h3>
+                <div class="wa-field">
+                  <label for="waReportArquivo">Arquivo</label>
+                  <input type="file" id="waReportArquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg">
+                </div>
               </div>
+
             </div>
-            <div class="wa-modal-footer">
-              <button class="wa-btn wa-btn-outline" onclick="waCloseReportModal()">Cancelar</button>
-              <button class="wa-btn wa-btn-primary" id="waReportSaveBtn" onclick="waSaveReport()">Enviar</button>
+
+            <div class="wa-wizard-footer">
+              <span class="wa-wizard-steps" id="waReportStepLabel">Etapa 1 de 2</span>
+              <div style="display:flex;gap:10px;">
+                <button class="wa-btn wa-btn-outline" id="waReportBackBtn" style="visibility:hidden;" onclick="waReportWizardBack()">Voltar</button>
+                <button class="wa-btn wa-btn-primary" id="waReportNextBtn" onclick="waReportWizardNext()">Avançar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -5057,17 +5064,19 @@
     // Módulo Relatórios — materiais do setor (Supabase Storage + tabela)
     // ==================================================================
     const FALLBACK_REPORTS = [
-      { id: 'r1', titulo: 'CAGED - Abril', categoria: 'CAGED', competencia: 'Abril/2026', arquivo_nome: 'CAGED (ABRIL).pdf', arquivo_path: null, tamanho_bytes: 4227453, usuario_email: null, created_at: '2026-05-05T12:00:00Z' },
-      { id: 'r2', titulo: 'CAGED - Maio', categoria: 'CAGED', competencia: 'Maio/2026', arquivo_nome: 'CAGED (MAIO).pdf', arquivo_path: null, tamanho_bytes: 4228631, usuario_email: null, created_at: '2026-06-05T12:00:00Z' },
-      { id: 'r3', titulo: 'CAGED - Junho', categoria: 'CAGED', competencia: 'Junho/2026', arquivo_nome: 'CAGED (JUNHO).pdf', arquivo_path: null, tamanho_bytes: 4227508, usuario_email: null, created_at: '2026-07-05T12:00:00Z' }
+      { id: 'r1', titulo: 'CAGED - Abril', categoria: 'CAGED', data_publicacao: '2026-04-30', arquivo_nome: 'CAGED (ABRIL).pdf', arquivo_path: null, tamanho_bytes: 4227453, usuario_email: null, created_at: '2026-05-05T12:00:00Z' },
+      { id: 'r2', titulo: 'CAGED - Maio', categoria: 'CAGED', data_publicacao: '2026-05-31', arquivo_nome: 'CAGED (MAIO).pdf', arquivo_path: null, tamanho_bytes: 4228631, usuario_email: null, created_at: '2026-06-05T12:00:00Z' },
+      { id: 'r3', titulo: 'CAGED - Junho', categoria: 'CAGED', data_publicacao: '2026-06-30', arquivo_nome: 'CAGED (JUNHO).pdf', arquivo_path: null, tamanho_bytes: 4227508, usuario_email: null, created_at: '2026-07-05T12:00:00Z' }
     ];
     const REPORTS_BUCKET = 'relatorios';
 
     let reports = [];
     let reportSort = 'recente';
+    let reportStep = 1;
 
     const waReportSearch = document.getElementById('waReportSearch');
     const waReportCategoryFilter = document.getElementById('waReportCategoryFilter');
+    const waReportYearFilter = document.getElementById('waReportYearFilter');
     const waReportMonthFilter = document.getElementById('waReportMonthFilter');
     const waReportClearBtn = document.getElementById('waReportClearBtn');
     const waReportSortPills = document.getElementById('waReportSortPills');
@@ -5080,10 +5089,13 @@
     const waReportTitulo = document.getElementById('waReportTitulo');
     const waReportCategoria = document.getElementById('waReportCategoria');
     const waReportCategoriaList = document.getElementById('waReportCategoriaList');
-    const waReportCompetencia = document.getElementById('waReportCompetencia');
+    const waReportDataPublicacao = document.getElementById('waReportDataPublicacao');
     const waReportArquivo = document.getElementById('waReportArquivo');
-    const waReportSaveBtn = document.getElementById('waReportSaveBtn');
+    const waReportStepLabel = document.getElementById('waReportStepLabel');
+    const waReportBackBtn = document.getElementById('waReportBackBtn');
+    const waReportNextBtn = document.getElementById('waReportNextBtn');
 
+    const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     const ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
 
     function fmtBytes(n){
@@ -5094,6 +5106,12 @@
       return `${v.toLocaleString('pt-BR', { maximumFractionDigits: i === 0 ? 0 : 1 })} ${units[i]}`;
     }
 
+    function fmtDateBR(iso){
+      if(!iso) return '—';
+      const [y, m, d] = String(iso).slice(0, 10).split('-');
+      return `${d}/${m}/${y}`;
+    }
+
     function reportStoragePath(filename){
       const safe = String(filename).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
       return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
@@ -5101,27 +5119,30 @@
 
     function refreshReportFilterOptions(){
       const categorias = [...new Set(reports.map(r => r.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      const curCat = waReportCategoryFilter.value;
-      waReportCategoryFilter.innerHTML = '<option value="">Categoria</option>' + categorias.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      if(categorias.includes(curCat)) waReportCategoryFilter.value = curCat;
+      fillSelect(waReportCategoryFilter, 'Categoria', categorias.map(c => ({ value: c, label: c })));
       waReportCategoriaList.innerHTML = categorias.map(c => `<option value="${esc(c)}">`).join('');
+
+      const anos = [...new Set(reports.map(r => String(r.data_publicacao || '').slice(0, 4)).filter(Boolean))].sort().reverse();
+      fillSelect(waReportYearFilter, 'Ano', anos.map(a => ({ value: a, label: a })));
     }
 
     function getFilteredReports(){
       const term = waReportSearch.value.trim().toLowerCase();
       const categoria = waReportCategoryFilter.value;
+      const ano = waReportYearFilter.value;
       const mes = waReportMonthFilter.value;
 
       let list = reports.filter(r => {
-        if(term && !(r.titulo.toLowerCase().includes(term) || (r.categoria || '').toLowerCase().includes(term) || (r.competencia || '').toLowerCase().includes(term))) return false;
+        if(term && !(r.titulo.toLowerCase().includes(term) || (r.categoria || '').toLowerCase().includes(term))) return false;
         if(categoria && r.categoria !== categoria) return false;
-        if(mes && String(r.created_at).slice(5, 7) !== mes) return false;
+        if(ano && String(r.data_publicacao || '').slice(0, 4) !== ano) return false;
+        if(mes && String(r.data_publicacao || '').slice(5, 7) !== mes) return false;
         return true;
       });
 
       return list.slice().sort((a, b) => {
         if(reportSort === 'az') return a.titulo.localeCompare(b.titulo, 'pt-BR');
-        const d = String(a.created_at).localeCompare(String(b.created_at));
+        const d = String(a.data_publicacao || '').localeCompare(String(b.data_publicacao || ''));
         return reportSort === 'antiga' ? d : -d;
       });
     }
@@ -5132,7 +5153,7 @@
       waReportCount.textContent = `${list.length} relatório${list.length === 1 ? '' : 's'}`;
 
       if(!list.length){
-        waReportTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="6">${reports.length ? 'Nenhum relatório encontrado com os filtros atuais.' : 'Nenhum relatório enviado ainda. Clique em "Novo Relatório" para adicionar o primeiro material.'}</td></tr>`;
+        waReportTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="6">${reports.length ? 'Nenhum relatório encontrado com os filtros atuais.' : 'Nenhum relatório enviado ainda. Clique em "Novo Arquivo" para adicionar o primeiro material.'}</td></tr>`;
         return;
       }
 
@@ -5143,10 +5164,11 @@
             <div class="wa-td-sub">${esc(r.arquivo_nome)}</div>
           </td>
           <td>${r.categoria ? `<span class="wa-clip-pill wa-clip-pill-categoria">${esc(r.categoria)}</span>` : '—'}</td>
-          <td>${r.competencia ? esc(r.competencia) : '—'}</td>
+          <td>${fmtDateBR(r.data_publicacao)}</td>
           <td class="wa-td-num" style="font-weight:400;color:var(--wa-text-muted);">${fmtBytes(r.tamanho_bytes)}</td>
           <td style="white-space:nowrap;">${fmtDateTimeBR(r.created_at)}</td>
           <td class="wa-table-actions">
+            <button class="wa-icon-btn" title="Visualizar" onclick="waViewReport('${r.id}')">${ICON_EYE}</button>
             <button class="wa-icon-btn" title="Baixar" onclick="waDownloadReport('${r.id}')">${ICON_DOWNLOAD}</button>
             ${isAdminUser() ? `<button class="wa-icon-btn danger" title="Remover" onclick="waDeleteReport('${r.id}')">${ICON_TRASH}</button>` : ''}
           </td>
@@ -5162,8 +5184,8 @@
       }
       const { data, error } = await supabaseClient
         .from('relatorios_arquivos')
-        .select('id,titulo,categoria,competencia,arquivo_nome,arquivo_path,tamanho_bytes,usuario_email,created_at')
-        .order('created_at', { ascending: false });
+        .select('id,titulo,categoria,data_publicacao,arquivo_nome,arquivo_path,tamanho_bytes,usuario_email,created_at')
+        .order('data_publicacao', { ascending: false });
 
       if(error){
         console.error('Erro ao carregar relatórios do Supabase:', error);
@@ -5178,11 +5200,37 @@
       renderReports();
     }
 
+    function updateReportWizardView(){
+      document.getElementById('waReportStep1').style.display = reportStep === 1 ? 'block' : 'none';
+      document.getElementById('waReportStep2').style.display = reportStep === 2 ? 'block' : 'none';
+      waReportBackBtn.style.visibility = reportStep > 1 ? 'visible' : 'hidden';
+      waReportNextBtn.textContent = reportStep === 2 ? 'Enviar' : 'Avançar';
+      waReportNextBtn.disabled = false;
+      waReportStepLabel.textContent = `Etapa ${reportStep} de 2`;
+    }
+
+    function waValidateReportStep(step){
+      if(step === 1){
+        if(!waReportTitulo.value.trim() || !waReportDataPublicacao.value){
+          alert('Preencha o título e a data de publicação na Etapa 1.');
+          return false;
+        }
+      } else if(step === 2){
+        if(!waReportArquivo.files[0]){
+          alert('Selecione um arquivo na Etapa 2.');
+          return false;
+        }
+      }
+      return true;
+    }
+
     window.waOpenReportModal = function(){
+      reportStep = 1;
       waReportTitulo.value = '';
       waReportCategoria.value = '';
-      waReportCompetencia.value = '';
+      waReportDataPublicacao.value = '';
       waReportArquivo.value = '';
+      updateReportWizardView();
       waReportModal.classList.add('open');
     };
 
@@ -5190,20 +5238,26 @@
       waReportModal.classList.remove('open');
     };
 
-    window.waSaveReport = async function(){
+    window.waReportWizardBack = function(){
+      if(reportStep > 1){ reportStep--; updateReportWizardView(); }
+    };
+
+    window.waReportWizardNext = async function(){
+      if(!waValidateReportStep(reportStep)) return;
+      if(reportStep < 2){ reportStep++; updateReportWizardView(); }
+      else { await waFinalizeReport(); }
+    };
+
+    async function waFinalizeReport(){
       const titulo = waReportTitulo.value.trim();
-      const file = waReportArquivo.files[0];
-      if(!titulo || !file){
-        alert('Preencha o título e selecione um arquivo.');
-        return;
-      }
       const categoria = waReportCategoria.value.trim();
-      const competencia = waReportCompetencia.value.trim();
+      const dataPublicacao = waReportDataPublicacao.value;
+      const file = waReportArquivo.files[0];
 
       if(!supabaseReady){
         reports.unshift({
           id: Date.now().toString(),
-          titulo, categoria, competencia,
+          titulo, categoria, data_publicacao: dataPublicacao,
           arquivo_nome: file.name,
           arquivo_path: null,
           tamanho_bytes: file.size,
@@ -5216,8 +5270,8 @@
         return;
       }
 
-      waReportSaveBtn.disabled = true;
-      waReportSaveBtn.textContent = 'Enviando...';
+      waReportNextBtn.disabled = true;
+      waReportNextBtn.textContent = 'Enviando...';
       try{
         const path = reportStoragePath(file.name);
         const { error: uploadError } = await supabaseClient.storage.from(REPORTS_BUCKET).upload(path, file, { upsert: false });
@@ -5230,7 +5284,7 @@
         const payload = {
           titulo,
           categoria: categoria || null,
-          competencia: competencia || null,
+          data_publicacao: dataPublicacao,
           arquivo_nome: file.name,
           arquivo_path: path,
           tamanho_bytes: file.size,
@@ -5246,9 +5300,25 @@
         await loadReports();
         waCloseReportModal();
       } finally {
-        waReportSaveBtn.disabled = false;
-        waReportSaveBtn.textContent = 'Enviar';
+        waReportNextBtn.disabled = false;
+        waReportNextBtn.textContent = 'Enviar';
       }
+    }
+
+    window.waViewReport = async function(id){
+      const r = reports.find(x => x.id === id);
+      if(!r) return;
+      if(!supabaseReady || !r.arquivo_path){
+        alert('Modo de demonstração: este relatório não tem um arquivo real armazenado.');
+        return;
+      }
+      const { data, error } = await supabaseClient.storage.from(REPORTS_BUCKET).createSignedUrl(r.arquivo_path, 60);
+      if(error || !data){
+        console.error('Erro ao gerar link de visualização:', error);
+        alert('Erro ao gerar o link de visualização: ' + (error ? error.message : ''));
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener');
     };
 
     window.waDownloadReport = async function(id){
@@ -5258,7 +5328,7 @@
         alert('Modo de demonstração: este relatório não tem um arquivo real armazenado.');
         return;
       }
-      const { data, error } = await supabaseClient.storage.from(REPORTS_BUCKET).createSignedUrl(r.arquivo_path, 60);
+      const { data, error } = await supabaseClient.storage.from(REPORTS_BUCKET).createSignedUrl(r.arquivo_path, 60, { download: r.arquivo_nome });
       if(error || !data){
         console.error('Erro ao gerar link de download:', error);
         alert('Erro ao gerar o link de download: ' + (error ? error.message : ''));
@@ -5290,6 +5360,7 @@
 
     waReportSearch.addEventListener('input', renderReports);
     waReportCategoryFilter.addEventListener('change', renderReports);
+    waReportYearFilter.addEventListener('change', renderReports);
     waReportMonthFilter.addEventListener('change', renderReports);
     waReportSortPills.addEventListener('click', (e) => {
       const btn = e.target.closest('.wa-sort-pill');
@@ -5300,6 +5371,7 @@
     waReportClearBtn.addEventListener('click', () => {
       waReportSearch.value = '';
       waReportCategoryFilter.value = '';
+      waReportYearFilter.value = '';
       waReportMonthFilter.value = '';
       reportSort = 'recente';
       renderReports();

@@ -11,7 +11,7 @@
 -- que deve ser executado LOGO DEPOIS deste.
 --
 --   relatorios_arquivos  → metadados de cada material enviado (título,
---                          categoria, competência, tamanho, quem enviou)
+--                          categoria, data de publicação, tamanho, quem enviou)
 --   bucket "relatorios"  → o arquivo em si (PDF, planilha, etc.), privado
 -- =====================================================================
 
@@ -21,19 +21,26 @@ create extension if not exists pgcrypto;
 -- 1. Metadados dos arquivos
 -- ---------------------------------------------------------------------
 create table if not exists public.relatorios_arquivos (
-  id             uuid primary key default gen_random_uuid(),
-  titulo         text not null,
-  categoria      text,
-  competencia    text,
-  arquivo_nome   text not null,
-  arquivo_path   text not null unique,
-  tamanho_bytes  bigint not null check (tamanho_bytes >= 0),
-  usuario_email  text,
-  created_at     timestamptz not null default now()
+  id               uuid primary key default gen_random_uuid(),
+  titulo           text not null,
+  categoria        text,
+  data_publicacao  date,
+  arquivo_nome     text not null,
+  arquivo_path     text not null unique,
+  tamanho_bytes    bigint not null check (tamanho_bytes >= 0),
+  usuario_email    text,
+  created_at       timestamptz not null default now()
 );
+
+-- Migração de uma versão anterior deste schema (campo livre "competência"
+-- trocado por uma data de verdade, que permite filtrar por ano/mês).
+alter table public.relatorios_arquivos add column if not exists data_publicacao date;
+alter table public.relatorios_arquivos drop column if exists competencia;
 
 create index if not exists relatorios_arquivos_created_idx
   on public.relatorios_arquivos (created_at desc);
+create index if not exists relatorios_arquivos_publicacao_idx
+  on public.relatorios_arquivos (data_publicacao desc);
 
 -- ---------------------------------------------------------------------
 -- 2. Bucket de Storage para os arquivos. Privado: o app só gera links
