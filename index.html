@@ -4209,11 +4209,8 @@
     function findProductByCode(code){
       return stockProducts.find(p => p.codigo_barras === code) || null;
     }
-    // Na tabela `cadastro_de_produtos` do Supabase o setor fica na coluna `categoria`.
-    const STOCK_SETOR_COL = 'categoria';
     function normalizeProduct(row){
       return Object.assign({}, row, {
-        setor: row.setor != null ? row.setor : row[STOCK_SETOR_COL],
         estoque_minimo: Number(row.estoque_minimo) || 0,
         preco_custo: row.preco_custo == null ? null : Number(row.preco_custo),
         ativo: row.ativo !== false
@@ -4873,7 +4870,7 @@
         ativo: waProdStatus.value === 'true'
       };
       // O setor de origem só é gravado no cadastro: depois disso não muda mais.
-      if(!editingProductId) payload[supabaseReady ? STOCK_SETOR_COL : 'setor'] = setor;
+      if(!editingProductId) payload.setor = setor;
       const origemPayload = { tipo: 'origem', setor, quantidade: qtdInicial, observacao: 'Lançamento inicial (origem)', usuario_email: currentUserEmail() };
 
       if(!supabaseReady){
