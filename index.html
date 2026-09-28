@@ -7,7 +7,7 @@
      e força HTTPS. 'unsafe-inline' é necessário porque o app é um HTML único com scripts/estilos embutidos;
      para removê-lo, extrair o JS/CSS para arquivos e usar nonce/hash. frame-ancestors não funciona via <meta>:
      configure o cabeçalho HTTP no host (ver SECURITY.md). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>CDLoad · Núcleo de Inteligência</title>
 <link rel="preconnect" href="https://fonts.googleapis.com/">
@@ -847,6 +847,16 @@
   .wa-clip-action-btn:hover{background:#fff;color:var(--wa-primary);}
   .wa-clip-action-btn.danger:hover{color:#dc2626;}
   .wa-clip-thumb svg{width:34px;height:34px;stroke-width:1.6;}
+  .wa-clip-thumb{overflow:hidden;}
+  /* Capa: arte gerada pelo tema (sempre por baixo) + imagem da matéria por cima */
+  .wa-clip-thumb svg.wa-clip-art{position:absolute;inset:0;width:100%;height:100%;stroke-width:0;}
+  .wa-clip-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+  .wa-clip-thumb-link{position:absolute;inset:0;z-index:1;}
+  .wa-clip-thumb-link:focus-visible{outline:3px solid var(--wa-primary);outline-offset:-3px;}
+  .wa-clip-card:hover .wa-clip-img{transform:scale(1.04);}
+  .wa-clip-actions{z-index:2;}
+  a.wa-clip-source{text-decoration:none;}
+  a.wa-clip-source:hover{text-decoration:underline;}
   .wa-clip-body{padding:16px;display:flex;flex-direction:column;flex:1;}
   .wa-clip-source{
     font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--wa-primary);
@@ -873,19 +883,20 @@
   /* ---- Barra de filtros em linha única (padrão wa-stock-filters) ---- */
   #page-clipping .wa-stock-filters .wa-sort-group,
   #page-clipping .wa-stock-filters .wa-sort-pills{flex:0 0 auto;flex-wrap:nowrap;}
-  @media (max-width:1500px){
+  @media (max-width:1700px){
     #page-clipping .wa-stock-filters{gap:8px;}
     #page-clipping .wa-stock-filters .wa-sort-label{display:none;}
     #page-clipping .wa-stock-filters .wa-sort-pills{gap:6px;}
-    #page-clipping .wa-stock-filters .wa-sort-pill{padding:7px 11px;}
-    #page-clipping .wa-stock-filters .wa-clip-search,
-    #page-clipping .wa-stock-filters .filter-select{min-width:84px;}
-  }
-  @media (max-width:1320px){
-    #page-clipping .wa-stock-filters .filter-divider{display:none;}
+    #page-clipping .wa-stock-filters .wa-sort-pill{padding:7px 9px;}
     #page-clipping .wa-stock-filters .btn{padding:10px 14px;}
     #page-clipping .wa-stock-filters .wa-clip-search,
     #page-clipping .wa-stock-filters .filter-select{min-width:72px;}
+  }
+  @media (max-width:1320px){
+    #page-clipping .wa-stock-filters .filter-divider{display:none;}
+    #page-clipping .wa-stock-filters .btn{padding:10px 12px;}
+    #page-clipping .wa-stock-filters .wa-clip-search,
+    #page-clipping .wa-stock-filters .filter-select{min-width:62px;}
   }
   .wa-clip-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
   .wa-clip-pill{
@@ -1392,6 +1403,9 @@
           </select>
           <select class="filter-select" id="waClipChannelFilter">
             <option value="">Plataforma</option>
+          </select>
+          <select class="filter-select" id="waClipPortalFilter">
+            <option value="">Portal</option>
           </select>
           <select class="filter-select" id="waClipSentimentFilter">
             <option value="">Sentimento</option>
@@ -2442,6 +2456,10 @@
        termo_busca       text,
        publicado_em      timestamptz,
        oculta            boolean not null default false, -- "remover" notícia do Google
+       portal_dominio    text references clipping_portais, -- portal (nome padrão por domínio)
+       link_original     text,          -- matéria no portal (resolvido do link do Google)
+       imagem_url        text,          -- capa da matéria (og:image); sem ela, arte pelo tema
+       imagem_status     text, imagem_tentativas integer,
        created_at        timestamptz not null default now(),
        updated_at        timestamptz not null default now()
      );
@@ -3891,6 +3909,7 @@
     const waClipMonthFilter = document.getElementById('waClipMonthFilter');
     const waClipCategoryFilter = document.getElementById('waClipCategoryFilter');
     const waClipChannelFilter = document.getElementById('waClipChannelFilter');
+    const waClipPortalFilter = document.getElementById('waClipPortalFilter');
     const waClipSentimentFilter = document.getElementById('waClipSentimentFilter');
     const waClipClearBtn = document.getElementById('waClipClearBtn');
     const waClipExportBtn = document.getElementById('waClipExportBtn');
@@ -3924,6 +3943,74 @@
       return `${d}/${m}/${y}`;
     }
 
+    // Chave do portal: sem acento, caixa ou pontuação ("Diario de Cuiabá"
+    // e "DIÁRIO DE CUIABÁ" são o mesmo portal). Com Supabase o nome já vem
+    // padronizado por domínio (tabela clipping_portais).
+    function clipPortalKey(n){
+      return String(n.portal || n.fonte || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    // Destino do clique na capa/título: a matéria no portal (ou o link do Google até ela ser resolvida).
+    function clipHref(n){
+      return [n.linkOriginal, n.link].find(u => /^https:\/\//.test(u || '')) || '';
+    }
+
+    // ---- Capa gerada pelo tema (categoria) quando a matéria não tem imagem ----
+    const CLIP_ICONS = {
+      megafone: '<path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>',
+      capelo: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path>',
+      grafico: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>',
+      escudo: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>',
+      chip: '<rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"></path>',
+      predio: '<rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"></path>',
+      sacola: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path>',
+      jornal: '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path><path d="M10 6h8v4h-8V6Z"></path>'
+    };
+    const CLIP_THEMES = {
+      'Campanhas':     { cores: [['#f97316', '#db2777'], ['#fb923c', '#e11d48'], ['#f59e0b', '#ea580c']], icone: 'megafone' },
+      'Capacitação':   { cores: [['#7c3aed', '#4f46e5'], ['#8b5cf6', '#6366f1'], ['#6d28d9', '#2563eb']], icone: 'capelo' },
+      'Economia':      { cores: [['#059669', '#0284c7'], ['#10b981', '#0d9488'], ['#047857', '#0369a1']], icone: 'grafico' },
+      'Segurança':     { cores: [['#dc2626', '#f59e0b'], ['#b91c1c', '#ea580c'], ['#e11d48', '#d97706']], icone: 'escudo' },
+      'Tecnologia':    { cores: [['#0891b2', '#2563eb'], ['#06b6d4', '#4f46e5'], ['#0e7490', '#1d4ed8']], icone: 'chip' },
+      'Institucional': { cores: [['#1d4ed8', '#0f172a'], ['#2563eb', '#1e293b'], ['#1e40af', '#334155']], icone: 'predio' },
+      'Comércio':      { cores: [['#2563eb', '#10b981'], ['#0ea5e9', '#16a34a'], ['#4f46e5', '#0d9488']], icone: 'sacola' }
+    };
+    const CLIP_THEME_DEFAULT = { cores: [['#475569', '#2563eb'], ['#334155', '#0891b2']], icone: 'jornal' };
+
+    // Aleatório, mas estável por notícia (semente = id): a arte não muda a cada render.
+    function clipRandom(seed){
+      let h = 2166136261;
+      for(const ch of String(seed)){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+      return () => {
+        h = (h + 0x6D2B79F5) | 0;
+        let t = Math.imul(h ^ (h >>> 15), 1 | h);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clipThemeArt(n){
+      const tema = CLIP_THEMES[n.categoria] || CLIP_THEME_DEFAULT;
+      const rnd = clipRandom(n.id);
+      const [c1, c2] = tema.cores[Math.floor(rnd() * tema.cores.length)];
+      const gid = 'clipg' + String(n.id).replace(/[^a-zA-Z0-9]/g, '');
+      const ang = Math.floor(rnd() * 360);
+      let formas = '';
+      for(let i = 0; i < 7; i++){
+        formas += `<circle cx="${Math.round(rnd() * 320)}" cy="${Math.round(rnd() * 180)}" r="${Math.round(18 + rnd() * 70)}" fill="#fff" fill-opacity="${(0.05 + rnd() * 0.12).toFixed(2)}"></circle>`;
+      }
+      for(let i = 0; i < 3; i++){
+        const y = Math.round(rnd() * 180);
+        formas += `<path d="M-10 ${y} Q 160 ${y + (rnd() - 0.5) * 120} 330 ${Math.round(rnd() * 180)}" stroke="#fff" stroke-opacity="${(0.08 + rnd() * 0.1).toFixed(2)}" stroke-width="${(1 + rnd() * 2).toFixed(1)}" fill="none"></path>`;
+      }
+      return `<svg class="wa-clip-art" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs><linearGradient id="${gid}" gradientTransform="rotate(${ang} .5 .5)"><stop offset="0" stop-color="${c1}"></stop><stop offset="1" stop-color="${c2}"></stop></linearGradient></defs>
+        <rect width="320" height="180" fill="url(#${gid})"></rect>${formas}
+        <circle cx="160" cy="90" r="34" fill="#fff" fill-opacity=".18"></circle>
+        <g transform="translate(142 72) scale(1.5)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${CLIP_ICONS[tema.icone]}</g>
+      </svg>`;
+    }
+
     function refreshClipFilterOptions(){
       const categorias = [...new Set(clippingNews.map(n => n.categoria))].sort();
       const canais = [...new Set(clippingNews.map(n => n.canal))].sort();
@@ -3936,6 +4023,23 @@
       waClipChannelFilter.innerHTML = '<option value="">Plataforma</option>' + canais.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if(canais.includes(curCanal)) waClipChannelFilter.value = curCanal;
 
+      // Portal: uma opção por chave; o rótulo é o nome mais usado daquele portal.
+      const portais = new Map();
+      clippingNews.forEach(n => {
+        const key = clipPortalKey(n);
+        if(!key) return;
+        const nome = n.portal || n.fonte;
+        const p = portais.get(key) || { key, nomes: new Map() };
+        p.nomes.set(nome, (p.nomes.get(nome) || 0) + 1);
+        portais.set(key, p);
+      });
+      const portalOpts = [...portais.values()]
+        .map(p => ({ key: p.key, nome: [...p.nomes.entries()].sort((a, b) => b[1] - a[1])[0][0] }))
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      const curPortal = waClipPortalFilter.value;
+      waClipPortalFilter.innerHTML = '<option value="">Portal</option>' + portalOpts.map(p => `<option value="${esc(p.key)}">${esc(p.nome)}</option>`).join('');
+      if(portais.has(curPortal)) waClipPortalFilter.value = curPortal;
+
       waClipCategoriaList.innerHTML = categorias.map(c => `<option value="${esc(c)}">`).join('');
       waClipCanalList.innerHTML = canais.map(c => `<option value="${esc(c)}">`).join('');
     }
@@ -3945,6 +4049,7 @@
       const month = waClipMonthFilter.value;
       const categoria = waClipCategoryFilter.value;
       const canal = waClipChannelFilter.value;
+      const portal = waClipPortalFilter.value;
       const sentimento = waClipSentimentFilter.value;
 
       let list = clippingNews.filter(n => {
@@ -3952,6 +4057,7 @@
         if(month && n.data.slice(5, 7) !== month) return false;
         if(categoria && n.categoria !== categoria) return false;
         if(canal && n.canal !== canal) return false;
+        if(portal && clipPortalKey(n) !== portal) return false;
         if(sentimento && n.sentimento !== sentimento) return false;
         return true;
       });
@@ -3982,10 +4088,15 @@
 
       const sentimentoClass = { 'Positivo': 'wa-clip-pill-positivo', 'Neutro': 'wa-clip-pill-neutro', 'Negativo': 'wa-clip-pill-negativo' };
 
-      waClipGrid.innerHTML = list.map(n => `
+      waClipGrid.innerHTML = list.map(n => {
+        const href = clipHref(n);
+        const portalNome = n.portal || n.fonte;
+        return `
         <div class="wa-clip-card">
           <div class="wa-clip-thumb">
-            ${clipNewspaperIcon}
+            ${clipThemeArt(n)}
+            ${/^https:\/\//.test(n.imagem || '') ? `<img class="wa-clip-img" src="${esc(n.imagem)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+            ${href ? `<a class="wa-clip-thumb-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Abrir a matéria em ${esc(portalNome)}" aria-label="Abrir a matéria em ${esc(portalNome)}"></a>` : ''}
             <div class="wa-clip-actions">
               <button class="wa-clip-action-btn" title="Editar" onclick="waOpenClipModal('${n.id}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
@@ -3996,12 +4107,14 @@
             </div>
           </div>
           <div class="wa-clip-body">
-            <div class="wa-clip-source">${esc(n.fonte)}</div>
-            ${/^https:\/\//.test(n.link || '')
-              ? `<a class="wa-clip-title-text" href="${esc(n.link)}" target="_blank" rel="noopener noreferrer" title="Abrir a matéria completa">${esc(n.titulo)}</a>`
+            ${/^https:\/\//.test(n.portalUrl || '')
+              ? `<a class="wa-clip-source" href="${esc(n.portalUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir o portal">${esc(portalNome)}</a>`
+              : `<div class="wa-clip-source">${esc(portalNome)}</div>`}
+            ${href
+              ? `<a class="wa-clip-title-text" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Abrir a matéria completa">${esc(n.titulo)}</a>`
               : `<div class="wa-clip-title-text">${esc(n.titulo)}</div>`}
             <div class="wa-clip-excerpt">${esc(n.resumo)}</div>
-            <div class="wa-clip-meta">${formatClipDateBR(n.data)} · ${esc(n.fonte)}</div>
+            <div class="wa-clip-meta">${formatClipDateBR(n.data)} · ${esc(portalNome)}</div>
             <div class="wa-clip-tags">
               <span class="wa-clip-pill wa-clip-pill-categoria">${esc(n.categoria)}</span>
               <span class="wa-clip-pill wa-clip-pill-canal">${esc(n.canal)}</span>
@@ -4009,8 +4122,15 @@
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
+
+    // Imagem da matéria que não carregar (link quebrado, bloqueio do portal):
+    // some e deixa aparecer a arte do tema que está por baixo.
+    waClipGrid.addEventListener('error', (e) => {
+      if(e.target.matches && e.target.matches('img.wa-clip-img')) e.target.remove();
+    }, true);
 
     async function loadClippingNews(){
       if(!supabaseReady){
@@ -4021,7 +4141,7 @@
       }
       const { data, error } = await supabaseClient
         .from('clipping_news')
-        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em')
+        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,portal:clipping_portais(nome,url)')
         .eq('oculta', false)
         .order('data_publicacao', { ascending: false })
         .order('publicado_em', { ascending: false, nullsFirst: false });
@@ -4046,7 +4166,11 @@
         sentimento: row.sentimento,
         origem: row.origem,
         link: row.link,
-        publicadoEm: row.publicado_em
+        publicadoEm: row.publicado_em,
+        linkOriginal: row.link_original,
+        imagem: row.imagem_url,
+        portal: row.portal ? row.portal.nome : null,
+        portalUrl: row.portal ? row.portal.url : null
       }));
       refreshClipFilterOptions();
       renderClippingNews();
@@ -4194,6 +4318,7 @@
     waClipMonthFilter.addEventListener('change', renderClippingNews);
     waClipCategoryFilter.addEventListener('change', renderClippingNews);
     waClipChannelFilter.addEventListener('change', renderClippingNews);
+    waClipPortalFilter.addEventListener('change', renderClippingNews);
     waClipSentimentFilter.addEventListener('change', renderClippingNews);
 
     waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(btn => {
@@ -4210,6 +4335,7 @@
       waClipMonthFilter.value = '';
       waClipCategoryFilter.value = '';
       waClipChannelFilter.value = '';
+      waClipPortalFilter.value = '';
       waClipSentimentFilter.value = '';
       clipSort = 'recente';
       waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(b => b.classList.toggle('active', b.dataset.sort === 'recente'));
@@ -4222,8 +4348,8 @@
         const s = String(v == null ? '' : v);
         return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       };
-      const rows = [['Data', 'Título', 'Resumo', 'Fonte', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
-        .concat(getFilteredClippingNews().map(n => [formatClipDateBR(n.data), n.titulo, n.resumo, n.fonte, n.categoria, n.canal, n.sentimento, n.link || '']));
+      const rows = [['Data', 'Título', 'Resumo', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
+        .concat(getFilteredClippingNews().map(n => [formatClipDateBR(n.data), n.titulo, n.resumo, n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
       const csv = '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n');
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
