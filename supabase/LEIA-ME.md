@@ -14,6 +14,15 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 2. Cole o conteúdo de [schema_relatorios.sql](schema_relatorios.sql) > **Run** (cria a tabela e o bucket de Storage do módulo Relatórios, também sem acesso ainda).
 3. Cole o conteúdo de [seguranca_rls.sql](seguranca_rls.sql) > **Run** (concede o acesso real: login + seção liberada; remover produto/movimentação do Estoque e remover relatório ficam restritos a Administrador).
 4. A última consulta lista os administradores. Confirme que o e-mail do administrador principal aparece (se não, use o `insert` comentado no fim do arquivo).
+5. Cole o conteúdo de [schema_clipping.sql](schema_clipping.sql) > **Run** (Clipping News: concede os privilégios da tabela `clipping_news` — resolve o erro *permission denied for table clipping_news* — e liga a coleta automática no Google Notícias a cada 30 minutos). O resultado da última linha deve trazer `"ok": true` e quantas notícias novas entraram.
+
+## Clipping News (Google Notícias)
+
+- Palavras-chave: `"CDL Cuiabá"` e `"Câmara de Dirigentes Lojistas de Cuiabá"` (frase exata). Para mudar, edite o array `termos` em `clipping_coletar()` e rode o arquivo de novo.
+- A coleta roda sozinha a cada 30 minutos (`pg_cron`). No app, o botão **Buscar notícias** faz uma busca rápida dos últimos 7 dias, e a seção dispara uma sozinha ao ser aberta se a última tiver mais de 1 hora.
+- Categoria, plataforma e sentimento são estimados pelo título e pelo veículo; corrija pelo botão **Editar** do card (a edição não é sobrescrita pelas próximas coletas).
+- Remover uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
+- Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.
 
 ## 3. Primeiro acesso do administrador
 
