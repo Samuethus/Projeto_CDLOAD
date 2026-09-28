@@ -1924,6 +1924,10 @@
               <span class="wa-stock-action-label">Saída</span>
               <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
             </button>
+            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre setores">
+              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+              <span class="wa-stock-action-label">Transferência</span>
+            </button>
             <button class="wa-btn wa-btn-primary" onclick="waOpenProductModal()" title="Novo Produto">
               <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               <span class="wa-stock-action-label">Novo Produto</span>
@@ -2210,17 +2214,40 @@
                   </button>
                 </div>
               </div>
-              <div class="wa-form-grid" style="margin-bottom:0;">
-                <div class="wa-field">
-                  <label>Tipo</label>
-                  <div class="wa-toggle-group" id="waMovTipoGroup">
-                    <button type="button" class="wa-toggle-chip selected" data-tipo="entrada">Entrada</button>
-                    <button type="button" class="wa-toggle-chip" data-tipo="saida">Saída</button>
-                  </div>
+              <div class="wa-field">
+                <label>Tipo</label>
+                <div class="wa-toggle-group" id="waMovTipoGroup">
+                  <button type="button" class="wa-toggle-chip selected" data-tipo="entrada">Entrada</button>
+                  <button type="button" class="wa-toggle-chip" data-tipo="saida">Saída</button>
+                  <button type="button" class="wa-toggle-chip" data-tipo="transferencia">Transferência</button>
                 </div>
+              </div>
+              <div class="wa-form-grid" style="margin-bottom:0;" id="waMovSetorField">
                 <div class="wa-field">
                   <label for="waMovSetor">Setor</label>
                   <select id="waMovSetor">
+                    <option value="Escritório">Escritório</option>
+                    <option value="Almoxarifado">Almoxarifado</option>
+                    <option value="RH">RH</option>
+                    <option value="Institucional">Institucional</option>
+                    <option value="Espaço">Espaço</option>
+                  </select>
+                </div>
+              </div>
+              <div class="wa-form-grid" style="margin-bottom:0;" id="waMovTransferGrid" hidden>
+                <div class="wa-field">
+                  <label for="waMovSetorOrigem">Origem</label>
+                  <select id="waMovSetorOrigem">
+                    <option value="Escritório">Escritório</option>
+                    <option value="Almoxarifado">Almoxarifado</option>
+                    <option value="RH">RH</option>
+                    <option value="Institucional">Institucional</option>
+                    <option value="Espaço">Espaço</option>
+                  </select>
+                </div>
+                <div class="wa-field">
+                  <label for="waMovSetorDestino">Destino</label>
+                  <select id="waMovSetorDestino">
                     <option value="Escritório">Escritório</option>
                     <option value="Almoxarifado">Almoxarifado</option>
                     <option value="RH">RH</option>
@@ -4157,7 +4184,11 @@
     const waMovSub = document.getElementById('waMovSub');
     const waMovProduto = document.getElementById('waMovProduto');
     const waMovTipoGroup = document.getElementById('waMovTipoGroup');
+    const waMovSetorField = document.getElementById('waMovSetorField');
     const waMovSetor = document.getElementById('waMovSetor');
+    const waMovTransferGrid = document.getElementById('waMovTransferGrid');
+    const waMovSetorOrigem = document.getElementById('waMovSetorOrigem');
+    const waMovSetorDestino = document.getElementById('waMovSetorDestino');
     const waMovQtd = document.getElementById('waMovQtd');
     const waMovObs = document.getElementById('waMovObs');
     const waMovSummary = document.getElementById('waMovSummary');
@@ -4406,6 +4437,7 @@
     const ICON_HISTORY = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
     const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
     const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+    const ICON_TRANSFER = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>';
 
     function renderStockProducts(){
       const list = getFilteredProducts();
@@ -4418,7 +4450,8 @@
         const sit = SITUACAO[situacaoOf(p, currentSetor)];
         const moveBtns = p.ativo ? `
             <button class="wa-icon-btn" title="Registrar entrada" onclick="waOpenMovModal('${p.id}','entrada')">${ICON_PLUS}</button>
-            <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>` : '';
+            <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>
+            <button class="wa-icon-btn" title="Transferência entre setores" onclick="waOpenMovModal('${p.id}','transferencia')">${ICON_TRANSFER}</button>` : '';
         return `
           <tr>
             <td><span class="wa-mono-pill">${stockEsc(p.codigo_barras)}</span></td>
@@ -4941,10 +4974,16 @@
       setStockTab('movimentacoes');
     };
 
-    // ---------------- CRUD: Movimentações (entrada / saída) ----------------
+    // ---------------- CRUD: Movimentações (entrada / saída / transferência) ----------------
+    // Transferência é só um par saída+entrada lançado junto: soma zero
+    // (o que sai de um setor é exatamente o que entra no outro), sem
+    // efeito no saldo total do produto — só redistribui entre setores.
     function setMovTipo(tipo){
       movTipo = tipo;
       waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', b.dataset.tipo === tipo));
+      const isTransfer = tipo === 'transferencia';
+      waMovSetorField.hidden = isTransfer;
+      waMovTransferGrid.hidden = !isTransfer;
       updateMovSummary();
     }
 
@@ -4955,9 +4994,24 @@
         waMovSummary.classList.remove('over');
         return;
       }
+      const q = Number(waMovQtd.value) || 0;
+      if(movTipo === 'transferencia'){
+        const origem = waMovSetorOrigem.value;
+        const destino = waMovSetorDestino.value;
+        if(origem === destino){
+          waMovSummary.textContent = 'Origem e destino precisam ser setores diferentes.';
+          waMovSummary.classList.add('over');
+          return;
+        }
+        const saldoOrigem = saldoOf(p.id, origem);
+        const saldoDestino = saldoOf(p.id, destino);
+        const aposOrigem = saldoOrigem - q;
+        waMovSummary.textContent = `${origem}: ${fmtQty(saldoOrigem)} → ${fmtQty(aposOrigem)} ${p.unidade}  ·  ${destino}: ${fmtQty(saldoDestino)} → ${fmtQty(saldoDestino + q)} ${p.unidade}`;
+        waMovSummary.classList.toggle('over', aposOrigem < 0);
+        return;
+      }
       const setor = waMovSetor.value;
       const saldo = saldoOf(p.id, setor);
-      const q = Number(waMovQtd.value) || 0;
       const apos = movTipo === 'saida' ? saldo - q : saldo + q;
       waMovSummary.textContent = `Saldo atual em ${setor}: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}`;
       waMovSummary.classList.toggle('over', apos < 0);
@@ -4968,6 +5022,8 @@
     });
     waMovProduto.addEventListener('change', updateMovSummary);
     waMovSetor.addEventListener('change', updateMovSummary);
+    waMovSetorOrigem.addEventListener('change', updateMovSummary);
+    waMovSetorDestino.addEventListener('change', updateMovSummary);
     waMovQtd.addEventListener('input', updateMovSummary);
     waMovQtd.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
@@ -4978,11 +5034,14 @@
         alert('Cadastre um produto ativo antes de registrar movimentações.');
         return;
       }
-      waMovSub.textContent = 'Escolha o setor e registre a entrada ou saída — dá pra redistribuir entre setores lançando uma saída num e uma entrada em outro.';
+      waMovSub.textContent = 'Escolha o setor e registre a entrada, saída ou transferência entre setores.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
-      waMovSetor.value = currentSetor !== STOCK_SETOR_TODOS ? currentSetor : STOCK_SETORES[0];
+      const setorPadrao = currentSetor !== STOCK_SETOR_TODOS ? currentSetor : STOCK_SETORES[0];
+      waMovSetor.value = setorPadrao;
+      waMovSetorOrigem.value = setorPadrao;
+      waMovSetorDestino.value = STOCK_SETORES[(STOCK_SETORES.indexOf(setorPadrao) + 1) % STOCK_SETORES.length];
       waMovQtd.value = '1';
       waMovObs.value = '';
       setMovTipo(tipo || 'entrada');
@@ -4999,11 +5058,52 @@
 
     window.waSaveMovement = async function(){
       const p = stockProducts.find(x => x.id === waMovProduto.value);
-      const setor = waMovSetor.value;
       const q = Number(waMovQtd.value);
       if(!p){ alert('Selecione o produto.'); return; }
-      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o setor.'); return; }
       if(!(q > 0)){ alert('Informe uma quantidade maior que zero.'); return; }
+
+      if(movTipo === 'transferencia'){
+        const origem = waMovSetorOrigem.value;
+        const destino = waMovSetorDestino.value;
+        if(!STOCK_SETORES.includes(origem) || !STOCK_SETORES.includes(destino)){ alert('Selecione a origem e o destino.'); return; }
+        if(origem === destino){ alert('Origem e destino precisam ser setores diferentes.'); return; }
+        // Estoque físico não pode ficar negativo: a saída da origem nunca
+        // pode passar do que existe lá, mesmo sendo uma transferência.
+        if(q > saldoOf(p.id, origem)){
+          alert(`Saldo insuficiente em ${origem}: ${p.nome} tem ${fmtQty(saldoOf(p.id, origem))} ${p.unidade} em estoque — a transferência deixaria o saldo negativo.`);
+          return;
+        }
+
+        const obsBase = waMovObs.value.trim();
+        const nota = `Transferência ${origem} → ${destino}`;
+        const observacao = obsBase ? `${obsBase} · ${nota}` : nota;
+        const usuario_email = currentUserEmail();
+        const payloadSaida = { produto_id: p.id, tipo: 'saida', setor: origem, quantidade: q, observacao, usuario_email };
+        const payloadEntrada = { produto_id: p.id, tipo: 'entrada', setor: destino, quantidade: q, observacao, usuario_email };
+
+        if(!supabaseReady){
+          const now = new Date().toISOString();
+          stockMovements.unshift(Object.assign({ id: 'm' + Date.now() + 'b', created_at: now }, payloadEntrada));
+          stockMovements.unshift(Object.assign({ id: 'm' + Date.now() + 'a', created_at: now }, payloadSaida));
+        } else {
+          // As duas pontas (saída + entrada) num único INSERT: ou as duas
+          // linhas entram, ou nenhuma — garante a soma zero da transferência.
+          const { error } = await supabaseClient.from('movimentacoes_estoque').insert([payloadSaida, payloadEntrada]);
+          if(error){
+            console.error('Erro ao registrar transferência no Supabase:', error);
+            alert('Erro ao registrar transferência no Supabase: ' + error.message);
+            return;
+          }
+        }
+
+        waCloseMovModal();
+        await loadStock();
+        showScanFeedback('ok', `Transferência de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${origem} → ${destino}`);
+        return;
+      }
+
+      const setor = waMovSetor.value;
+      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o setor.'); return; }
       if(movTipo === 'saida' && q > saldoOf(p.id, setor)){
         alert(`Saldo insuficiente em ${setor}: ${p.nome} tem ${fmtQty(saldoOf(p.id, setor))} ${p.unidade} em estoque.`);
         return;
