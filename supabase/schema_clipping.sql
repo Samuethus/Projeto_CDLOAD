@@ -17,13 +17,16 @@
 --   5. Portais: cada notícia aponta para `clipping_portais` pelo domínio
 --      do veículo, com um nome padrão por portal (o Google às vezes chama
 --      o mesmo site de "Diario de Cuiabá" e de "diariodecuiaba.com.br").
---   6. Imagens: `clipping_processar_imagens()` descobre o link real da
---      matéria e a imagem de capa dela (og:image), em lotes a cada 10 min.
+--   6. Verificação: `clipping_verificar_materias()` abre cada matéria e só
+--      a publica no app se ela CITA uma das palavras-chave no texto (não
+--      conta menção só em links "Leia também", menus e rodapés). Aproveita
+--      e guarda o link real e a imagem de capa (og:image). Lotes a cada 5 min.
 --
 -- Palavras-chave (entre aspas, frase exata):
 --   "CDL Cuiabá"
 --   "Câmara de Dirigentes Lojistas de Cuiabá"
--- Para trocar, edite o array `termos` dentro de clipping_coletar().
+--   "Fundação CDL Cuiabá"
+-- Para trocar, edite a função clipping_palavras_chave() e rode de novo.
 -- =====================================================================
 
 do $$
@@ -78,6 +81,15 @@ alter table public.clipping_news add column if not exists imagem_url        text
 -- null = pendente | 'ok' | 'sem_imagem' | 'erro' (tenta até 3 vezes)
 alter table public.clipping_news add column if not exists imagem_status     text;
 alter table public.clipping_news add column if not exists imagem_tentativas integer not null default 0;
+-- A matéria cita a palavra-chave? null = ainda não verificada | 'confirmada'
+-- | 'descartada' (não cita) | 'erro' (tenta até 3 vezes) | 'nao_verificavel'.
+-- O app só mostra notícias do Google 'confirmada'.
+alter table public.clipping_news add column if not exists verificacao       text;
+alter table public.clipping_news add column if not exists verificada_em     timestamptz;
+-- Notícias gravadas antes da verificação existir: recomeça a contagem de tentativas.
+update public.clipping_news set imagem_tentativas = 0
+ where origem = 'google_news' and verificacao is null and imagem_tentativas <> 0;
+create index if not exists clipping_news_verificacao_idx on public.clipping_news (verificacao);
 
 create index if not exists clipping_news_portal_idx on public.clipping_news (portal_dominio);
 create unique index if not exists clipping_news_google_id_key on public.clipping_news (google_id);
@@ -304,6 +316,83 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------
+-- 3c. Palavras-chave e leitura do texto da matéria
+-- ---------------------------------------------------------------------
+
+-- Única lista de palavras-chave: usada na busca e na verificação.
+create or replace function public.clipping_palavras_chave()
+returns text[]
+language sql immutable
+as $$
+  select array['CDL Cuiabá', 'Câmara de Dirigentes Lojistas de Cuiabá', 'Fundação CDL Cuiabá']
+$$;
+
+-- Texto comparável: entidades HTML resolvidas, minúsculas, sem acento e
+-- só letras/números separados por um espaço ("CDL-Cuiabá" = "cdl cuiaba").
+create or replace function public.clipping_normalizar(v text)
+returns text
+language plpgsql immutable
+as $$
+declare
+  cod text;
+begin
+  if v is null then return ''; end if;
+  for cod in select distinct m[1] from regexp_matches(v, '&#([0-9]{2,5});', 'g') m loop
+    if cod::int between 32 and 55295 then
+      v := replace(v, '&#' || cod || ';', chr(cod::int));
+    end if;
+  end loop;
+  for cod in select distinct m[1] from regexp_matches(v, '&#[xX]([0-9a-fA-F]{2,4});', 'g') m loop
+    if ('x' || lpad(cod, 8, '0'))::bit(32)::int between 32 and 55295 then
+      v := regexp_replace(v, '&#[xX]' || cod || ';', chr(('x' || lpad(cod, 8, '0'))::bit(32)::int), 'g');
+    end if;
+  end loop;
+  v := replace(replace(replace(replace(v, '&aacute;', 'á'), '&eacute;', 'é'), '&iacute;', 'í'), '&oacute;', 'ó');
+  v := replace(replace(replace(replace(v, '&uacute;', 'ú'), '&atilde;', 'ã'), '&otilde;', 'õ'), '&ccedil;', 'ç');
+  v := replace(replace(replace(replace(v, '&acirc;', 'â'), '&ecirc;', 'ê'), '&ocirc;', 'ô'), '&agrave;', 'à');
+  v := replace(replace(replace(replace(v, '&Aacute;', 'Á'), '&Eacute;', 'É'), '&Atilde;', 'Ã'), '&Ccedil;', 'Ç');
+  v := replace(v, '&amp;', '&');
+  v := translate(lower(v), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn');
+  return btrim(regexp_replace(v, '[^a-z0-9]+', ' ', 'g'));
+end;
+$$;
+
+-- Texto corrido da matéria: tira scripts/estilos, menus, cabeçalho e
+-- rodapé do site, barras laterais, formulários e TODO texto de link — é
+-- nos links ("Leia também", "Mais lidas", manchetes de outras matérias)
+-- que a palavra-chave aparece sem a matéria citá-la.
+-- Obs.: no regex do Postgres a gula do padrão inteiro é a do primeiro
+-- quantificador; por isso todos aqui são não-gulosos (*?).
+create or replace function public.clipping_texto_materia(html text)
+returns text
+language plpgsql immutable
+as $$
+declare
+  v   text := coalesce(html, '');
+  tag text;
+begin
+  v := coalesce(substring(v from '(?i)<body[^>]*?>(.*)$'), v);
+  v := regexp_replace(v, '<!--.*?-->', ' ', 'g');
+  foreach tag in array array['script','style','noscript','svg','iframe','template','nav','aside','header','footer','form','select','button'] loop
+    v := regexp_replace(v, '<' || tag || '(\s[^>]*?)??>.*?</' || tag || '\s*?>', ' ', 'gi');
+  end loop;
+  v := regexp_replace(v, '<a(\s[^>]*?)??>.*?</a\s*?>', ' ', 'gi');
+  v := regexp_replace(v, '<[^>]*?>', ' ', 'g');
+  return public.clipping_normalizar(v);
+end;
+$$;
+
+-- O texto (já normalizado) cita alguma palavra-chave como frase inteira?
+create or replace function public.clipping_cita_palavra_chave(texto_normalizado text)
+returns boolean
+language sql immutable
+as $$
+  select exists (
+    select 1 from unnest(public.clipping_palavras_chave()) k
+     where position(' ' || public.clipping_normalizar(k) || ' ' in ' ' || coalesce(texto_normalizado, '') || ' ') > 0)
+$$;
+
+-- ---------------------------------------------------------------------
 -- 4. Coleta no Google Notícias (RSS)
 --
 -- Chamada de 3 jeitos: pelo pg_cron (a cada 30 min), pelo SQL Editor e
@@ -322,7 +411,7 @@ security definer
 set search_path = public, extensions
 as $$
 declare
-  termos       text[] := array['CDL Cuiabá', 'Câmara de Dirigentes Lojistas de Cuiabá'];
+  termos       text[] := public.clipping_palavras_chave();
   janelas      text[] := array[' when:7d', ''];
   v_timeout    text := '20000';
   termo        text;
@@ -355,7 +444,7 @@ begin
     -- Chamadas da API têm statement_timeout curto (~8 s no Supabase):
     -- pelo app busca só os últimos 7 dias; a varredura completa fica no pg_cron.
     janelas := array[' when:7d'];
-    v_timeout := '3000';
+    v_timeout := '2500';  -- 3 termos x 2,5 s cabem no limite
     select max(iniciado_em) into v_ultima from public.clipping_coletas;
     if v_ultima > now() - interval '2 minutes' then
       return jsonb_build_object('ok', true, 'ignorada', true, 'ultima_coleta', v_ultima);
@@ -467,49 +556,57 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------
--- 4b. Link direto e imagem de capa de cada matéria
+-- 4b. Verificação da matéria + link direto + imagem de capa
 --
 -- O link do RSS é um redirecionamento codificado do Google. Para chegar à
 -- matéria: (1) abre a página do Google e lê a assinatura (data-n-a-sg/ts);
 -- (2) pede ao Google o endereço real (batchexecute "garturlreq");
--- (3) abre a matéria e lê a imagem de capa (og:image / twitter:image).
--- São ~3 requisições por notícia, então roda em lotes pelo pg_cron (a
--- cada 10 min), das mais recentes para as mais antigas. Sem imagem, o app
--- mostra uma arte gerada pelo tema (categoria) da notícia.
+-- (3) abre a matéria e:
+--     - confere se ela CITA uma palavra-chave (no título dela ou no texto
+--       corrido, sem contar links, menus e rodapés — ver
+--       clipping_texto_materia). Não cita = 'descartada' e some do app;
+--     - lê a imagem de capa (og:image / twitter:image).
+-- Página que não abre depois de 3 tentativas fica 'nao_verificavel' (não
+-- dá para confirmar a citação, então também não aparece no app).
+-- São ~3 requisições por notícia: roda em lotes pelo pg_cron (a cada
+-- 5 min), das mais recentes para as mais antigas.
 -- ---------------------------------------------------------------------
-create or replace function public.clipping_processar_imagens(p_limite integer default 8)
+drop function if exists public.clipping_processar_imagens(integer);
+
+create or replace function public.clipping_verificar_materias(p_limite integer default 10)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public, extensions
 as $$
 declare
-  r         record;
-  resp      extensions.http_response;
-  v_sg      text;
-  v_ts      text;
-  v_req     text;
-  v_json    jsonb;
-  v_url     text;
-  v_img     text;
-  v_ok      integer := 0;
-  v_sem     integer := 0;
-  v_falhas  integer := 0;
-  v_ua      extensions.http_header := extensions.http_header('User-Agent',
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36');
+  r          record;
+  resp       extensions.http_response;
+  v_sg       text;
+  v_ts       text;
+  v_req      text;
+  v_json     jsonb;
+  v_url      text;
+  v_img      text;
+  v_cita     boolean;
+  v_conf     integer := 0;
+  v_desc     integer := 0;
+  v_falhas   integer := 0;
+  v_ua       extensions.http_header := extensions.http_header('User-Agent',
+               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36');
 begin
-  if not pg_try_advisory_xact_lock(hashtext('cdload_clipping_imagens')) then
-    return jsonb_build_object('ok', true, 'ignorada', true, 'motivo', 'processamento em andamento');
+  if not pg_try_advisory_xact_lock(hashtext('cdload_clipping_verificar')) then
+    return jsonb_build_object('ok', true, 'ignorada', true, 'motivo', 'verificação em andamento');
   end if;
   perform extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', '15000');
 
   for r in
-    select id, google_id, link_original
+    select id, google_id, link_original, titulo, imagem_tentativas
       from public.clipping_news
      where origem = 'google_news' and not oculta and google_id is not null
-       and (imagem_status is null or (imagem_status = 'erro' and imagem_tentativas < 3))
+       and (verificacao is null or (verificacao = 'erro' and imagem_tentativas < 3))
      order by publicado_em desc nulls last
-     limit greatest(coalesce(p_limite, 8), 1)
+     limit greatest(coalesce(p_limite, 10), 1)
   loop
     v_url := r.link_original;
     v_img := null;
@@ -533,26 +630,29 @@ begin
         -- Resposta: )]}'  [["wrb.fr","Fbv4je","[\"garturlres\",\"https://...\",1]",...]]
         v_json := regexp_replace(resp.content, '^\)\]\}''\s*', '')::jsonb;
         v_url := ((v_json -> 0 ->> 2)::jsonb) ->> 1;
-        if v_url is null or v_url !~ '^https?://' then raise exception 'endereço real não retornado'; end if;
+        if v_url is null or v_url !~ '^https?://' then v_url := null; raise exception 'endereço real não retornado'; end if;
       end if;
 
-      -- 3: imagem de capa (falha aqui não perde o link já descoberto)
+      -- 3: a matéria em si
+      resp := extensions.http(('GET', v_url, array[v_ua], null, null)::extensions.http_request);
+      if resp.status <> 200 then raise exception 'matéria HTTP %', resp.status; end if;
+
+      v_cita := public.clipping_cita_palavra_chave(public.clipping_normalizar(r.titulo))
+             or public.clipping_cita_palavra_chave(public.clipping_texto_materia(resp.content));
+
       begin
-        resp := extensions.http(('GET', v_url, array[v_ua], null, null)::extensions.http_request);
-        if resp.status = 200 then
-          v_img := coalesce(
-            substring(resp.content from '<meta[^>]+(?:property|name)=["'']og:image(?::secure_url|:url)?["''][^>]*content=["'']([^"'']+)'),
-            substring(resp.content from '<meta[^>]+content=["'']([^"'']+)["''][^>]*(?:property|name)=["'']og:image["'']'),
-            substring(resp.content from '<meta[^>]+name=["'']twitter:image(?::src)?["''][^>]*content=["'']([^"'']+)'));
-          v_img := replace(btrim(v_img), '&amp;', '&');
-          if v_img like '//%' then
-            v_img := 'https:' || v_img;
-          elsif v_img like '/%' then
-            v_img := substring(v_url from '^https?://[^/]+') || v_img;
-          end if;
-          v_img := regexp_replace(v_img, '^http://', 'https://');  -- o app é servido em HTTPS
-          if v_img !~ '^https://' then v_img := null; end if;
+        v_img := coalesce(
+          substring(resp.content from '<meta[^>]+(?:property|name)=["'']og:image(?::secure_url|:url)?["''][^>]*content=["'']([^"'']+)'),
+          substring(resp.content from '<meta[^>]+content=["'']([^"'']+)["''][^>]*(?:property|name)=["'']og:image["'']'),
+          substring(resp.content from '<meta[^>]+name=["'']twitter:image(?::src)?["''][^>]*content=["'']([^"'']+)'));
+        v_img := replace(btrim(v_img), '&amp;', '&');
+        if v_img like '//%' then
+          v_img := 'https:' || v_img;
+        elsif v_img like '/%' then
+          v_img := substring(v_url from '^https?://[^/]+') || v_img;
         end if;
+        v_img := regexp_replace(v_img, '^http://', 'https://');  -- o app é servido em HTTPS
+        if v_img !~ '^https://' then v_img := null; end if;
       exception when others then
         v_img := null;
       end;
@@ -561,46 +661,56 @@ begin
          set link_original     = v_url,
              imagem_url        = v_img,
              imagem_status     = case when v_img is null then 'sem_imagem' else 'ok' end,
+             verificacao       = case when v_cita then 'confirmada' else 'descartada' end,
+             verificada_em     = now(),
              imagem_tentativas = imagem_tentativas + 1
        where id = r.id;
-      if v_img is null then v_sem := v_sem + 1; else v_ok := v_ok + 1; end if;
+      if v_cita then v_conf := v_conf + 1; else v_desc := v_desc + 1; end if;
     exception when others then
+      -- O bloco foi desfeito, mas v_url (variável) sobrevive: guarda o link
+      -- real já descoberto para a próxima tentativa não depender do Google.
       update public.clipping_news
-         set imagem_status = 'erro', imagem_tentativas = imagem_tentativas + 1
+         set link_original     = coalesce(link_original, v_url),
+             verificacao       = case when r.imagem_tentativas + 1 >= 3 then 'nao_verificavel' else 'erro' end,
+             verificada_em     = now(),
+             imagem_tentativas = imagem_tentativas + 1
        where id = r.id;
       v_falhas := v_falhas + 1;
     end;
   end loop;
 
-  return jsonb_build_object('ok', true, 'com_imagem', v_ok, 'sem_imagem', v_sem, 'falhas', v_falhas);
+  return jsonb_build_object('ok', true, 'confirmadas', v_conf, 'descartadas', v_desc, 'falhas', v_falhas);
 end;
 $$;
 
--- Só o pg_cron / SQL Editor processam imagens e portais (nada disso é exposto ao app).
-revoke all on function public.clipping_processar_imagens(integer), public.clipping_vincular_portais(),
+-- Só o pg_cron / SQL Editor verificam matérias e ligam portais (nada disso é exposto ao app).
+revoke all on function public.clipping_verificar_materias(integer), public.clipping_vincular_portais(),
                        public.clipping_registrar_portal(text, text)
   from public, anon, authenticated;
 revoke all on function public.clipping_coletar() from public, anon;
 grant execute on function public.clipping_coletar() to authenticated;
 revoke all on function public.clipping_classificar_canal(text),
                public.clipping_classificar_categoria(text), public.clipping_classificar_sentimento(text),
-               public.clipping_chave(text), public.clipping_dominio(text)
+               public.clipping_chave(text), public.clipping_dominio(text),
+               public.clipping_palavras_chave(), public.clipping_normalizar(text),
+               public.clipping_texto_materia(text), public.clipping_cita_palavra_chave(text)
   from public, anon;
 
 -- ---------------------------------------------------------------------
--- 5. Agendamento (coleta a cada 30 min, imagens a cada 10 min) e primeira coleta
+-- 5. Agendamento (coleta a cada 30 min, verificação a cada 5 min) e primeira coleta
 -- ---------------------------------------------------------------------
+select cron.unschedule(jobid) from cron.job where jobname = 'cdload-clipping-imagens';  -- job da versão anterior
 select cron.schedule('cdload-clipping-google-news', '*/30 * * * *', $$select public.clipping_coletar()$$);
-select cron.schedule('cdload-clipping-imagens', '*/10 * * * *', $$select public.clipping_processar_imagens(8)$$);
+select cron.schedule('cdload-clipping-verificacao', '*/5 * * * *', $$select public.clipping_verificar_materias(10)$$);
 
 -- Liga as notícias já gravadas aos portais (nome padronizado).
 select public.clipping_vincular_portais();
 
--- Coleta + um primeiro lote de 3 imagens (o resto vem pelo pg_cron).
--- "coleta" deve trazer "ok": true e o total de notícias novas; "imagens",
--- quantas ganharam capa. Erro de HTTP = o Google recusou temporariamente;
--- o agendamento tenta de novo.
-select public.clipping_coletar() as coleta, public.clipping_processar_imagens(3) as imagens;
+-- Coleta + um primeiro lote de 3 verificações (o resto vem pelo pg_cron).
+-- "coleta" deve trazer "ok": true e o total de notícias novas;
+-- "verificacao", quantas foram confirmadas/descartadas. Erro de HTTP = o
+-- Google recusou temporariamente; o agendamento tenta de novo.
+select public.clipping_coletar() as coleta, public.clipping_verificar_materias(3) as verificacao;
 
 -- Opcional: as 10 notícias de EXEMPLO do protótipo (conteúdo ilustrativo,
 -- não são matérias reais) ficam misturadas às reais. Para removê-las,
