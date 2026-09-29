@@ -932,22 +932,107 @@
   .wa-clip-pill-negativo{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
 
   /* ===================================================================
-     DASHBOARD — só o cabeçalho e a barra de filtros ficam; o conteúdo dos
-     painéis (KPIs/gráficos/tabelas) foi removido a pedido.
+     DASHBOARD · Painel de Estoque — guia de estilo próprio (tokens --stk-*),
+     paleta azul corporativa. Cores de status seguem a semântica do guia:
+     entrada/sucesso = verde, saída = vermelho, em progresso = azul claro,
+     alerta = laranja.
   =================================================================== */
-  #page-dashboard .filter-bar{margin-bottom:22px;}
-  #page-dashboard .filter-select{min-width:120px;}
-  /* Tablet/celular: a barra quebra em linhas (filtros em 2 colunas; 1 no celular). */
-  @media (max-width:1100px){
-    #page-dashboard .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow:visible;}
-    #page-dashboard .wa-stock-filters .filter-select{flex:1 1 calc(50% - 6px);min-width:0;}
-    #page-dashboard .wa-stock-filters .filter-spacer,
-    #page-dashboard .wa-stock-filters .filter-divider{display:none;}
-    #page-dashboard .wa-stock-filters .btn{flex:1 1 calc(50% - 6px);justify-content:center;}
+  #page-dashboard{
+    --stk-primary-dark:#002B54;
+    --stk-primary:#0056D2;
+    --stk-primary-light:#0099FF;
+    --stk-secondary-dark:#0B3C6D;
+    --stk-secondary-light:#52A0FF;
+    --stk-neutral-bg:#E1E6EB;
+    --stk-white:#FFFFFF;
+    --stk-success:#10B981;
+    --stk-success-bg:#D1FAE5;
+    --stk-warning:#F59E0B;
+    --stk-warning-bg:#FEF3C7;
+    --stk-danger:#EF4444;
+    --stk-danger-bg:#FEE2E2;
+    --stk-caption:#8297A8;
   }
-  @media (max-width:640px){
-    #page-dashboard .wa-stock-filters .filter-select{flex-basis:100%;}
-  }
+
+  /* ---- Barra superior: segmented control de período + exportar ---- */
+  .stk-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;}
+  .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
+  .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
+  .stk-btn-export{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--stk-neutral-bg);background:var(--stk-white);color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:9px 16px;border-radius:10px;cursor:pointer;}
+  .stk-btn-export:hover{border-color:var(--stk-primary-light);color:var(--stk-primary);}
+  .stk-btn-export svg{width:15px;height:15px;}
+
+  /* ---- Grade + anatomia dos cards ---- */
+  .stk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px;}
+  .stk-span-2{grid-column:span 2;}
+  .stk-span-4{grid-column:1 / -1;}
+  @media (max-width:1100px){ .stk-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:640px){ .stk-grid{grid-template-columns:1fr;} .stk-span-2,.stk-span-4{grid-column:auto;} }
+  .stk-card{background:var(--stk-white);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,43,84,.04),0 8px 20px -16px rgba(0,43,84,.18);display:flex;flex-direction:column;min-width:0;}
+  .stk-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .stk-card-head h3{margin:0;font-size:14px;font-weight:500;color:var(--stk-secondary-dark);}
+  .stk-card-body{flex:1;min-width:0;position:relative;}
+  .stk-vazio{font-size:13px;color:var(--stk-caption);padding:18px 0;text-align:center;}
+  .stk-chart-filtro{border:1px solid var(--stk-neutral-bg);background:var(--stk-white);color:var(--stk-secondary-dark);font-family:inherit;font-size:12px;font-weight:500;padding:5px 10px;border-radius:8px;cursor:pointer;}
+
+  /* ---- KPI ---- */
+  .stk-kpi-icon{width:38px;height:38px;border-radius:10px;background:#EAF2FF;color:var(--stk-primary);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .stk-kpi-icon svg{width:18px;height:18px;stroke-width:2;}
+  .stk-kpi-label{font-size:13px;color:var(--stk-secondary-dark);font-weight:500;}
+  .stk-kpi-valor{font-size:32px;font-weight:700;color:var(--stk-primary-dark);line-height:1.15;margin-top:6px;letter-spacing:-.01em;}
+  .stk-kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;margin-top:8px;padding:3px 8px;border-radius:9999px;}
+  .stk-kpi-delta.pos{color:var(--stk-success);background:var(--stk-success-bg);}
+  .stk-kpi-delta.neg{color:var(--stk-danger);background:var(--stk-danger-bg);}
+  .stk-kpi-delta.neu{color:var(--stk-caption);background:var(--stk-neutral-bg);}
+  .stk-kpi-ref{font-size:11px;color:var(--stk-caption);margin-top:6px;}
+
+  /* ---- Gráfico "Stock Flow" (barras duplas) ---- */
+  .stk-legenda{display:flex;gap:16px;font-size:12px;color:var(--stk-secondary-dark);margin-bottom:10px;}
+  .stk-legenda span{display:inline-flex;align-items:center;gap:6px;}
+  .stk-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .stk-svg{display:block;overflow:visible;}
+  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;}
+  .stk-svg .stk-grade{stroke:#EEF1F4;stroke-width:1;}
+
+  /* ---- "Warehouse Utilization" (ocupação por setor) ---- */
+  .stk-setor-linha{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--stk-secondary-dark);margin-bottom:8px;}
+  .stk-setor-linha .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
+  .stk-setor-linha .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stk-setor-linha .pct{font-weight:700;color:var(--stk-primary-dark);font-variant-numeric:tabular-nums;}
+  .stk-barra-total{height:10px;border-radius:6px;background:var(--stk-neutral-bg);overflow:hidden;display:flex;gap:1px;margin:14px 0 6px;}
+  .stk-barra-total b{display:block;height:100%;}
+  .stk-barra-total-legenda{font-size:11px;color:var(--stk-caption);text-align:right;}
+
+  /* ---- Lista "Stock Alerts" ---- */
+  .stk-alerta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 20px;}
+  @media (max-width:640px){ .stk-alerta-grid{grid-template-columns:1fr;} }
+  .stk-alerta-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--stk-neutral-bg);}
+  .stk-alerta-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .stk-alerta-ic svg{width:16px;height:16px;stroke-width:2;}
+  .stk-alerta-ic.warn{background:var(--stk-warning-bg);color:var(--stk-warning);}
+  .stk-alerta-ic.danger{background:var(--stk-danger-bg);color:var(--stk-danger);}
+  .stk-alerta-txt{flex:1;min-width:0;}
+  .stk-alerta-nome{font-size:13px;font-weight:500;color:var(--stk-secondary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stk-alerta-meta{font-size:11px;color:var(--stk-caption);margin-top:2px;}
+  .stk-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;flex:0 0 auto;}
+  .stk-badge.ok{background:var(--stk-success-bg);color:var(--stk-success);}
+  .stk-badge.delay{background:var(--stk-warning-bg);color:var(--stk-warning);}
+  .stk-badge.danger{background:var(--stk-danger-bg);color:var(--stk-danger);}
+  .stk-badge.ongoing{background:var(--stk-neutral-bg);color:var(--stk-primary-light);}
+
+  /* ---- Tabela "Movimentações" ---- */
+  .stk-table-wrap{overflow-x:auto;}
+  .stk-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .stk-table th{text-transform:uppercase;font-size:11px;font-weight:600;color:var(--stk-secondary-dark);text-align:left;padding:10px 16px;border-bottom:1px solid var(--stk-neutral-bg);white-space:nowrap;}
+  .stk-table td{padding:12px 16px;border-bottom:1px solid var(--stk-neutral-bg);color:var(--stk-secondary-dark);white-space:nowrap;}
+  .stk-table tr:last-child td{border-bottom:none;}
+  .stk-table .num{font-variant-numeric:tabular-nums;text-align:right;}
+  .stk-mov-ic{width:26px;height:26px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;}
+  .stk-mov-ic svg{width:13px;height:13px;stroke-width:2.4;}
+  .stk-mov-ic.in{background:var(--stk-success-bg);color:var(--stk-success);}
+  .stk-mov-ic.out{background:var(--stk-danger-bg);color:var(--stk-danger);}
+  .stk-mov-ic.transfer{background:#E6F1FF;color:var(--stk-primary-light);}
 
   /* ===================================================================
      ESTOQUE — cadastro de produtos, leitura de código de barras
@@ -1223,46 +1308,20 @@
       </section>
 
 
-      <!-- DASHBOARD -->
+      <!-- DASHBOARD · Painel de Estoque -->
       <section class="page" id="page-dashboard">
-
-        <div class="filter-bar wa-stock-filters">
-          <select class="filter-select" id="dbPainel" title="Painel exibido">
-            <option value="clipping">Painel · Clipping News</option>
-            <option value="estoque">Painel · Estoque</option>
-            <option value="campanhas" disabled>Painel · Campanhas (em breve)</option>
-            <option value="relatorios" disabled>Painel · Relatórios (em breve)</option>
-          </select>
-          <select class="filter-select" id="dbPeriodo" title="Período">
-            <option value="7">Últimos 7 dias</option>
-            <option value="30" selected>Últimos 30 dias</option>
-            <option value="90">Últimos 90 dias</option>
-            <option value="ano">Ano atual</option>
-          </select>
-          <select class="filter-select" id="dbPlayer" title="Player">
-            <option value="">Todos os players</option>
-          </select>
-          <select class="filter-select" id="dbCanal" title="Plataforma">
-            <option value="">Plataforma</option>
-          </select>
-          <select class="filter-select" id="dbSetor" title="Setor" hidden></select>
-          <select class="filter-select" id="dbSituacao" title="Situação" hidden>
-            <option value="">Todas as situações</option>
-            <option value="ok">Em estoque</option>
-            <option value="baixo">Estoque baixo</option>
-            <option value="zerado">Sem estoque</option>
-          </select>
-          <div class="filter-spacer"></div>
-          <div class="filter-divider"></div>
-          <button class="btn btn-clear" id="dbLimpar" title="Limpar filtros" aria-label="Limpar filtros">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            <span class="btn-label">Limpar</span>
-          </button>
-          <button class="btn btn-export" id="dbExportar" title="Exportar os dados do painel (CSV)" aria-label="Exportar os dados do painel (CSV)">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            <span class="btn-label">Exportar</span>
+        <div class="stk-toolbar">
+          <div class="stk-segmented" id="stkPeriodo" role="tablist" aria-label="Período">
+            <button type="button" class="stk-seg-btn" data-periodo="hoje" role="tab" aria-selected="false">Hoje</button>
+            <button type="button" class="stk-seg-btn active" data-periodo="semana" role="tab" aria-selected="true">Esta semana</button>
+            <button type="button" class="stk-seg-btn" data-periodo="mes" role="tab" aria-selected="false">Este mês</button>
+          </div>
+          <button type="button" class="stk-btn-export" id="stkExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Exportar</span>
           </button>
         </div>
+        <div class="stk-grid" id="stkGrid"></div>
       </section>
 
       <!-- INSTÂNCIAS -->
@@ -6031,6 +6090,284 @@ ${clipPlayerPills(n)}
       renderReports();
     });
 
+    // ==================================================================
+    // Dashboard · Painel de Estoque — lê os dados já carregados pelo
+    // módulo Estoque (stockProducts/stockMovements/saldoOf/situacaoOf),
+    // sem tabela ou fetch novo. Guia de estilo próprio (tokens --stk-*).
+    // ==================================================================
+    const stkSegmented = document.getElementById('stkPeriodo');
+    const stkGrid = document.getElementById('stkGrid');
+    let stkPeriodoAtual = 'semana';
+    let stkFluxoModo = 'semanal';
+
+    const stkHojeIso = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+    const stkSomaDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+    const stkNum = v => Number(v || 0).toLocaleString('pt-BR');
+    const stkPct = (v, casas) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: casas || 0, maximumFractionDigits: casas || 0 }) + '%';
+    const stkDataHoraBR = iso => { const d = new Date(iso); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
+
+    const STK_ICONS = {
+      layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline>',
+      arrowUpRight: '<line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline>',
+      arrowDownLeft: '<line x1="17" y1="7" x2="7" y2="17"></line><polyline points="17 17 7 17 7 7"></polyline>',
+      percent: '<line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle>',
+      trendUp: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>',
+      trendDown: '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline>',
+      alerta: '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>'
+    };
+    const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
+    const STK_SETOR_CORES = ['#002B54', '#0056D2', '#0099FF', '#0B3C6D', '#52A0FF'];
+    const stkSetorCor = setor => { const i = STOCK_SETORES.indexOf(setor); return i === -1 ? '#8297A8' : STK_SETOR_CORES[i % STK_SETOR_CORES.length]; };
+
+    // Janela do segmented control (Hoje / Esta semana / Este mês).
+    function stkRange(modo){
+      const fim = stkHojeIso();
+      if(modo === 'hoje') return { ini: fim, fim, rotulo: 'hoje' };
+      if(modo === 'mes') return { ini: fim.slice(0, 7) + '-01', fim, rotulo: 'este mês' };
+      return { ini: stkSomaDias(fim, -6), fim, rotulo: 'esta semana' };
+    }
+    // Janela anterior, mesmo número de dias, para calcular variação.
+    function stkRangeAnterior(range){
+      const dias = Math.round((new Date(range.fim + 'T12:00:00') - new Date(range.ini + 'T12:00:00')) / 86400000) + 1;
+      const fimAnt = stkSomaDias(range.ini, -1);
+      return { ini: stkSomaDias(fimAnt, -(dias - 1)), fim: fimAnt };
+    }
+    const stkMovsEntre = (ini, fim) => stockMovements.filter(m => { const d = String(m.created_at).slice(0, 10); return d >= ini && d <= fim; });
+    const stkSomaQtd = lista => lista.reduce((s, m) => s + (Number(m.quantidade) || 0), 0);
+
+    function stkDelta(atual, anterior){
+      if(!(anterior > 0)){
+        return atual > 0 ? { txt: 'sem base no período anterior', cls: 'neu', icone: '' } : { txt: 'sem variação', cls: 'neu', icone: '' };
+      }
+      const dif = (atual - anterior) / anterior;
+      if(Math.abs(dif) < 0.005) return { txt: '0% desde o período anterior', cls: 'neu', icone: '' };
+      const pos = dif > 0;
+      return { txt: `${pos ? '+' : ''}${(dif * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% desde o período anterior`, cls: pos ? 'pos' : 'neg', icone: stkIcone(pos ? 'trendUp' : 'trendDown') };
+    }
+
+    function stkKpi(icone, label, valor, delta, ref){
+      return `<div class="stk-card">
+        <div class="stk-card-head">
+          <div><div class="stk-kpi-label">${esc(label)}</div><div class="stk-kpi-valor">${valor}</div></div>
+          <div class="stk-kpi-icon">${stkIcone(icone)}</div>
+        </div>
+        ${delta ? `<div class="stk-kpi-delta ${delta.cls}">${delta.icone}${esc(delta.txt)}</div>` : ''}
+        ${ref ? `<div class="stk-kpi-ref">${esc(ref)}</div>` : ''}
+      </div>`;
+    }
+
+    // Passo de eixo "redondo" (1/2/5 × 10^n), igual à régua usada no resto do app.
+    function stkPasso(max){
+      if(max <= 0) return 1;
+      const exp = Math.floor(Math.log10(max));
+      const base = Math.pow(10, exp);
+      const norm = max / base;
+      return (norm <= 2 ? 0.5 : norm <= 5 ? 1 : 2) * base;
+    }
+
+    // Gráfico "Stock Flow": barras duplas (entrada sólida x saída hachurada)
+    // por categoria (dias da semana ou meses, conforme o filtro local do card).
+    function stkDesenharFluxo(el, categorias, entradas, saidas){
+      const W = Math.max(260, Math.floor(el.clientWidth)), H = 220;
+      const m = { t: 10, r: 10, b: 26, l: 36 };
+      const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
+      const max = Math.max(1, ...entradas, ...saidas);
+      const passo = stkPasso(max);
+      const topo = Math.ceil(max / passo) * passo;
+      const y = v => m.t + ih - (v / topo) * ih;
+      const grupoL = iw / n;
+      const barraL = Math.min(20, grupoL * 0.26);
+      const patId = `stkHatch-${el.id}`;
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Entradas e saídas por período">
+        <defs><pattern id="${patId}" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill="#EAF2FF"></rect>
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#52A0FF" stroke-width="2.2"></line>
+        </pattern></defs>`;
+      for(let v = 0; v <= topo + 1e-9; v += passo){
+        svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
+        svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkNum(v)}</text>`;
+      }
+      const base = m.t + ih;
+      categorias.forEach((cat, i) => {
+        const cx = m.l + grupoL * i + grupoL / 2;
+        const xa = cx - 2 - barraL, xb = cx + 2;
+        const ya = y(entradas[i]), yb = y(saidas[i]);
+        svg += `<rect x="${xa.toFixed(1)}" y="${ya.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - ya).toFixed(1)}" rx="3" fill="#0056D2"></rect>`;
+        svg += `<rect x="${xb.toFixed(1)}" y="${yb.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yb).toFixed(1)}" rx="3" fill="url(#${patId})" stroke="#52A0FF" stroke-width="1"></rect>`;
+        svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cat)}</text>`;
+      });
+      svg += `</svg>`;
+      el.innerHTML = svg;
+    }
+
+    function stkDadosFluxo(modo){
+      const semanal = modo !== 'mensal';
+      const hoje = stkHojeIso();
+      const categorias = [], chaves = [];
+      if(semanal){
+        for(let i = 6; i >= 0; i--){
+          const d = stkSomaDias(hoje, -i);
+          chaves.push(d);
+          categorias.push(new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''));
+        }
+      } else {
+        for(let i = 5; i >= 0; i--){
+          const d = new Date(hoje + 'T12:00:00'); d.setMonth(d.getMonth() - i);
+          const chave = d.toISOString().slice(0, 7);
+          chaves.push(chave);
+          categorias.push(d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''));
+        }
+      }
+      const entradas = chaves.map(() => 0), saidas = chaves.map(() => 0);
+      const idx = new Map(chaves.map((k, i) => [k, i]));
+      const janelaIni = semanal ? chaves[0] : chaves[0] + '-01';
+      stockMovements.forEach(m => {
+        const d = String(m.created_at).slice(0, 10);
+        if(d < janelaIni) return;
+        const chave = semanal ? d : d.slice(0, 7);
+        const i = idx.get(chave);
+        if(i === undefined) return;
+        if(m.tipo === 'saida') saidas[i] += m.quantidade; else entradas[i] += m.quantidade;
+      });
+      return { categorias, entradas, saidas };
+    }
+
+    function stkAbrir(){
+      const carregar = stockProducts.length ? Promise.resolve() : loadStock();
+      Promise.resolve(carregar).then(stkRender);
+    }
+
+    function stkRender(){
+      if(!stockProducts.length){
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhum produto cadastrado. Confira se o seu usuário tem acesso ao Estoque.</div></div>`;
+        return;
+      }
+      const range = stkRange(stkPeriodoAtual);
+      const rangeAnt = stkRangeAnterior(range);
+      const ativos = stockProducts.filter(p => p.ativo);
+      const movsPeriodo = stkMovsEntre(range.ini, range.fim);
+      const movsAnteriores = stkMovsEntre(rangeAnt.ini, rangeAnt.fim);
+
+      // ---- KPIs ----
+      const totalStockAtual = ativos.reduce((s, p) => s + Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS)), 0);
+      const entradasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo !== 'saida'));
+      const saidasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo === 'saida'));
+      const entradasQtdAnt = stkSomaQtd(movsAnteriores.filter(m => m.tipo !== 'saida'));
+      const saidasQtdAnt = stkSomaQtd(movsAnteriores.filter(m => m.tipo === 'saida'));
+      const netPeriodo = entradasQtd - saidasQtd;
+      const totalStockInicio = totalStockAtual - netPeriodo;
+      const qOk = ativos.filter(p => situacaoOf(p) === 'ok').length;
+      const eficiencia = ativos.length ? qOk / ativos.length : 0;
+
+      const kTotal = stkKpi('layers', 'Total em estoque', stkNum(totalStockAtual), stkDelta(totalStockAtual, totalStockInicio), `unidades · produtos ativos, ${esc(range.rotulo)}`);
+      const kOut = stkKpi('arrowUpRight', 'Saídas', stkNum(saidasQtd), stkDelta(saidasQtd, saidasQtdAnt), `unidades · ${esc(range.rotulo)}`);
+      const kIn = stkKpi('arrowDownLeft', 'Entradas', stkNum(entradasQtd), stkDelta(entradasQtd, entradasQtdAnt), `unidades · ${esc(range.rotulo)}`);
+      const kEfic = stkKpi('percent', 'Eficiência do armazém', stkPct(eficiencia), null, `${stkNum(qOk)} de ${stkNum(ativos.length)} produtos ativos em situação normal`);
+
+      // ---- Stock Flow (barras duplas) ----
+      const F = stkDadosFluxo(stkFluxoModo);
+      const wFluxo = `<div class="stk-card stk-span-2">
+          <div class="stk-card-head"><h3>Fluxo de estoque</h3>
+            <select class="stk-chart-filtro" id="stkFluxoFiltro">
+              <option value="semanal" ${stkFluxoModo === 'semanal' ? 'selected' : ''}>Semanal</option>
+              <option value="mensal" ${stkFluxoModo === 'mensal' ? 'selected' : ''}>Mensal</option>
+            </select>
+          </div>
+          <div class="stk-card-body">
+            <div class="stk-legenda"><span><i style="background:#0056D2"></i>Entradas</span><span><i style="background:#52A0FF"></i>Saídas</span></div>
+            <div id="stkFluxoGraf"></div>
+          </div>
+        </div>`;
+
+      // ---- Warehouse Utilization (ocupação por setor) ----
+      const setores = STOCK_SETORES.map(s => ({ nome: s, cor: stkSetorCor(s), qtd: stockProducts.reduce((sum, p) => sum + Math.max(0, saldoOf(p.id, s)), 0) })).sort((a, b) => b.qtd - a.qtd);
+      const totalSetores = setores.reduce((s, x) => s + x.qtd, 0) || 1;
+      const wOcupacao = `<div class="stk-card stk-span-2">
+          <div class="stk-card-head"><h3>Ocupação por setor</h3></div>
+          <div class="stk-card-body">
+            <div class="stk-barra-total">${setores.filter(s => s.qtd > 0).map(s => `<b style="width:${(s.qtd / totalSetores * 100).toFixed(1)}%;background:${s.cor}" title="${esc(s.nome)}"></b>`).join('')}</div>
+            <div class="stk-barra-total-legenda">${stkNum(totalSetores)} unidades no total</div>
+            <div style="margin-top:14px;">${setores.map(s => `
+              <div class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span><span class="pct">${stkPct(s.qtd / totalSetores, 1)}</span></div>`).join('')}</div>
+          </div>
+        </div>`;
+
+      // ---- Stock Alerts ----
+      const alertas = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p)))
+        .sort((a, b) => (situacaoOf(a) === 'zerado' ? 0 : 1) - (situacaoOf(b) === 'zerado' ? 0 : 1) || a.nome.localeCompare(b.nome, 'pt-BR'))
+        .slice(0, 8);
+      const wAlertas = `<div class="stk-card stk-span-4">
+          <div class="stk-card-head"><h3>Alertas de estoque</h3></div>
+          <div class="stk-card-body">${alertas.length ? `<div class="stk-alerta-grid">${alertas.map(p => {
+              const sit = situacaoOf(p);
+              const danger = sit === 'zerado';
+              return `<div class="stk-alerta-item">
+                <span class="stk-alerta-ic ${danger ? 'danger' : 'warn'}">${stkIcone('alerta')}</span>
+                <div class="stk-alerta-txt"><div class="stk-alerta-nome">${esc(p.nome)}</div>
+                  <div class="stk-alerta-meta">${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} / mín. ${fmtQty(p.estoque_minimo)} ${esc(p.unidade)}</div></div>
+                <span class="stk-badge ${danger ? 'danger' : 'delay'}">${danger ? 'Sem estoque' : 'Estoque baixo'}</span>
+              </div>`;
+            }).join('')}</div>` : '<div class="stk-vazio">Nenhum produto abaixo do mínimo.</div>'}</div>
+        </div>`;
+
+      // ---- Movimentações (tabela) ----
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const movsTabela = movsPeriodo.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
+      const wTabela = `<div class="stk-card stk-span-4">
+          <div class="stk-card-head"><h3>Movimentações · ${esc(range.rotulo)}</h3></div>
+          <div class="stk-card-body"><div class="stk-table-wrap">${movsTabela.length ? `<table class="stk-table">
+              <thead><tr><th>Data/hora</th><th>Produto</th><th>Setor</th><th>Tipo</th><th style="text-align:right;">Quantidade</th><th>Usuário</th></tr></thead>
+              <tbody>${movsTabela.map(m => {
+                const p = byId.get(m.produto_id);
+                const saida = m.tipo === 'saida';
+                return `<tr>
+                  <td>${stkDataHoraBR(m.created_at)}</td>
+                  <td>${p ? esc(p.nome) : '—'}</td>
+                  <td>${esc(m.setor)}</td>
+                  <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${saida ? 'danger' : 'ok'}">${saida ? 'Saída' : 'Entrada'}</span></td>
+                  <td class="num">${fmtQty(m.quantidade)} ${p ? esc(p.unidade) : ''}</td>
+                  <td>${esc(userNameOf(m.usuario_email) || m.usuario_email || '—')}</td>
+                </tr>`;
+              }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhuma movimentação no período.</div>'}</div></div>
+        </div>`;
+
+      stkGrid.innerHTML = kTotal + kOut + kIn + kEfic + wFluxo + wOcupacao + wAlertas + wTabela;
+      const graf = document.getElementById('stkFluxoGraf');
+      if(graf) stkDesenharFluxo(graf, F.categorias, F.entradas, F.saidas);
+    }
+
+    stkSegmented.addEventListener('click', ev => {
+      const btn = ev.target.closest('.stk-seg-btn');
+      if(!btn) return;
+      stkSegmented.querySelectorAll('.stk-seg-btn').forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+      stkPeriodoAtual = btn.dataset.periodo;
+      stkRender();
+    });
+    stkGrid.addEventListener('change', ev => {
+      if(ev.target.id === 'stkFluxoFiltro'){ stkFluxoModo = ev.target.value; stkRender(); }
+    });
+    document.getElementById('stkExportar').addEventListener('click', () => {
+      const range = stkRange(stkPeriodoAtual);
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const rows = [['Data/hora', 'Produto', 'Setor', 'Tipo', 'Quantidade', 'Usuário']]
+        .concat(stkMovsEntre(range.ini, range.fim).map(m => {
+          const p = byId.get(m.produto_id);
+          return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', fmtQty(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
+        }));
+      const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `estoque_dashboard_${range.ini}_a_${range.fim}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    let stkResizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(stkResizeTimer);
+      stkResizeTimer = setTimeout(() => { if(currentPage === 'dashboard') stkRender(); }, 200);
+    });
+    document.addEventListener('cdload:menuresize', () => { if(currentPage === 'dashboard') stkRender(); });
+
     // ---------------- Integração com a navegação ----------------
     document.addEventListener('cdload:pagechange', (e) => {
       currentPage = e.detail.page;
@@ -6040,6 +6377,8 @@ ${clipPlayerPills(n)}
         if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
       } else if(currentPage === 'relatorios'){
         loadReports();
+      } else if(currentPage === 'dashboard'){
+        stkAbrir();
       } else if(currentPage === 'clipping'){
         openClippingSection();
       } else if(waCamModal.classList.contains('open')){
