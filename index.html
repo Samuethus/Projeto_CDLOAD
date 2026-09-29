@@ -2450,7 +2450,7 @@
        categoria         text not null,
        canal             text not null,
        sentimento        text not null default 'Neutro', -- 'Positivo' | 'Neutro' | 'Negativo'
-       origem            text not null default 'manual', -- 'manual' | 'google_news'
+       origem            text not null default 'manual', -- 'manual' | 'google_news' | 'cdl_site' (cdlcuiaba.com.br)
        link              text,          -- matéria original (Google Notícias)
        google_id         text unique,   -- evita duplicar a mesma notícia
        termo_busca       text,
@@ -4306,9 +4306,9 @@
         return;
       }
 
-      // Notícia do Google só é ocultada: apagada, voltaria na próxima coleta.
+      // Notícia coletada (Google ou site da CDL) só é ocultada: apagada, voltaria na próxima coleta.
       const n = clippingNews.find(x => x.id === id);
-      const { error } = n && n.origem === 'google_news'
+      const { error } = n && n.origem !== 'manual'
         ? await supabaseClient.from('clipping_news').update({ oculta: true }).eq('id', id)
         : await supabaseClient.from('clipping_news').delete().eq('id', id);
       if(error){
