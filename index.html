@@ -1380,8 +1380,8 @@
         <div class="filter-bar wa-stock-filters">
           <select class="filter-select" id="dbPainel" title="Painel exibido">
             <option value="clipping">Painel · Clipping News</option>
+            <option value="estoque">Painel · Estoque</option>
             <option value="campanhas" disabled>Painel · Campanhas (em breve)</option>
-            <option value="estoque" disabled>Painel · Estoque (em breve)</option>
             <option value="relatorios" disabled>Painel · Relatórios (em breve)</option>
           </select>
           <select class="filter-select" id="dbPeriodo" title="Período">
@@ -1396,13 +1396,20 @@
           <select class="filter-select" id="dbCanal" title="Plataforma">
             <option value="">Plataforma</option>
           </select>
+          <select class="filter-select" id="dbSetor" title="Setor" hidden></select>
+          <select class="filter-select" id="dbSituacao" title="Situação" hidden>
+            <option value="">Todas as situações</option>
+            <option value="ok">Em estoque</option>
+            <option value="baixo">Estoque baixo</option>
+            <option value="zerado">Sem estoque</option>
+          </select>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
           <button class="btn btn-clear" id="dbLimpar" title="Limpar filtros" aria-label="Limpar filtros">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             <span class="btn-label">Limpar</span>
           </button>
-          <button class="btn btn-export" id="dbExportar" title="Exportar as notícias do painel (CSV)" aria-label="Exportar as notícias do painel (CSV)">
+          <button class="btn btn-export" id="dbExportar" title="Exportar os dados do painel (CSV)" aria-label="Exportar os dados do painel (CSV)">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
             <span class="btn-label">Exportar</span>
           </button>
@@ -6190,6 +6197,8 @@ ${clipPlayerPills(n)}
     const dbPeriodo = document.getElementById('dbPeriodo');
     const dbPlayer = document.getElementById('dbPlayer');
     const dbCanal = document.getElementById('dbCanal');
+    const dbSetor = document.getElementById('dbSetor');
+    const dbSituacao = document.getElementById('dbSituacao');
     const dbGrid = document.getElementById('dbGrid');
     const dbStatus = document.getElementById('dbStatus');
     const dbTip = document.getElementById('dbTooltip');
@@ -6393,7 +6402,40 @@ ${clipPlayerPills(n)}
         series.forEach(s => { if((n.players || []).includes(s.nome)) s.valores[i]++; });
       });
       const rotulo = k => `${semanal ? 'sem. ' : ''}${k.slice(8, 10)}/${k.slice(5, 7)}`;
-      return { chaves, series, semanal, rotulo };
+      return { chaves, series, semanal, rotulo, rotuloEixo: `Notícias por ${semanal ? 'semana' : 'dia'} e por player` };
+    }
+
+    // ---- Série temporal de movimentações de estoque (Entradas x Saídas) ----
+    // Origem conta como entrada (é o primeiro lançamento do produto naquele
+    // setor). Uma transferência gera uma saída na origem + uma entrada no
+    // destino — ambas contam aqui como atividade real naquele setor.
+    function dbSerieMovimentos(lista, P){
+      const semanal = P.dias > 31;
+      const chaves = [];
+      const chaveDe = iso => {
+        if(!semanal) return iso;
+        const d = new Date(iso + 'T12:00:00');
+        const seg = (d.getDay() + 6) % 7;
+        const k = dbSomaDias(iso, -seg);
+        return k < P.ini ? P.ini : k;
+      };
+      for(let d = P.ini; d <= P.fim; d = dbSomaDias(d, 1)){
+        const k = chaveDe(d);
+        if(chaves[chaves.length - 1] !== k) chaves.push(k);
+      }
+      const idx = new Map(chaves.map((k, i) => [k, i]));
+      const series = [
+        { nome: 'Entradas', cor: '#00A389', area: true, valores: chaves.map(() => 0) },
+        { nome: 'Saídas', cor: '#3B4BB9', area: false, valores: chaves.map(() => 0) }
+      ];
+      lista.forEach(m => {
+        const i = idx.get(chaveDe(String(m.created_at).slice(0, 10)));
+        if(i === undefined) return;
+        if(m.tipo === 'saida') series[1].valores[i] += m.quantidade;
+        else series[0].valores[i] += m.quantidade; // entrada ou origem
+      });
+      const rotulo = k => `${semanal ? 'sem. ' : ''}${k.slice(8, 10)}/${k.slice(5, 7)}`;
+      return { chaves, series, semanal, rotulo, rotuloEixo: `Movimentações de estoque por ${semanal ? 'semana' : 'dia'}` };
     }
 
     // Interpola uma curva suave (Catmull-Rom -> Bézier cúbica) por todos os
@@ -6423,7 +6465,7 @@ ${clipPlayerPills(n)}
       const { passo, topo } = dbEscala(max);
       const x = i => m.l + (n <= 1 ? iw / 2 : i * iw / (n - 1));
       const y = v => m.t + ih - (v / topo) * ih;
-      let svg = `<svg class="db-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Notícias por ${S.semanal ? 'semana' : 'dia'} e por player">`;
+      let svg = `<svg class="db-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(S.rotuloEixo || (S.semanal ? 'Série por semana' : 'Série por dia'))}">`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
         svg += `<line class="${v === 0 ? 'db-base' : 'db-grade'}" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"></line>`;
         svg += `<text class="db-eixo" x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${dbNum(v)}</text>`;
@@ -6439,6 +6481,7 @@ ${clipPlayerPills(n)}
       // documento inteiro, não pela posição.
       const base = m.t + ih;
       S.series.forEach((s, si) => {
+        if(s.area === false) return; // ex.: "Saídas" no painel de Estoque — só a linha, sem preenchimento
         const pontos = s.valores.map((v, i) => ({ x: x(i), y: y(v) }));
         const linha = dbCurvaSuave(pontos);
         const gradId = `dbGrad-${el.id}-${si}`;
@@ -6582,6 +6625,7 @@ ${clipPlayerPills(n)}
     const dbDataBR = iso => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
     function dbRender(){
+      if(dbPainel.value === 'estoque') return dbRenderEstoque();
       if(dbPainel.value !== 'clipping') return;
       dbEsconderDica();
       const P = dbPeriodoAtual();
@@ -6691,6 +6735,121 @@ ${clipPlayerPills(n)}
       if(graf) dbDesenharLinhas(graf, S);
     }
 
+    // ==================================================================
+    // Painel · Estoque — mesmos componentes do painel de Clipping (dbWidget,
+    // dbKpi, dbRoscaSvg, dbDesenharLinhas), lendo os dados já carregados
+    // pelo módulo Estoque (stockProducts/stockMovements/saldoOf/situacaoOf).
+    // ==================================================================
+    // Paleta categórica sem vínculo de marca (setores não são players) —
+    // mesma ordem validada para daltonismo usada como padrão no projeto.
+    const DB_SETOR_CORES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
+    const dbSetorCor = setor => { const i = STOCK_SETORES.indexOf(setor); return i === -1 ? '#94A3B8' : DB_SETOR_CORES[i % DB_SETOR_CORES.length]; };
+    const dbMoeda = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function dbEstMovs(ini, fim){
+      const setor = dbSetor.value;
+      return stockMovements.filter(m => {
+        const d = String(m.created_at).slice(0, 10);
+        if(d < ini || d > fim) return false;
+        return !setor || setor === STOCK_SETOR_TODOS || m.setor === setor;
+      });
+    }
+
+    function dbRenderEstoque(){
+      dbEsconderDica();
+      const P = dbPeriodoAtual();
+      const ativos = stockProducts.filter(p => p.ativo);
+      const movsPeriodo = dbEstMovs(P.ini, P.fim);
+      const movsAnteriores = dbEstMovs(P.iniAnt, P.fimAnt);
+      const temBase = stockMovements.some(m => String(m.created_at).slice(0, 10) <= P.fimAnt);
+      const refTxt = `${esc(P.rotulo)} · vs. ${esc(P.rotuloAnt)}`;
+      const setorFiltro = dbSetor.value;
+
+      dbStatus.innerHTML = `<strong>${esc(P.rotulo)}</strong> (${dbDataBR(P.ini)} a ${dbDataBR(P.fim)}) comparado com os ${esc(P.rotuloAnt)} · `
+        + `${dbNum(movsPeriodo.length)} movimentações · Fonte: módulo Estoque. `
+        + `Saldo e situação são sempre a foto de agora (não mudam com o período selecionado).`;
+
+      if(!stockProducts.length){
+        dbGrid.innerHTML = dbWidget({ id: 'dbEstVazio', titulo: 'Sem dados', span: 4, corpo: '<div class="db-vazio">Nenhum produto cadastrado. Confira se o seu usuário tem acesso ao Estoque.</div>' });
+        return;
+      }
+
+      // Linha 1 — KPIs
+      const valorEstoque = ativos.reduce((s, p) => s + (Number(p.preco_custo) || 0) * Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS)), 0);
+      const porSituacao = { ok: 0, baixo: 0, zerado: 0 };
+      ativos.forEach(p => { const s = situacaoOf(p); if(porSituacao[s] !== undefined) porSituacao[s]++; });
+
+      const k1 = dbKpi({ id: 'dbEstK1', titulo: 'Valor em estoque', hero: true, valor: dbMoeda(valorEstoque), delta: '',
+        ref: 'Custo de aquisição × saldo atual, produtos ativos (foto de agora)' });
+      const k2 = dbKpi({ id: 'dbEstK2', titulo: 'Situação do estoque', valor: dbPct(ativos.length ? porSituacao.ok / ativos.length : 0), rosca: true, delta: '',
+        mini: [
+          { cor: '#00A389', rotulo: 'Em estoque', valor: dbNum(porSituacao.ok), frac: porSituacao.ok },
+          { cor: '#F59E0B', rotulo: 'Estoque baixo', valor: dbNum(porSituacao.baixo), frac: porSituacao.baixo },
+          { cor: '#EF4444', rotulo: 'Sem estoque', valor: dbNum(porSituacao.zerado), frac: porSituacao.zerado }
+        ] });
+      const qEntradas = movsPeriodo.filter(m => m.tipo !== 'saida').length;
+      const qSaidas = movsPeriodo.filter(m => m.tipo === 'saida').length;
+      const k3 = dbKpi({ id: 'dbEstK3', titulo: 'Movimentações no período', valor: dbNum(movsPeriodo.length),
+        delta: dbDelta(movsPeriodo.length, movsAnteriores.length, false, temBase), ref: `${refTxt} (${dbNum(movsAnteriores.length)})`,
+        mini: [
+          { cor: '#00A389', rotulo: 'Entradas', valor: dbNum(qEntradas), frac: movsPeriodo.length ? qEntradas / movsPeriodo.length : 0 },
+          { cor: '#3B4BB9', rotulo: 'Saídas', valor: dbNum(qSaidas), frac: movsPeriodo.length ? qSaidas / movsPeriodo.length : 0 }
+        ] });
+      const k4 = dbKpi({ id: 'dbEstK4', titulo: 'Produtos cadastrados', valor: dbNum(stockProducts.length), rosca: true, delta: '',
+        mini: [
+          { cor: '#00A389', rotulo: 'Ativos', valor: dbNum(ativos.length), frac: ativos.length },
+          { cor: '#CBD5E1', rotulo: 'Inativos', valor: dbNum(stockProducts.length - ativos.length), frac: stockProducts.length - ativos.length }
+        ] });
+
+      // Linha 2 — movimentações no tempo + saldo por setor
+      const S = dbSerieMovimentos(movsPeriodo, P);
+      const wEstMov = dbWidget({ id: 'dbEstMov', titulo: 'Movimentações de estoque', span: 2, acao: dbBotaoTabela('dbEstMov'),
+        corpo: dbTabelas.has('dbEstMov')
+          ? dbTabela([S.semanal ? 'Semana de' : 'Dia', ...S.series.map(s => s.nome)], S.chaves.map((k, i) => [dbDataBR(k), ...S.series.map(s => fmtQty(s.valores[i]))]))
+          : `<div class="db-linha-topo"><div class="db-legenda">${S.series.map(s => `<span><i class="db-key-linha" style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div></div><div id="dbEstMovGraf"></div>`,
+        rodape: `Unidades entrando e saindo por ${S.semanal ? 'semana' : 'dia'}${setorFiltro && setorFiltro !== STOCK_SETOR_TODOS ? ` em ${esc(setorFiltro)}` : ''}. Uma transferência entre setores conta como saída na origem e entrada no destino.` });
+
+      const totalPorSetor = s => stockProducts.reduce((sum, p) => sum + Math.max(0, saldoOf(p.id, s)), 0);
+      const setorMini = STOCK_SETORES.map(s => ({ cor: dbSetorCor(s), rotulo: s, valor: fmtQty(totalPorSetor(s)), frac: totalPorSetor(s) }));
+      const wEstSetor = dbWidget({ id: 'dbEstSetor', titulo: 'Saldo por setor', corpo: setorMini.some(m => m.frac > 0)
+          ? `<div class="db-kpi-rosca" style="margin-top:4px;">${dbRoscaSvg(setorMini, 96)}<ul class="db-rosca-legenda">${setorMini.map(m => `
+              <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
+                  <span class="db-mini-val">${esc(m.valor)}</span></li>`).join('')}</ul></div>`
+          : '<div class="db-vazio">Sem saldo em nenhum setor.</div>',
+        rodape: 'Como o saldo de todos os produtos está distribuído entre os setores agora.' });
+
+      // Ainda na linha 2 (completa o grid de 4 colunas: 2+1+1) — alertas de reposição
+      const icAlertaEst = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+      const alertas = ativos.filter(p => { const s = situacaoOf(p); return s === 'baixo' || s === 'zerado'; })
+        .sort((a, b) => (situacaoOf(a) === 'zerado' ? 0 : 1) - (situacaoOf(b) === 'zerado' ? 0 : 1) || a.nome.localeCompare(b.nome, 'pt-BR'))
+        .slice(0, 6);
+      const wEstAlerta = dbWidget({ id: 'dbEstAlerta', titulo: 'Alertas de reposição', corpo: alertas.length ? `<ul class="db-lista">${alertas.map(p => {
+          const sit = situacaoOf(p);
+          return `<li><span class="db-lista-ic alerta">${icAlertaEst}</span><div class="db-lista-txt">
+              <div class="db-lista-tit" style="-webkit-line-clamp:1;line-clamp:1">${esc(p.nome)}</div>
+              <div class="db-lista-meta"><span class="db-tag-neg">${esc(SITUACAO[sit].label)}</span><span>${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} / mín. ${fmtQty(p.estoque_minimo)} ${esc(p.unidade)}</span></div></div></li>`;
+        }).join('')}</ul>` : '<div class="db-vazio">Nenhum produto abaixo do mínimo.</div>',
+        rodape: 'Produtos com saldo total abaixo (ou zerado) do estoque mínimo cadastrado. <a data-db-ir="estoque">Ver no Estoque</a>' });
+
+      // Linha 3 — tabela completa de produtos (filtrável por Situação no filtro do painel)
+      const listaTabela = stockProducts.filter(p => !dbSituacao.value || situacaoOf(p) === dbSituacao.value)
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      const wEstTabela = dbWidget({ id: 'dbEstTabela', titulo: 'Produtos', span: 4, acao: '<a class="db-card-acao" data-db-ir="estoque">Abrir Estoque</a>',
+        corpo: listaTabela.length ? `<div class="db-tabela-wrap"><table class="db-tabela">
+            <thead><tr><th>Código</th><th style="text-align:left;">Produto</th><th>Unidade</th><th>Saldo</th><th>Mínimo</th><th>Situação</th></tr></thead>
+            <tbody>${listaTabela.map(p => {
+              const sit = situacaoOf(p);
+              return `<tr><td>${esc(p.codigo_barras)}</td><td style="text-align:left;">${esc(p.nome)}</td><td>${esc(p.unidade)}</td>
+                <td>${fmtQty(saldoOf(p.id, setorFiltro))}</td><td>${fmtQty(p.estoque_minimo)}</td>
+                <td><span class="wa-badge ${SITUACAO[sit].cls}">${esc(SITUACAO[sit].label)}</span></td></tr>`;
+            }).join('')}</tbody></table></div>`
+          : '<div class="db-vazio">Nenhum produto encontrado com os filtros atuais.</div>',
+        rodape: `${dbNum(listaTabela.length)} produto${listaTabela.length === 1 ? '' : 's'}${setorFiltro && setorFiltro !== STOCK_SETOR_TODOS ? ` · saldo exibido em ${esc(setorFiltro)}` : ' · saldo total (todos os setores)'}.` });
+
+      dbGrid.innerHTML = k1 + k2 + k3 + k4 + wEstMov + wEstSetor + wEstAlerta + wEstTabela;
+      const estGraf = document.getElementById('dbEstMovGraf');
+      if(estGraf) dbDesenharLinhas(estGraf, S);
+    }
+
     // Interações do painel (delegadas: sobrevivem ao re-render).
     dbGrid.addEventListener('click', ev => {
       const t = ev.target.closest('[data-db-tabela]');
@@ -6728,31 +6887,52 @@ ${clipPlayerPills(n)}
     }, true);
 
     function dbPreencherFiltros(){
-      const curP = dbPlayer.value, curC = dbCanal.value;
+      const curP = dbPlayer.value, curC = dbCanal.value, curS = dbSetor.value;
       dbPlayer.innerHTML = '<option value="">Todos os players</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
       dbPlayer.value = CLIP_PLAYERS.some(p => p.nome === curP) ? curP : '';
       const canais = [...new Set(clippingNews.map(n => n.canal).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
       dbCanal.innerHTML = '<option value="">Plataforma</option>' + canais.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       dbCanal.value = canais.includes(curC) ? curC : '';
+      dbSetor.innerHTML = `<option value="${STOCK_SETOR_TODOS}">Todos os setores</option>` + STOCK_SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      dbSetor.value = curS && (curS === STOCK_SETOR_TODOS || STOCK_SETORES.includes(curS)) ? curS : STOCK_SETOR_TODOS;
     }
-    function dbAtualizar(){ dbPreencherFiltros(); dbRender(); }
+    // Cada painel usa filtros diferentes — mostra só os que fazem sentido.
+    function dbAlternarFiltros(){
+      const estoque = dbPainel.value === 'estoque';
+      dbPlayer.hidden = estoque; dbCanal.hidden = estoque;
+      dbSetor.hidden = !estoque; dbSituacao.hidden = !estoque;
+    }
+    function dbAtualizar(){ dbPreencherFiltros(); dbAlternarFiltros(); dbRender(); }
     async function dbAbrir(){
-      if(!clippingNews.length) await loadClippingNews();
+      if(dbPainel.value === 'estoque'){
+        if(!stockProducts.length) await loadStock();
+      } else if(!clippingNews.length){
+        await loadClippingNews();
+      }
       dbAtualizar();
     }
-    [dbPainel, dbPeriodo, dbPlayer, dbCanal].forEach(el => el.addEventListener('change', dbRender));
+    dbPainel.addEventListener('change', dbAbrir);
+    [dbPeriodo, dbPlayer, dbCanal, dbSetor, dbSituacao].forEach(el => el.addEventListener('change', dbRender));
     document.getElementById('dbLimpar').addEventListener('click', () => {
-      dbPeriodo.value = '30'; dbPlayer.value = ''; dbCanal.value = '';
+      dbPeriodo.value = '30'; dbPlayer.value = ''; dbCanal.value = ''; dbSetor.value = STOCK_SETOR_TODOS; dbSituacao.value = '';
       dbRender();
     });
     document.getElementById('dbExportar').addEventListener('click', () => {
-      const P = dbPeriodoAtual();
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-      const rows = [['Data', 'Título', 'Player', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
-        .concat(dbFatia(P.ini, P.fim).map(n => [formatClipDateBR(n.data), n.titulo, (n.players || []).join(' / '), n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
+      let rows, filename;
+      if(dbPainel.value === 'estoque'){
+        rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Preço de custo', 'Situação']]
+          .concat(stockProducts.map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, dbSetor.value)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p)].label]));
+        filename = `dashboard_estoque_${dbHojeIso()}.csv`;
+      } else {
+        const P = dbPeriodoAtual();
+        rows = [['Data', 'Título', 'Player', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
+          .concat(dbFatia(P.ini, P.fim).map(n => [formatClipDateBR(n.data), n.titulo, (n.players || []).join(' / '), n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
+        filename = `dashboard_clipping_${P.ini}_a_${P.fim}.csv`;
+      }
       const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
-      a.href = url; a.download = `dashboard_clipping_${P.ini}_a_${P.fim}.csv`;
+      a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
