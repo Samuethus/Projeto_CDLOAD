@@ -2388,7 +2388,7 @@
                 </div>
                 <div>
                   <div class="wa-modal-title" id="waProductModalTitle">Novo Produto</div>
-                  <div class="wa-modal-sub" id="waProductModalSub">Cadastro do produto e lançamento de origem do estoque</div>
+                  <div class="wa-modal-sub" id="waProductModalSub">Cadastro do produto no catálogo</div>
                 </div>
               </div>
               <button class="wa-modal-close" onclick="waCloseProductModal()">&times;</button>
@@ -2410,17 +2410,6 @@
               </div>
               <div class="wa-form-grid">
                 <div class="wa-field">
-                  <label for="waProdSetor">Setor de origem</label>
-                  <select id="waProdSetor">
-                    <option value="Escritório">Escritório</option>
-                    <option value="Almoxarifado">Almoxarifado</option>
-                    <option value="RH">RH</option>
-                    <option value="Institucional">Institucional</option>
-                    <option value="Espaço">Espaço</option>
-                  </select>
-                  <div class="wa-empty-hint" id="waProdSetorHint" hidden>Setor onde entrou a quantidade inicial — não muda após o cadastro. Para movimentar entre setores depois, use Entrada/Saída.</div>
-                </div>
-                <div class="wa-field">
                   <label for="waProdUnidade">Unidade</label>
                   <select id="waProdUnidade">
                     <option value="UN">UN · Unidade</option>
@@ -2435,6 +2424,7 @@
                 <div class="wa-field">
                   <label for="waProdMinimo">Estoque mínimo</label>
                   <input type="number" id="waProdMinimo" min="0" step="any" placeholder="0">
+                  <div class="wa-empty-hint">Total somando o consumo mínimo de todos os setores que usam este produto.</div>
                 </div>
                 <div class="wa-field">
                   <label for="waProdCusto">Preço de custo (R$)</label>
@@ -2446,15 +2436,6 @@
                 <textarea id="waProdDescricao" rows="2" placeholder="Detalhes opcionais do produto"></textarea>
               </div>
               <div class="wa-form-grid" style="margin-bottom:0;">
-                <div class="wa-field" id="waProdOrigemField">
-                  <label for="waProdQtdInicial">Quantidade inicial (origem)</label>
-                  <input type="number" id="waProdQtdInicial" min="0" step="any" placeholder="0">
-                  <div class="wa-empty-hint">Registrada como o primeiro lançamento do produto.</div>
-                </div>
-                <div class="wa-field" id="waProdOrigemInfo" hidden>
-                  <label>Origem do estoque</label>
-                  <div class="wa-empty-hint" id="waProdOrigemText" style="color:var(--wa-text);">—</div>
-                </div>
                 <div class="wa-field">
                   <label for="waProdStatus">Status</label>
                   <select id="waProdStatus">
@@ -2697,13 +2678,12 @@
      script, ninguém lê ou grava nada no Estoque, nem o `anon`.
 
      create table if not exists public.cadastro_de_produtos (
-       id              uuid primary key default gen_random_uuid(),
-       setor           text not null,  -- 'Escritório' | 'Almoxarifado' | 'RH' | 'Institucional' | 'Espaço'
-       codigo_barras   text not null,  -- único por setor: unique (setor, codigo_barras)
+       id              uuid primary key default gen_random_uuid(),  -- sem setor: produto é global
+       codigo_barras   text not null unique,  -- único no catálogo inteiro
        nome            text not null,
        descricao       text,
        unidade         text not null default 'UN',
-       estoque_minimo  numeric(14,3) not null default 0,
+       estoque_minimo  numeric(14,3) not null default 0,  -- total único (soma do mínimo de todos os setores que consomem)
        preco_custo     numeric(14,2),
        ativo           boolean not null default true,
        created_at / updated_at
@@ -2713,15 +2693,16 @@
        id             uuid primary key default gen_random_uuid(),
        produto_id     uuid not null references cadastro_de_produtos(id) on delete cascade,
        tipo           text not null,  -- 'origem' (1º lançamento, único por produto) | 'entrada' | 'saida'
+       setor          text not null,  -- 'Escritório' | 'Almoxarifado' | 'RH' | 'Institucional' | 'Espaço'
        quantidade     numeric(14,3) not null,
        observacao     text,
        usuario_email  text,
        created_at     timestamptz not null default now()
      );
-     -- + trigger que bloqueia saldo negativo, view `vw_estoque_saldo`
-     --   (saldo = origem + entradas − saídas por produto) e RLS permissivo
-     --   no mesmo padrão das demais tabelas (movimentações sem UPDATE:
-     --   o histórico é imutável; corrige-se removendo e relançando).
+     -- + trigger que bloqueia saldo negativo POR SETOR, view `vw_estoque_saldo`
+     --   (saldo por produto+setor = origem + entradas − saídas daquele setor)
+     --   e RLS permissivo no mesmo padrão das demais tabelas (movimentações
+     --   sem UPDATE: o histórico é imutável; corrige-se removendo e relançando).
 ============================================================================ -->
 <!-- Versões fixas + SRI: o navegador recusa o script se o conteúdo do CDN for alterado. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
@@ -4621,25 +4602,25 @@ ${clipPlayerPills(n)}
     });
 
     // ---------------- Estoque (produtos · origem / entradas / saídas) ----------------
-    // Produtos em `cadastro_de_produtos` (catálogo único — código de barras
-    // não se repete); todo lançamento em `movimentacoes_estoque` (tipo
-    // origem | entrada | saida), cada um com o seu próprio setor. O saldo
-    // por produto + setor vem da view `vw_estoque_saldo` — nunca é
-    // gravado direto no produto. O `setor` do produto é só o setor de
-    // origem (onde entrou a quantidade inicial no cadastro); entradas e
-    // saídas depois disso podem acontecer em qualquer setor, permitindo
-    // redistribuir o estoque entre eles (ex: saída do Escritório + entrada
-    // em outro setor).
+    // Produto é global — cadastro em `cadastro_de_produtos` não tem setor,
+    // só código de barras (único no catálogo), nome e estoque_minimo (um
+    // total único, somando o mínimo desejado em todos os setores que
+    // consomem o produto). Todo lançamento em `movimentacoes_estoque` (tipo
+    // origem | entrada | saida) tem o seu próprio setor — o saldo por
+    // produto + setor vem da view `vw_estoque_saldo`, nunca é gravado
+    // direto no produto. Entradas e saídas podem acontecer em qualquer
+    // setor, permitindo redistribuir o estoque entre eles (ex: saída do
+    // Escritório + entrada em outro setor).
     const STOCK_SETORES = ['Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'];
     const STOCK_SETOR_TODOS = 'Todos';
     const STOCK_SETOR_STORAGE_KEY = 'cdload_estoque_setor';
 
     const FALLBACK_PRODUCTS = [
-      { id: 'p1', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', setor: 'Escritório', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, descricao: '', ativo: true },
-      { id: 'p2', codigo_barras: '2000000000022', nome: 'Caneta esferográfica azul (cx 50)', setor: 'Escritório', unidade: 'CX', estoque_minimo: 3, preco_custo: 42, descricao: '', ativo: true },
-      { id: 'p3', codigo_barras: '2000000000039', nome: 'Café torrado e moído 500g', setor: 'Almoxarifado', unidade: 'UN', estoque_minimo: 10, preco_custo: 18.9, descricao: '', ativo: true },
-      { id: 'p4', codigo_barras: '2000000000046', nome: 'Copo descartável 180ml (pct 100)', setor: 'Almoxarifado', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.4, descricao: '', ativo: true },
-      { id: 'p5', codigo_barras: '2000000000053', nome: 'Detergente neutro 500ml', setor: 'Espaço', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, descricao: '', ativo: true }
+      { id: 'p1', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, descricao: '', ativo: true },
+      { id: 'p2', codigo_barras: '2000000000022', nome: 'Caneta esferográfica azul (cx 50)', unidade: 'CX', estoque_minimo: 3, preco_custo: 42, descricao: '', ativo: true },
+      { id: 'p3', codigo_barras: '2000000000039', nome: 'Café torrado e moído 500g', unidade: 'UN', estoque_minimo: 10, preco_custo: 18.9, descricao: '', ativo: true },
+      { id: 'p4', codigo_barras: '2000000000046', nome: 'Copo descartável 180ml (pct 100)', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.4, descricao: '', ativo: true },
+      { id: 'p5', codigo_barras: '2000000000053', nome: 'Detergente neutro 500ml', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, descricao: '', ativo: true }
     ];
     const FALLBACK_MOVEMENTS = [
       { id: 'm1', produto_id: 'p1', tipo: 'origem', setor: 'Escritório', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
@@ -4707,16 +4688,10 @@ ${clipPlayerPills(n)}
     const waProductModal = document.getElementById('waProductModal');
     const waProdCodigo = document.getElementById('waProdCodigo');
     const waProdNome = document.getElementById('waProdNome');
-    const waProdSetor = document.getElementById('waProdSetor');
-    const waProdSetorHint = document.getElementById('waProdSetorHint');
     const waProdUnidade = document.getElementById('waProdUnidade');
     const waProdMinimo = document.getElementById('waProdMinimo');
     const waProdCusto = document.getElementById('waProdCusto');
     const waProdDescricao = document.getElementById('waProdDescricao');
-    const waProdQtdInicial = document.getElementById('waProdQtdInicial');
-    const waProdOrigemField = document.getElementById('waProdOrigemField');
-    const waProdOrigemInfo = document.getElementById('waProdOrigemInfo');
-    const waProdOrigemText = document.getElementById('waProdOrigemText');
     const waProdStatus = document.getElementById('waProdStatus');
 
     const waMovModal = document.getElementById('waMovModal');
@@ -4767,9 +4742,13 @@ ${clipPlayerPills(n)}
       }
       return bySetor.get(setor) || 0;
     }
-    function situacaoOf(p, setor){
+    // estoque_minimo é um valor global do produto (soma do mínimo desejado
+    // em todos os setores que o consomem) — por isso a situação sempre
+    // compara contra o saldo TOTAL (todos os setores), nunca contra o
+    // saldo de um setor isolado, mesmo que a tela esteja filtrada por setor.
+    function situacaoOf(p){
       if(!p.ativo) return 'inativo';
-      const s = saldoOf(p.id, setor);
+      const s = saldoOf(p.id, STOCK_SETOR_TODOS);
       if(s <= 0) return 'zerado';
       if(p.estoque_minimo > 0 && s <= p.estoque_minimo) return 'baixo';
       return 'ok';
@@ -4910,7 +4889,7 @@ ${clipPlayerPills(n)}
     function renderStockKpis(){
       const ativos = stockProducts.filter(p => p.ativo);
       const itens = ativos.reduce((sum, p) => sum + Math.max(saldoOf(p.id, currentSetor), 0), 0);
-      const baixo = ativos.filter(p => { const s = situacaoOf(p, currentSetor); return s === 'baixo' || s === 'zerado'; }).length;
+      const baixo = ativos.filter(p => { const s = situacaoOf(p); return s === 'baixo' || s === 'zerado'; }).length;
       const hoje = new Date().toDateString();
       const movHoje = setorMovements().filter(m => new Date(m.created_at).toDateString() === hoje).length;
       document.getElementById('waStockKpiProdutos').textContent = ativos.length.toLocaleString('pt-BR');
@@ -4932,7 +4911,7 @@ ${clipPlayerPills(n)}
         if(term && !(p.nome.toLowerCase().includes(term) || p.codigo_barras.toLowerCase().includes(term))) return false;
         if(produto && p.id !== produto) return false;
         if(unidade && p.unidade !== unidade) return false;
-        if(situacao && situacaoOf(p, currentSetor) !== situacao) return false;
+        if(situacao && situacaoOf(p) !== situacao) return false;
         return true;
       });
       return list.sort((a, b) => {
@@ -4986,7 +4965,7 @@ ${clipPlayerPills(n)}
         return;
       }
       waStockTableBody.innerHTML = list.map(p => {
-        const sit = SITUACAO[situacaoOf(p, currentSetor)];
+        const sit = SITUACAO[situacaoOf(p)];
         const moveBtns = p.ativo ? `
             <button class="wa-icon-btn" title="Registrar entrada" onclick="waOpenMovModal('${p.id}','entrada')">${ICON_PLUS}</button>
             <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>
@@ -5079,7 +5058,7 @@ ${clipPlayerPills(n)}
         return;
       }
       if(scanMode === 'consulta'){
-        showScanFeedback('ok', `${p.nome} · saldo ${fmtQty(saldoOf(p.id, currentSetor))} ${p.unidade} · ${SITUACAO[situacaoOf(p, currentSetor)].label}`);
+        showScanFeedback('ok', `${p.nome} · saldo ${fmtQty(saldoOf(p.id, currentSetor))} ${p.unidade} · ${SITUACAO[situacaoOf(p)].label}`);
         waStockSearch.value = code;
         setStockTab('produtos');
         return;
@@ -5359,43 +5338,26 @@ ${clipPlayerPills(n)}
     };
 
     // ---------------- CRUD: Produtos ----------------
-    window.waOpenProductModal = async function(id, presetCode){
+    // Cadastro cria só o produto (catálogo global) — para colocar saldo em
+    // algum setor, use Nova Movimentação (Entrada) depois de salvar.
+    window.waOpenProductModal = function(id, presetCode){
       editingProductId = id || null;
       const p = stockProducts.find(x => x.id === editingProductId);
 
       document.getElementById('waProductModalTitle').textContent = p ? 'Editar Produto' : 'Novo Produto';
-      document.getElementById('waProductModalSub').textContent = p ? `Atualize os dados cadastrais do produto · origem em ${p.setor}` : 'Cadastro do produto e lançamento de origem do estoque';
+      document.getElementById('waProductModalSub').textContent = p ? 'Atualize os dados cadastrais do produto' : 'Cadastro do produto no catálogo';
       document.getElementById('waProdSaveBtn').textContent = p ? 'Salvar Alterações' : 'Salvar Produto';
 
       waProdCodigo.value = p ? p.codigo_barras : (presetCode || '');
       waProdNome.value = p ? p.nome : '';
-      waProdSetor.value = p ? p.setor : (currentSetor === STOCK_SETOR_TODOS ? STOCK_SETORES[0] : currentSetor);
-      waProdSetor.disabled = !!p;
-      waProdSetorHint.hidden = !p;
       waProdUnidade.value = p ? p.unidade : 'UN';
       waProdMinimo.value = p ? p.estoque_minimo : '';
       waProdCusto.value = p && p.preco_custo != null ? p.preco_custo : '';
       waProdDescricao.value = p ? (p.descricao || '') : '';
-      waProdQtdInicial.value = '';
       waProdStatus.value = p && !p.ativo ? 'false' : 'true';
 
-      waProdOrigemField.hidden = !!p;
-      waProdOrigemInfo.hidden = !p;
       waProductModal.classList.add('open');
       setTimeout(() => (waProdCodigo.value ? waProdNome : waProdCodigo).focus(), 50);
-
-      if(p){
-        waProdOrigemText.textContent = 'Carregando...';
-        let origem = stockMovements.find(m => m.produto_id === p.id && m.tipo === 'origem');
-        if(!origem && supabaseReady){
-          const { data } = await supabaseClient.from('movimentacoes_estoque')
-            .select('quantidade,created_at').eq('produto_id', p.id).eq('tipo', 'origem').maybeSingle();
-          origem = data;
-        }
-        waProdOrigemText.textContent = origem
-          ? `${fmtQty(origem.quantidade)} ${p.unidade} em ${p.setor} · ${fmtDateTimeBR(origem.created_at)}`
-          : 'Sem lançamento de origem registrado.';
-      }
     };
 
     window.waCloseProductModal = function(){
@@ -5414,11 +5376,6 @@ ${clipPlayerPills(n)}
         alert('Preencha o código de barras e o nome do produto.');
         return;
       }
-      const setor = waProdSetor.value;
-      if(!STOCK_SETORES.includes(setor)){
-        alert('Selecione o setor de origem do produto.');
-        return;
-      }
       const dup = stockProducts.find(p => p.codigo_barras === codigo && p.id !== editingProductId);
       if(dup){
         alert(`O código ${codigo} já está cadastrado para "${dup.nome}".`);
@@ -5426,9 +5383,8 @@ ${clipPlayerPills(n)}
       }
       const minimo = waProdMinimo.value === '' ? 0 : Number(waProdMinimo.value);
       const custo = waProdCusto.value === '' ? null : Number(waProdCusto.value);
-      const qtdInicial = waProdQtdInicial.value === '' ? 0 : Number(waProdQtdInicial.value);
-      if(!(minimo >= 0) || (custo !== null && !(custo >= 0)) || (!editingProductId && !(qtdInicial >= 0))){
-        alert('Estoque mínimo, preço de custo e quantidade inicial não podem ser negativos.');
+      if(!(minimo >= 0) || (custo !== null && !(custo >= 0))){
+        alert('Estoque mínimo e preço de custo não podem ser negativos.');
         return;
       }
 
@@ -5441,9 +5397,6 @@ ${clipPlayerPills(n)}
         descricao: waProdDescricao.value.trim() || null,
         ativo: waProdStatus.value === 'true'
       };
-      // O setor de origem só é gravado no cadastro: depois disso não muda mais.
-      if(!editingProductId) payload.setor = setor;
-      const origemPayload = { tipo: 'origem', setor, quantidade: qtdInicial, observacao: 'Lançamento inicial (origem)', usuario_email: currentUserEmail() };
 
       if(!supabaseReady){
         if(editingProductId){
@@ -5452,7 +5405,6 @@ ${clipPlayerPills(n)}
           const id = 'p' + Date.now();
           const now = new Date().toISOString();
           stockProducts.push(Object.assign({ id, created_at: now }, payload));
-          stockMovements.unshift(Object.assign({ id: 'm' + Date.now(), produto_id: id, created_at: now }, origemPayload));
         }
       } else if(editingProductId){
         const { error } = await supabaseClient.from('cadastro_de_produtos').update(payload).eq('id', editingProductId);
@@ -5462,23 +5414,18 @@ ${clipPlayerPills(n)}
           return;
         }
       } else {
-        const { data, error } = await supabaseClient.from('cadastro_de_produtos').insert(payload).select().single();
+        const { error } = await supabaseClient.from('cadastro_de_produtos').insert(payload).select().single();
         if(error){
           console.error('Erro ao salvar produto no Supabase:', error);
           alert('Erro ao salvar produto no Supabase: ' + error.message);
           return;
-        }
-        const { error: movError } = await supabaseClient.from('movimentacoes_estoque').insert(Object.assign({ produto_id: data.id }, origemPayload));
-        if(movError){
-          console.error('Erro ao registrar origem no Supabase:', movError);
-          alert('Produto salvo, mas houve erro ao registrar o lançamento de origem: ' + movError.message);
         }
       }
 
       const wasEditing = !!editingProductId;
       waCloseProductModal();
       await loadStock();
-      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · origem em ${setor} com saldo inicial de ${fmtQty(qtdInicial)} ${payload.unidade}.`);
+      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · use Nova Movimentação para dar entrada em algum setor.`);
     };
 
     window.waDeleteProduct = async function(id){
@@ -5729,8 +5676,8 @@ ${clipPlayerPills(n)}
       };
       let rows, filename;
       if(stockTab === 'produtos'){
-        rows = [['Setor de origem', 'Código de barras', 'Produto', 'Unidade', `Saldo (${currentSetor})`, 'Estoque mínimo', 'Preço de custo', 'Situação']]
-          .concat(getFilteredProducts().map(p => [p.setor, p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p, currentSetor)].label]));
+        rows = [['Código de barras', 'Produto', 'Unidade', `Saldo (${currentSetor})`, 'Estoque mínimo', 'Preço de custo', 'Situação']]
+          .concat(getFilteredProducts().map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));

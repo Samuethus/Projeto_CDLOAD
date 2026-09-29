@@ -12,8 +12,10 @@
 -- (e é proposital: nunca deixamos o `anon` com acesso, nem por um instante).
 --
 --   cadastro_de_produtos   → catálogo único (código de barras único no
---                            catálogo inteiro); `setor` aqui é só o setor
---                            de origem, informativo, fixo após o cadastro
+--                            catálogo inteiro), sem setor — o produto é
+--                            global; `estoque_minimo` é um total único que
+--                            já soma o mínimo desejado em todos os setores
+--                            que consomem o produto (não é por setor)
 --   movimentacoes_estoque  → origem (1º lançamento, único por produto),
 --                            entradas e saídas — cada lançamento informa
 --                            o setor onde aconteceu, o que permite
@@ -26,11 +28,10 @@
 create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------------
--- 1. Cadastro de produtos (catálogo único, `setor` = setor de origem)
+-- 1. Cadastro de produtos (catálogo único, sem setor — produto é global)
 -- ---------------------------------------------------------------------
 create table if not exists public.cadastro_de_produtos (
   id              uuid primary key default gen_random_uuid(),
-  setor           text not null,
   codigo_barras   text not null,
   nome            text not null,
   descricao       text,
@@ -44,16 +45,14 @@ create table if not exists public.cadastro_de_produtos (
 
 do $$
 begin
-  -- Em bancos migrados de uma coluna `categoria` livre, pode haver valor
-  -- fora da lista padrão — nesse caso avisa e pula em vez de falhar aqui.
-  -- Corrija os dados e rode este script de novo.
-  if exists (select 1 from public.cadastro_de_produtos where setor not in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço')) then
-    raise notice 'cadastro_de_produtos tem setor(es) fora da lista padrão — restrição cadastro_de_produtos_setor_valido NÃO foi criada. Valores encontrados: %',
-      (select string_agg(distinct setor, ', ') from public.cadastro_de_produtos where setor not in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'));
-  elsif not exists (select 1 from pg_constraint where conname = 'cadastro_de_produtos_setor_valido') then
-    alter table public.cadastro_de_produtos
-      add constraint cadastro_de_produtos_setor_valido
-      check (setor in ('Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'));
+  -- Migração de bancos antigos: `setor` era o "setor de origem" do
+  -- produto, mas o produto é global (só as movimentações têm setor) —
+  -- remove a coluna, sua checagem de valor válido e o gatilho que travava
+  -- a edição dela.
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'cadastro_de_produtos' and column_name = 'setor') then
+    drop trigger if exists trg_cadastro_de_produtos_setor_fixo on public.cadastro_de_produtos;
+    alter table public.cadastro_de_produtos drop constraint if exists cadastro_de_produtos_setor_valido;
+    alter table public.cadastro_de_produtos drop column setor;
   end if;
   -- Substitui a unicidade antiga (setor, código) — hoje o código de
   -- barras é único no catálogo inteiro, não mais por setor.
@@ -65,6 +64,8 @@ begin
       add constraint cadastro_de_produtos_codigo_key unique (codigo_barras);
   end if;
 end $$;
+
+drop function if exists public.estoque_bloqueia_troca_setor();
 
 -- ---------------------------------------------------------------------
 -- 2. Movimentações: origem / entrada / saída — cada uma tem o seu setor
@@ -114,24 +115,6 @@ drop trigger if exists trg_cadastro_de_produtos_updated_at on public.cadastro_de
 create trigger trg_cadastro_de_produtos_updated_at
   before update on public.cadastro_de_produtos
   for each row execute function public.estoque_set_updated_at();
-
--- O setor de origem é fixo após o cadastro (é o registro histórico de onde
--- o produto entrou pela primeira vez) — para movimentar entre setores
--- depois, usa-se entrada/saída, que têm o seu próprio setor.
-create or replace function public.estoque_bloqueia_troca_setor()
-returns trigger language plpgsql as $$
-begin
-  if new.setor is distinct from old.setor then
-    raise exception 'O setor de origem de um produto não pode ser alterado após o cadastro.';
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_cadastro_de_produtos_setor_fixo on public.cadastro_de_produtos;
-create trigger trg_cadastro_de_produtos_setor_fixo
-  before update on public.cadastro_de_produtos
-  for each row execute function public.estoque_bloqueia_troca_setor();
 
 -- ---------------------------------------------------------------------
 -- 4. Integridade do saldo (agora por produto + setor)
