@@ -962,7 +962,7 @@
   #page-dashboard .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
   #page-dashboard .wa-stock-filters .wa-clip-search,
   #page-dashboard .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
-  #page-dashboard .wa-stock-filters .wa-clip-search{min-width:200px;flex:1.5 1 200px;}
+  #page-dashboard .wa-stock-filters .wa-clip-search{min-width:260px;flex:2 1 260px;}
   #page-dashboard .wa-stock-filters #stkPainelFiltro{flex:0 0 auto;min-width:0;overflow:visible;}
   .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;flex:0 0 auto;}
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
@@ -983,6 +983,19 @@
   .stk-busca-nome{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-busca-meta{font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;flex:0 0 auto;}
   .stk-busca-vazio{padding:12px 10px;font-size:12.5px;color:var(--wa-text-muted);text-align:center;}
+  /* Seleção múltipla: checkbox em cada resultado + contador na busca */
+  #page-dashboard .stk-busca-lista{min-width:min(420px,calc(100vw - 48px));}
+  .stk-busca-item input[type="checkbox"]{flex:0 0 auto;width:15px;height:15px;margin:0;accent-color:var(--stk-primary);cursor:pointer;}
+  .stk-busca-item.marcado{background:#EAF2FF;}
+  .stk-busca-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px 8px;margin-bottom:4px;border-bottom:1px solid var(--stk-neutral-bg);font-size:11.5px;color:var(--wa-text-muted);}
+  .stk-busca-topo button{border:none;background:none;color:var(--stk-primary);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;padding:2px 4px;}
+  .stk-busca-contagem{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    border:none;border-radius:9999px;background:var(--stk-primary);color:#fff;
+    font-family:inherit;font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;white-space:nowrap;
+  }
+  .stk-busca-contagem[hidden]{display:none;}
+  #page-dashboard .wa-clip-search:has(.stk-busca-contagem:not([hidden])) input{padding-right:118px;}
 
   /* ---- Grade + anatomia dos cards ---- */
   /* Linha de KPIs: auto-fit — acomoda 4, 5 ou mais cards sem sobrar coluna vazia. */
@@ -1018,7 +1031,9 @@
   .stk-legenda{display:flex;gap:16px;font-size:12px;color:var(--stk-secondary-dark);margin-bottom:10px;}
   .stk-legenda span{display:inline-flex;align-items:center;gap:6px;}
   .stk-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
-  .stk-svg{display:block;overflow:visible;}
+  /* stroke:none — sem isto os gráficos herdam o `svg{stroke:currentColor}` dos
+     ícones: o texto dos eixos ganha contorno escuro (parece negrito). */
+  .stk-svg{display:block;overflow:visible;stroke:none;}
   .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;font-weight:400;font-family:inherit;}
   .stk-svg .stk-grade{stroke:#EEF1F4;stroke-width:1;}
 
@@ -1358,6 +1373,7 @@
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="stkBusca" placeholder="Buscar produto por nome ou código..." autocomplete="off">
+            <button type="button" class="stk-busca-contagem" id="stkBuscaContagem" title="Limpar seleção" hidden></button>
             <div class="stk-busca-lista" id="stkBuscaLista" hidden></div>
           </div>
           <select class="filter-select" id="stkPainelFiltro" title="Painel exibido">
@@ -6192,8 +6208,12 @@ ${clipPlayerPills(n)}
     let stkPeriodoAtual = 'semana';
     let stkFluxoModo = 'semanal';
     let stkTabelaAba = 'produtos';
-    let stkProdutoSelecionadoId = null;
-    let stkNoticiaSelecionadaId = null;
+    const stkBuscaContagem = document.getElementById('stkBuscaContagem');
+    // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
+    const stkSelecao = { estoque: new Set(), clipping: new Set() };
+    const stkSelAtual = () => stkSelecao[stkPainelEl.value];
+    const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
+    const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
     const STK_SIT_CLS = { ok: 'ok', baixo: 'delay', zerado: 'danger', inativo: 'ongoing' };
 
     // Tooltip flutuante compartilhado por todos os gráficos do painel.
@@ -6278,16 +6298,19 @@ ${clipPlayerPills(n)}
     // Valor de saída por setor), que sempre mostram todos.
     const stkMovsEntre = (ini, fim) => stockMovements.filter(m => {
       const d = String(m.created_at).slice(0, 10);
-      if(d < ini || d > fim) return false;
+      if(d < ini || d > fim || !stkProdOk(m.produto_id)) return false;
       return !stkSetorEl.value || m.setor === stkSetorEl.value;
     });
     const stkSomaQtd = lista => lista.reduce((s, m) => s + (Number(m.quantidade) || 0), 0);
     // Player (quando escolhido) filtra as notícias em todo o painel de
     // Clipping — a notícia precisa citar aquele player especificamente.
-    const stkNewsEntre = (ini, fim) => clippingNews.filter(n => {
+    // A busca lista as notícias da janela atual (sem a seleção), para que
+    // tudo o que for marcado apareça de fato no painel.
+    const stkNewsJanela = (ini, fim) => clippingNews.filter(n => {
       if(n.data < ini || n.data > fim) return false;
       return !stkPlayerEl.value || (n.players || []).includes(stkPlayerEl.value);
     });
+    const stkNewsEntre = (ini, fim) => stkNewsJanela(ini, fim).filter(stkNewsOk);
     // Sentimento: mesma paleta de marca já validada nesta conversa
     // (verde/vermelho, com posição + rótulo de texto reforçando a cor).
     const STK_SENT = [
@@ -6334,6 +6357,11 @@ ${clipPlayerPills(n)}
       if(Math.abs(dif) < 0.005) return { txt: '0% desde o período anterior', cls: 'neu', icone: '' };
       const pos = dif > 0;
       return { txt: `${pos ? '+' : ''}${(dif * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% desde o período anterior`, cls: pos ? 'pos' : 'neg', icone: stkIcone(pos ? 'trendUp' : 'trendDown') };
+    }
+
+    function stkSeloFiltro(singular, plural){
+      const n = stkSelAtual().size;
+      return n ? ` <span class="stk-badge ongoing">Filtrado: ${n} ${n === 1 ? singular : plural}</span>` : '';
     }
 
     function stkKpi(icone, label, valor, delta){
@@ -6519,7 +6547,7 @@ ${clipPlayerPills(n)}
       const janelaIni = semanal ? chaves[0] : chaves[0] + '-01';
       const setor = stkSetorEl.value;
       stockMovements.forEach(m => {
-        if(setor && m.setor !== setor) return;
+        if((setor && m.setor !== setor) || !stkProdOk(m.produto_id)) return;
         const d = String(m.created_at).slice(0, 10);
         if(d < janelaIni) return;
         const chave = semanal ? d : d.slice(0, 7);
@@ -6545,7 +6573,7 @@ ${clipPlayerPills(n)}
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const setor = stkSetorEl.value;
       stockMovements.forEach(m => {
-        if(m.tipo === 'saida' || (setor && m.setor !== setor)) return;
+        if(m.tipo === 'saida' || (setor && m.setor !== setor) || !stkProdOk(m.produto_id)) return;
         const i = idx.get(String(m.created_at).slice(0, 7));
         if(i === undefined) return;
         const p = byId.get(m.produto_id);
@@ -6560,7 +6588,7 @@ ${clipPlayerPills(n)}
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const porSetor = new Map(STOCK_SETORES.map(s => [s, 0]));
       stockMovements.forEach(m => {
-        if(m.tipo !== 'saida' || !porSetor.has(m.setor)) return;
+        if(m.tipo !== 'saida' || !porSetor.has(m.setor) || !stkProdOk(m.produto_id)) return;
         const p = byId.get(m.produto_id);
         const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
         porSetor.set(m.setor, porSetor.get(m.setor) + preco * (Number(m.quantidade) || 0));
@@ -6594,7 +6622,7 @@ ${clipPlayerPills(n)}
       const series = CLIP_PLAYERS.filter(p => !playerFiltro || playerFiltro === p.nome)
         .map(p => ({ nome: p.nome, cor: p.cor, valores: chaves.map(() => 0) }));
       clippingNews.forEach(n => {
-        if(n.data < janelaIni) return;
+        if(n.data < janelaIni || !stkNewsOk(n)) return;
         const chave = semanal ? n.data : n.data.slice(0, 7);
         const i = idx.get(chave);
         if(i === undefined) return;
@@ -6630,6 +6658,7 @@ ${clipPlayerPills(n)}
     // infraestrutura visual (dbKpi/stkCard/rosca/gráficos/tooltip).
     function stkRender(){
       stkAlternarFiltrosPorPainel();
+      stkAtualizarContagem();
       if(stkPainelEl.value === 'clipping') return stkRenderClipping();
       return stkRenderEstoque();
     }
@@ -6650,7 +6679,8 @@ ${clipPlayerPills(n)}
       const range = stkRange(stkPeriodoAtual);
       const rangeAnt = stkRangeAnterior(range);
       const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
-      const ativos = stockProducts.filter(p => p.ativo);
+      const produtos = stockProducts.filter(p => stkProdOk(p.id));
+      const ativos = produtos.filter(p => p.ativo);
       const movsPeriodo = stkMovsEntre(range.ini, range.fim);
       const movsAnteriores = stkMovsEntre(rangeAnt.ini, rangeAnt.fim);
 
@@ -6716,7 +6746,7 @@ ${clipPlayerPills(n)}
         </div>`;
 
       // ---- Distribuição por setor ----
-      const setores = STOCK_SETORES.map(s => ({ nome: s, cor: stkSetorCor(s), qtd: stockProducts.reduce((sum, p) => sum + Math.max(0, saldoOf(p.id, s)), 0) })).sort((a, b) => b.qtd - a.qtd);
+      const setores = STOCK_SETORES.map(s => ({ nome: s, cor: stkSetorCor(s), qtd: produtos.reduce((sum, p) => sum + Math.max(0, saldoOf(p.id, s)), 0) })).sort((a, b) => b.qtd - a.qtd);
       const totalSetores = setores.reduce((s, x) => s + x.qtd, 0) || 1;
       const wDistribuicao = `<div class="stk-card">
           <div class="stk-card-head"><h3>Distribuição por setor</h3></div>
@@ -6741,8 +6771,7 @@ ${clipPlayerPills(n)}
       // ---- Produtos / Movimentações (switch replicado do Estoque) ----
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const ORDEM_SIT = { zerado: 0, baixo: 1, ok: 2, inativo: 3 };
-      const produtoFiltro = stkProdutoSelecionadoId ? byId.get(stkProdutoSelecionadoId) : null;
-      const listaProdutos = stockProducts.filter(p => !stkProdutoSelecionadoId || p.id === stkProdutoSelecionadoId)
+      const listaProdutos = produtos.slice()
         .sort((a, b) => (ORDEM_SIT[situacaoOf(a)] - ORDEM_SIT[situacaoOf(b)]) || a.nome.localeCompare(b.nome, 'pt-BR'));
       const corpoProdutos = listaProdutos.length ? `<table class="stk-table">
           <thead><tr><th>Código</th><th>Produto</th><th>Unidade</th><th style="text-align:right;">Saldo</th><th style="text-align:right;">Mínimo</th><th>Situação</th></tr></thead>
@@ -6753,8 +6782,7 @@ ${clipPlayerPills(n)}
               <td><span class="stk-badge ${STK_SIT_CLS[sit]}">${esc(SITUACAO[sit].label)}</span></td></tr>`;
           }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhum produto encontrado.</div>';
 
-      const movsTabela = movsPeriodo.filter(m => !stkProdutoSelecionadoId || m.produto_id === stkProdutoSelecionadoId)
-        .slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
+      const movsTabela = movsPeriodo.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
       const corpoMovimentacoes = movsTabela.length ? `<table class="stk-table">
           <thead><tr><th>Data/hora</th><th>Produto</th><th>Setor</th><th>Tipo</th><th style="text-align:right;">Quantidade</th><th>Usuário</th></tr></thead>
           <tbody>${movsTabela.map(m => {
@@ -6773,7 +6801,7 @@ ${clipPlayerPills(n)}
       const tituloTabela = stkTabelaAba === 'produtos' ? 'Produtos' : `Movimentações · ${esc(range.rotulo)}`;
       const wTabela = `<div class="stk-card stk-span-4">
           <div class="stk-card-head">
-            <h3>${tituloTabela}${produtoFiltro ? ` <span class="stk-badge ongoing" style="font-weight:600;">Filtrado: ${esc(produtoFiltro.nome)}</span>` : ''}</h3>
+            <h3>${tituloTabela}${stkSeloFiltro('produto', 'produtos')}</h3>
             <div class="wa-view-toggle" id="stkTabelaToggle">
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'produtos' ? ' active' : ''}" data-tab="produtos">${stkIcone('caixa')}Produtos</button>
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'movimentacoes' ? ' active' : ''}" data-tab="movimentacoes">${stkIcone('transferencia')}Movimentações</button>
@@ -6898,8 +6926,7 @@ ${clipPlayerPills(n)}
 
       // ---- Notícias / Por player (switch replicado do Estoque) ----
       const STK_SENT_CLS = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
-      const listaNoticias = atual.filter(n => !stkNoticiaSelecionadaId || n.id === stkNoticiaSelecionadaId)
-        .slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
+      const listaNoticias = atual.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
       const corpoNoticias = listaNoticias.length ? `<table class="stk-table">
           <thead><tr><th>Data</th><th>Título</th><th>Portal</th><th>Player</th><th>Sentimento</th></tr></thead>
           <tbody>${listaNoticias.map(n => {
@@ -6923,7 +6950,7 @@ ${clipPlayerPills(n)}
 
       const wTabela = `<div class="stk-card stk-span-4">
           <div class="stk-card-head">
-            <h3>${stkTabelaAba === 'produtos' ? 'Notícias' : 'Por player'}</h3>
+            <h3>${stkTabelaAba === 'produtos' ? 'Notícias' : 'Por player'}${stkSeloFiltro('notícia', 'notícias')}</h3>
             <div class="wa-view-toggle" id="stkTabelaToggle">
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'produtos' ? ' active' : ''}" data-tab="produtos">${stkIcone('jornal')}Notícias</button>
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'movimentacoes' ? ' active' : ''}" data-tab="movimentacoes">${stkIcone('megafone')}Por player</button>
@@ -6961,71 +6988,85 @@ ${clipPlayerPills(n)}
     [stkMesEl, stkAnoEl, stkSetorEl, stkPlayerEl].forEach(el => el.addEventListener('change', stkRender));
     stkPainelEl.addEventListener('change', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
-      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkNoticiaSelecionadaId = null; stkBuscaLista.hidden = true;
+      stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos';
       stkAbrir();
     });
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
-      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkNoticiaSelecionadaId = null; stkBuscaLista.hidden = true;
+      stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos';
       stkRender();
     });
-    // Busca: pré-visualização para seleção — produto (Estoque) ou notícia (Clipping).
-    stkBuscaInput.addEventListener('input', () => {
-      const termo = stkBuscaInput.value.trim().toLowerCase();
+    // Busca com seleção múltipla: cada resultado tem um checkbox; o que for
+    // marcado filtra o painel ativo inteiro (KPIs, gráficos e tabela).
+    const STK_SENT_CLS_BUSCA = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
+    function stkCandidatosBusca(termo){
+      const tem = t => (t || '').toLowerCase().includes(termo);
       if(stkPainelEl.value === 'clipping'){
-        if(stkNoticiaSelecionadaId && clippingNews.find(n => n.id === stkNoticiaSelecionadaId)?.titulo.toLowerCase() !== termo){
-          stkNoticiaSelecionadaId = null;
-        }
-        if(!termo){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
-        const achadas = clippingNews.filter(n => n.titulo.toLowerCase().includes(termo) || (n.resumo || '').toLowerCase().includes(termo) || (n.portal || n.fonte || '').toLowerCase().includes(termo)).slice(0, 8);
-        const STK_SENT_CLS = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
-        stkBuscaLista.innerHTML = achadas.length ? achadas.map(n => `<button type="button" class="stk-busca-item" data-id="${n.id}">
-            <span class="stk-busca-nome">${esc(n.titulo)}</span>
-            <span class="stk-busca-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</span>
-            <span class="stk-badge ${STK_SENT_CLS[n.sentimento] || 'ongoing'}">${esc(n.sentimento || 'Neutro')}</span>
-          </button>`).join('') : '<div class="stk-busca-vazio">Nenhuma notícia encontrada.</div>';
-        stkBuscaLista.hidden = false;
-        return;
+        const range = stkRange(stkPeriodoAtual);
+        return stkNewsJanela(range.ini, range.fim)
+          .filter(n => !termo || tem(n.titulo) || tem(n.resumo) || tem(n.portal || n.fonte))
+          .sort((a, b) => b.data.localeCompare(a.data))
+          .map(n => ({ id: n.id, nome: n.titulo, meta: `${n.portal || n.fonte || ''} · ${formatClipDateBR(n.data)}`, badge: STK_SENT_CLS_BUSCA[n.sentimento] || 'ongoing', rotulo: n.sentimento || 'Neutro' }));
       }
-      if(stkProdutoSelecionadoId && stockProducts.find(p => p.id === stkProdutoSelecionadoId)?.nome.toLowerCase() !== termo){
-        stkProdutoSelecionadoId = null;
-      }
-      if(!termo){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
-      const achados = stockProducts.filter(p => p.nome.toLowerCase().includes(termo) || p.codigo_barras.toLowerCase().includes(termo)).slice(0, 8);
-      stkBuscaLista.innerHTML = achados.length ? achados.map(p => {
-        const sit = situacaoOf(p);
-        return `<button type="button" class="stk-busca-item" data-id="${p.id}">
-          <span class="stk-busca-nome">${esc(p.nome)}</span>
-          <span class="stk-busca-meta">${esc(p.codigo_barras)} · ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${esc(p.unidade)}</span>
-          <span class="stk-badge ${STK_SIT_CLS[sit]}">${esc(SITUACAO[sit].label)}</span>
-        </button>`;
-      }).join('') : '<div class="stk-busca-vazio">Nenhum produto encontrado.</div>';
+      return stockProducts
+        .filter(p => !termo || tem(p.nome) || tem(p.codigo_barras))
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .map(p => {
+          const sit = situacaoOf(p);
+          return { id: p.id, nome: p.nome, meta: `${p.codigo_barras} · ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${p.unidade}`, badge: STK_SIT_CLS[sit], rotulo: SITUACAO[sit].label };
+        });
+    }
+    function stkAtualizarContagem(){
+      const n = stkSelAtual().size;
+      stkBuscaContagem.hidden = !n;
+      stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
+    }
+    function stkMostrarBusca(){
+      const termo = stkBuscaInput.value.trim().toLowerCase();
+      const sel = stkSelAtual();
+      if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
+      // Sem termo: lista só os já marcados, para revisar/desmarcar.
+      let itens = stkCandidatosBusca(termo);
+      itens = termo ? itens.sort((a, b) => sel.has(b.id) - sel.has(a.id)) : itens.filter(i => sel.has(i.id));
+      itens = itens.slice(0, 30);
+      const vazio = stkPainelEl.value === 'clipping' ? 'Nenhuma notícia encontrada no período.' : 'Nenhum produto encontrado.';
+      const rolagem = stkBuscaLista.scrollTop;
+      stkBuscaLista.innerHTML = `<div class="stk-busca-topo"><span>${sel.size ? `${sel.size} selecionado${sel.size === 1 ? '' : 's'}` : 'Marque um ou mais itens'}</span>${sel.size ? '<button type="button" data-acao="limpar-selecao">Limpar seleção</button>' : ''}</div>`
+        + (itens.length ? itens.map(i => `<label class="stk-busca-item${sel.has(i.id) ? ' marcado' : ''}">
+            <input type="checkbox" value="${esc(i.id)}"${sel.has(i.id) ? ' checked' : ''}>
+            <span class="stk-busca-nome">${esc(i.nome)}</span>
+            <span class="stk-busca-meta">${esc(i.meta)}</span>
+            <span class="stk-badge ${i.badge}">${esc(i.rotulo)}</span>
+          </label>`).join('') : `<div class="stk-busca-vazio">${vazio}</div>`);
       stkBuscaLista.hidden = false;
+      stkBuscaLista.scrollTop = rolagem;
+    }
+    stkBuscaInput.addEventListener('input', stkMostrarBusca);
+    stkBuscaInput.addEventListener('focus', stkMostrarBusca);
+    stkBuscaLista.addEventListener('change', ev => {
+      const cb = ev.target.closest('input[type="checkbox"]');
+      if(!cb) return;
+      const sel = stkSelAtual();
+      if(cb.checked) sel.add(cb.value); else sel.delete(cb.value);
+      stkRender();
+      stkMostrarBusca();
     });
     stkBuscaLista.addEventListener('click', ev => {
-      const btn = ev.target.closest('.stk-busca-item');
-      if(!btn) return;
-      if(stkPainelEl.value === 'clipping'){
-        const n = clippingNews.find(x => x.id === btn.dataset.id);
-        stkNoticiaSelecionadaId = btn.dataset.id;
-        stkBuscaInput.value = n ? n.titulo : '';
-        stkBuscaLista.hidden = true;
-        stkTabelaAba = 'produtos';
-        stkRender();
-        return;
-      }
-      const p = stockProducts.find(x => x.id === btn.dataset.id);
-      stkProdutoSelecionadoId = btn.dataset.id;
-      stkBuscaInput.value = p ? p.nome : '';
+      if(!ev.target.closest('[data-acao="limpar-selecao"]')) return;
+      stkSelAtual().clear();
+      stkRender();
+      stkMostrarBusca();
+    });
+    stkBuscaContagem.addEventListener('click', () => {
+      stkSelAtual().clear();
       stkBuscaLista.hidden = true;
-      stkTabelaAba = 'produtos';
       stkRender();
     });
-    stkBuscaInput.addEventListener('focus', () => { if(stkBuscaLista.innerHTML) stkBuscaLista.hidden = false; });
     document.addEventListener('click', ev => {
-      if(!ev.target.closest('.wa-clip-search')) stkBuscaLista.hidden = true;
+      // composedPath: o alvo pode já ter sido removido ao reconstruir a lista.
+      if(!ev.composedPath().some(el => el.classList && el.classList.contains('wa-clip-search'))) stkBuscaLista.hidden = true;
     });
     stkGrid.addEventListener('change', ev => {
       if(ev.target.id === 'stkFluxoFiltro'){ stkFluxoModo = ev.target.value; stkRender(); }
@@ -7058,7 +7099,7 @@ ${clipPlayerPills(n)}
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
       if(stkPainelEl.value === 'clipping'){
-        const noticias = stkNewsEntre(range.ini, range.fim).filter(n => !stkNoticiaSelecionadaId || n.id === stkNoticiaSelecionadaId);
+        const noticias = stkNewsEntre(range.ini, range.fim);
         if(stkTabelaAba === 'produtos'){
           rows = [['Data', 'Título', 'Portal', 'Players', 'Categoria', 'Sentimento', 'Link']]
             .concat(noticias.map(n => [formatClipDateBR(n.data), n.titulo, n.portal || n.fonte || '', (n.players || []).join(' / '), n.categoria || '', n.sentimento || '', clipHref(n) || '']));
@@ -7086,13 +7127,13 @@ ${clipPlayerPills(n)}
       const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
       if(stkTabelaAba === 'produtos'){
         rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Situação']]
-          .concat(stockProducts.filter(p => !stkProdutoSelecionadoId || p.id === stkProdutoSelecionadoId)
+          .concat(stockProducts.filter(p => stkProdOk(p.id))
             .map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, setorAtivo)), fmtQty(p.estoque_minimo), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_dashboard_produtos_${stkHojeIso()}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
         rows = [['Data/hora', 'Produto', 'Setor', 'Tipo', 'Quantidade', 'Usuário']]
-          .concat(stkMovsEntre(range.ini, range.fim).filter(m => !stkProdutoSelecionadoId || m.produto_id === stkProdutoSelecionadoId).map(m => {
+          .concat(stkMovsEntre(range.ini, range.fim).map(m => {
             const p = byId.get(m.produto_id);
             return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', fmtQty(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
