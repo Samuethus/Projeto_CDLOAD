@@ -1011,7 +1011,7 @@
   .stk-legenda span{display:inline-flex;align-items:center;gap:6px;}
   .stk-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
   .stk-svg{display:block;overflow:visible;}
-  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;}
+  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;font-weight:600;font-family:inherit;}
   .stk-svg .stk-grade{stroke:#EEF1F4;stroke-width:1;}
 
   /* ---- "Warehouse Utilization" (ocupação por setor) ---- */
@@ -1019,12 +1019,15 @@
   .stk-setor-linha .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
   .stk-setor-linha .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-setor-linha .pct{font-weight:700;color:var(--stk-primary-dark);font-variant-numeric:tabular-nums;}
-  .stk-barra-total-legenda{font-size:11px;color:var(--stk-caption);text-align:right;}
-  .stk-rosca-wrap{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
-  .stk-rosca-wrap .stk-svg{flex:0 0 auto;}
-  .stk-rosca-legenda{list-style:none;margin:0;padding:0;flex:1;min-width:120px;}
+  /* Rosca: corpo do card em coluna — gráfico + legenda ocupam o espaço
+     disponível; o total fica sempre centralizado no rodapé do card. */
+  .stk-card-body.stk-rosca-body{display:flex;flex-direction:column;}
+  .stk-rosca-wrap{flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:0;}
+  .stk-rosca-graf{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .stk-rosca-legenda{list-style:none;margin:0 0 0 auto;padding:0;flex:0 0 auto;max-width:48%;}
   .stk-rosca-legenda li{margin-bottom:10px;}
   .stk-rosca-legenda li:last-child{margin-bottom:0;}
+  .stk-rosca-total{margin-top:auto;padding-top:12px;text-align:center;font-size:11.5px;font-weight:600;color:var(--stk-caption);}
 
   /* ---- Lista "Stock Alerts" ---- */
   .stk-alerta-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
@@ -6379,9 +6382,10 @@ ${clipPlayerPills(n)}
       });
     }
 
-    // Gráfico de barras "Valor gasto com compras": série única, eixo Y em R$.
-    // Barras na mesma paleta/transparência do gráfico de linha: contorno
-    // sólido em #022B53 + preenchimento em gradiente (24% -> 0% de opacidade).
+    // Gráfico de barras (série única, eixo Y em R$). Cor = azul de destaque
+    // da seção selecionada no menu (--sidebar-selected); contorno sólido +
+    // preenchimento chapado a 20% de opacidade.
+    const STK_COR_BARRA = '#0052CC';
     function stkDesenharBarrasValor(el, categorias, valores, rotulo){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = 220;
       const m = { t: 10, r: 10, b: 26, l: 56 };
@@ -6393,12 +6397,7 @@ ${clipPlayerPills(n)}
       const grupoL = iw / n;
       const barraL = Math.min(36, grupoL * 0.5);
       const base = m.t + ih;
-      const gradId = `stkBarraGrad-${el.id}`;
-      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo || 'Valores por categoria')}">
-        <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#022B53" stop-opacity="0.47"></stop>
-          <stop offset="100%" stop-color="#022B53" stop-opacity="0"></stop>
-        </linearGradient></defs>`;
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo || 'Valores por categoria')}">`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
         svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
         svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkMoedaCompacta(v)}</text>`;
@@ -6407,7 +6406,7 @@ ${clipPlayerPills(n)}
         const cx = m.l + grupoL * i + grupoL / 2;
         const x = cx - barraL / 2;
         const yy = y(valores[i]);
-        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="url(#${gradId})" stroke="#022B53" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(stkMoeda(valores[i]))}|#022B53"></rect>`;
+        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${STK_COR_BARRA}" fill-opacity="0.2" stroke="${STK_COR_BARRA}" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(stkMoeda(valores[i]))}|${STK_COR_BARRA}"></rect>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cat)}</text>`;
       });
       svg += `</svg>`;
@@ -6429,7 +6428,7 @@ ${clipPlayerPills(n)}
         if(frac >= 0.08){
           const ang = (-90 + (cumFrac + frac / 2) * 360) * Math.PI / 180;
           const lx = (cx + r * Math.cos(ang)).toFixed(1), ly = (cy + r * Math.sin(ang)).toFixed(1);
-          rotulos += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(9, Math.round(tamanho * 0.1))}" font-weight="700" fill="#fff" pointer-events="none">${esc(stkPct(frac, 0))}</text>`;
+          rotulos += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="${Math.max(11, Math.round(tamanho * 0.075))}" font-weight="600" fill="#fff" stroke="rgba(0,43,84,.45)" stroke-width="2.5" paint-order="stroke" pointer-events="none">${esc(stkPct(frac, 0))}</text>`;
         }
         cum += frac * circ; cumFrac += frac;
       });
@@ -6575,7 +6574,7 @@ ${clipPlayerPills(n)}
       const wCompras = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor gasto com compras</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:#0056D2"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
             <div id="stkComprasGraf"></div>
           </div>
         </div>`;
@@ -6603,10 +6602,10 @@ ${clipPlayerPills(n)}
       const totalSetores = setores.reduce((s, x) => s + x.qtd, 0) || 1;
       const wDistribuicao = `<div class="stk-card">
           <div class="stk-card-head"><h3>Distribuição por setor</h3></div>
-          <div class="stk-card-body">
-            <div class="stk-rosca-wrap"><div id="stkDistribGraf"></div><ul class="stk-rosca-legenda">${setores.map(s => `
+          <div class="stk-card-body stk-rosca-body">
+            <div class="stk-rosca-wrap"><div class="stk-rosca-graf" id="stkDistribGraf"></div><ul class="stk-rosca-legenda" id="stkDistribLegenda">${setores.map(s => `
               <li class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span></li>`).join('')}</ul></div>
-            <div class="stk-barra-total-legenda" style="text-align:center;margin-top:10px;">${stkNum(totalSetores)} unidades no total</div>
+            <div class="stk-rosca-total">${stkNum(totalSetores)} unidades no total</div>
           </div>
         </div>`;
 
@@ -6616,7 +6615,7 @@ ${clipPlayerPills(n)}
       const wValorSaida = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor de saída por setor</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:#0056D2"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
             <div id="stkValorSaidaGraf"></div>
           </div>
         </div>`;
@@ -6669,7 +6668,14 @@ ${clipPlayerPills(n)}
         + `<div class="stk-grid-3">${wFluxo}${wCompras}${wAlertas}${wDistribuicao}${wValorSaida}</div>`
         + `<div class="stk-grid">${wTabela}</div>`;
       const grafDistrib = document.getElementById('stkDistribGraf');
-      if(grafDistrib) stkDesenharRosca(grafDistrib, setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: fmtQty(s.qtd) + ' un.' })), 130);
+      if(grafDistrib){
+        // Tamanho pelo espaço real que sobra ao lado da legenda (mesma altura
+        // útil dos gráficos de barra vizinhos, ~210px).
+        const legenda = document.getElementById('stkDistribLegenda');
+        const livre = grafDistrib.parentElement.clientWidth - (legenda ? legenda.offsetWidth : 0) - 16;
+        const tamanho = Math.max(140, Math.min(210, Math.floor(livre)));
+        stkDesenharRosca(grafDistrib, setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: fmtQty(s.qtd) + ' un.' })), tamanho);
+      }
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
         { nome: 'Entradas', cor: '#0056D2', valores: F.entradas },
