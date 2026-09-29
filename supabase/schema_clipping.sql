@@ -24,16 +24,20 @@
 --   7. Site oficial: `clipping_coletar_site_cdl()` lê TODAS as matérias de
 --      cdlcuiaba.com.br/ultimas-noticias (com a capa), a cada 30 min, sem
 --      checagem de palavra-chave. Portal: "Site Oficial".
---   8. Bing Notícias como segunda fonte de busca, e busca ampliada: janelas
---      de 1/7/30 dias a cada 30 min + varredura diária mês a mês do ano.
+--   8. Busca ampliada no Google: janelas de 1/7/30 dias a cada 30 min +
+--      varredura diária mês a mês do ano.
 --   9. Domínios bloqueados (clipping_dominio_bloqueado): pnbonline.com.br
 --      nunca é gravado nem acessado.
 --
--- Palavras-chave (entre aspas, frase exata):
---   "CDL Cuiabá"
---   "Câmara de Dirigentes Lojistas de Cuiabá"
---   "Fundação CDL Cuiabá"
--- Para trocar, edite a função clipping_palavras_chave() e rode de novo.
+--  10. Escopo atual (substitui a regra de citação no texto): TODAS as
+--      notícias do Google Notícias sobre dois atores, para comparação no
+--      Dashboard — cada uma marcada em `players`:
+--        CDL Cuiabá    : "CDL Cuiabá", "Câmara de Dirigentes Lojistas de
+--                        Cuiabá", "Fundação CDL Cuiabá" (+ site oficial)
+--        Fecomércio MT : "Fecomércio MT", "Fecomércio Mato Grosso"
+--      Para trocar, edite a função clipping_players() e rode de novo.
+--      A verificação só completa link direto e imagem (não filtra mais) e
+--      o Bing saiu da busca.
 -- =====================================================================
 
 do $$
@@ -101,9 +105,12 @@ create index if not exists clipping_news_verificacao_idx on public.clipping_news
 alter table public.clipping_news add column if not exists fonte_id          text;
 create unique index if not exists clipping_news_fonte_id_key on public.clipping_news (fonte_id);
 -- Endereço da matéria normalizado (sem http/www/parâmetros): a mesma
--- matéria achada pelo Google, pelo Bing e no site oficial vira uma só.
+-- matéria achada pelo Google e no site oficial vira uma só.
 alter table public.clipping_news add column if not exists link_chave        text;
 create index if not exists clipping_news_link_chave_idx on public.clipping_news (link_chave);
+-- Ator(es) a que a notícia se refere: 'CDL Cuiabá', 'Fecomércio MT' (ver clipping_players).
+alter table public.clipping_news add column if not exists players           text[] not null default '{}';
+create index if not exists clipping_news_players_idx on public.clipping_news using gin (players);
 
 create index if not exists clipping_news_portal_idx on public.clipping_news (portal_dominio);
 create unique index if not exists clipping_news_google_id_key on public.clipping_news (google_id);
@@ -333,12 +340,29 @@ $$;
 -- 3c. Palavras-chave e leitura do texto da matéria
 -- ---------------------------------------------------------------------
 
--- Única lista de palavras-chave: usada na busca e na verificação.
+-- Atores monitorados e os termos buscados no Google Notícias para cada um
+-- (frase exata). Cada notícia recebe o(s) ator(es) cujo termo a trouxe
+-- (coluna `players`), base da comparação no Dashboard.
+-- Para incluir um ator/termo, acrescente uma linha e rode o arquivo de novo.
+create or replace function public.clipping_players()
+returns table (player text, termo text, principal boolean)
+language sql immutable
+as $$
+  select * from (values
+    ('CDL Cuiabá',    'CDL Cuiabá',                              true),
+    ('CDL Cuiabá',    'Câmara de Dirigentes Lojistas de Cuiabá', false),
+    ('CDL Cuiabá',    'Fundação CDL Cuiabá',                     false),
+    ('Fecomércio MT', 'Fecomércio MT',                           true),
+    ('Fecomércio MT', 'Fecomércio Mato Grosso',                  false)
+  ) v (player, termo, principal)
+$$;
+
+-- Todos os termos (compatibilidade com as funções de texto abaixo).
 create or replace function public.clipping_palavras_chave()
 returns text[]
 language sql immutable
 as $$
-  select array['CDL Cuiabá', 'Câmara de Dirigentes Lojistas de Cuiabá', 'Fundação CDL Cuiabá']
+  select array_agg(termo) from public.clipping_players()
 $$;
 
 -- Resolve entidades HTML ("Funda&ccedil;&atilde;o" -> "Fundação"), sem
@@ -510,19 +534,21 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------
--- 4. Coleta nos buscadores (Google Notícias + Bing Notícias)
+-- 4. Coleta no Google Notícias — CDL Cuiabá e Fecomércio MT
 --
 -- Chamada pelo pg_cron (a cada 30 min, e uma varredura completa por dia),
--- pelo SQL Editor e pelo app ao abrir a seção (RPC).
---   * normal:   por palavra-chave, Google nas janelas de 1, 7 e 30 dias e
---               na busca geral + 1ª página do Bing;
---   * completa: + Google mês a mês desde janeiro (cada mês rende até 100
---               notícias), últimos 12 meses, "CDL Cuiabá" sem aspas, e o
---               Bing em 5 páginas;
---   * pelo app: só Google, últimos 7 dias (o app tem limite de ~8 s).
--- Tudo o que vem dos buscadores passa depois por clipping_verificar_materias
--- (precisa CITAR a palavra-chave). Só grava notícias do ano corrente;
--- repetidas são ignoradas (id do Google / endereço da matéria).
+-- pelo SQL Editor e pelo app ao abrir a seção (RPC). Para cada termo de
+-- clipping_players():
+--   * normal:   janelas de 1, 7 e 30 dias + busca geral;
+--   * completa: + últimos 12 meses e mês a mês desde janeiro (cada mês
+--               rende até 100 notícias);
+--   * pelo app: só o termo principal de cada ator, últimos 7 dias (o app
+--               tem limite de ~8 s).
+-- Entra TUDO o que o Google devolver (sem checagem de texto), marcado com
+-- o ator do termo. Só o ano corrente; repetidas são ignoradas pelo id do
+-- Google e, quando a mesma notícia vem por termos dos dois atores, ela
+-- fica marcada com os dois. Ficam de fora só o site oficial da CDL (lido
+-- direto, clipping_coletar_site_cdl) e domínios bloqueados.
 -- ---------------------------------------------------------------------
 drop function if exists public.clipping_coletar();
 
@@ -533,14 +559,16 @@ security definer
 set search_path = public, extensions
 as $$
 declare
-  termos       text[] := public.clipping_palavras_chave();
   consultas    text[] := array[]::text[];
-  paginas_bing integer[] := array[1];
+  atores       text[] := array[]::text[];   -- ator de cada consulta (mesma posição)
+  janelas      text[];
   v_timeout    text := '20000';
-  termo        text;
+  p            record;
+  janela       text;
+  i            integer;
   consulta     text;
+  v_player     text;
   v_mes        date;
-  v_pag        integer;
   v_url        text;
   resp         extensions.http_response;
   doc          xml;
@@ -548,8 +576,6 @@ declare
   v_titulo     text;
   v_fonte      text;
   v_link       text;
-  v_resumo     text;
-  v_img        text;
   v_dominio    text;
   v_nova       boolean;
   v_ts         timestamptz;
@@ -562,7 +588,6 @@ declare
   v_encontradas integer := 0;
   v_novas      integer := 0;
   v_erros      text := '';
-  n            integer;
 begin
   -- Pelo app (há usuário logado): confere a seção e evita coletas em sequência.
   if auth.uid() is not null then
@@ -571,7 +596,7 @@ begin
     end if;
     v_app := true;
     v_origem := 'app';
-    v_timeout := '2500';  -- 3 consultas x 2,5 s cabem no limite da API
+    v_timeout := '3000';  -- 2 consultas x 3 s cabem no limite da API
     select max(iniciado_em) into v_ultima from public.clipping_coletas;
     if v_ultima > now() - interval '2 minutes' then
       return jsonb_build_object('ok', true, 'ignorada', true, 'ultima_coleta', v_ultima);
@@ -586,31 +611,32 @@ begin
   insert into public.clipping_coletas (origem) values (v_origem) returning id into v_coleta;
   perform extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', v_timeout);
 
-  -- Monta as consultas do Google.
-  foreach termo in array termos loop
+  -- Monta as consultas (termo entre aspas + janela), cada uma com seu ator.
+  for p in select * from public.clipping_players() loop
     if v_app then
-      consultas := consultas || ('"' || termo || '" when:7d');
+      continue when not p.principal;
+      janelas := array[' when:7d'];
     else
-      consultas := consultas || array['"' || termo || '" when:1d', '"' || termo || '" when:7d',
-                                      '"' || termo || '" when:30d', '"' || termo || '"'];
+      janelas := array[' when:1d', ' when:7d', ' when:30d', ''];
       if p_completa then
-        consultas := consultas || ('"' || termo || '" when:1y');
+        janelas := janelas || ' when:1y'::text;
         v_mes := v_desde;
         while v_mes <= (now() at time zone 'America/Cuiaba')::date loop
-          consultas := consultas || ('"' || termo || '" after:' || to_char(v_mes, 'YYYY-MM-DD')
-                                     || ' before:' || to_char(v_mes + interval '1 month', 'YYYY-MM-DD'));
+          janelas := janelas || (' after:' || to_char(v_mes, 'YYYY-MM-DD')
+                                 || ' before:' || to_char(v_mes + interval '1 month', 'YYYY-MM-DD'));
           v_mes := (v_mes + interval '1 month')::date;
         end loop;
       end if;
     end if;
+    foreach janela in array janelas loop
+      consultas := consultas || ('"' || p.termo || '"' || janela);
+      atores    := atores || p.player;
+    end loop;
   end loop;
-  if p_completa and not v_app then
-    consultas := consultas || 'CDL Cuiabá'::text;  -- sem aspas: mais amplo (a verificação filtra)
-    paginas_bing := array[1, 11, 21, 31, 41];
-  end if;
 
-  -- Google Notícias
-  foreach consulta in array consultas loop
+  for i in 1 .. coalesce(array_length(consultas, 1), 0) loop
+    consulta := consultas[i];
+    v_player := atores[i];
     begin
       v_url := 'https://news.google.com/rss/search?q=' || extensions.urlencode(consulta)
             || '&hl=pt-BR&gl=BR&ceid=BR:pt-419';
@@ -644,7 +670,7 @@ begin
         if v_link !~ '^https://' then v_link := null; end if;
 
         continue when public.clipping_dominio_bloqueado(it.fonte_url);
-        -- Matérias do site oficial vêm direto de lá (clipping_coletar_site_cdl).
+        -- Matérias do site oficial da CDL vêm direto de lá (clipping_coletar_site_cdl).
         continue when public.clipping_dominio(it.fonte_url) = 'cdlcuiaba.com.br';
 
         v_ts := coalesce(public.clipping_data_rss(it.pub), now());
@@ -659,7 +685,7 @@ begin
 
         insert into public.clipping_news
           (titulo, resumo, fonte, data_publicacao, categoria, canal, sentimento,
-           origem, link, google_id, termo_busca, publicado_em, portal_dominio)
+           origem, link, google_id, termo_busca, publicado_em, portal_dominio, players)
         values
           (v_titulo,
            'Encontrada no Google Notícias. Clique na imagem ou no título para ler a matéria completa.',
@@ -667,95 +693,23 @@ begin
            public.clipping_classificar_categoria(v_titulo),
            public.clipping_classificar_canal(v_fonte),
            public.clipping_classificar_sentimento(v_titulo),
-           'google_news', v_link, btrim(it.guid), consulta, v_ts, v_dominio)
-        -- Já existente: só completa o portal de notícias antigas (não
-        -- mexe no que foi editado no app).
+           'google_news', v_link, btrim(it.guid), consulta, v_ts, v_dominio, array[v_player])
+        -- Já existente: soma o ator (a mesma notícia pode citar os dois) e
+        -- completa o portal; não mexe no que foi editado no app.
         on conflict (google_id) do update
-          set portal_dominio = excluded.portal_dominio
-          where clipping_news.portal_dominio is null and excluded.portal_dominio is not null
+          set players = array(select distinct unnest(clipping_news.players || excluded.players) order by 1),
+              portal_dominio = coalesce(clipping_news.portal_dominio, excluded.portal_dominio)
+          where not (clipping_news.players @> excluded.players)
+             or (clipping_news.portal_dominio is null and excluded.portal_dominio is not null)
         returning (xmax = 0) into v_nova;
 
         if v_nova then v_novas := v_novas + 1; end if;
         v_nova := null;
       end loop;
     exception when others then
-      v_erros := v_erros || 'Google ' || consulta || ': ' || sqlerrm || E'\n';
+      v_erros := v_erros || consulta || ': ' || sqlerrm || E'\n';
     end;
   end loop;
-
-  -- Bing Notícias (link direto da matéria, resumo e imagem). Fora do app.
-  if not v_app then
-    foreach termo in array termos loop
-      foreach v_pag in array paginas_bing loop
-        begin
-          v_url := 'https://www.bing.com/news/search?q=' || extensions.urlencode('"' || termo || '"')
-                || '&format=rss&setlang=pt-BR&cc=BR&first=' || v_pag;
-          resp := extensions.http(('GET', v_url,
-                    array[extensions.http_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36')],
-                    null, null)::extensions.http_request);
-          if resp.status <> 200 then raise exception 'HTTP %', resp.status; end if;
-          doc := xmlparse(document regexp_replace(resp.content, '^\s*<\?xml[^>]*\?>', ''));
-
-          for it in
-            select * from xmltable('/rss/channel/item' passing doc columns
-              titulo text path 'title',
-              link   text path 'link',
-              resumo text path 'description',
-              pub    text path 'pubDate',
-              fonte  text path '*[local-name()="Source"]',
-              imagem text path '*[local-name()="Image"]')
-          loop
-            v_link := public.clipping_urldecode(substring(it.link from '[?&]url=([^&]+)'));
-            continue when v_link is null or v_link !~ '^https?://' or nullif(btrim(it.titulo), '') is null;
-            v_encontradas := v_encontradas + 1;
-            continue when public.clipping_dominio_bloqueado(v_link);
-            continue when public.clipping_dominio(v_link) = 'cdlcuiaba.com.br';
-
-            v_ts := coalesce(public.clipping_data_rss(it.pub), now());
-            v_data := (v_ts at time zone 'America/Cuiaba')::date;
-            continue when v_data < v_desde;
-            -- Já existe essa matéria (por qualquer fonte)? Não duplica.
-            continue when exists (select 1 from public.clipping_news
-                                   where link_chave = public.clipping_link_chave(v_link));
-
-            v_titulo := btrim(regexp_replace(it.titulo, '\s+', ' ', 'g'));
-            v_fonte  := coalesce(nullif(btrim(it.fonte), ''), public.clipping_dominio(v_link));
-            v_dominio := public.clipping_registrar_portal(v_link, v_fonte);
-            if v_dominio is not null then
-              select nome into v_fonte from public.clipping_portais where dominio = v_dominio;
-            end if;
-            v_resumo := nullif(btrim(regexp_replace(it.resumo, '\s+', ' ', 'g')), '');
-            -- Miniatura do Bing (reserva, se a matéria não tiver og:image).
-            v_img := nullif(btrim(it.imagem), '');
-            if v_img is not null then
-              v_img := regexp_replace(v_img, '^http://', 'https://') || '&w=700&h=394&c=14';
-            end if;
-
-            insert into public.clipping_news
-              (titulo, resumo, fonte, data_publicacao, categoria, canal, sentimento,
-               origem, link, link_original, link_chave, fonte_id, termo_busca, publicado_em,
-               portal_dominio, imagem_url)
-            values
-              (v_titulo,
-               coalesce(v_resumo, 'Encontrada no Bing Notícias. Clique na imagem ou no título para ler a matéria completa.'),
-               v_fonte, v_data,
-               public.clipping_classificar_categoria(v_titulo),
-               public.clipping_classificar_canal(v_fonte),
-               public.clipping_classificar_sentimento(v_titulo),
-               'bing_news', v_link, v_link, public.clipping_link_chave(v_link),
-               'bing:' || md5(public.clipping_link_chave(v_link)), '"' || termo || '" (Bing)',
-               v_ts, v_dominio, v_img)
-            on conflict (fonte_id) do nothing;
-
-            get diagnostics n = row_count;
-            v_novas := v_novas + n;
-          end loop;
-        exception when others then
-          v_erros := v_erros || 'Bing ' || termo || ' p' || v_pag || ': ' || sqlerrm || E'\n';
-        end;
-      end loop;
-    end loop;
-  end if;
 
   perform public.clipping_vincular_portais();
 
@@ -771,16 +725,14 @@ $$;
 -- ---------------------------------------------------------------------
 -- 4b. Verificação da matéria + link direto + imagem de capa
 --
--- Para as notícias dos buscadores (Google e Bing):
+-- Para as notícias do Google (NÃO filtra mais: só completa os dados):
 -- (1/2) Google: o link do RSS é um redirecionamento codificado. Abre a
 --       página do Google, lê a assinatura (data-n-a-sg/ts) e pede o
---       endereço real (batchexecute "garturlreq"). O Bing já traz o link.
+--       endereço real (batchexecute "garturlreq").
 -- (3)   Mesma matéria já existente (outra fonte / site oficial) = 'duplicada';
 --       domínio bloqueado = 'bloqueada' (nem é acessado).
--- (4)   Abre a matéria e confere se ela CITA uma palavra-chave (no título
---       dela ou no texto corrido, sem contar links, menus e rodapés — ver
---       clipping_texto_materia). Não cita = 'descartada' e some do app.
---       Lê também a imagem de capa (og:image / twitter:image).
+-- (4)   Abre a matéria e lê a imagem de capa (og:image / twitter:image).
+--       A notícia aparece no app desde a coleta; a verificação só a enriquece.
 -- Página que não abre depois de 3 tentativas fica 'nao_verificavel'.
 -- Roda em lotes pelo pg_cron (a cada 5 min), das mais recentes primeiro.
 -- ---------------------------------------------------------------------
@@ -803,9 +755,7 @@ declare
   v_chave    text;
   v_html     text;
   v_img      text;
-  v_cita     boolean;
   v_conf     integer := 0;
-  v_desc     integer := 0;
   v_dup      integer := 0;
   v_falhas   integer := 0;
   v_ua       extensions.http_header := extensions.http_header('User-Agent',
@@ -819,7 +769,7 @@ begin
   for r in
     select id, google_id, link_original, titulo, imagem_url, imagem_tentativas
       from public.clipping_news
-     where origem in ('google_news', 'bing_news') and not oculta
+     where origem = 'google_news' and not oculta
        and (google_id is not null or link_original is not null)
        and portal_dominio is distinct from 'cdlcuiaba.com.br'
        and (verificacao is null or (verificacao = 'erro' and imagem_tentativas < 3))
@@ -871,8 +821,6 @@ begin
       if resp.status <> 200 then raise exception 'matéria HTTP %', resp.status; end if;
       v_html := public.clipping_decodificar_resposta(resp.content);
 
-      v_cita := public.clipping_cita_palavra_chave(public.clipping_normalizar(r.titulo))
-             or public.clipping_cita_palavra_chave(public.clipping_texto_materia(v_html));
 
       begin
         v_img := coalesce(
@@ -890,18 +838,18 @@ begin
       exception when others then
         v_img := null;
       end;
-      v_img := coalesce(v_img, r.imagem_url);  -- reserva: miniatura do Bing
+      v_img := coalesce(v_img, r.imagem_url);  -- mantém a imagem que já existia
 
       update public.clipping_news
          set link_original     = v_url,
              link_chave        = v_chave,
              imagem_url        = v_img,
              imagem_status     = case when v_img is null then 'sem_imagem' else 'ok' end,
-             verificacao       = case when v_cita then 'confirmada' else 'descartada' end,
+             verificacao       = 'confirmada',
              verificada_em     = now(),
              imagem_tentativas = imagem_tentativas + 1
        where id = r.id;
-      if v_cita then v_conf := v_conf + 1; else v_desc := v_desc + 1; end if;
+      v_conf := v_conf + 1;
     exception when others then
       -- O bloco foi desfeito, mas v_url (variável) sobrevive: guarda o link
       -- real já descoberto para a próxima tentativa não depender do Google.
@@ -916,7 +864,7 @@ begin
     end;
   end loop;
 
-  return jsonb_build_object('ok', true, 'confirmadas', v_conf, 'descartadas', v_desc,
+  return jsonb_build_object('ok', true, 'processadas', v_conf,
                             'duplicadas_ou_bloqueadas', v_dup, 'falhas', v_falhas);
 end;
 $$;
@@ -1028,7 +976,7 @@ begin
         insert into public.clipping_news
           (titulo, resumo, fonte, data_publicacao, categoria, canal, sentimento,
            origem, link, link_original, link_chave, fonte_id, publicado_em, portal_dominio,
-           imagem_url, imagem_status, verificacao, verificada_em)
+           imagem_url, imagem_status, verificacao, verificada_em, players)
         values
           (v_titulo,
            coalesce(v_resumo, 'Matéria publicada no site oficial da CDL Cuiabá. Clique na imagem ou no título para ler.'),
@@ -1037,7 +985,8 @@ begin
            'Site institucional',
            public.clipping_classificar_sentimento(v_titulo),
            'cdl_site', v_url, v_url, public.clipping_link_chave(v_url), 'cdl:' || v_id, v_ts, 'cdlcuiaba.com.br',
-           v_img, case when v_img is null then 'sem_imagem' else 'ok' end, 'confirmada', now())
+           v_img, case when v_img is null then 'sem_imagem' else 'ok' end, 'confirmada', now(),
+           array['CDL Cuiabá'])
         -- Já existente: o site oficial é a referência (título, linha fina,
         -- data e capa); categoria/sentimento editados no app são mantidos.
         on conflict (fonte_id) do update
@@ -1045,6 +994,7 @@ begin
               data_publicacao = excluded.data_publicacao, publicado_em = excluded.publicado_em,
               link = excluded.link, link_original = excluded.link_original, link_chave = excluded.link_chave,
               portal_dominio = excluded.portal_dominio, verificacao = 'confirmada',
+              players = array(select distinct unnest(clipping_news.players || excluded.players) order by 1),
               imagem_url = coalesce(excluded.imagem_url, clipping_news.imagem_url),
               imagem_status = case when coalesce(excluded.imagem_url, clipping_news.imagem_url) is null then 'sem_imagem' else 'ok' end
           where p_completa
@@ -1083,11 +1033,29 @@ $$;
 -- ---------------------------------------------------------------------
 -- 4d. Ajustes nos dados já gravados
 -- ---------------------------------------------------------------------
--- Notícias dos buscadores descartadas/sem verificação na versão anterior
--- (que lia errado sites em ISO-8859-1, como o Bra1) são conferidas de novo.
-update public.clipping_news set verificacao = null, imagem_tentativas = 0
- where origem in ('google_news', 'bing_news')
-   and verificacao in ('descartada', 'nao_verificavel', 'erro');
+-- Escopo novo: a regra de citação no texto caiu. As notícias do Google
+-- descartadas por ela voltam a valer.
+update public.clipping_news set verificacao = 'confirmada'
+ where origem = 'google_news' and verificacao = 'descartada';
+
+-- A busca agora é só no Google Notícias: o que veio do Bing sai do app.
+update public.clipping_news set verificacao = 'fora_escopo', verificada_em = now()
+ where origem = 'bing_news' and verificacao is distinct from 'fora_escopo';
+
+-- Ator das notícias gravadas antes da coluna `players`: pelo termo que as
+-- trouxe (Google), pelo site oficial (CDL) ou, nas manuais, pelo texto.
+update public.clipping_news n
+   set players = coalesce((
+         select array_agg(distinct p.player order by p.player)
+           from public.clipping_players() p
+          where public.clipping_normalizar(coalesce(n.termo_busca, '')) like '%' || public.clipping_normalizar(p.termo) || '%'
+             or (n.origem = 'manual'
+                 and position(' ' || public.clipping_normalizar(p.termo) || ' '
+                              in ' ' || public.clipping_normalizar(n.titulo || ' ' || n.resumo) || ' ') > 0)),
+         '{}')
+ where n.players = '{}' and n.origem in ('google_news', 'manual');
+update public.clipping_news set players = array['CDL Cuiabá']
+ where players = '{}' and (origem in ('cdl_site', 'manual', 'google_news'));
 
 -- Portal do site oficial com o nome "Site Oficial" em todas as matérias dele.
 update public.clipping_news set fonte = 'Site Oficial'
@@ -1121,7 +1089,8 @@ revoke all on function public.clipping_classificar_canal(text),
                public.clipping_palavras_chave(), public.clipping_normalizar(text), public.clipping_decodificar_html(text),
                public.clipping_texto_materia(text), public.clipping_cita_palavra_chave(text),
                public.clipping_dominio_bloqueado(text), public.clipping_link_chave(text), public.clipping_urldecode(text),
-               public.clipping_decodificar_resposta(text), public.clipping_data_rss(text)
+               public.clipping_decodificar_resposta(text), public.clipping_data_rss(text),
+               public.clipping_players()
   from public, anon;
 
 -- ---------------------------------------------------------------------
@@ -1139,10 +1108,11 @@ select cron.schedule('cdload-clipping-site-cdl', '15,45 * * * *', $$select publi
 select public.clipping_vincular_portais();
 
 -- Primeira carga: site oficial COMPLETO (todas as matérias do ano) + busca
--- COMPLETA nos buscadores. Leva cerca de 1 a 2 minutos.
+-- COMPLETA no Google Notícias para a CDL Cuiabá e a Fecomércio MT. Leva
+-- cerca de 2 a 3 minutos.
 --   "site_cdl": "ok": true e "materias_do_ano" com o total de 2026;
---   "buscadores": "ok": true e quantas notícias novas entraram (elas
---   aparecem no app conforme a verificação confirma, 15 a cada 5 min).
+--   "buscadores": "ok": true e quantas notícias novas entraram (já
+--   aparecem no app; link direto e imagem chegam em seguida, 15 a cada 5 min).
 -- Se "erros" vier preenchido, copie o texto e envie para ajuste.
 select public.clipping_coletar_site_cdl(true) as site_cdl,
        public.clipping_coletar(true) as buscadores;
