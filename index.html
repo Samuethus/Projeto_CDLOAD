@@ -1125,6 +1125,8 @@
     .wa-stock-actions .wa-stock-action-icon,
     .wa-stock-actions .wa-stock-action-label{display:none;}
     .wa-stock-actions .wa-stock-action-symbol{display:inline-block;font-size:19px;font-weight:700;line-height:1;}
+    /* Transferência não tem um símbolo de texto equivalente a +/-/↺ — mantém o ícone (mesma cor herdada do botão via currentColor). */
+    .wa-stock-actions .wa-stock-action-icon-always{display:block;}
   }
 
   /* ---- KPIs ---- */
@@ -1168,6 +1170,7 @@
   /* ---- Formulários de estoque ---- */
   .wa-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px;}
   .wa-form-grid .wa-field{margin-bottom:0;}
+  .wa-form-grid[hidden]{display:none;}
   @media (max-width:640px){ .wa-form-grid{grid-template-columns:1fr;} }
   @keyframes waFadeIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
   .wa-fade-in{animation:waFadeIn .2s ease;}
@@ -2208,7 +2211,7 @@
               <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
             </button>
             <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre setores">
-              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+              <svg class="wa-stock-action-icon wa-stock-action-icon-always" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               <span class="wa-stock-action-label">Transferência</span>
             </button>
             <button class="wa-btn wa-btn-primary" onclick="waOpenProductModal()" title="Novo Produto">
