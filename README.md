@@ -2,7 +2,7 @@
 
 Painel web estático (HTML único, sem build) com Campanhas, Clipping News, Relatórios, Usuários e Estoque, usando o Supabase (Auth + banco com RLS + Storage).
 
-O Clipping News é alimentado automaticamente pelo Google Notícias ("CDL Cuiabá", "Câmara de Dirigentes Lojistas de Cuiabá" e "Fundação CDL Cuiabá"; só entram matérias que citam o termo no texto), com a coleta rodando no próprio Supabase: ver [supabase/schema_clipping.sql](supabase/schema_clipping.sql).
+O Clipping News é alimentado automaticamente pelo Google Notícias e pelo site oficial da CDL, comparando dois players (CDL Cuiabá e Fecomércio MT), com a coleta rodando no próprio Supabase: ver [supabase/schema_clipping.sql](supabase/schema_clipping.sql). O Dashboard traz o painel "Clipping News" com os principais indicadores dessa comparação.
 
 ## Antes de publicar
 

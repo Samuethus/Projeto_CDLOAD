@@ -519,12 +519,12 @@
   }
 
   /* ===================================================================
-     MÓDULOS TEMPLATES, CAMPANHAS (DISPAROS), USUÁRIOS, CLIPPING NEWS,
+     MÓDULOS DASHBOARD, TEMPLATES, CAMPANHAS (DISPAROS), USUÁRIOS, CLIPPING NEWS,
      ESTOQUE & RELATÓRIOS — tokens de cor compartilhados. Isolados nas
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios{
+  #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -883,7 +883,9 @@
   /* ---- Barra de filtros em linha única (padrão wa-stock-filters) ---- */
   #page-clipping .wa-stock-filters .wa-sort-group,
   #page-clipping .wa-stock-filters .wa-sort-pills{flex:0 0 auto;flex-wrap:nowrap;}
-  @media (max-width:1700px){
+  @media (max-width:1800px){
+    #page-clipping .wa-stock-filters .btn-label{display:none;}
+    #page-clipping .wa-stock-filters .btn{padding:10px 12px;}
     #page-clipping .wa-stock-filters{gap:8px;}
     #page-clipping .wa-stock-filters .wa-sort-label{display:none;}
     #page-clipping .wa-stock-filters .wa-sort-pills{gap:6px;}
@@ -902,11 +904,173 @@
   .wa-clip-pill{
     font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:9999px;white-space:nowrap;
   }
+  .wa-clip-pill-player{background:#fff;color:var(--wa-text);box-shadow:inset 0 0 0 1px var(--wa-border);display:inline-flex;align-items:center;gap:5px;}
+  .wa-clip-pill-player i{width:8px;height:8px;border-radius:50%;display:inline-block;}
   .wa-clip-pill-categoria{background:var(--wa-primary-soft);color:var(--wa-primary);}
   .wa-clip-pill-canal{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   .wa-clip-pill-positivo{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
   .wa-clip-pill-neutro{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   .wa-clip-pill-negativo{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
+
+  /* ===================================================================
+     DASHBOARD — painéis (Painel "Clipping News": CDL Cuiabá x Fecomércio MT)
+     Grade de 4 colunas (guia de estilo do dashboard): linha 1 = 4 KPIs,
+     linha 2 = 2 widgets de 2 colunas, linha 3 = 1/2/1, linha 4 = 2/2.
+     Cores de dados validadas para daltonismo sobre o fundo branco
+     (skill dataviz): players azul/laranja, sentimento ciano/cinza/vermelho.
+  =================================================================== */
+  #page-dashboard{
+    --db-cdl:#2563EB;
+    --db-fecom:#EB6834;
+    --db-pos:#0891B2;
+    --db-neu:#CBD5E1;
+    --db-neg:#DC2626;
+    --db-grid:#E2E8F0;
+    --db-eixo:#94A3B8;
+    --db-trilho:#F1F5F9;
+    --db-sobe:#166534;
+    --db-desce:#991B1B;
+  }
+  .db-status{font-size:12.5px;color:var(--wa-text-muted);margin:-10px 0 16px;line-height:1.5;}
+  .db-status strong{color:var(--wa-text);font-weight:600;}
+  .db-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+  .db-span-2{grid-column:span 2;}
+  .db-span-4{grid-column:1 / -1;}
+  @media (max-width:1100px){ .db-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:640px){
+    .db-grid{grid-template-columns:1fr;}
+    .db-span-2,.db-span-4{grid-column:auto;}
+    .db-card-foot{display:none;}
+  }
+  #page-dashboard .filter-bar{margin-bottom:22px;}
+  #page-dashboard .filter-select{min-width:120px;}
+  /* Tablet/celular: a barra quebra em linhas (filtros em 2 colunas; 1 no celular). */
+  @media (max-width:1100px){
+    #page-dashboard .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow:visible;}
+    #page-dashboard .wa-stock-filters .filter-select{flex:1 1 calc(50% - 6px);min-width:0;}
+    #page-dashboard .wa-stock-filters .filter-spacer,
+    #page-dashboard .wa-stock-filters .filter-divider{display:none;}
+    #page-dashboard .wa-stock-filters .btn{flex:1 1 calc(50% - 6px);justify-content:center;}
+  }
+  @media (max-width:640px){
+    #page-dashboard .wa-stock-filters .filter-select{flex-basis:100%;}
+  }
+
+  /* ---- Anatomia do widget: contêiner, cabeçalho, corpo, rodapé ---- */
+  .db-card{
+    background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;
+    padding:16px 18px;display:flex;flex-direction:column;min-width:0;
+  }
+  .db-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;min-height:26px;}
+  .db-card-head h3{margin:0;font-size:14px;font-weight:700;color:var(--wa-text);line-height:1.3;}
+  .db-card-acao{
+    border:1px solid var(--wa-border);background:#fff;color:var(--wa-text-muted);border-radius:8px;
+    font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 10px;cursor:pointer;white-space:nowrap;
+  }
+  .db-card-acao:hover{color:var(--wa-primary);border-color:#cbd5e1;}
+  .db-card-body{flex:1;min-width:0;position:relative;}
+  .db-card-foot{
+    margin-top:14px;padding-top:10px;border-top:1px solid var(--wa-slate-bg);
+    font-size:11.5px;color:var(--wa-text-muted);line-height:1.45;
+  }
+  .db-card-foot a,.db-link{color:var(--wa-primary);font-weight:600;text-decoration:none;cursor:pointer;background:none;border:none;padding:0;font:inherit;}
+  .db-card-foot a:hover,.db-link:hover{text-decoration:underline;}
+  .db-legenda{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--wa-text-muted);}
+  .db-legenda span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .db-key-linha{width:14px;height:2px;border-radius:2px;display:inline-block;flex:0 0 auto;}
+  .db-key-caixa{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto;}
+  .db-mini-rot span{overflow:hidden;text-overflow:ellipsis;}
+  .db-vazio{font-size:13px;color:var(--wa-text-muted);padding:18px 0;text-align:center;}
+
+  /* ---- KPI (métricas de resumo) ---- */
+  .db-kpi-linha{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;}
+  .db-kpi-valor{font-size:30px;font-weight:700;color:var(--wa-text);line-height:1.1;}
+  .db-kpi-valor.db-hero{font-size:48px;}
+  .db-delta{font-size:12.5px;font-weight:700;white-space:nowrap;}
+  .db-delta.sobe{color:var(--db-sobe);}
+  .db-delta.desce{color:var(--db-desce);}
+  .db-delta.neutro{color:var(--wa-text-muted);font-weight:600;}
+  .db-kpi-ref{font-size:12px;color:var(--wa-text-muted);margin-top:6px;}
+  .db-mini{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .db-mini li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;align-items:center;gap:10px;font-size:12px;color:var(--wa-text);}
+  .db-mini-rot{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .db-mini-trilho{height:6px;border-radius:3px;background:var(--db-trilho);overflow:hidden;}
+  .db-mini-trilho b{display:block;height:100%;border-radius:0 3px 3px 0;}
+  .db-mini-val{font-variant-numeric:tabular-nums;color:var(--wa-text-muted);font-size:11.5px;min-width:44px;text-align:right;}
+
+  /* ---- Gráficos (SVG / barras) ---- */
+  /* O projeto define svg{stroke:currentColor}: nos gráficos cada marca traz a própria cor. */
+  .db-svg{display:block;overflow:visible;stroke:none;}
+  .db-lista-thumb svg{stroke:none;}
+  .db-svg .db-grade{stroke:var(--db-grid);stroke-width:1;}
+  .db-svg .db-base{stroke:#CBD5E1;stroke-width:1;}
+  .db-svg .db-eixo{fill:var(--wa-text-muted);font-size:11px;font-variant-numeric:tabular-nums;}
+  .db-svg .db-cruz{stroke:#94A3B8;stroke-width:1;}
+  .db-svg .db-alvo{fill:transparent;cursor:crosshair;outline:none;}
+  .db-svg .db-alvo:focus-visible{stroke:var(--wa-primary);stroke-width:2;}
+  .db-linha-topo{display:flex;justify-content:flex-end;margin:-4px 0 6px;}
+
+  .db-barras{display:flex;flex-direction:column;gap:14px;}
+  .db-barra-rot{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--wa-text);margin-bottom:5px;}
+  .db-barra-rot small{color:var(--wa-text-muted);font-size:11.5px;}
+  .db-div-trilho{position:relative;height:22px;}
+  .db-div-centro{position:absolute;top:-4px;bottom:-4px;left:50%;width:1px;background:#94A3B8;}
+  .db-seg{position:absolute;top:0;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;}
+  .db-seg.esq{border-radius:4px 0 0 4px;}
+  .db-seg.dir{border-radius:0 4px 4px 0;}
+  .db-seg:hover{filter:brightness(1.08);}
+  .db-grupo{display:grid;grid-template-columns:minmax(80px,30%) minmax(0,1fr);gap:10px;align-items:center;}
+  .db-grupo-rot{font-size:12px;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .db-grupo-barras{display:flex;flex-direction:column;gap:2px;}
+  .db-gbar{display:flex;align-items:center;gap:6px;height:12px;}
+  .db-gbar b{height:10px;border-radius:0 4px 4px 0;min-width:2px;cursor:default;}
+  .db-gbar b:hover{filter:brightness(1.08);}
+  .db-gbar span{font-size:11px;color:var(--wa-text-muted);font-variant-numeric:tabular-nums;}
+
+  /* ---- Nuvem de palavras ---- */
+  .db-nuvem{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;align-content:center;gap:4px 12px;min-height:220px;padding:6px 4px;}
+  .db-nuvem span{line-height:1.1;cursor:default;color:var(--wa-text-muted);font-weight:600;}
+  .db-nuvem span.forte{color:var(--wa-text);font-weight:700;}
+  .db-nuvem span:hover{color:var(--wa-primary);}
+
+  /* ---- Listas (veículos, notícias, alertas) ---- */
+  .db-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+  .db-lista li{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--wa-slate-bg);min-width:0;}
+  .db-lista li:last-child{border-bottom:none;}
+  .db-lista-ic{width:28px;height:28px;border-radius:8px;flex:0 0 auto;background:var(--db-trilho);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--wa-slate-text);overflow:hidden;}
+  .db-lista-ic img{width:18px;height:18px;}
+  .db-lista-ic.alerta{background:#FEE2E2;color:var(--db-neg);}
+  .db-lista-ic.alerta svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;}
+  .db-lista-thumb{width:72px;height:48px;border-radius:8px;flex:0 0 auto;overflow:hidden;position:relative;background:var(--db-trilho);}
+  .db-lista-thumb img,.db-lista-thumb svg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .db-lista-txt{min-width:0;flex:1;}
+  .db-lista-tit{font-size:13px;font-weight:600;color:var(--wa-text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-decoration:none;}
+  a.db-lista-tit:hover{color:var(--wa-primary);text-decoration:underline;}
+  .db-lista-meta{font-size:11.5px;color:var(--wa-text-muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;}
+  .db-lista-num{font-size:13px;font-weight:700;color:var(--wa-text);font-variant-numeric:tabular-nums;}
+  .db-lista-bar{display:flex;gap:2px;height:6px;margin-top:5px;border-radius:3px;overflow:hidden;background:var(--db-trilho);}
+  .db-lista-bar b{height:100%;}
+  .db-tag-neg{font-size:10.5px;font-weight:700;color:var(--wa-rejected-text);background:var(--wa-rejected-bg);padding:1px 8px;border-radius:9999px;}
+  @media (max-width:640px){ .db-lista-thumb{display:none;} }
+
+  /* ---- Tabela (alternativa acessível a cada gráfico) ---- */
+  .db-tabela-wrap{max-height:280px;overflow:auto;}
+  .db-tabela{width:100%;border-collapse:collapse;font-size:12px;}
+  .db-tabela th,.db-tabela td{padding:6px 8px;border-bottom:1px solid var(--wa-slate-bg);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .db-tabela th:first-child,.db-tabela td:first-child{text-align:left;}
+  .db-tabela th{color:var(--wa-text-muted);font-weight:600;position:sticky;top:0;background:#fff;}
+
+  /* ---- Dica de ferramenta (tooltip) ---- */
+  .db-tooltip{
+    position:fixed;z-index:60;pointer-events:none;background:#0F172A;color:#fff;border-radius:8px;
+    padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(15,23,42,.25);min-width:130px;max-width:260px;
+  }
+  .db-tooltip[hidden]{display:none;}
+  .db-tip-tit{color:#CBD5E1;font-size:11px;margin-bottom:4px;}
+  .db-tip-linha{display:flex;align-items:center;gap:8px;margin-top:2px;}
+  .db-tip-linha i{width:12px;height:2px;border-radius:2px;flex:0 0 auto;}
+  .db-tip-linha strong{font-variant-numeric:tabular-nums;}
+  .db-tip-linha span{color:#CBD5E1;}
 
   /* ===================================================================
      ESTOQUE — cadastro de produtos, leitura de código de barras
@@ -1081,11 +1245,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 10L12 3L21 10" /> <path d="M5 10V20H10V16A2 2 0 0 1 14 16V20H19V10" /> </svg>
         <span>Home</span>
       </button>
-      <button class="nav-item" data-page="dashboard" data-title="Dashboard" data-desc="">
+      <button class="nav-item" data-page="dashboard" data-title="Dashboard" data-desc="Painéis com os principais indicadores da plataforma.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
         <span>Dashboard</span>
       </button>
-      <button class="nav-item" data-page="clipping" data-title="Clipping News" data-desc="Acompanhe as principais notícias sobre a CDL Cuiabá.">
+      <button class="nav-item" data-page="clipping" data-title="Clipping News" data-desc="Acompanhe as notícias sobre a CDL Cuiabá e a Fecomércio MT.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path><path d="M10 6h8v4h-8V6Z"></path></svg>
         <span>Clipping News</span>
       </button>
@@ -1180,24 +1344,41 @@
 
       <!-- DASHBOARD -->
       <section class="page" id="page-dashboard">
-        <div class="shortcut-grid">
-          <div class="shortcut-card">
-            <div class="shortcut-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
-            </div>
-            <h3>Instâncias</h3>
-            <p>Conecte chips de WhatsApp ao sistema via API clicando no botão a seguir:</p>
-            <button class="btn btn-primary" onclick="goTo('instancias')">Ir para Instâncias</button>
-          </div>
-          <div class="shortcut-card">
-            <div class="shortcut-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            </div>
-            <h3>Templates</h3>
-            <p>Crie seus próprios modelos de comunicação através da ferramenta clicando no botão a seguir:</p>
-            <button class="btn btn-primary" onclick="goTo('templates')">Ir para Templates</button>
-          </div>
+
+        <div class="filter-bar wa-stock-filters">
+          <select class="filter-select" id="dbPainel" title="Painel exibido">
+            <option value="clipping">Painel · Clipping News</option>
+            <option value="campanhas" disabled>Painel · Campanhas (em breve)</option>
+            <option value="estoque" disabled>Painel · Estoque (em breve)</option>
+            <option value="relatorios" disabled>Painel · Relatórios (em breve)</option>
+          </select>
+          <select class="filter-select" id="dbPeriodo" title="Período">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="ano">Ano atual</option>
+          </select>
+          <select class="filter-select" id="dbPlayer" title="Player">
+            <option value="">Todos os players</option>
+          </select>
+          <select class="filter-select" id="dbCanal" title="Plataforma">
+            <option value="">Plataforma</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="dbLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="dbExportar" title="Exportar as notícias do painel (CSV)" aria-label="Exportar as notícias do painel (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
+          </button>
         </div>
+
+        <div class="db-status" id="dbStatus"></div>
+        <div class="db-grid" id="dbGrid"></div>
+        <div class="db-tooltip" id="dbTooltip" role="tooltip" hidden></div>
       </section>
 
       <!-- INSTÂNCIAS -->
@@ -1383,6 +1564,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="waClipSearch" placeholder="Buscar por título, resumo ou fonte...">
           </div>
+          <select class="filter-select" id="waClipPlayerFilter" title="Player (entidade citada na notícia)">
+            <option value="">Player</option>
+          </select>
           <select class="filter-select" id="waClipMonthFilter">
             <option value="">Mês</option>
             <option value="01">Janeiro</option>
@@ -1424,13 +1608,13 @@
           </div>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
-          <button class="btn btn-clear" id="waClipClearBtn">
+          <button class="btn btn-clear" id="waClipClearBtn" title="Limpar filtros" aria-label="Limpar filtros">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            Limpar
+            <span class="btn-label">Limpar</span>
           </button>
-          <button class="btn btn-export" id="waClipExportBtn">
+          <button class="btn btn-export" id="waClipExportBtn" title="Exportar CSV" aria-label="Exportar CSV">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            Exportar
+            <span class="btn-label">Exportar</span>
           </button>
         </div>
 
@@ -3912,6 +4096,7 @@
     const waClipCategoryFilter = document.getElementById('waClipCategoryFilter');
     const waClipChannelFilter = document.getElementById('waClipChannelFilter');
     const waClipPortalFilter = document.getElementById('waClipPortalFilter');
+    const waClipPlayerFilter = document.getElementById('waClipPlayerFilter');
     const waClipSentimentFilter = document.getElementById('waClipSentimentFilter');
     const waClipClearBtn = document.getElementById('waClipClearBtn');
     const waClipExportBtn = document.getElementById('waClipExportBtn');
@@ -3950,6 +4135,20 @@
     // padronizado por domínio (tabela clipping_portais).
     function clipPortalKey(n){
       return String(n.portal || n.fonte || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    // Players comparados (CDL Cuiabá x Fecomércio MT). Cor fixa por player —
+    // a cor segue a entidade, nunca a posição — validada para daltonismo
+    // sobre o fundo branco dos cards (skill dataviz: CVD ΔE 29,9; contraste >= 3:1).
+    const CLIP_PLAYERS = [
+      { nome: 'CDL Cuiabá', cor: '#2563EB' },
+      { nome: 'Fecomércio MT', cor: '#EB6834' }
+    ];
+    const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
+    // Etiqueta do player no card: o texto fica na cor de texto; a cor do
+    // player vai só no marcador ao lado.
+    function clipPlayerPills(n){
+      return (n.players || []).map(p => `<span class="wa-clip-pill wa-clip-pill-player"><i style="background:${clipPlayerCor(p)}"></i>${esc(p)}</span>`).join('');
     }
 
     // Portais bloqueados (alerta de segurança do antivírus): nunca exibidos
@@ -4034,6 +4233,10 @@
       waClipChannelFilter.innerHTML = '<option value="">Plataforma</option>' + canais.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if(canais.includes(curCanal)) waClipChannelFilter.value = curCanal;
 
+      const curPlayer = waClipPlayerFilter.value;
+      waClipPlayerFilter.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
+      if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) waClipPlayerFilter.value = curPlayer;
+
       // Portal: uma opção por chave; o rótulo é o nome mais usado daquele portal.
       const portais = new Map();
       clippingNews.forEach(n => {
@@ -4061,6 +4264,7 @@
       const categoria = waClipCategoryFilter.value;
       const canal = waClipChannelFilter.value;
       const portal = waClipPortalFilter.value;
+      const player = waClipPlayerFilter.value;
       const sentimento = waClipSentimentFilter.value;
 
       let list = clippingNews.filter(n => {
@@ -4069,6 +4273,7 @@
         if(categoria && n.categoria !== categoria) return false;
         if(canal && n.canal !== canal) return false;
         if(portal && clipPortalKey(n) !== portal) return false;
+        if(player && !(n.players || []).includes(player)) return false;
         if(sentimento && n.sentimento !== sentimento) return false;
         return true;
       });
@@ -4127,6 +4332,7 @@
             <div class="wa-clip-excerpt">${esc(n.resumo)}</div>
             <div class="wa-clip-meta">${formatClipDateBR(n.data)} · ${esc(portalNome)}</div>
             <div class="wa-clip-tags">
+${clipPlayerPills(n)}
               <span class="wa-clip-pill wa-clip-pill-categoria">${esc(n.categoria)}</span>
               <span class="wa-clip-pill wa-clip-pill-canal">${esc(n.canal)}</span>
               <span class="wa-clip-pill ${sentimentoClass[n.sentimento] || 'wa-clip-pill-neutro'}">${esc(n.sentimento)}</span>
@@ -4145,19 +4351,18 @@
 
     async function loadClippingNews(){
       if(!supabaseReady){
-        clippingNews = FALLBACK_CLIPPING_NEWS.map(n => ({ ...n }));
+        clippingNews = FALLBACK_CLIPPING_NEWS.map(n => ({ players: ['CDL Cuiabá'], ...n }));
         refreshClipFilterOptions();
         renderClippingNews();
         return;
       }
       const { data, error } = await supabaseClient
         .from('clipping_news')
-        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,portal:clipping_portais(nome,url)')
+        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,players,portal:clipping_portais(nome,url)')
         .eq('oculta', false)
-        // Coletadas (Google, Bing, site oficial), só as confirmadas: as dos
-        // buscadores precisam citar a palavra-chave no texto e as do site
-        // oficial entram todas. As cadastradas à mão sempre aparecem.
-        .or('origem.eq.manual,verificacao.eq.confirmada')
+        // Tudo o que foi coletado aparece, menos as repetidas (duplicada),
+        // os domínios bloqueados e o que saiu do escopo (Bing).
+        .or('verificacao.is.null,verificacao.not.in.(duplicada,bloqueada,fora_escopo)')
         .order('data_publicacao', { ascending: false })
         .order('publicado_em', { ascending: false, nullsFirst: false });
 
@@ -4185,11 +4390,13 @@
         linkOriginal: row.link_original,
         imagem: row.imagem_url,
         portal: row.portal ? row.portal.nome : null,
-        portalUrl: row.portal ? row.portal.url : null
+        portalUrl: row.portal ? row.portal.url : null,
+        players: Array.isArray(row.players) ? row.players : []
       }));
       refreshClipFilterOptions();
       renderClippingNews();
       await loadClipStatus();
+      if(currentPage === 'dashboard') dbAtualizar();
     }
 
     // Última coleta no Google Notícias (tabela clipping_coletas).
@@ -4334,6 +4541,7 @@
     waClipCategoryFilter.addEventListener('change', renderClippingNews);
     waClipChannelFilter.addEventListener('change', renderClippingNews);
     waClipPortalFilter.addEventListener('change', renderClippingNews);
+    waClipPlayerFilter.addEventListener('change', renderClippingNews);
     waClipSentimentFilter.addEventListener('change', renderClippingNews);
 
     waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(btn => {
@@ -4351,6 +4559,7 @@
       waClipCategoryFilter.value = '';
       waClipChannelFilter.value = '';
       waClipPortalFilter.value = '';
+      waClipPlayerFilter.value = '';
       waClipSentimentFilter.value = '';
       clipSort = 'recente';
       waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(b => b.classList.toggle('active', b.dataset.sort === 'recente'));
@@ -4363,8 +4572,8 @@
         const s = String(v == null ? '' : v);
         return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       };
-      const rows = [['Data', 'Título', 'Resumo', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
-        .concat(getFilteredClippingNews().map(n => [formatClipDateBR(n.data), n.titulo, n.resumo, n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
+      const rows = [['Data', 'Título', 'Resumo', 'Player', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
+        .concat(getFilteredClippingNews().map(n => [formatClipDateBR(n.data), n.titulo, n.resumo, (n.players || []).join(' / '), n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
       const csv = '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n');
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
@@ -5966,6 +6175,479 @@
       renderReports();
     });
 
+    // ---------------- Dashboard (painéis) ----------------
+    // Painel "Clipping News": usa as mesmas notícias da seção Clipping
+    // (clippingNews — já sem duplicadas/bloqueadas) e compara os players.
+    // "Engajamento" aqui é exposição na imprensa (volume, share of voice,
+    // alcance em veículos e tom): curtidas/compartilhamentos não existem no
+    // Google Notícias. Tudo recalcula a cada filtro (uma única fatia).
+    const dbPainel = document.getElementById('dbPainel');
+    const dbPeriodo = document.getElementById('dbPeriodo');
+    const dbPlayer = document.getElementById('dbPlayer');
+    const dbCanal = document.getElementById('dbCanal');
+    const dbGrid = document.getElementById('dbGrid');
+    const dbStatus = document.getElementById('dbStatus');
+    const dbTip = document.getElementById('dbTooltip');
+    // Sentimento: polaridade (divergente centrado no neutro), cores validadas
+    // para daltonismo — o verde x vermelho reprovou na validação.
+    const DB_SENT = [
+      { nome: 'Negativo', cor: '#DC2626', texto: '#fff' },
+      { nome: 'Neutro', cor: '#CBD5E1', texto: '#0F172A' },
+      { nome: 'Positivo', cor: '#0891B2', texto: '#fff' }
+    ];
+    const DB_STOP = new Set(('a o as os um uma uns umas de da do das dos em no na nos nas por para pra com sem sob sobre entre ate e ou que se ao aos e sao ser foi sera seu sua seus suas mais menos muito ja nao como quando onde qual quais este esta estes estas esse essa isso isto aquele aquela diz apos durante contra desde pelo pela pelos pelas tambem novo nova novos novas ano anos dia dias mes hoje vai vao tem ter faz fazer ha sim so ainda cada todo toda todos todas outro outra seus lhe eles elas ele ela voce the of and ' +
+      'cdl cuiaba fecomercio mt mato grosso camara dirigentes lojistas federacao fundacao').split(' '));
+    const dbTabelas = new Set();   // widgets que estão mostrando a tabela no lugar do gráfico
+
+    const dbHojeIso = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+    const dbSomaDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+    const dbDiasEntre = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
+    const dbNum = v => Number(v || 0).toLocaleString('pt-BR');
+    const dbPct = (v, casas = 0) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas }) + '%';
+    const dbSemAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+    function dbPeriodoAtual(){
+      const fim = dbHojeIso();
+      if(dbPeriodo.value === 'ano'){
+        const ini = fim.slice(0, 4) + '-01-01';
+        const dias = dbDiasEntre(ini, fim) + 1;
+        const fimAnt = dbSomaDias(ini, -1);
+        return { ini, fim, dias, fimAnt, iniAnt: dbSomaDias(fimAnt, -(dias - 1)), rotulo: 'Ano atual (desde 01/01)', rotuloAnt: 'mesmo número de dias antes' };
+      }
+      const dias = Number(dbPeriodo.value) || 30;
+      const ini = dbSomaDias(fim, -(dias - 1));
+      const fimAnt = dbSomaDias(ini, -1);
+      return { ini, fim, dias, fimAnt, iniAnt: dbSomaDias(fimAnt, -(dias - 1)), rotulo: `Últimos ${dias} dias`, rotuloAnt: `${dias} dias anteriores` };
+    }
+
+    // Players visíveis: todos, ou só o escolhido no filtro. A cor segue o player.
+    const dbPlayersVisiveis = () => CLIP_PLAYERS.filter(p => !dbPlayer.value || p.nome === dbPlayer.value);
+
+    // Fatia de notícias do período. `todosPlayers` ignora o filtro de player
+    // (o share of voice precisa do total de menções de todos).
+    function dbFatia(ini, fim, todosPlayers){
+      const canal = dbCanal.value;
+      const player = todosPlayers ? '' : dbPlayer.value;
+      return clippingNews.filter(n => n.data >= ini && n.data <= fim
+        && (!canal || n.canal === canal)
+        && (n.players || []).some(p => CLIP_PLAYERS.some(cp => cp.nome === p))
+        && (!player || (n.players || []).includes(player)));
+    }
+    const dbDoPlayer = (lista, nome) => lista.filter(n => (n.players || []).includes(nome));
+
+    // Variação contra o período anterior. `pp` = pontos percentuais.
+    function dbDelta(atual, anterior, pp, temBase){
+      if(!temBase) return '<span class="db-delta neutro">sem base anterior</span>';
+      // Base pequena (< 10) distorce o percentual (3 -> 162 = +5.300%): mostra a diferença absoluta.
+      const absoluto = !pp && anterior < 10;
+      const dif = pp ? (atual - anterior) * 100 : absoluto ? atual - anterior : (atual - anterior) / anterior * 100;
+      const txt = pp ? `${dif > 0 ? '+' : ''}${dif.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.`
+                     : absoluto ? `${dif > 0 ? '+' : ''}${dbNum(dif)}`
+                     : `${dif > 0 ? '+' : ''}${Math.round(dif).toLocaleString('pt-BR')}%`;
+      if(Math.abs(dif) < 0.05) return `<span class="db-delta neutro">= ${pp ? '0 p.p.' : '0%'}</span>`;
+      return `<span class="db-delta ${dif > 0 ? 'sobe' : 'desce'}" title="Variação contra o período anterior">${dif > 0 ? '▲' : '▼'} ${txt}</span>`;
+    }
+
+    // Escala do eixo Y com passos "redondos" (1, 2, 5 x 10^n), no máximo 5 marcas.
+    function dbEscala(max){
+      const bruto = Math.max(1, max) / 4;
+      const pot = Math.pow(10, Math.floor(Math.log10(bruto)));
+      const passo = [1, 2, 5, 10].map(f => f * pot).find(p => p >= bruto) || pot * 10;
+      return { passo: Math.max(1, passo), topo: Math.max(1, passo) * Math.ceil(Math.max(1, max) / Math.max(1, passo)) };
+    }
+
+    // ---- Tooltip (valor em destaque, rótulo secundário, chave em linha) ----
+    function dbMostrarDica(ev, titulo, linhas){
+      dbTip.replaceChildren();
+      if(titulo){ const t = document.createElement('div'); t.className = 'db-tip-tit'; t.textContent = titulo; dbTip.appendChild(t); }
+      linhas.forEach(l => {
+        const r = document.createElement('div'); r.className = 'db-tip-linha';
+        const k = document.createElement('i'); k.style.background = l.cor || '#94A3B8'; r.appendChild(k);
+        const v = document.createElement('strong'); v.textContent = l.valor; r.appendChild(v);
+        const s = document.createElement('span'); s.textContent = l.rotulo; r.appendChild(s);
+        dbTip.appendChild(r);
+      });
+      dbTip.hidden = false;
+      const px = ev.clientX ?? (ev.target.getBoundingClientRect().left + 10);
+      const py = ev.clientY ?? ev.target.getBoundingClientRect().top;
+      const w = dbTip.offsetWidth, h = dbTip.offsetHeight;
+      dbTip.style.left = Math.min(window.innerWidth - w - 8, px + 14) + 'px';
+      dbTip.style.top = Math.max(8, py - h - 12) + 'px';
+    }
+    const dbEsconderDica = () => { dbTip.hidden = true; };
+
+    // ---- Anatomia padrão do widget ----
+    function dbWidget({ id, titulo, span, acao, corpo, rodape }){
+      return `
+        <section class="db-card ${span === 2 ? 'db-span-2' : span === 4 ? 'db-span-4' : ''}" id="${id}" aria-labelledby="${id}-tit">
+          <div class="db-card-head">
+            <h3 id="${id}-tit">${titulo}</h3>
+            ${acao || ''}
+          </div>
+          <div class="db-card-body">${corpo}</div>
+          ${rodape ? `<div class="db-card-foot">${rodape}</div>` : ''}
+        </section>`;
+    }
+    const dbBotaoTabela = id => `<button type="button" class="db-card-acao" data-db-tabela="${id}">${dbTabelas.has(id) ? 'Ver gráfico' : 'Ver tabela'}</button>`;
+    const dbTabela = (cab, linhas) => `<div class="db-tabela-wrap"><table class="db-tabela"><thead><tr>${cab.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const dbLegendaPlayers = (players, tipo) => `<div class="db-legenda">${players.map(p => `<span><i class="${tipo === 'linha' ? 'db-key-linha' : 'db-key-caixa'}" style="background:${p.cor}"></i>${esc(p.nome)}</span>`).join('')}</div>`;
+
+    // ---- KPI ----
+    function dbKpi({ id, titulo, valor, hero, delta, ref, mini, rodape }){
+      const lista = mini && mini.length ? `<ul class="db-mini">${mini.map(m => `
+          <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
+              <span class="db-mini-trilho"><b style="width:${Math.max(0, Math.min(100, m.frac * 100)).toFixed(1)}%;background:${m.cor}"></b></span>
+              <span class="db-mini-val">${esc(m.valor)}</span></li>`).join('')}</ul>` : '';
+      return dbWidget({ id, titulo, corpo: `
+          <div class="db-kpi-linha"><span class="db-kpi-valor${hero ? ' db-hero' : ''}">${valor}</span>${delta}</div>
+          <div class="db-kpi-ref">${ref}</div>${lista}`, rodape });
+    }
+
+    // ---- Série temporal por player (dia até 31 dias; semana acima disso) ----
+    function dbSerie(lista, P, players){
+      const semanal = P.dias > 31;
+      const chaves = [];
+      const chaveDe = iso => {
+        if(!semanal) return iso;
+        const d = new Date(iso + 'T12:00:00');
+        const seg = (d.getDay() + 6) % 7;             // semana começando na segunda
+        const k = dbSomaDias(iso, -seg);
+        return k < P.ini ? P.ini : k;
+      };
+      for(let d = P.ini; d <= P.fim; d = dbSomaDias(d, 1)){
+        const k = chaveDe(d);
+        if(chaves[chaves.length - 1] !== k) chaves.push(k);
+      }
+      const idx = new Map(chaves.map((k, i) => [k, i]));
+      const series = players.map(p => ({ ...p, valores: chaves.map(() => 0) }));
+      lista.forEach(n => {
+        const i = idx.get(chaveDe(n.data));
+        if(i === undefined) return;
+        series.forEach(s => { if((n.players || []).includes(s.nome)) s.valores[i]++; });
+      });
+      const rotulo = k => `${semanal ? 'sem. ' : ''}${k.slice(8, 10)}/${k.slice(5, 7)}`;
+      return { chaves, series, semanal, rotulo };
+    }
+
+    function dbDesenharLinhas(el, S){
+      const W = Math.max(260, Math.floor(el.clientWidth)), H = 240;
+      const m = { t: 10, r: 14, b: 26, l: 38 };
+      const iw = W - m.l - m.r, ih = H - m.t - m.b, n = S.chaves.length;
+      const max = Math.max(0, ...S.series.flatMap(s => s.valores));
+      const { passo, topo } = dbEscala(max);
+      const x = i => m.l + (n <= 1 ? iw / 2 : i * iw / (n - 1));
+      const y = v => m.t + ih - (v / topo) * ih;
+      let svg = `<svg class="db-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Notícias por ${S.semanal ? 'semana' : 'dia'} e por player">`;
+      for(let v = 0; v <= topo + 1e-9; v += passo){
+        svg += `<line class="${v === 0 ? 'db-base' : 'db-grade'}" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"></line>`;
+        svg += `<text class="db-eixo" x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${dbNum(v)}</text>`;
+      }
+      const nRot = Math.min(n, W < 420 ? 4 : 6);
+      const marcas = nRot <= 1 ? [0] : Array.from({ length: nRot }, (_, k) => Math.round(k * (n - 1) / (nRot - 1)));
+      [...new Set(marcas)].forEach(i => {
+        svg += `<text class="db-eixo" x="${x(i)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${S.rotulo(S.chaves[i])}</text>`;
+      });
+      S.series.forEach(s => {
+        const d = s.valores.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+        svg += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
+        svg += `<circle cx="${x(n - 1)}" cy="${y(s.valores[n - 1])}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
+      });
+      svg += `<line class="db-cruz" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"></line>`;
+      S.series.forEach((s, k) => { svg += `<circle class="db-ponto" data-k="${k}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2" visibility="hidden"></circle>`; });
+      svg += `<rect class="db-alvo" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" tabindex="0" aria-label="Use as setas para percorrer os pontos"></rect></svg>`;
+      el.innerHTML = svg;
+
+      const alvo = el.querySelector('.db-alvo'), cruz = el.querySelector('.db-cruz'), pontos = el.querySelectorAll('.db-ponto');
+      let atual = n - 1;
+      const marcar = (i, ev) => {
+        atual = Math.max(0, Math.min(n - 1, i));
+        cruz.setAttribute('x1', x(atual)); cruz.setAttribute('x2', x(atual)); cruz.setAttribute('visibility', 'visible');
+        pontos.forEach(p => { const s = S.series[p.dataset.k]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', y(s.valores[atual])); p.setAttribute('visibility', 'visible'); });
+        const r = alvo.getBoundingClientRect();
+        const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
+        dbMostrarDica(evPos, `${S.semanal ? 'Semana de ' : ''}${S.chaves[atual].slice(8, 10)}/${S.chaves[atual].slice(5, 7)}/${S.chaves[atual].slice(0, 4)}`,
+          S.series.map(s => ({ cor: s.cor, valor: dbNum(s.valores[atual]), rotulo: s.nome })));
+      };
+      const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); dbEsconderDica(); };
+      alvo.addEventListener('pointermove', ev => {
+        const r = alvo.getBoundingClientRect();
+        marcar(n <= 1 ? 0 : Math.round((ev.clientX - r.left) / (r.width / (n - 1))), ev);
+      });
+      alvo.addEventListener('pointerleave', soltar);
+      alvo.addEventListener('blur', soltar);
+      alvo.addEventListener('focus', () => marcar(atual));
+      alvo.addEventListener('keydown', ev => {
+        if(ev.key === 'ArrowLeft'){ ev.preventDefault(); marcar(atual - 1); }
+        if(ev.key === 'ArrowRight'){ ev.preventDefault(); marcar(atual + 1); }
+      });
+    }
+
+    // ---- Nuvem de palavras (títulos do período) ----
+    function dbPalavras(lista){
+      const cont = new Map();
+      lista.forEach(n => {
+        (String(n.titulo || '').match(/[\p{L}\p{N}]+/gu) || []).forEach(w => {
+          const chave = dbSemAcento(w);
+          if(chave.length < 3 || /^\d+$/.test(chave) || DB_STOP.has(chave)) return;
+          const c = cont.get(chave) || { n: 0, formas: new Map() };
+          c.n++;
+          const forma = w.toLowerCase();
+          c.formas.set(forma, (c.formas.get(forma) || 0) + 1);
+          cont.set(chave, c);
+        });
+      });
+      return [...cont.values()]
+        .map(c => ({ palavra: [...c.formas.entries()].sort((a, b) => b[1] - a[1])[0][0], n: c.n }))
+        .filter(p => p.n >= 2)
+        .sort((a, b) => b.n - a.n || a.palavra.localeCompare(b.palavra, 'pt-BR'))
+        .slice(0, 40);
+    }
+    function dbNuvemHtml(palavras){
+      if(!palavras.length) return '<div class="db-vazio">Poucas notícias no período para formar a nuvem.</div>';
+      const max = palavras[0].n, min = palavras[palavras.length - 1].n;
+      // As maiores no centro: intercala para a esquerda e para a direita.
+      const ordem = [];
+      palavras.forEach((p, i) => { if(i % 2) ordem.push(p); else ordem.unshift(p); });
+      return `<div class="db-nuvem">${ordem.map(p => {
+        const t = max === min ? 1 : (Math.sqrt(p.n) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
+        return `<span class="${t > 0.55 ? 'forte' : ''}" style="font-size:${(12 + t * 22).toFixed(1)}px" data-db-palavra="${esc(p.palavra)}" data-db-n="${p.n}" tabindex="0">${esc(p.palavra)}</span>`;
+      }).join('')}</div>`;
+    }
+
+    // ---- Sentimento por player: barra divergente centrada no neutro ----
+    function dbSentimentoHtml(lista, players){
+      const linhas = players.map(p => {
+        const doP = dbDoPlayer(lista, p.nome);
+        const c = Object.fromEntries(DB_SENT.map(s => [s.nome, doP.filter(n => n.sentimento === s.nome).length]));
+        return { p, total: doP.length, c };
+      }).filter(l => l.total);
+      if(!linhas.length) return '<div class="db-vazio">Sem notícias no período.</div>';
+      const barras = linhas.map(({ p, total, c }) => {
+        const f = k => c[k] / total;
+        // Escala: 100% ocupa meia trilha; o neutro fica metade de cada lado do centro.
+        const esq = f('Negativo') + f('Neutro') / 2;
+        const segs = [
+          { s: DB_SENT[0], ini: 50 - esq * 50, larg: f('Negativo') * 50, cls: 'esq' },
+          { s: DB_SENT[1], ini: 50 - f('Neutro') * 25, larg: f('Neutro') * 50, cls: '' },
+          { s: DB_SENT[2], ini: 50 + f('Neutro') * 25, larg: f('Positivo') * 50, cls: 'dir' }
+        ].filter(x => x.larg > 0);
+        return `
+          <div>
+            <div class="db-barra-rot"><span><i class="db-key-caixa" style="background:${p.cor};margin-right:6px"></i>${esc(p.nome)}</span><small>${dbNum(total)} notícias</small></div>
+            <div class="db-div-trilho"><span class="db-div-centro"></span>
+              ${segs.map(x => `<span class="db-seg ${x.cls}" tabindex="0" style="left:calc(${x.ini}% + 1px);width:calc(${x.larg}% - 2px);background:${x.s.cor};color:${x.s.texto}"
+                  data-db-dica="${esc(p.nome)}|${esc(x.s.nome)}|${c[x.s.nome]}|${dbPct(c[x.s.nome] / total)}">${x.larg >= 9 ? dbPct(c[x.s.nome] / total) : ''}</span>`).join('')}
+            </div>
+          </div>`;
+      }).join('');
+      return `<div class="db-linha-topo"><div class="db-legenda">${DB_SENT.map(s => `<span><i class="db-key-caixa" style="background:${s.cor}"></i>${s.nome}</span>`).join('')}</div></div><div class="db-barras">${barras}</div>`;
+    }
+
+    // ---- Temas (categoria) por player: barras agrupadas ----
+    function dbTemas(lista, players){
+      const cats = new Map();
+      lista.forEach(n => { const c = cats.get(n.categoria) || { total: 0 }; c.total++; players.forEach(p => { if((n.players || []).includes(p.nome)) c[p.nome] = (c[p.nome] || 0) + 1; }); cats.set(n.categoria, c); });
+      return [...cats.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 6);
+    }
+    function dbTemasHtml(temas, players){
+      if(!temas.length) return '<div class="db-vazio">Sem notícias no período.</div>';
+      const max = Math.max(1, ...temas.flatMap(([, c]) => players.map(p => c[p.nome] || 0)));
+      return `<div class="db-linha-topo">${dbLegendaPlayers(players, 'caixa')}</div><div class="db-barras">${temas.map(([cat, c]) => `
+        <div class="db-grupo"><div class="db-grupo-rot" title="${esc(cat)}">${esc(cat)}</div>
+          <div class="db-grupo-barras">${players.map(p => `
+            <div class="db-gbar"><b tabindex="0" style="width:${((c[p.nome] || 0) / max * 88).toFixed(1)}%;background:${p.cor}" data-db-dica="${esc(cat)}|${esc(p.nome)}|${c[p.nome] || 0}|"></b><span>${dbNum(c[p.nome] || 0)}</span></div>`).join('')}
+          </div></div>`).join('')}</div>`;
+    }
+
+    function dbDominio(n){
+      const m = /^https?:\/\/(?:www\.)?([^/:?#]+)/i.exec(n.portalUrl || n.linkOriginal || '');
+      return m ? m[1].toLowerCase() : '';
+    }
+    function dbIconePortal(nome, dominio){
+      const letra = esc((nome || '?').trim().charAt(0).toUpperCase());
+      return `<span class="db-lista-ic">${dominio && !clipLinkBloqueado('https://' + dominio)
+        ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dominio)}&sz=32" alt="" loading="lazy" referrerpolicy="no-referrer" data-db-letra="${letra}">` : letra}</span>`;
+    }
+    const dbDataBR = iso => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+    function dbRender(){
+      if(dbPainel.value !== 'clipping') return;
+      dbEsconderDica();
+      const P = dbPeriodoAtual();
+      const players = dbPlayersVisiveis();
+      const atual = dbFatia(P.ini, P.fim), ant = dbFatia(P.iniAnt, P.fimAnt);
+      const atualT = dbFatia(P.ini, P.fim, true), antT = dbFatia(P.iniAnt, P.fimAnt, true);
+      const temBase = clippingNews.some(n => n.data <= P.fimAnt);
+
+      dbStatus.innerHTML = `<strong>${esc(P.rotulo)}</strong> (${dbDataBR(P.ini)} a ${dbDataBR(P.fim)}) comparado com os ${esc(P.rotuloAnt)} · `
+        + `${dbNum(atual.length)} notícias · Fonte: Google Notícias e site oficial da CDL. `
+        + `Engajamento aqui é a exposição na imprensa (volume, share of voice, veículos e tom).`;
+
+      if(!clippingNews.length){
+        dbGrid.innerHTML = dbWidget({ id: 'dbVazio', titulo: 'Sem dados', span: 4, corpo: '<div class="db-vazio">Nenhuma notícia carregada. Confira se o seu usuário tem acesso ao Clipping News.</div>' });
+        return;
+      }
+
+      // Linha 1 — KPIs
+      const menc = (lista, nome) => dbDoPlayer(lista, nome).length;
+      const totMenc = lista => CLIP_PLAYERS.reduce((s, p) => s + menc(lista, p.nome), 0);
+      const foco = players.length === 1 ? players[0] : CLIP_PLAYERS[0];
+      const sov = l => totMenc(l) ? menc(l, foco.nome) / totMenc(l) : 0;
+      const portais = l => new Set(l.map(clipPortalKey).filter(Boolean)).size;
+      const positivas = l => l.length ? l.filter(n => n.sentimento === 'Positivo').length / l.length : 0;
+      const refTxt = `${esc(P.rotulo)} · vs. ${esc(P.rotuloAnt)}`;
+
+      const k1 = dbKpi({ id: 'dbK1', titulo: 'Total de notícias', hero: true, valor: dbNum(atual.length),
+        delta: dbDelta(atual.length, ant.length, false, temBase), ref: `${refTxt} (${dbNum(ant.length)})`,
+        mini: players.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbNum(menc(atual, p.nome)), frac: atual.length ? menc(atual, p.nome) / atual.length : 0 })),
+        rodape: 'Notícias do período que citam o(s) player(s). A que cita os dois conta uma vez no total e uma vez para cada player.' });
+      const k2 = dbKpi({ id: 'dbK2', titulo: `Share of voice · ${esc(foco.nome)}`, valor: dbPct(sov(atualT)),
+        delta: dbDelta(sov(atualT), sov(antT), true, temBase && totMenc(antT) > 0), ref: refTxt,
+        mini: CLIP_PLAYERS.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbPct(totMenc(atualT) ? menc(atualT, p.nome) / totMenc(atualT) : 0), frac: totMenc(atualT) ? menc(atualT, p.nome) / totMenc(atualT) : 0 })),
+        rodape: 'Participação do player no total de menções dos players no período: quem ocupa mais espaço na imprensa. Não depende do filtro de player.' });
+      const k3 = dbKpi({ id: 'dbK3', titulo: 'Veículos distintos', valor: dbNum(portais(atual)),
+        delta: dbDelta(portais(atual), portais(ant), false, temBase), ref: `${refTxt} (${dbNum(portais(ant))})`,
+        mini: players.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbNum(portais(dbDoPlayer(atual, p.nome))), frac: portais(atual) ? portais(dbDoPlayer(atual, p.nome)) / portais(atual) : 0 })),
+        rodape: 'Portais diferentes que publicaram sobre o(s) player(s): mede a amplitude da cobertura, não só o volume.' });
+      const k4 = dbKpi({ id: 'dbK4', titulo: 'Notícias positivas', valor: dbPct(positivas(atual)),
+        delta: dbDelta(positivas(atual), positivas(ant), true, temBase && ant.length > 0), ref: refTxt,
+        mini: DB_SENT.slice().reverse().map(s => { const q = atual.filter(n => n.sentimento === s.nome).length; return { cor: s.cor, rotulo: s.nome, valor: dbNum(q), frac: atual.length ? q / atual.length : 0 }; }),
+        rodape: 'Tom estimado pelo título (pode ser corrigido em Clipping News › Editar). Variação em pontos percentuais (p.p.).' });
+
+      // Linha 2 — tendência + nuvem
+      const S = dbSerie(atual, P, players);
+      const wEvol = dbWidget({ id: 'dbEvol', titulo: 'Evolução do volume de notícias', span: 2, acao: dbBotaoTabela('dbEvol'),
+        corpo: dbTabelas.has('dbEvol')
+          ? dbTabela([S.semanal ? 'Semana de' : 'Dia', ...S.series.map(s => s.nome)], S.chaves.map((k, i) => [dbDataBR(k), ...S.series.map(s => dbNum(s.valores[i]))]))
+          : `<div class="db-linha-topo">${dbLegendaPlayers(players, 'linha')}</div><div id="dbEvolGraf"></div>`,
+        rodape: `Notícias por ${S.semanal ? 'semana (a partir de segunda-feira)' : 'dia'} de cada player. Picos costumam indicar campanhas, eventos ou temas em alta.` });
+      const palavras = dbPalavras(atual);
+      const wNuvem = dbWidget({ id: 'dbNuvem', titulo: 'Nuvem de palavras', span: 2, acao: dbBotaoTabela('dbNuvem'),
+        corpo: dbTabelas.has('dbNuvem') ? dbTabela(['Palavra', 'Ocorrências'], palavras.map(p => [p.palavra, dbNum(p.n)])) : dbNuvemHtml(palavras),
+        rodape: 'Palavras mais frequentes nos títulos do período, sem artigos, preposições e os nomes dos próprios players. Quanto maior, mais recorrente.' });
+
+      // Linha 3 — veículos, notícias recentes, alertas
+      const porPortal = new Map();
+      atual.forEach(n => {
+        const k = clipPortalKey(n); if(!k) return;
+        const v = porPortal.get(k) || { nome: n.portal || n.fonte, dominio: dbDominio(n), total: 0 };
+        v.total++; players.forEach(p => { if((n.players || []).includes(p.nome)) v[p.nome] = (v[p.nome] || 0) + 1; });
+        porPortal.set(k, v);
+      });
+      const topPortais = [...porPortal.values()].sort((a, b) => b.total - a.total).slice(0, 7);
+      const wVeic = dbWidget({ id: 'dbVeic', titulo: 'Principais veículos', corpo: topPortais.length ? `<ul class="db-lista">${topPortais.map(v => `
+          <li>${dbIconePortal(v.nome, v.dominio)}
+            <div class="db-lista-txt"><div class="db-lista-meta" style="justify-content:space-between;margin:0"><span class="db-lista-tit" style="-webkit-line-clamp:1;line-clamp:1">${esc(v.nome)}</span><span class="db-lista-num">${dbNum(v.total)}</span></div>
+              <div class="db-lista-bar" data-db-dica="${esc(v.nome)}|${players.map(p => `${p.nome}: ${v[p.nome] || 0}`).join(' · ')}||">${players.map(p => `<b style="width:${((v[p.nome] || 0) / Math.max(1, topPortais[0].total) * 100).toFixed(1)}%;background:${p.cor}"></b>`).join('')}</div></div></li>`).join('')}</ul>`
+          : '<div class="db-vazio">Sem notícias no período.</div>',
+        rodape: 'Portais com mais notícias no período; a barra mostra a divisão entre os players. <a data-db-ir="clipping">Ver no Clipping News</a>' });
+
+      const recentes = atual.slice().sort((a, b) => b.data.localeCompare(a.data) || (b.publicadoEm || '').localeCompare(a.publicadoEm || '')).slice(0, 6);
+      const wRec = dbWidget({ id: 'dbRec', titulo: 'Notícias recentes', span: 2, corpo: recentes.length ? `<ul class="db-lista">${recentes.map(n => {
+          const href = clipHref(n);
+          return `<li><span class="db-lista-thumb">${clipThemeArt(n)}${/^https:\/\//.test(n.imagem || '') ? `<img class="wa-clip-img" src="${esc(n.imagem)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span>
+            <div class="db-lista-txt">${href ? `<a class="db-lista-tit" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(n.titulo)}</a>` : `<div class="db-lista-tit">${esc(n.titulo)}</div>`}
+              <div class="db-lista-meta"><span>${esc(n.portal || n.fonte)} · ${dbDataBR(n.data)}</span>${clipPlayerPills(n)}</div></div></li>`;
+        }).join('')}</ul>` : '<div class="db-vazio">Sem notícias no período.</div>',
+        rodape: 'As notícias mais recentes do período. <a data-db-ir="clipping">Ver todas no Clipping News</a>' });
+
+      const negativas = atual.filter(n => n.sentimento === 'Negativo').sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
+      const icAlerta = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+      const wAlert = dbWidget({ id: 'dbAlert', titulo: 'Alertas', corpo: negativas.length ? `<ul class="db-lista">${negativas.map(n => {
+          const href = clipHref(n);
+          return `<li><span class="db-lista-ic alerta">${icAlerta}</span><div class="db-lista-txt">
+              ${href ? `<a class="db-lista-tit" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(n.titulo)}</a>` : `<div class="db-lista-tit">${esc(n.titulo)}</div>`}
+              <div class="db-lista-meta"><span class="db-tag-neg">Negativa</span><span>${esc(n.portal || n.fonte)} · ${dbDataBR(n.data)}</span></div></div></li>`;
+        }).join('')}</ul>` : '<div class="db-vazio">Nenhuma notícia negativa no período.</div>',
+        rodape: 'Notícias com tom negativo no período, para acompanhamento e resposta.' });
+
+      // Linha 4 — sentimento e temas por player
+      const temas = dbTemas(atual, players);
+      const wSent = dbWidget({ id: 'dbSent', titulo: 'Sentimento por player', span: 2, acao: dbBotaoTabela('dbSent'),
+        corpo: dbTabelas.has('dbSent')
+          ? dbTabela(['Player', 'Negativo', 'Neutro', 'Positivo', 'Total'], players.map(p => { const l = dbDoPlayer(atual, p.nome); return [p.nome, ...DB_SENT.map(s => dbNum(l.filter(n => n.sentimento === s.nome).length)), dbNum(l.length)]; }))
+          : dbSentimentoHtml(atual, players),
+        rodape: 'Distribuição do tom das notícias de cada player, centrada no neutro: à esquerda as negativas, à direita as positivas.' });
+      const wTemas = dbWidget({ id: 'dbTemas', titulo: 'Temas por player', span: 2, acao: dbBotaoTabela('dbTemas'),
+        corpo: dbTabelas.has('dbTemas') ? dbTabela(['Tema', ...players.map(p => p.nome)], temas.map(([cat, c]) => [cat, ...players.map(p => dbNum(c[p.nome] || 0))])) : dbTemasHtml(temas, players),
+        rodape: 'Temas (categoria estimada pelo título) com mais notícias no período, lado a lado por player.' });
+
+      dbGrid.innerHTML = k1 + k2 + k3 + k4 + wEvol + wNuvem + wVeic + wRec + wAlert + wSent + wTemas;
+      const graf = document.getElementById('dbEvolGraf');
+      if(graf) dbDesenharLinhas(graf, S);
+    }
+
+    // Interações do painel (delegadas: sobrevivem ao re-render).
+    dbGrid.addEventListener('click', ev => {
+      const t = ev.target.closest('[data-db-tabela]');
+      if(t){ const id = t.dataset.dbTabela; dbTabelas.has(id) ? dbTabelas.delete(id) : dbTabelas.add(id); dbRender(); return; }
+      const ir = ev.target.closest('[data-db-ir]');
+      if(ir){ ev.preventDefault(); goTo(ir.dataset.dbIr); }
+    });
+    const dbDicaDe = alvo => {
+      if(alvo.dataset.dbPalavra) return [null, [{ cor: '#94A3B8', valor: dbNum(alvo.dataset.dbN), rotulo: `ocorrências de “${alvo.dataset.dbPalavra}”` }]];
+      const [a, b, c, d] = alvo.dataset.dbDica.split('|');
+      const cor = (DB_SENT.find(s => s.nome === b) || CLIP_PLAYERS.find(p => p.nome === b) || {}).cor;
+      if(c === '' && d === '') return [a, [{ cor: '#94A3B8', valor: b, rotulo: '' }]];
+      return [a, [{ cor, valor: d ? `${dbNum(c)} (${d})` : dbNum(c), rotulo: b }]];
+    };
+    ['pointerover', 'focusin'].forEach(tipo => dbGrid.addEventListener(tipo, ev => {
+      const alvo = ev.target.closest('[data-db-dica],[data-db-palavra]');
+      if(!alvo) return;
+      const [tit, linhas] = dbDicaDe(alvo);
+      dbMostrarDica(ev, tit, linhas);
+    }));
+    dbGrid.addEventListener('pointermove', ev => {
+      if(ev.target.closest('[data-db-dica],[data-db-palavra]') && !dbTip.hidden){
+        dbTip.style.left = Math.min(window.innerWidth - dbTip.offsetWidth - 8, ev.clientX + 14) + 'px';
+        dbTip.style.top = Math.max(8, ev.clientY - dbTip.offsetHeight - 12) + 'px';
+      }
+    });
+    ['pointerout', 'focusout'].forEach(tipo => dbGrid.addEventListener(tipo, ev => {
+      if(ev.target.closest('[data-db-dica],[data-db-palavra]')) dbEsconderDica();
+    }));
+    // Imagem que não carrega: some e deixa a arte / a inicial do portal.
+    dbGrid.addEventListener('error', ev => {
+      const img = ev.target;
+      if(!(img instanceof HTMLImageElement)) return;
+      if(img.dataset.dbLetra){ img.parentElement.textContent = img.dataset.dbLetra; } else img.remove();
+    }, true);
+
+    function dbPreencherFiltros(){
+      const curP = dbPlayer.value, curC = dbCanal.value;
+      dbPlayer.innerHTML = '<option value="">Todos os players</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
+      dbPlayer.value = CLIP_PLAYERS.some(p => p.nome === curP) ? curP : '';
+      const canais = [...new Set(clippingNews.map(n => n.canal).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      dbCanal.innerHTML = '<option value="">Plataforma</option>' + canais.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      dbCanal.value = canais.includes(curC) ? curC : '';
+    }
+    function dbAtualizar(){ dbPreencherFiltros(); dbRender(); }
+    async function dbAbrir(){
+      if(!clippingNews.length) await loadClippingNews();
+      dbAtualizar();
+    }
+    [dbPainel, dbPeriodo, dbPlayer, dbCanal].forEach(el => el.addEventListener('change', dbRender));
+    document.getElementById('dbLimpar').addEventListener('click', () => {
+      dbPeriodo.value = '30'; dbPlayer.value = ''; dbCanal.value = '';
+      dbRender();
+    });
+    document.getElementById('dbExportar').addEventListener('click', () => {
+      const P = dbPeriodoAtual();
+      const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const rows = [['Data', 'Título', 'Player', 'Portal', 'Categoria', 'Plataforma', 'Sentimento', 'Link']]
+        .concat(dbFatia(P.ini, P.fim).map(n => [formatClipDateBR(n.data), n.titulo, (n.players || []).join(' / '), n.portal || n.fonte, n.categoria, n.canal, n.sentimento, clipHref(n)]));
+      const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `dashboard_clipping_${P.ini}_a_${P.fim}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    let dbResizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(dbResizeTimer);
+      dbResizeTimer = setTimeout(() => { if(currentPage === 'dashboard') dbRender(); }, 200);
+    });
+
     // ---------------- Integração com a navegação ----------------
     document.addEventListener('cdload:pagechange', (e) => {
       currentPage = e.detail.page;
@@ -5975,6 +6657,8 @@
         if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
       } else if(currentPage === 'relatorios'){
         loadReports();
+      } else if(currentPage === 'dashboard'){
+        dbAbrir();
       } else if(currentPage === 'clipping'){
         openClippingSection();
       } else if(waCamModal.classList.contains('open')){
