@@ -976,12 +976,19 @@
   }
 
   /* ---- Anatomia do widget: contêiner, cabeçalho, corpo, rodapé ---- */
+  /* Visual "clean/corporate": cartão sem borda pesada, sombra suave em
+     camadas, cantos mais arredondados — paleta de destaque nos azuis do
+     projeto (--wa-primary/--azul-royal); verde/âmbar/vermelho ficam
+     reservados só para status (positivo/alerta/crítico), nunca decorativos. */
   .db-card{
-    background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;
-    padding:16px 18px;display:flex;flex-direction:column;min-width:0;
+    background:var(--wa-card);border:1px solid rgba(15,23,42,.05);border-radius:18px;
+    padding:20px 22px;display:flex;flex-direction:column;min-width:0;
+    box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 24px -18px rgba(15,23,42,.16);
   }
-  .db-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;min-height:26px;}
-  .db-card-head h3{margin:0;font-size:14px;font-weight:700;color:var(--wa-text);line-height:1.3;}
+  .db-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;min-height:26px;}
+  .db-card-head h3{margin:0;font-size:14.5px;font-weight:700;color:var(--wa-text);line-height:1.3;letter-spacing:-.01em;}
+  .db-kpi-icon{width:38px;height:38px;border-radius:11px;background:var(--wa-primary-soft);color:var(--wa-primary);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .db-kpi-icon svg{width:19px;height:19px;stroke-width:2;}
   .db-card-acao{
     border:1px solid var(--wa-border);background:#fff;color:var(--wa-text-muted);border-radius:8px;
     font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 10px;cursor:pointer;white-space:nowrap;
@@ -1003,13 +1010,16 @@
 
   /* ---- KPI (métricas de resumo) ---- */
   .db-kpi-linha{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;}
-  .db-kpi-valor{font-size:30px;font-weight:700;color:var(--wa-text);line-height:1.1;}
-  .db-kpi-valor.db-hero{font-size:48px;}
-  .db-delta{font-size:12.5px;font-weight:700;white-space:nowrap;}
-  .db-delta.sobe{color:var(--db-sobe);}
-  .db-delta.desce{color:var(--db-desce);}
-  .db-delta.neutro{color:var(--wa-text-muted);font-weight:600;}
+  .db-kpi-valor{font-size:30px;font-weight:700;color:var(--wa-text);line-height:1.1;letter-spacing:-.01em;}
+  .db-kpi-valor.db-hero{font-size:44px;}
+  .db-delta{font-size:11.5px;font-weight:700;white-space:nowrap;padding:3px 9px 3px 7px;border-radius:9999px;display:inline-flex;align-items:center;gap:3px;}
+  .db-delta.sobe{color:var(--db-sobe);background:var(--wa-approved-bg);}
+  .db-delta.desce{color:var(--db-desce);background:var(--wa-rejected-bg);}
+  .db-delta.neutro{color:var(--wa-text-muted);background:var(--wa-slate-bg);font-weight:600;}
   .db-kpi-ref{font-size:12px;color:var(--wa-text-muted);margin-top:6px;}
+  .db-kpi-gauge{display:flex;flex-direction:column;align-items:center;margin-top:6px;}
+  .db-gauge{display:block;}
+  .db-gauge-legenda{margin-top:2px;font-size:12px;color:var(--wa-text-muted);text-align:center;}
   .db-mini{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .db-mini li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;align-items:center;gap:10px;font-size:12px;color:var(--wa-text);}
   .db-mini-rot{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -6353,13 +6363,44 @@ ${clipPlayerPills(n)}
       </svg>`;
     }
 
+    // Medidor semicircular (meia-rosca) — para uma proporção ÚNICA contra um
+    // limite (ex.: % positivo, % em estoque). Nunca para comparar várias
+    // categorias — aí é rosca (dbRoscaSvg) ou barra, que a leitura é mais justa.
+    function dbGaugeSvg(frac, cor){
+      const W = 172, H = 100, r = 66, cx = W / 2, cy = 86, esp = 15;
+      const f = Math.max(0, Math.min(1, frac));
+      const meio = Math.PI * r;
+      const len = f * meio;
+      return `<svg class="db-gauge" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--db-trilho)" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${meio.toFixed(1)} ${meio.toFixed(1)}" transform="rotate(180 ${cx} ${cy})"></circle>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(2 * meio - len).toFixed(1)}" transform="rotate(180 ${cx} ${cy})"></circle>
+        <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="25" font-weight="800" fill="var(--wa-text)">${Math.round(f * 100)}%</text>
+      </svg>`;
+    }
+
+    // Ícones dos cards de KPI — quadrado azul-suave no cabeçalho (reaproveita
+    // traçados já usados em outras telas do app, pela consistência visual).
+    const DB_ICONS = {
+      jornal: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>',
+      megafone: '<path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>',
+      globo: '<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>',
+      sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>',
+      carteira: '<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>',
+      checagem: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+      transferencia: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
+      caixa: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line>'
+    };
+    const dbIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${DB_ICONS[nome] || ''}</svg>`;
+
     // ---- KPI ----
-    // Cards em rosca (Share of Voice, Veículos distintos, Notícias
-    // positivas) são mais enxutos: sem subtítulo de período e sem nota de
-    // rodapé — a legenda ao lado do gráfico já dá o contexto necessário.
-    function dbKpi({ id, titulo, valor, hero, delta, ref, mini, rosca, rodape }){
+    // Cards em rosca/medidor (proporção contra o todo ou contra um limite)
+    // são mais enxutos: sem subtítulo de período e sem nota de rodapé — a
+    // legenda ao lado do gráfico já dá o contexto necessário.
+    function dbKpi({ id, titulo, valor, hero, delta, ref, mini, rosca, gauge, corGauge, legendaGauge, icone, rodape }){
       let lista = '';
-      if(mini && mini.length){
+      if(gauge !== undefined){
+        lista = `<div class="db-kpi-gauge">${dbGaugeSvg(gauge, corGauge || '#2563EB')}${legendaGauge ? `<div class="db-gauge-legenda">${legendaGauge}</div>` : ''}</div>`;
+      } else if(mini && mini.length){
         if(rosca){
           const legenda = mini.map(m => `
             <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
@@ -6373,10 +6414,11 @@ ${clipPlayerPills(n)}
           lista = `<ul class="db-mini">${linhas}</ul>`;
         }
       }
-      return dbWidget({ id, titulo, corpo: `
+      const enxuto = rosca || gauge !== undefined;
+      return dbWidget({ id, titulo, acao: icone ? `<div class="db-kpi-icon">${dbIcone(icone)}</div>` : '', corpo: `
           <div class="db-kpi-linha"><span class="db-kpi-valor${hero ? ' db-hero' : ''}">${valor}</span>${delta}</div>
-          ${rosca ? '' : `<div class="db-kpi-ref">${ref}</div>`}${lista}`,
-        rodape: rosca ? '' : rodape });
+          ${enxuto ? '' : `<div class="db-kpi-ref">${ref}</div>`}${lista}`,
+        rodape: enxuto ? '' : rodape });
     }
 
     // ---- Série temporal por player (dia até 31 dias; semana acima disso) ----
@@ -6425,8 +6467,8 @@ ${clipPlayerPills(n)}
       }
       const idx = new Map(chaves.map((k, i) => [k, i]));
       const series = [
-        { nome: 'Entradas', cor: '#00A389', area: true, valores: chaves.map(() => 0) },
-        { nome: 'Saídas', cor: '#3B4BB9', area: false, valores: chaves.map(() => 0) }
+        { nome: 'Entradas', cor: '#2563EB', area: true, valores: chaves.map(() => 0) },
+        { nome: 'Saídas', cor: '#0050A2', area: false, valores: chaves.map(() => 0) }
       ];
       lista.forEach(m => {
         const i = idx.get(chaveDe(String(m.created_at).slice(0, 10)));
@@ -6564,7 +6606,7 @@ ${clipPlayerPills(n)}
       palavras.forEach((p, i) => { if(i % 2) ordem.push(p); else ordem.unshift(p); });
       return `<div class="db-nuvem">${ordem.map(p => {
         const t = max === min ? 1 : (Math.sqrt(p.n) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
-        return `<span style="font-size:${(12 + t * 22).toFixed(1)}px;font-weight:${t > 0.55 ? 700 : 600};--nuvem-cor:${dbMisturarCor('#E6F5F0', '#00A389', t)}" data-db-palavra="${esc(p.palavra)}" data-db-n="${p.n}" tabindex="0">${esc(p.palavra)}</span>`;
+        return `<span style="font-size:${(12 + t * 22).toFixed(1)}px;font-weight:${t > 0.55 ? 700 : 600};--nuvem-cor:${dbMisturarCor('#DBEAFE', '#0050A2', t)}" data-db-palavra="${esc(p.palavra)}" data-db-n="${p.n}" tabindex="0">${esc(p.palavra)}</span>`;
       }).join('')}</div>`;
     }
 
@@ -6652,21 +6694,22 @@ ${clipPlayerPills(n)}
       const positivas = l => l.length ? l.filter(n => n.sentimento === 'Positivo').length / l.length : 0;
       const refTxt = `${esc(P.rotulo)} · vs. ${esc(P.rotuloAnt)}`;
 
-      const k1 = dbKpi({ id: 'dbK1', titulo: 'Total de notícias', hero: true, valor: dbNum(atual.length),
+      const k1 = dbKpi({ id: 'dbK1', titulo: 'Total de notícias', hero: true, valor: dbNum(atual.length), icone: 'jornal',
         delta: dbDelta(atual.length, ant.length, false, temBase), ref: `${refTxt} (${dbNum(ant.length)})`,
         mini: players.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbNum(menc(atual, p.nome)), frac: atual.length ? menc(atual, p.nome) / atual.length : 0 })),
         rodape: 'Notícias do período que citam o(s) player(s). A que cita os dois conta uma vez no total e uma vez para cada player.' });
-      const k2 = dbKpi({ id: 'dbK2', titulo: 'Share of Voice', valor: dbPct(sov(atualT)), rosca: true,
+      const k2 = dbKpi({ id: 'dbK2', titulo: 'Share of Voice', valor: dbPct(sov(atualT)), rosca: true, icone: 'megafone',
         delta: dbDelta(sov(atualT), sov(antT), true, temBase && totMenc(antT) > 0), ref: refTxt,
         mini: CLIP_PLAYERS.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbPct(totMenc(atualT) ? menc(atualT, p.nome) / totMenc(atualT) : 0), frac: totMenc(atualT) ? menc(atualT, p.nome) / totMenc(atualT) : 0 })),
         rodape: `Participação de cada player no total de menções dos players no período (número em destaque: ${esc(foco.nome)}) — quem ocupa mais espaço na imprensa. Não depende do filtro de player.` });
-      const k3 = dbKpi({ id: 'dbK3', titulo: 'Veículos distintos', valor: dbNum(portais(atual)), rosca: true,
+      const k3 = dbKpi({ id: 'dbK3', titulo: 'Veículos distintos', valor: dbNum(portais(atual)), rosca: true, icone: 'globo',
         delta: dbDelta(portais(atual), portais(ant), false, temBase), ref: `${refTxt} (${dbNum(portais(ant))})`,
         mini: players.map(p => ({ cor: p.cor, rotulo: p.nome, valor: dbNum(portais(dbDoPlayer(atual, p.nome))), frac: portais(atual) ? portais(dbDoPlayer(atual, p.nome)) / portais(atual) : 0 })),
         rodape: 'Portais diferentes que publicaram sobre o(s) player(s): mede a amplitude da cobertura, não só o volume.' });
-      const k4 = dbKpi({ id: 'dbK4', titulo: 'Notícias positivas', valor: dbPct(positivas(atual)), rosca: true,
+      const qPositivas = atual.filter(n => n.sentimento === 'Positivo').length;
+      const k4 = dbKpi({ id: 'dbK4', titulo: 'Notícias positivas', valor: dbPct(positivas(atual)), icone: 'sorriso',
+        gauge: positivas(atual), corGauge: DB_SENT[2].cor, legendaGauge: `${dbNum(qPositivas)} de ${dbNum(atual.length)} no período`,
         delta: dbDelta(positivas(atual), positivas(ant), true, temBase && ant.length > 0), ref: refTxt,
-        mini: DB_SENT.slice().reverse().map(s => { const q = atual.filter(n => n.sentimento === s.nome).length; return { cor: s.cor, rotulo: s.nome, valor: dbNum(q), frac: atual.length ? q / atual.length : 0 }; }),
         rodape: 'Tom estimado pelo título (pode ser corrigido em Clipping News › Editar). Variação em pontos percentuais (p.p.).' });
 
       // Linha 2 — tendência + nuvem
@@ -6740,9 +6783,11 @@ ${clipPlayerPills(n)}
     // dbKpi, dbRoscaSvg, dbDesenharLinhas), lendo os dados já carregados
     // pelo módulo Estoque (stockProducts/stockMovements/saldoOf/situacaoOf).
     // ==================================================================
-    // Paleta categórica sem vínculo de marca (setores não são players) —
-    // mesma ordem validada para daltonismo usada como padrão no projeto.
-    const DB_SETOR_CORES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
+    // Paleta categórica nos azuis do projeto (setores não são players — sem
+    // cor de marca própria). Como é a mesma família de cor em degradê,
+    // a distinção sempre vem acompanhada do rótulo de texto (legenda,
+    // tooltip, tabela), nunca só da cor — do mais escuro ao mais claro.
+    const DB_SETOR_CORES = ['#0050A2', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'];
     const dbSetorCor = setor => { const i = STOCK_SETORES.indexOf(setor); return i === -1 ? '#94A3B8' : DB_SETOR_CORES[i % DB_SETOR_CORES.length]; };
     const dbMoeda = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     function dbEstMovs(ini, fim){
@@ -6778,25 +6823,22 @@ ${clipPlayerPills(n)}
       const porSituacao = { ok: 0, baixo: 0, zerado: 0 };
       ativos.forEach(p => { const s = situacaoOf(p); if(porSituacao[s] !== undefined) porSituacao[s]++; });
 
-      const k1 = dbKpi({ id: 'dbEstK1', titulo: 'Valor em estoque', hero: true, valor: dbMoeda(valorEstoque), delta: '',
+      const k1 = dbKpi({ id: 'dbEstK1', titulo: 'Valor em estoque', hero: true, valor: dbMoeda(valorEstoque), delta: '', icone: 'carteira',
         ref: 'Custo de aquisição × saldo atual, produtos ativos (foto de agora)' });
-      const k2 = dbKpi({ id: 'dbEstK2', titulo: 'Situação do estoque', valor: dbPct(ativos.length ? porSituacao.ok / ativos.length : 0), rosca: true, delta: '',
-        mini: [
-          { cor: '#00A389', rotulo: 'Em estoque', valor: dbNum(porSituacao.ok), frac: porSituacao.ok },
-          { cor: '#F59E0B', rotulo: 'Estoque baixo', valor: dbNum(porSituacao.baixo), frac: porSituacao.baixo },
-          { cor: '#EF4444', rotulo: 'Sem estoque', valor: dbNum(porSituacao.zerado), frac: porSituacao.zerado }
-        ] });
+      const k2 = dbKpi({ id: 'dbEstK2', titulo: 'Situação do estoque', valor: dbPct(ativos.length ? porSituacao.ok / ativos.length : 0), icone: 'checagem',
+        gauge: ativos.length ? porSituacao.ok / ativos.length : 0, corGauge: '#00A389',
+        legendaGauge: `${dbNum(porSituacao.ok)} em estoque · ${dbNum(porSituacao.baixo)} baixo · ${dbNum(porSituacao.zerado)} zerado` });
       const qEntradas = movsPeriodo.filter(m => m.tipo !== 'saida').length;
       const qSaidas = movsPeriodo.filter(m => m.tipo === 'saida').length;
-      const k3 = dbKpi({ id: 'dbEstK3', titulo: 'Movimentações no período', valor: dbNum(movsPeriodo.length),
+      const k3 = dbKpi({ id: 'dbEstK3', titulo: 'Movimentações no período', valor: dbNum(movsPeriodo.length), icone: 'transferencia',
         delta: dbDelta(movsPeriodo.length, movsAnteriores.length, false, temBase), ref: `${refTxt} (${dbNum(movsAnteriores.length)})`,
         mini: [
-          { cor: '#00A389', rotulo: 'Entradas', valor: dbNum(qEntradas), frac: movsPeriodo.length ? qEntradas / movsPeriodo.length : 0 },
-          { cor: '#3B4BB9', rotulo: 'Saídas', valor: dbNum(qSaidas), frac: movsPeriodo.length ? qSaidas / movsPeriodo.length : 0 }
+          { cor: 'var(--wa-primary)', rotulo: 'Entradas', valor: dbNum(qEntradas), frac: movsPeriodo.length ? qEntradas / movsPeriodo.length : 0 },
+          { cor: 'var(--azul-royal)', rotulo: 'Saídas', valor: dbNum(qSaidas), frac: movsPeriodo.length ? qSaidas / movsPeriodo.length : 0 }
         ] });
-      const k4 = dbKpi({ id: 'dbEstK4', titulo: 'Produtos cadastrados', valor: dbNum(stockProducts.length), rosca: true, delta: '',
+      const k4 = dbKpi({ id: 'dbEstK4', titulo: 'Produtos cadastrados', valor: dbNum(stockProducts.length), rosca: true, delta: '', icone: 'caixa',
         mini: [
-          { cor: '#00A389', rotulo: 'Ativos', valor: dbNum(ativos.length), frac: ativos.length },
+          { cor: '#2563EB', rotulo: 'Ativos', valor: dbNum(ativos.length), frac: ativos.length },
           { cor: '#CBD5E1', rotulo: 'Inativos', valor: dbNum(stockProducts.length - ativos.length), frac: stockProducts.length - ativos.length }
         ] });
 
