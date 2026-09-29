@@ -992,7 +992,6 @@
   .stk-kpi-delta.pos{color:var(--stk-success);background:var(--stk-success-bg);}
   .stk-kpi-delta.neg{color:var(--stk-danger);background:var(--stk-danger-bg);}
   .stk-kpi-delta.neu{color:var(--stk-caption);background:var(--stk-neutral-bg);}
-  .stk-kpi-ref{font-size:11px;color:var(--stk-caption);margin-top:6px;}
 
   /* ---- Gráfico "Stock Flow" (barras duplas) ---- */
   .stk-legenda{display:flex;gap:16px;font-size:12px;color:var(--stk-secondary-dark);margin-bottom:10px;}
@@ -1007,9 +1006,11 @@
   .stk-setor-linha .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
   .stk-setor-linha .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-setor-linha .pct{font-weight:700;color:var(--stk-primary-dark);font-variant-numeric:tabular-nums;}
-  .stk-barra-total{height:10px;border-radius:6px;background:var(--stk-neutral-bg);overflow:hidden;display:flex;gap:1px;margin:14px 0 6px;}
-  .stk-barra-total b{display:block;height:100%;}
   .stk-barra-total-legenda{font-size:11px;color:var(--stk-caption);text-align:right;}
+  .stk-rosca-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .stk-rosca-legenda{list-style:none;margin:0;padding:0;width:100%;}
+  .stk-rosca-legenda li{margin-bottom:8px;}
+  .stk-rosca-legenda li:last-child{margin-bottom:0;}
 
   /* ---- Lista "Stock Alerts" ---- */
   .stk-alerta-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
@@ -1039,6 +1040,18 @@
   .stk-mov-ic.in{background:var(--stk-success-bg);color:var(--stk-success);}
   .stk-mov-ic.out{background:var(--stk-danger-bg);color:var(--stk-danger);}
   .stk-mov-ic.transfer{background:#E6F1FF;color:var(--stk-primary-light);}
+
+  /* ---- Tooltip (hover nos gráficos) ---- */
+  .stk-tooltip{position:fixed;z-index:60;pointer-events:none;background:#0F172A;color:#fff;border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(15,23,42,.25);min-width:120px;max-width:260px;}
+  .stk-tooltip[hidden]{display:none;}
+  .stk-tip-tit{color:#CBD5E1;font-size:11px;margin-bottom:4px;}
+  .stk-tip-linha{display:flex;align-items:center;gap:8px;margin-top:2px;}
+  .stk-tip-linha i{width:12px;height:2px;border-radius:2px;flex:0 0 auto;}
+  .stk-tip-linha strong{font-variant-numeric:tabular-nums;}
+  .stk-tip-linha span{color:#CBD5E1;}
+  .stk-svg .stk-alvo{fill:transparent;cursor:crosshair;outline:none;}
+  .stk-svg .stk-alvo:focus-visible{stroke:var(--stk-primary);stroke-width:2;}
+  .stk-svg .stk-cruz{stroke:#94A3B8;stroke-width:1;}
 
   /* ===================================================================
      ESTOQUE — cadastro de produtos, leitura de código de barras
@@ -1328,6 +1341,7 @@
           </button>
         </div>
         <div id="stkGrid"></div>
+        <div class="stk-tooltip" id="stkTooltip" role="tooltip" hidden></div>
       </section>
 
       <!-- INSTÂNCIAS -->
@@ -6103,9 +6117,22 @@ ${clipPlayerPills(n)}
     // ==================================================================
     const stkSegmented = document.getElementById('stkPeriodo');
     const stkGrid = document.getElementById('stkGrid');
+    const stkTip = document.getElementById('stkTooltip');
     let stkPeriodoAtual = 'semana';
     let stkFluxoModo = 'semanal';
     let stkTabelaAba = 'produtos';
+
+    // Tooltip flutuante compartilhado por todos os gráficos do painel.
+    function stkMostrarDica(ev, titulo, linhas){
+      stkTip.innerHTML = (titulo ? `<div class="stk-tip-tit">${esc(titulo)}</div>` : '')
+        + linhas.map(l => `<div class="stk-tip-linha">${l.cor ? `<i style="background:${l.cor}"></i>` : ''}<strong>${esc(l.valor)}</strong><span>${esc(l.rotulo)}</span></div>`).join('');
+      stkTip.hidden = false;
+      const px = ev.clientX !== undefined ? ev.clientX : (ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect().left : 0);
+      const py = ev.clientY !== undefined ? ev.clientY : (ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect().top : 0);
+      stkTip.style.left = Math.min(window.innerWidth - stkTip.offsetWidth - 8, px + 14) + 'px';
+      stkTip.style.top = Math.max(8, py - stkTip.offsetHeight - 12) + 'px';
+    }
+    function stkEsconderDica(){ stkTip.hidden = true; }
 
     const stkHojeIso = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
     const stkSomaDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -6129,8 +6156,20 @@ ${clipPlayerPills(n)}
       transferencia: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>'
     };
     const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
-    const STK_SETOR_CORES = ['#002B54', '#0056D2', '#0099FF', '#0B3C6D', '#52A0FF'];
-    const stkSetorCor = setor => { const i = STOCK_SETORES.indexOf(setor); return i === -1 ? '#8297A8' : STK_SETOR_CORES[i % STK_SETOR_CORES.length]; };
+    // Paleta dos setores = degradê entre as duas cores do gráfico de linha
+    // (Entradas #0056D2 -> Saídas #52A0FF), mesmo padrão em todo o painel.
+    const stkMisturarCor = (hexA, hexB, t) => {
+      const p = h => [0, 2, 4].map(i => parseInt(h.substr(i + 1, 2), 16));
+      const [ra, ga, ba] = p(hexA), [rb, gb, bb] = p(hexB);
+      const mix = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
+      return `#${mix(ra, rb)}${mix(ga, gb)}${mix(ba, bb)}`;
+    };
+    const stkSetorCor = setor => {
+      const i = STOCK_SETORES.indexOf(setor);
+      if(i === -1) return '#8297A8';
+      const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
+      return stkMisturarCor('#0056D2', '#52A0FF', t);
+    };
 
     // Janela do segmented control (Hoje / Esta semana / Este mês).
     function stkRange(modo){
@@ -6158,14 +6197,13 @@ ${clipPlayerPills(n)}
       return { txt: `${pos ? '+' : ''}${(dif * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% desde o período anterior`, cls: pos ? 'pos' : 'neg', icone: stkIcone(pos ? 'trendUp' : 'trendDown') };
     }
 
-    function stkKpi(icone, label, valor, delta, ref){
+    function stkKpi(icone, label, valor, delta){
       return `<div class="stk-card">
         <div class="stk-card-head">
           <div><div class="stk-kpi-label">${esc(label)}</div><div class="stk-kpi-valor">${valor}</div></div>
           <div class="stk-kpi-icon">${stkIcone(icone)}</div>
         </div>
         ${delta ? `<div class="stk-kpi-delta ${delta.cls}">${delta.icone}${esc(delta.txt)}</div>` : ''}
-        ${ref ? `<div class="stk-kpi-ref">${esc(ref)}</div>` : ''}
       </div>`;
     }
 
@@ -6230,12 +6268,39 @@ ${clipPlayerPills(n)}
         svg += `<path d="${linha}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
         svg += `<circle cx="${x(n - 1).toFixed(1)}" cy="${y(s.valores[n - 1]).toFixed(1)}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
       });
-      svg += `</svg>`;
+      svg += `<line class="stk-cruz" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"></line>`;
+      series.forEach((s, k) => { svg += `<circle class="stk-ponto" data-k="${k}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2" visibility="hidden"></circle>`; });
+      svg += `<rect class="stk-alvo" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" tabindex="0" aria-label="Use as setas para percorrer os pontos"></rect></svg>`;
       el.innerHTML = svg;
+
+      const alvo = el.querySelector('.stk-alvo'), cruz = el.querySelector('.stk-cruz'), pontos = el.querySelectorAll('.stk-ponto');
+      let atual = n - 1;
+      const marcar = (i, ev) => {
+        atual = Math.max(0, Math.min(n - 1, i));
+        cruz.setAttribute('x1', x(atual)); cruz.setAttribute('x2', x(atual)); cruz.setAttribute('visibility', 'visible');
+        pontos.forEach(p => { const s = series[p.dataset.k]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', y(s.valores[atual])); p.setAttribute('visibility', 'visible'); });
+        const r = alvo.getBoundingClientRect();
+        const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
+        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: stkNum(s.valores[atual]), rotulo: s.nome })));
+      };
+      const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); stkEsconderDica(); };
+      alvo.addEventListener('pointermove', ev => {
+        const r = alvo.getBoundingClientRect();
+        marcar(n <= 1 ? 0 : Math.round((ev.clientX - r.left) / (r.width / (n - 1))), ev);
+      });
+      alvo.addEventListener('pointerleave', soltar);
+      alvo.addEventListener('blur', soltar);
+      alvo.addEventListener('focus', () => marcar(atual));
+      alvo.addEventListener('keydown', ev => {
+        if(ev.key === 'ArrowLeft'){ ev.preventDefault(); marcar(atual - 1); }
+        if(ev.key === 'ArrowRight'){ ev.preventDefault(); marcar(atual + 1); }
+      });
     }
 
     // Gráfico de barras "Valor gasto com compras": série única, eixo Y em R$.
-    function stkDesenharBarrasValor(el, categorias, valores){
+    // Barras na mesma paleta/transparência do gráfico de linha: contorno
+    // sólido em #022B53 + preenchimento em gradiente (24% -> 0% de opacidade).
+    function stkDesenharBarrasValor(el, categorias, valores, rotulo){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = 220;
       const m = { t: 10, r: 10, b: 26, l: 56 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
@@ -6246,7 +6311,12 @@ ${clipPlayerPills(n)}
       const grupoL = iw / n;
       const barraL = Math.min(36, grupoL * 0.5);
       const base = m.t + ih;
-      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Valor gasto com compras por mês">`;
+      const gradId = `stkBarraGrad-${el.id}`;
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo || 'Valores por categoria')}">
+        <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#022B53" stop-opacity="0.24"></stop>
+          <stop offset="100%" stop-color="#022B53" stop-opacity="0"></stop>
+        </linearGradient></defs>`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
         svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
         svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkMoedaCompacta(v)}</text>`;
@@ -6255,11 +6325,31 @@ ${clipPlayerPills(n)}
         const cx = m.l + grupoL * i + grupoL / 2;
         const x = cx - barraL / 2;
         const yy = y(valores[i]);
-        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="#0056D2"></rect>`;
+        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="url(#${gradId})" stroke="#022B53" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(stkMoeda(valores[i]))}|#022B53"></rect>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cat)}</text>`;
       });
       svg += `</svg>`;
       el.innerHTML = svg;
+    }
+
+    // Rosca (donut) — usada em "Distribuição por setor".
+    function stkDesenharRosca(el, dados, tamanho){
+      const ativos = dados.filter(d => d.valor > 0);
+      const total = ativos.reduce((s, d) => s + d.valor, 0) || 1;
+      const espessura = Math.round(tamanho * 0.24);
+      const r = tamanho / 2 - espessura / 2 - 2, cx = tamanho / 2, cy = tamanho / 2, circ = 2 * Math.PI * r;
+      const gap = ativos.length > 1 ? 3 : 0;
+      let cum = 0, arcos = '';
+      ativos.forEach(d => {
+        const frac = d.valor / total;
+        const len = Math.max(0, frac * circ - gap);
+        arcos += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.cor}" stroke-width="${espessura}" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(circ - len).toFixed(1)}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" tabindex="0" data-stk-dica="Distribuição por setor|${esc(d.nome)}|${esc(d.rotuloValor || stkNum(d.valor))} (${stkPct(frac, 1)})|${d.cor}"></circle>`;
+        cum += frac * circ;
+      });
+      el.innerHTML = `<svg class="stk-svg" width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}" role="img" aria-label="Distribuição por setor">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--stk-neutral-bg)" stroke-width="${espessura}"></circle>
+        ${arcos}
+      </svg>`;
     }
 
     function stkDadosFluxo(modo){
@@ -6359,11 +6449,11 @@ ${clipPlayerPills(n)}
       const qOk = ativos.filter(p => situacaoOf(p) === 'ok').length;
       const eficiencia = ativos.length ? qOk / ativos.length : 0;
 
-      const kTotal = stkKpi('layers', 'Total em estoque', stkNum(totalStockAtual), stkDelta(totalStockAtual, totalStockInicio), `unidades · produtos ativos, ${esc(range.rotulo)}`);
-      const kOut = stkKpi('arrowUpRight', 'Saídas', stkNum(saidasQtd), stkDelta(saidasQtd, saidasQtdAnt), `unidades · ${esc(range.rotulo)}`);
-      const kIn = stkKpi('arrowDownLeft', 'Entradas', stkNum(entradasQtd), stkDelta(entradasQtd, entradasQtdAnt), `unidades · ${esc(range.rotulo)}`);
-      const kEfic = stkKpi('percent', 'Eficiência do armazém', stkPct(eficiencia), null, `${stkNum(qOk)} de ${stkNum(ativos.length)} produtos ativos em situação normal`);
-      const kCadastrados = stkKpi('caixa', 'Produtos cadastrados', stkNum(ativos.length), null, `${stkNum(stockProducts.length - ativos.length)} inativos · ${stkNum(stockProducts.length)} no catálogo`);
+      const kTotal = stkKpi('layers', 'Total em estoque', stkNum(totalStockAtual), stkDelta(totalStockAtual, totalStockInicio));
+      const kOut = stkKpi('arrowUpRight', 'Saídas', stkNum(saidasQtd), stkDelta(saidasQtd, saidasQtdAnt));
+      const kIn = stkKpi('arrowDownLeft', 'Entradas', stkNum(entradasQtd), stkDelta(entradasQtd, entradasQtdAnt));
+      const kEfic = stkKpi('percent', 'Eficiência do armazém', stkPct(eficiencia), null);
+      const kCadastrados = stkKpi('caixa', 'Produtos cadastrados', stkNum(ativos.length), null);
 
       // ---- Fluxo de estoque (linhas suaves com área) ----
       const F = stkDadosFluxo(stkFluxoModo);
@@ -6415,10 +6505,9 @@ ${clipPlayerPills(n)}
       const wDistribuicao = `<div class="stk-card">
           <div class="stk-card-head"><h3>Distribuição por setor</h3></div>
           <div class="stk-card-body">
-            <div class="stk-barra-total">${setores.filter(s => s.qtd > 0).map(s => `<b style="width:${(s.qtd / totalSetores * 100).toFixed(1)}%;background:${s.cor}" title="${esc(s.nome)}"></b>`).join('')}</div>
-            <div class="stk-barra-total-legenda">${stkNum(totalSetores)} unidades no total</div>
-            <div style="margin-top:14px;">${setores.map(s => `
-              <div class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span><span class="pct">${stkPct(s.qtd / totalSetores, 1)}</span></div>`).join('')}</div>
+            <div class="stk-rosca-wrap"><div id="stkDistribGraf"></div><ul class="stk-rosca-legenda">${setores.map(s => `
+              <li class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span><span class="pct">${stkPct(s.qtd / totalSetores, 1)}</span></li>`).join('')}</ul></div>
+            <div class="stk-barra-total-legenda" style="text-align:center;margin-top:10px;">${stkNum(totalSetores)} unidades no total</div>
           </div>
         </div>`;
 
@@ -6477,15 +6566,17 @@ ${clipPlayerPills(n)}
       stkGrid.innerHTML = `<div class="stk-kpi-row">${kTotal}${kOut}${kIn}${kEfic}${kCadastrados}</div>`
         + `<div class="stk-grid-3">${wFluxo}${wCompras}${wAlertas}${wDistribuicao}${wValorSaida}</div>`
         + `<div class="stk-grid">${wTabela}</div>`;
+      const grafDistrib = document.getElementById('stkDistribGraf');
+      if(grafDistrib) stkDesenharRosca(grafDistrib, setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: fmtQty(s.qtd) + ' un.' })), 130);
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
         { nome: 'Entradas', cor: '#0056D2', valores: F.entradas },
         { nome: 'Saídas', cor: '#52A0FF', valores: F.saidas }
       ]);
       const grafCompras = document.getElementById('stkComprasGraf');
-      if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores);
+      if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores, 'Valor gasto com compras por mês');
       const grafValorSaida = document.getElementById('stkValorSaidaGraf');
-      if(grafValorSaida) stkDesenharBarrasValor(grafValorSaida, VS.categorias, VS.valores);
+      if(grafValorSaida) stkDesenharBarrasValor(grafValorSaida, VS.categorias, VS.valores, 'Valor de saída por setor');
     }
 
     stkSegmented.addEventListener('click', ev => {
@@ -6504,6 +6595,23 @@ ${clipPlayerPills(n)}
       stkTabelaAba = btn.dataset.tab;
       stkRender();
     });
+    // Tooltip: qualquer elemento com data-stk-dica="titulo|rótulo|valor|cor"
+    // (barras, fatias da rosca) mostra a dica ao passar o mouse ou focar.
+    ['pointerover', 'focusin'].forEach(tipo => stkGrid.addEventListener(tipo, ev => {
+      const alvo = ev.target.closest('[data-stk-dica]');
+      if(!alvo) return;
+      const [tit, rotulo, valor, cor] = alvo.dataset.stkDica.split('|');
+      stkMostrarDica(ev, tit, [{ cor, valor, rotulo }]);
+    }));
+    stkGrid.addEventListener('pointermove', ev => {
+      if(ev.target.closest('[data-stk-dica]') && !stkTip.hidden){
+        stkTip.style.left = Math.min(window.innerWidth - stkTip.offsetWidth - 8, ev.clientX + 14) + 'px';
+        stkTip.style.top = Math.max(8, ev.clientY - stkTip.offsetHeight - 12) + 'px';
+      }
+    });
+    ['pointerout', 'focusout'].forEach(tipo => stkGrid.addEventListener(tipo, ev => {
+      if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
+    }));
     document.getElementById('stkExportar').addEventListener('click', () => {
       const range = stkRange(stkPeriodoAtual);
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
