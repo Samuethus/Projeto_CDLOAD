@@ -3952,9 +3952,18 @@
       return String(n.portal || n.fonte || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
+    // Portais bloqueados (alerta de segurança do antivírus): nunca exibidos
+    // nem linkados. O banco já os descarta; aqui é uma segunda barreira.
+    const CLIP_DOMINIOS_BLOQUEADOS = ['pnbonline.com.br'];
+    function clipLinkBloqueado(url){
+      const m = /^https?:\/\/([^/:?#]+)/i.exec(url || '');
+      const host = m ? m[1].toLowerCase() : '';
+      return !!host && CLIP_DOMINIOS_BLOQUEADOS.some(d => host === d || host.endsWith('.' + d));
+    }
+
     // Destino do clique na capa/título: a matéria no portal (ou o link do Google até ela ser resolvida).
     function clipHref(n){
-      return [n.linkOriginal, n.link].find(u => /^https:\/\//.test(u || '')) || '';
+      return [n.linkOriginal, n.link].find(u => /^https:\/\//.test(u || '') && !clipLinkBloqueado(u)) || '';
     }
 
     // ---- Capa gerada pelo tema (categoria) quando a matéria não tem imagem ----
@@ -4145,9 +4154,10 @@
         .from('clipping_news')
         .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,portal:clipping_portais(nome,url)')
         .eq('oculta', false)
-        // Do Google, só as matérias que citam a palavra-chave no texto
-        // (clipping_verificar_materias); as cadastradas à mão sempre aparecem.
-        .or('origem.neq.google_news,verificacao.eq.confirmada')
+        // Coletadas (Google, Bing, site oficial), só as confirmadas: as dos
+        // buscadores precisam citar a palavra-chave no texto e as do site
+        // oficial entram todas. As cadastradas à mão sempre aparecem.
+        .or('origem.eq.manual,verificacao.eq.confirmada')
         .order('data_publicacao', { ascending: false })
         .order('publicado_em', { ascending: false, nullsFirst: false });
 
@@ -4160,7 +4170,7 @@
         return;
       }
 
-      clippingNews = (data || []).map(row => ({
+      clippingNews = (data || []).filter(row => !clipLinkBloqueado(row.link) && !clipLinkBloqueado(row.link_original) && !clipLinkBloqueado(row.portal && row.portal.url)).map(row => ({
         id: row.id,
         titulo: row.titulo,
         resumo: row.resumo,
