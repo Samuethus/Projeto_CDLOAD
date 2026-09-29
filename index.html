@@ -1016,9 +1016,9 @@
   .db-mini-trilho{height:6px;border-radius:3px;background:var(--db-trilho);overflow:hidden;}
   .db-mini-trilho b{display:block;height:100%;border-radius:0 3px 3px 0;}
   .db-mini-val{font-variant-numeric:tabular-nums;color:var(--wa-text-muted);font-size:11.5px;min-width:44px;text-align:right;}
-  .db-kpi-rosca{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:14px;}
+  .db-kpi-rosca{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:16px;margin-top:16px;flex-wrap:wrap;}
   .db-rosca{flex:0 0 auto;}
-  .db-rosca-legenda{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:8px;}
+  .db-rosca-legenda{list-style:none;margin:0;padding:0;flex:0 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;}
   .db-rosca-legenda li{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--wa-text);}
   .db-rosca-legenda .db-mini-rot{flex:1;}
   .db-rosca-legenda .db-mini-val{min-width:auto;}
@@ -1054,9 +1054,8 @@
 
   /* ---- Nuvem de palavras ---- */
   .db-nuvem{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;align-content:center;gap:4px 12px;min-height:220px;padding:6px 4px;}
-  .db-nuvem span{line-height:1.1;cursor:default;color:var(--wa-text-muted);font-weight:600;}
-  .db-nuvem span.forte{color:var(--wa-text);font-weight:700;}
-  .db-nuvem span:hover{color:var(--wa-primary);}
+  .db-nuvem span{line-height:1.1;cursor:default;color:var(--nuvem-cor, var(--wa-text-muted));font-weight:600;}
+  .db-nuvem span:hover,.db-nuvem span:focus-visible{color:var(--wa-primary);outline:none;}
 
   /* ---- Listas (veículos, notícias, alertas) ---- */
   .db-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
@@ -4168,13 +4167,14 @@
     // Players comparados (CDL Cuiabá x Fecomércio MT). Cor fixa por player —
     // a cor segue a entidade, nunca a posição. Cores de marca a pedido
     // explícito (2026-09) — o par anterior (#2563EB azul / #EB6834 laranja)
-    // tinha sido validado para daltonismo (CVD ΔE 29,9); este par de verdes
-    // próximos não foi revalidado e é visualmente mais parecido entre si em
-    // marcas pequenas (linha, pontos, legendas) — usados junto de rótulo de
-    // texto sempre que possível, nunca só a cor.
+    // tinha sido validado para daltonismo (CVD ΔE 29,9). O par atual não foi
+    // revalidado: #E6F5F0 (Fecomércio) tem contraste ~1.1:1 contra o fundo
+    // branco dos cards (#FFFFFF) — abaixo de qualquer piso de legibilidade —
+    // então essa cor só é confiável junto de um rótulo de texto (legenda,
+    // tooltip), nunca sozinha num traço fino de linha ou ponto pequeno.
     const CLIP_PLAYERS = [
-      { nome: 'CDL Cuiabá', cor: '#00A884' },
-      { nome: 'Fecomércio MT', cor: '#0B9B82' }
+      { nome: 'CDL Cuiabá', cor: '#00A389' },
+      { nome: 'Fecomércio MT', cor: '#E6F5F0' }
     ];
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
@@ -6300,45 +6300,74 @@ ${clipPlayerPills(n)}
     const dbTabela = (cab, linhas) => `<div class="db-tabela-wrap"><table class="db-tabela"><thead><tr>${cab.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     const dbLegendaPlayers = (players, tipo) => `<div class="db-legenda">${players.map(p => `<span><i class="${tipo === 'linha' ? 'db-key-linha' : 'db-key-caixa'}" style="background:${p.cor}"></i>${esc(p.nome)}</span>`).join('')}</div>`;
 
+    // Luminância relativa (WCAG) e escolha de texto branco/escuro pela maior
+    // razão de contraste contra a própria cor — usado para rótulos dentro de
+    // um preenchimento colorido (fatia de rosca), nunca por uma regra fixa.
+    function dbLumRel(hex){
+      const h = hex.replace('#', '');
+      const [r, g, b] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255);
+      const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    }
+    function dbTextoSobre(hex){
+      const L = dbLumRel(hex);
+      return (1.05 / (L + 0.05)) >= ((L + 0.05) / 0.05) ? '#fff' : '#0F172A';
+    }
+
     // ---- Rosca (donut) — usada nos KPIs em vez das trilhas horizontais.
     // Fatias somam ao redor do círculo pela proporção RELATIVA das frações
     // recebidas (normaliza por `total` mesmo que não somem exatamente 1 —
-    // ex.: notícia que cita os dois players conta duas vezes).
+    // ex.: notícia que cita os dois players conta duas vezes). Rótulo de %
+    // só entra na fatia quando ela é larga o bastante para caber sem cortar.
     function dbRoscaSvg(mini, tamanho){
       const ativos = mini.filter(m => m.frac > 0);
       const total = ativos.reduce((s, m) => s + m.frac, 0) || 1;
-      const r = tamanho / 2 - 7, cx = tamanho / 2, cy = tamanho / 2, circ = 2 * Math.PI * r;
+      const espessura = Math.round(tamanho * 0.24); // anel mais grosso = orifício menor
+      const r = tamanho / 2 - espessura / 2 - 2, cx = tamanho / 2, cy = tamanho / 2, circ = 2 * Math.PI * r;
       const gap = ativos.length > 1 ? 3 : 0; // respiro entre fatias (surface gap)
-      let cum = 0;
-      const arcos = ativos.map(m => {
+      let cum = 0, cumFrac = 0, arcos = '', rotulos = '';
+      ativos.forEach(m => {
         const frac = m.frac / total;
         const len = Math.max(0, frac * circ - gap);
         const d = `${len.toFixed(1)} ${(circ - len).toFixed(1)}`;
-        const off = (-cum).toFixed(1);
-        cum += frac * circ;
-        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${m.cor}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${d}" stroke-dashoffset="${off}" transform="rotate(-90 ${cx} ${cy})"></circle>`;
-      }).join('');
+        arcos += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${m.cor}" stroke-width="${espessura}" stroke-linecap="round" stroke-dasharray="${d}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"></circle>`;
+        if(frac >= 0.08){
+          const ang = (-90 + (cumFrac + frac / 2) * 360) * Math.PI / 180;
+          const lx = (cx + r * Math.cos(ang)).toFixed(1), ly = (cy + r * Math.sin(ang)).toFixed(1);
+          rotulos += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(9, Math.round(tamanho * 0.115))}" font-weight="700" fill="${dbTextoSobre(m.cor)}">${esc(dbPct(frac))}</text>`;
+        }
+        cum += frac * circ; cumFrac += frac;
+      });
       return `<svg class="db-rosca" width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}" role="img" aria-hidden="true">
-        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--db-trilho)" stroke-width="9"></circle>
-        ${arcos}
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--db-trilho)" stroke-width="${espessura}"></circle>
+        ${arcos}${rotulos}
       </svg>`;
     }
 
     // ---- KPI ----
+    // Cards em rosca (Share of Voice, Veículos distintos, Notícias
+    // positivas) são mais enxutos: sem subtítulo de período e sem nota de
+    // rodapé — a legenda ao lado do gráfico já dá o contexto necessário.
     function dbKpi({ id, titulo, valor, hero, delta, ref, mini, rosca, rodape }){
       let lista = '';
       if(mini && mini.length){
-        const linhas = mini.map(m => `
-          <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
-              ${rosca ? '' : `<span class="db-mini-trilho"><b style="width:${Math.max(0, Math.min(100, m.frac * 100)).toFixed(1)}%;background:${m.cor}"></b></span>`}
-              <span class="db-mini-val">${esc(m.valor)}</span></li>`).join('');
-        lista = rosca
-          ? `<div class="db-kpi-rosca">${dbRoscaSvg(mini, 84)}<ul class="db-rosca-legenda">${linhas}</ul></div>`
-          : `<ul class="db-mini">${linhas}</ul>`;
+        if(rosca){
+          const legenda = mini.map(m => `
+            <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
+                <span class="db-mini-val">${esc(m.valor)}</span></li>`).join('');
+          lista = `<div class="db-kpi-rosca">${dbRoscaSvg(mini, 96)}<ul class="db-rosca-legenda">${legenda}</ul></div>`;
+        } else {
+          const linhas = mini.map(m => `
+            <li><span class="db-mini-rot" title="${esc(m.rotulo)}"><i class="db-key-caixa" style="background:${m.cor}"></i><span>${esc(m.rotulo)}</span></span>
+                <span class="db-mini-trilho"><b style="width:${Math.max(0, Math.min(100, m.frac * 100)).toFixed(1)}%;background:${m.cor}"></b></span>
+                <span class="db-mini-val">${esc(m.valor)}</span></li>`).join('');
+          lista = `<ul class="db-mini">${linhas}</ul>`;
+        }
       }
       return dbWidget({ id, titulo, corpo: `
           <div class="db-kpi-linha"><span class="db-kpi-valor${hero ? ' db-hero' : ''}">${valor}</span>${delta}</div>
-          <div class="db-kpi-ref">${ref}</div>${lista}`, rodape });
+          ${rosca ? '' : `<div class="db-kpi-ref">${ref}</div>`}${lista}`,
+        rodape: rosca ? '' : rodape });
     }
 
     // ---- Série temporal por player (dia até 31 dias; semana acima disso) ----
@@ -6475,6 +6504,15 @@ ${clipPlayerPills(n)}
         .sort((a, b) => b.n - a.n || a.palavra.localeCompare(b.palavra, 'pt-BR'))
         .slice(0, 40);
     }
+    // Mistura linear (sRGB) entre duas cores hex — suficiente para a nuvem de
+    // palavras, que é decorativa (a magnitude real já está no tamanho da
+    // fonte); t=0 -> hexClaro, t=1 -> hexEscuro.
+    function dbMisturarCor(hexClaro, hexEscuro, t){
+      const p = h => [0, 2, 4].map(i => parseInt(h.substr(i + 1, 2), 16));
+      const [rc, gc, bc] = p(hexClaro), [re, ge, be] = p(hexEscuro);
+      const mix = (c, e) => Math.round(c + (e - c) * t).toString(16).padStart(2, '0');
+      return `#${mix(rc, re)}${mix(gc, ge)}${mix(bc, be)}`;
+    }
     function dbNuvemHtml(palavras){
       if(!palavras.length) return '<div class="db-vazio">Poucas notícias no período para formar a nuvem.</div>';
       const max = palavras[0].n, min = palavras[palavras.length - 1].n;
@@ -6483,7 +6521,7 @@ ${clipPlayerPills(n)}
       palavras.forEach((p, i) => { if(i % 2) ordem.push(p); else ordem.unshift(p); });
       return `<div class="db-nuvem">${ordem.map(p => {
         const t = max === min ? 1 : (Math.sqrt(p.n) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
-        return `<span class="${t > 0.55 ? 'forte' : ''}" style="font-size:${(12 + t * 22).toFixed(1)}px" data-db-palavra="${esc(p.palavra)}" data-db-n="${p.n}" tabindex="0">${esc(p.palavra)}</span>`;
+        return `<span style="font-size:${(12 + t * 22).toFixed(1)}px;font-weight:${t > 0.55 ? 700 : 600};--nuvem-cor:${dbMisturarCor('#E6F5F0', '#00A389', t)}" data-db-palavra="${esc(p.palavra)}" data-db-n="${p.n}" tabindex="0">${esc(p.palavra)}</span>`;
       }).join('')}</div>`;
     }
 
