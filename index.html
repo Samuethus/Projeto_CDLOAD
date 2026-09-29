@@ -5592,7 +5592,8 @@ ${clipPlayerPills(n)}
 
         waCloseMovModal();
         await loadStock();
-        showScanFeedback('ok', `Transferência de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${origem} → ${destino}`);
+        // Total do produto não muda numa transferência — só a distribuição entre setores.
+        showScanFeedback('ok', `Transferência de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${origem} → ${destino} · saldo total do produto: ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${p.unidade} (sem alteração)`);
         return;
       }
 
