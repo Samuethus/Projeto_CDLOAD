@@ -127,6 +127,9 @@
     margin-top:8px;
     flex:1;
     overflow-y:auto;
+    /* overflow-y:auto liga também a rolagem horizontal; o menu nunca rola
+       para os lados (evita a barra que piscava ao recolher). */
+    overflow-x:hidden;
   }
   .nav-item{
     display:flex;
@@ -341,8 +344,16 @@
   .content{
     flex:1;
     overflow-y:auto;
+    /* A página nunca rola para os lados: tabelas e barras largas têm rolagem
+       própria. Sem isto, a barra horizontal piscava durante o recolher/expandir. */
+    overflow-x:hidden;
     padding:30px 34px 48px;
   }
+  /* Durante a animação do menu (0,22s) a largura disponível muda a cada
+     quadro: as áreas com rolagem horizontal própria não mostram a barra. */
+  .app.menu-animando .wa-stock-filters,
+  .app.menu-animando .wa-table-wrap,
+  .app.menu-animando .db-tabela-wrap{overflow-x:hidden;}
 
   .page{display:none;}
   .page.active{display:block;}
@@ -2842,8 +2853,24 @@
   const collapseLabel = document.getElementById('collapseLabel');
 
   let collapsed = false;
+  // Enquanto o menu anima, nenhuma área mostra barra de rolagem horizontal
+  // (.app.menu-animando); ao terminar, avisa as seções que dependem da
+  // largura (o Dashboard redesenha os gráficos).
+  const appEl = sidebar.closest('.app');
+  let fimAnimacao = null;
+  const encerrarAnimacaoMenu = () => {
+    clearTimeout(fimAnimacao);
+    if(appEl) appEl.classList.remove('menu-animando');
+    document.dispatchEvent(new CustomEvent('cdload:menuresize'));
+  };
+  sidebar.addEventListener('transitionend', ev => {
+    if(ev.target === sidebar && ev.propertyName === 'width') encerrarAnimacaoMenu();
+  });
   collapseBtn.addEventListener('click', () => {
     collapsed = !collapsed;
+    if(appEl) appEl.classList.add('menu-animando');
+    clearTimeout(fimAnimacao);
+    fimAnimacao = setTimeout(encerrarAnimacaoMenu, 400);   // garantia, se o transitionend não vier
     sidebar.classList.toggle('collapsed', collapsed);
     if(collapsed){
       collapseIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
@@ -6655,6 +6682,8 @@ ${clipPlayerPills(n)}
       clearTimeout(dbResizeTimer);
       dbResizeTimer = setTimeout(() => { if(currentPage === 'dashboard') dbRender(); }, 200);
     });
+    // Menu recolhido/expandido: a área útil mudou de largura, redesenha os gráficos.
+    document.addEventListener('cdload:menuresize', () => { if(currentPage === 'dashboard') dbRender(); });
 
     // ---------------- Integração com a navegação ----------------
     document.addEventListener('cdload:pagechange', (e) => {
