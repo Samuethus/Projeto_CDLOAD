@@ -954,14 +954,27 @@
     --stk-caption:#8297A8;
   }
 
-  /* ---- Barra superior: segmented control de período + exportar ---- */
-  .stk-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
-  .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;}
+  /* ---- Barra de filtros (replica o padrão do Clipping News) ---- */
+  #page-dashboard .filter-bar{margin-bottom:20px;}
+  .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;flex:0 0 auto;}
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
-  .stk-btn-export{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--stk-neutral-bg);background:var(--stk-white);color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:9px 16px;border-radius:10px;cursor:pointer;}
-  .stk-btn-export:hover{border-color:var(--stk-primary-light);color:var(--stk-primary);}
-  .stk-btn-export svg{width:15px;height:15px;}
+  .stk-segmented-inativo{opacity:.45;pointer-events:none;}
+  /* Pré-visualização de produtos ao buscar (autocomplete) */
+  .stk-busca-lista{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;
+    background:#fff;border:1px solid var(--wa-border);border-radius:12px;
+    box-shadow:0 8px 24px rgba(15,23,42,.12);max-height:320px;overflow:auto;padding:6px;
+  }
+  .stk-busca-lista[hidden]{display:none;}
+  .stk-busca-item{
+    display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;cursor:pointer;
+    padding:9px 10px;border-radius:8px;font-family:inherit;text-align:left;
+  }
+  .stk-busca-item:hover,.stk-busca-item:focus-visible{background:var(--stk-neutral-bg,#F1F5F9);outline:none;}
+  .stk-busca-nome{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stk-busca-meta{font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;flex:0 0 auto;}
+  .stk-busca-vazio{padding:12px 10px;font-size:12.5px;color:var(--wa-text-muted);text-align:center;}
 
   /* ---- Grade + anatomia dos cards ---- */
   /* Linha de KPIs: auto-fit — acomoda 4, 5 ou mais cards sem sobrar coluna vazia. */
@@ -1007,9 +1020,10 @@
   .stk-setor-linha .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-setor-linha .pct{font-weight:700;color:var(--stk-primary-dark);font-variant-numeric:tabular-nums;}
   .stk-barra-total-legenda{font-size:11px;color:var(--stk-caption);text-align:right;}
-  .stk-rosca-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
-  .stk-rosca-legenda{list-style:none;margin:0;padding:0;width:100%;}
-  .stk-rosca-legenda li{margin-bottom:8px;}
+  .stk-rosca-wrap{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
+  .stk-rosca-wrap .stk-svg{flex:0 0 auto;}
+  .stk-rosca-legenda{list-style:none;margin:0;padding:0;flex:1;min-width:120px;}
+  .stk-rosca-legenda li{margin-bottom:10px;}
   .stk-rosca-legenda li:last-child{margin-bottom:0;}
 
   /* ---- Lista "Stock Alerts" ---- */
@@ -1329,15 +1343,47 @@
 
       <!-- DASHBOARD · Painel de Estoque -->
       <section class="page" id="page-dashboard">
-        <div class="stk-toolbar">
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="stkBusca" placeholder="Buscar produto por nome ou código..." autocomplete="off">
+            <div class="stk-busca-lista" id="stkBuscaLista" hidden></div>
+          </div>
           <div class="stk-segmented" id="stkPeriodo" role="tablist" aria-label="Período">
             <button type="button" class="stk-seg-btn" data-periodo="hoje" role="tab" aria-selected="false">Hoje</button>
             <button type="button" class="stk-seg-btn active" data-periodo="semana" role="tab" aria-selected="true">Esta semana</button>
             <button type="button" class="stk-seg-btn" data-periodo="mes" role="tab" aria-selected="false">Este mês</button>
           </div>
-          <button type="button" class="stk-btn-export" id="stkExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            <span>Exportar</span>
+          <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
+            <option value="">Mês</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+          <select class="filter-select" id="stkAnoFiltro" title="Ano (substitui o período acima)">
+            <option value="">Ano</option>
+          </select>
+          <select class="filter-select" id="stkSetorFiltro" title="Setor">
+            <option value="">Setor</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="stkLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="stkExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
           </button>
         </div>
         <div id="stkGrid"></div>
@@ -6118,9 +6164,16 @@ ${clipPlayerPills(n)}
     const stkSegmented = document.getElementById('stkPeriodo');
     const stkGrid = document.getElementById('stkGrid');
     const stkTip = document.getElementById('stkTooltip');
+    const stkBuscaInput = document.getElementById('stkBusca');
+    const stkBuscaLista = document.getElementById('stkBuscaLista');
+    const stkMesEl = document.getElementById('stkMesFiltro');
+    const stkAnoEl = document.getElementById('stkAnoFiltro');
+    const stkSetorEl = document.getElementById('stkSetorFiltro');
     let stkPeriodoAtual = 'semana';
     let stkFluxoModo = 'semanal';
     let stkTabelaAba = 'produtos';
+    let stkProdutoSelecionadoId = null;
+    const STK_SIT_CLS = { ok: 'ok', baixo: 'delay', zerado: 'danger', inativo: 'ongoing' };
 
     // Tooltip flutuante compartilhado por todos os gráficos do painel.
     function stkMostrarDica(ev, titulo, linhas){
@@ -6171,8 +6224,19 @@ ${clipPlayerPills(n)}
       return stkMisturarCor('#0056D2', '#52A0FF', t);
     };
 
-    // Janela do segmented control (Hoje / Esta semana / Este mês).
+    // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
+    // Hoje/Esta semana/Este mês — mesmo padrão do filtro de período do Estoque.
+    const STK_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     function stkRange(modo){
+      const mes = stkMesEl.value, ano = stkAnoEl.value;
+      if(mes || ano){
+        const anoUsar = ano || String(new Date().getFullYear());
+        if(mes){
+          const ultimoDia = new Date(Number(anoUsar), Number(mes), 0).getDate();
+          return { ini: `${anoUsar}-${mes}-01`, fim: `${anoUsar}-${mes}-${String(ultimoDia).padStart(2, '0')}`, rotulo: `${STK_MESES[Number(mes) - 1]} de ${anoUsar}` };
+        }
+        return { ini: `${anoUsar}-01-01`, fim: `${anoUsar}-12-31`, rotulo: `ano de ${anoUsar}` };
+      }
       const fim = stkHojeIso();
       if(modo === 'hoje') return { ini: fim, fim, rotulo: 'hoje' };
       if(modo === 'mes') return { ini: fim.slice(0, 7) + '-01', fim, rotulo: 'este mês' };
@@ -6184,8 +6248,26 @@ ${clipPlayerPills(n)}
       const fimAnt = stkSomaDias(range.ini, -1);
       return { ini: stkSomaDias(fimAnt, -(dias - 1)), fim: fimAnt };
     }
-    const stkMovsEntre = (ini, fim) => stockMovements.filter(m => { const d = String(m.created_at).slice(0, 10); return d >= ini && d <= fim; });
+    // Setor (quando escolhido) filtra as movimentações em todo o painel —
+    // exceto nos dois widgets que comparam setores entre si (Distribuição,
+    // Valor de saída por setor), que sempre mostram todos.
+    const stkMovsEntre = (ini, fim) => stockMovements.filter(m => {
+      const d = String(m.created_at).slice(0, 10);
+      if(d < ini || d > fim) return false;
+      return !stkSetorEl.value || m.setor === stkSetorEl.value;
+    });
     const stkSomaQtd = lista => lista.reduce((s, m) => s + (Number(m.quantidade) || 0), 0);
+
+    // Repopula Setor (fixo) e Ano (dinâmico, a partir do histórico de
+    // movimentações), preservando a seleção atual quando ainda válida.
+    function stkPreencherFiltros(){
+      const curSetor = stkSetorEl.value, curAno = stkAnoEl.value;
+      stkSetorEl.innerHTML = '<option value="">Setor</option>' + STOCK_SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      if(STOCK_SETORES.includes(curSetor)) stkSetorEl.value = curSetor;
+      const anos = [...new Set(stockMovements.map(m => String(m.created_at).slice(0, 4)))].sort().reverse();
+      stkAnoEl.innerHTML = '<option value="">Ano</option>' + anos.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+      if(anos.includes(curAno)) stkAnoEl.value = curAno;
+    }
 
     function stkDelta(atual, anterior){
       if(!(anterior > 0)){
@@ -6314,7 +6396,7 @@ ${clipPlayerPills(n)}
       const gradId = `stkBarraGrad-${el.id}`;
       let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo || 'Valores por categoria')}">
         <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#022B53" stop-opacity="0.24"></stop>
+          <stop offset="0%" stop-color="#022B53" stop-opacity="0.47"></stop>
           <stop offset="100%" stop-color="#022B53" stop-opacity="0"></stop>
         </linearGradient></defs>`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
@@ -6339,16 +6421,21 @@ ${clipPlayerPills(n)}
       const espessura = Math.round(tamanho * 0.24);
       const r = tamanho / 2 - espessura / 2 - 2, cx = tamanho / 2, cy = tamanho / 2, circ = 2 * Math.PI * r;
       const gap = ativos.length > 1 ? 3 : 0;
-      let cum = 0, arcos = '';
+      let cum = 0, cumFrac = 0, arcos = '', rotulos = '';
       ativos.forEach(d => {
         const frac = d.valor / total;
         const len = Math.max(0, frac * circ - gap);
         arcos += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.cor}" stroke-width="${espessura}" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(circ - len).toFixed(1)}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" tabindex="0" data-stk-dica="Distribuição por setor|${esc(d.nome)}|${esc(d.rotuloValor || stkNum(d.valor))} (${stkPct(frac, 1)})|${d.cor}"></circle>`;
-        cum += frac * circ;
+        if(frac >= 0.08){
+          const ang = (-90 + (cumFrac + frac / 2) * 360) * Math.PI / 180;
+          const lx = (cx + r * Math.cos(ang)).toFixed(1), ly = (cy + r * Math.sin(ang)).toFixed(1);
+          rotulos += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-size="${Math.max(9, Math.round(tamanho * 0.1))}" font-weight="700" fill="#fff" pointer-events="none">${esc(stkPct(frac, 0))}</text>`;
+        }
+        cum += frac * circ; cumFrac += frac;
       });
       el.innerHTML = `<svg class="stk-svg" width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}" role="img" aria-label="Distribuição por setor">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--stk-neutral-bg)" stroke-width="${espessura}"></circle>
-        ${arcos}
+        ${arcos}${rotulos}
       </svg>`;
     }
 
@@ -6373,7 +6460,9 @@ ${clipPlayerPills(n)}
       const entradas = chaves.map(() => 0), saidas = chaves.map(() => 0);
       const idx = new Map(chaves.map((k, i) => [k, i]));
       const janelaIni = semanal ? chaves[0] : chaves[0] + '-01';
+      const setor = stkSetorEl.value;
       stockMovements.forEach(m => {
+        if(setor && m.setor !== setor) return;
         const d = String(m.created_at).slice(0, 10);
         if(d < janelaIni) return;
         const chave = semanal ? d : d.slice(0, 7);
@@ -6397,8 +6486,9 @@ ${clipPlayerPills(n)}
       const valores = chaves.map(() => 0);
       const idx = new Map(chaves.map((k, i) => [k, i]));
       const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const setor = stkSetorEl.value;
       stockMovements.forEach(m => {
-        if(m.tipo === 'saida') return;
+        if(m.tipo === 'saida' || (setor && m.setor !== setor)) return;
         const i = idx.get(String(m.created_at).slice(0, 7));
         if(i === undefined) return;
         const p = byId.get(m.produto_id);
@@ -6432,14 +6522,23 @@ ${clipPlayerPills(n)}
         stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhum produto cadastrado. Confira se o seu usuário tem acesso ao Estoque.</div></div>`;
         return;
       }
+      stkPreencherFiltros();
+      const substituido = !!(stkMesEl.value || stkAnoEl.value);
+      stkSegmented.classList.toggle('stk-segmented-inativo', substituido);
+      stkSegmented.querySelectorAll('.stk-seg-btn').forEach(b => {
+        const ativo = !substituido && b.dataset.periodo === stkPeriodoAtual;
+        b.classList.toggle('active', ativo);
+        b.setAttribute('aria-selected', ativo ? 'true' : 'false');
+      });
       const range = stkRange(stkPeriodoAtual);
       const rangeAnt = stkRangeAnterior(range);
+      const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
       const ativos = stockProducts.filter(p => p.ativo);
       const movsPeriodo = stkMovsEntre(range.ini, range.fim);
       const movsAnteriores = stkMovsEntre(rangeAnt.ini, rangeAnt.fim);
 
       // ---- KPIs ----
-      const totalStockAtual = ativos.reduce((s, p) => s + Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS)), 0);
+      const totalStockAtual = ativos.reduce((s, p) => s + Math.max(0, saldoOf(p.id, setorAtivo)), 0);
       const entradasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo !== 'saida'));
       const saidasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo === 'saida'));
       const entradasQtdAnt = stkSomaQtd(movsAnteriores.filter(m => m.tipo !== 'saida'));
@@ -6506,7 +6605,7 @@ ${clipPlayerPills(n)}
           <div class="stk-card-head"><h3>Distribuição por setor</h3></div>
           <div class="stk-card-body">
             <div class="stk-rosca-wrap"><div id="stkDistribGraf"></div><ul class="stk-rosca-legenda">${setores.map(s => `
-              <li class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span><span class="pct">${stkPct(s.qtd / totalSetores, 1)}</span></li>`).join('')}</ul></div>
+              <li class="stk-setor-linha"><span class="dot" style="background:${s.cor}"></span><span class="nome">${esc(s.nome)}</span></li>`).join('')}</ul></div>
             <div class="stk-barra-total-legenda" style="text-align:center;margin-top:10px;">${stkNum(totalSetores)} unidades no total</div>
           </div>
         </div>`;
@@ -6525,18 +6624,20 @@ ${clipPlayerPills(n)}
       // ---- Produtos / Movimentações (switch replicado do Estoque) ----
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const ORDEM_SIT = { zerado: 0, baixo: 1, ok: 2, inativo: 3 };
-      const listaProdutos = stockProducts.slice().sort((a, b) => (ORDEM_SIT[situacaoOf(a)] - ORDEM_SIT[situacaoOf(b)]) || a.nome.localeCompare(b.nome, 'pt-BR'));
-      const STK_SIT_CLS = { ok: 'ok', baixo: 'delay', zerado: 'danger', inativo: 'ongoing' };
+      const produtoFiltro = stkProdutoSelecionadoId ? byId.get(stkProdutoSelecionadoId) : null;
+      const listaProdutos = stockProducts.filter(p => !stkProdutoSelecionadoId || p.id === stkProdutoSelecionadoId)
+        .sort((a, b) => (ORDEM_SIT[situacaoOf(a)] - ORDEM_SIT[situacaoOf(b)]) || a.nome.localeCompare(b.nome, 'pt-BR'));
       const corpoProdutos = listaProdutos.length ? `<table class="stk-table">
           <thead><tr><th>Código</th><th>Produto</th><th>Unidade</th><th style="text-align:right;">Saldo</th><th style="text-align:right;">Mínimo</th><th>Situação</th></tr></thead>
           <tbody>${listaProdutos.map(p => {
             const sit = situacaoOf(p);
             return `<tr><td>${esc(p.codigo_barras)}</td><td>${esc(p.nome)}</td><td>${esc(p.unidade)}</td>
-              <td class="num">${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))}</td><td class="num">${fmtQty(p.estoque_minimo)}</td>
+              <td class="num">${fmtQty(saldoOf(p.id, setorAtivo))}</td><td class="num">${fmtQty(p.estoque_minimo)}</td>
               <td><span class="stk-badge ${STK_SIT_CLS[sit]}">${esc(SITUACAO[sit].label)}</span></td></tr>`;
-          }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhum produto cadastrado.</div>';
+          }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhum produto encontrado.</div>';
 
-      const movsTabela = movsPeriodo.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
+      const movsTabela = movsPeriodo.filter(m => !stkProdutoSelecionadoId || m.produto_id === stkProdutoSelecionadoId)
+        .slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
       const corpoMovimentacoes = movsTabela.length ? `<table class="stk-table">
           <thead><tr><th>Data/hora</th><th>Produto</th><th>Setor</th><th>Tipo</th><th style="text-align:right;">Quantidade</th><th>Usuário</th></tr></thead>
           <tbody>${movsTabela.map(m => {
@@ -6552,9 +6653,10 @@ ${clipPlayerPills(n)}
             </tr>`;
           }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhuma movimentação no período.</div>';
 
+      const tituloTabela = stkTabelaAba === 'produtos' ? 'Produtos' : `Movimentações · ${esc(range.rotulo)}`;
       const wTabela = `<div class="stk-card stk-span-4">
           <div class="stk-card-head">
-            <h3>${stkTabelaAba === 'produtos' ? 'Produtos' : `Movimentações · ${esc(range.rotulo)}`}</h3>
+            <h3>${tituloTabela}${produtoFiltro ? ` <span class="stk-badge ongoing" style="font-weight:600;">Filtrado: ${esc(produtoFiltro.nome)}</span>` : ''}</h3>
             <div class="wa-view-toggle" id="stkTabelaToggle">
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'produtos' ? ' active' : ''}" data-tab="produtos">${stkIcone('caixa')}Produtos</button>
               <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'movimentacoes' ? ' active' : ''}" data-tab="movimentacoes">${stkIcone('transferencia')}Movimentações</button>
@@ -6582,9 +6684,49 @@ ${clipPlayerPills(n)}
     stkSegmented.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
-      stkSegmented.querySelectorAll('.stk-seg-btn').forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
       stkPeriodoAtual = btn.dataset.periodo;
+      // Um período fixo (Hoje/Semana/Mês) substitui o filtro de Mês/Ano avulso.
+      stkMesEl.value = ''; stkAnoEl.value = '';
       stkRender();
+    });
+    [stkMesEl, stkAnoEl, stkSetorEl].forEach(el => el.addEventListener('change', stkRender));
+    document.getElementById('stkLimpar').addEventListener('click', () => {
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = '';
+      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkBuscaLista.hidden = true;
+      stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos';
+      stkRender();
+    });
+    // Busca de produto: pré-visualização (nome, código, saldo, situação) para seleção.
+    stkBuscaInput.addEventListener('input', () => {
+      const termo = stkBuscaInput.value.trim().toLowerCase();
+      if(stkProdutoSelecionadoId && stockProducts.find(p => p.id === stkProdutoSelecionadoId)?.nome.toLowerCase() !== termo){
+        stkProdutoSelecionadoId = null;
+      }
+      if(!termo){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
+      const achados = stockProducts.filter(p => p.nome.toLowerCase().includes(termo) || p.codigo_barras.toLowerCase().includes(termo)).slice(0, 8);
+      stkBuscaLista.innerHTML = achados.length ? achados.map(p => {
+        const sit = situacaoOf(p);
+        return `<button type="button" class="stk-busca-item" data-id="${p.id}">
+          <span class="stk-busca-nome">${esc(p.nome)}</span>
+          <span class="stk-busca-meta">${esc(p.codigo_barras)} · ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${esc(p.unidade)}</span>
+          <span class="stk-badge ${STK_SIT_CLS[sit]}">${esc(SITUACAO[sit].label)}</span>
+        </button>`;
+      }).join('') : '<div class="stk-busca-vazio">Nenhum produto encontrado.</div>';
+      stkBuscaLista.hidden = false;
+    });
+    stkBuscaLista.addEventListener('click', ev => {
+      const btn = ev.target.closest('.stk-busca-item');
+      if(!btn) return;
+      const p = stockProducts.find(x => x.id === btn.dataset.id);
+      stkProdutoSelecionadoId = btn.dataset.id;
+      stkBuscaInput.value = p ? p.nome : '';
+      stkBuscaLista.hidden = true;
+      stkTabelaAba = 'produtos';
+      stkRender();
+    });
+    stkBuscaInput.addEventListener('focus', () => { if(stkBuscaLista.innerHTML) stkBuscaLista.hidden = false; });
+    document.addEventListener('click', ev => {
+      if(!ev.target.closest('.wa-clip-search')) stkBuscaLista.hidden = true;
     });
     stkGrid.addEventListener('change', ev => {
       if(ev.target.id === 'stkFluxoFiltro'){ stkFluxoModo = ev.target.value; stkRender(); }
@@ -6616,14 +6758,16 @@ ${clipPlayerPills(n)}
       const range = stkRange(stkPeriodoAtual);
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
+      const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
       if(stkTabelaAba === 'produtos'){
         rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Situação']]
-          .concat(stockProducts.map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS)), fmtQty(p.estoque_minimo), SITUACAO[situacaoOf(p)].label]));
+          .concat(stockProducts.filter(p => !stkProdutoSelecionadoId || p.id === stkProdutoSelecionadoId)
+            .map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, setorAtivo)), fmtQty(p.estoque_minimo), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_dashboard_produtos_${stkHojeIso()}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
         rows = [['Data/hora', 'Produto', 'Setor', 'Tipo', 'Quantidade', 'Usuário']]
-          .concat(stkMovsEntre(range.ini, range.fim).map(m => {
+          .concat(stkMovsEntre(range.ini, range.fim).filter(m => !stkProdutoSelecionadoId || m.produto_id === stkProdutoSelecionadoId).map(m => {
             const p = byId.get(m.produto_id);
             return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', fmtQty(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
