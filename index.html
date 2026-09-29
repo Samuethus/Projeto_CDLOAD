@@ -1011,7 +1011,7 @@
   .stk-legenda span{display:inline-flex;align-items:center;gap:6px;}
   .stk-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
   .stk-svg{display:block;overflow:visible;}
-  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;font-weight:600;font-family:inherit;}
+  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;font-weight:400;font-family:inherit;}
   .stk-svg .stk-grade{stroke:#EEF1F4;stroke-width:1;}
 
   /* ---- "Warehouse Utilization" (ocupação por setor) ---- */
@@ -1344,9 +1344,13 @@
       </section>
 
 
-      <!-- DASHBOARD · Painel de Estoque -->
+      <!-- DASHBOARD -->
       <section class="page" id="page-dashboard">
         <div class="filter-bar wa-stock-filters">
+          <select class="filter-select" id="stkPainelFiltro" title="Painel exibido">
+            <option value="estoque">Painel · Controle de Estoque</option>
+            <option value="clipping">Painel · Clipping News</option>
+          </select>
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="stkBusca" placeholder="Buscar produto por nome ou código..." autocomplete="off">
@@ -1377,6 +1381,9 @@
           </select>
           <select class="filter-select" id="stkSetorFiltro" title="Setor">
             <option value="">Setor</option>
+          </select>
+          <select class="filter-select" id="stkPlayerFiltro" title="Player" hidden>
+            <option value="">Player</option>
           </select>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
@@ -6160,10 +6167,11 @@ ${clipPlayerPills(n)}
     });
 
     // ==================================================================
-    // Dashboard · Painel de Estoque — lê os dados já carregados pelo
-    // módulo Estoque (stockProducts/stockMovements/saldoOf/situacaoOf),
-    // sem tabela ou fetch novo. Guia de estilo próprio (tokens --stk-*).
+    // Dashboard — dois painéis (Estoque / Clipping News), mesma infra
+    // visual (--stk-* tokens, dbKpi/rosca/gráficos/tooltip). Cada um lê
+    // os dados já carregados pelo próprio módulo, sem fetch novo.
     // ==================================================================
+    const stkPainelEl = document.getElementById('stkPainelFiltro');
     const stkSegmented = document.getElementById('stkPeriodo');
     const stkGrid = document.getElementById('stkGrid');
     const stkTip = document.getElementById('stkTooltip');
@@ -6172,10 +6180,12 @@ ${clipPlayerPills(n)}
     const stkMesEl = document.getElementById('stkMesFiltro');
     const stkAnoEl = document.getElementById('stkAnoFiltro');
     const stkSetorEl = document.getElementById('stkSetorFiltro');
+    const stkPlayerEl = document.getElementById('stkPlayerFiltro');
     let stkPeriodoAtual = 'semana';
     let stkFluxoModo = 'semanal';
     let stkTabelaAba = 'produtos';
     let stkProdutoSelecionadoId = null;
+    let stkNoticiaSelecionadaId = null;
     const STK_SIT_CLS = { ok: 'ok', baixo: 'delay', zerado: 'danger', inativo: 'ongoing' };
 
     // Tooltip flutuante compartilhado por todos os gráficos do painel.
@@ -6209,7 +6219,11 @@ ${clipPlayerPills(n)}
       trendDown: '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline>',
       alerta: '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
       caixa: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line>',
-      transferencia: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>'
+      transferencia: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
+      jornal: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>',
+      megafone: '<path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>',
+      globo: '<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>',
+      sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>'
     };
     const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
     // Paleta dos setores = degradê entre as duas cores do gráfico de linha
@@ -6260,11 +6274,43 @@ ${clipPlayerPills(n)}
       return !stkSetorEl.value || m.setor === stkSetorEl.value;
     });
     const stkSomaQtd = lista => lista.reduce((s, m) => s + (Number(m.quantidade) || 0), 0);
+    // Player (quando escolhido) filtra as notícias em todo o painel de
+    // Clipping — a notícia precisa citar aquele player especificamente.
+    const stkNewsEntre = (ini, fim) => clippingNews.filter(n => {
+      if(n.data < ini || n.data > fim) return false;
+      return !stkPlayerEl.value || (n.players || []).includes(stkPlayerEl.value);
+    });
+    // Sentimento: mesma paleta de marca já validada nesta conversa
+    // (verde/vermelho, com posição + rótulo de texto reforçando a cor).
+    const STK_SENT = [
+      { nome: 'Negativo', cor: '#DA0000' },
+      { nome: 'Neutro', cor: '#CBD5E1' },
+      { nome: 'Positivo', cor: '#74B230' }
+    ];
 
     // Repopula Setor (fixo) e Ano (dinâmico, a partir do histórico de
     // movimentações), preservando a seleção atual quando ainda válida.
+    // Mostra/esconde os filtros específicos de cada painel — a busca e o
+    // período (segmentado/Mês/Ano) são os únicos que os dois sempre têm.
+    function stkAlternarFiltrosPorPainel(){
+      const clipping = stkPainelEl.value === 'clipping';
+      stkSetorEl.hidden = clipping;
+      stkPlayerEl.hidden = !clipping;
+      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : 'Buscar produto por nome ou código...';
+    }
+
     function stkPreencherFiltros(){
-      const curSetor = stkSetorEl.value, curAno = stkAnoEl.value;
+      const curAno = stkAnoEl.value;
+      if(stkPainelEl.value === 'clipping'){
+        const curPlayer = stkPlayerEl.value;
+        stkPlayerEl.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
+        if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) stkPlayerEl.value = curPlayer;
+        const anosClip = [...new Set(clippingNews.map(n => String(n.data).slice(0, 4)))].sort().reverse();
+        stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosClip.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        if(anosClip.includes(curAno)) stkAnoEl.value = curAno;
+        return;
+      }
+      const curSetor = stkSetorEl.value;
       stkSetorEl.innerHTML = '<option value="">Setor</option>' + STOCK_SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
       if(STOCK_SETORES.includes(curSetor)) stkSetorEl.value = curSetor;
       const anos = [...new Set(stockMovements.map(m => String(m.created_at).slice(0, 4)))].sort().reverse();
@@ -6386,7 +6432,11 @@ ${clipPlayerPills(n)}
     // da seção selecionada no menu (--sidebar-selected); contorno sólido +
     // preenchimento chapado a 20% de opacidade.
     const STK_COR_BARRA = '#0052CC';
-    function stkDesenharBarrasValor(el, categorias, valores, rotulo){
+    // `formatador` estiliza o eixo Y e o valor no tooltip — R$ compacto por
+    // padrão (Estoque); Clipping passa stkNum para contagens simples.
+    function stkDesenharBarrasValor(el, categorias, valores, rotulo, formatador, formatadorDica){
+      const fmtEixo = formatador || stkMoedaCompacta;
+      const fmtDica = formatadorDica || stkMoeda;
       const W = Math.max(260, Math.floor(el.clientWidth)), H = 220;
       const m = { t: 10, r: 10, b: 26, l: 56 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
@@ -6400,13 +6450,13 @@ ${clipPlayerPills(n)}
       let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo || 'Valores por categoria')}">`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
         svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
-        svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkMoedaCompacta(v)}</text>`;
+        svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${fmtEixo(v)}</text>`;
       }
       categorias.forEach((cat, i) => {
         const cx = m.l + grupoL * i + grupoL / 2;
         const x = cx - barraL / 2;
         const yy = y(valores[i]);
-        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${STK_COR_BARRA}" fill-opacity="0.2" stroke="${STK_COR_BARRA}" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(stkMoeda(valores[i]))}|${STK_COR_BARRA}"></rect>`;
+        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${STK_COR_BARRA}" fill-opacity="0.2" stroke="${STK_COR_BARRA}" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(fmtDica(valores[i]))}|${STK_COR_BARRA}"></rect>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cat)}</text>`;
       });
       svg += `</svg>`;
@@ -6511,12 +6561,72 @@ ${clipPlayerPills(n)}
       return { categorias: linhas.map(l => l[0]), valores: linhas.map(l => l[1]) };
     }
 
+    // Volume de notícias por player, ao longo do tempo (dia/semana ou mês
+    // conforme o filtro local do card) — o "fluxo" do painel de Clipping.
+    function stkDadosVolumePorPlayer(modo){
+      const semanal = modo !== 'mensal';
+      const hoje = stkHojeIso();
+      const categorias = [], chaves = [];
+      if(semanal){
+        for(let i = 6; i >= 0; i--){
+          const d = stkSomaDias(hoje, -i);
+          chaves.push(d);
+          categorias.push(new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''));
+        }
+      } else {
+        for(let i = 5; i >= 0; i--){
+          const d = new Date(hoje + 'T12:00:00'); d.setMonth(d.getMonth() - i);
+          chaves.push(d.toISOString().slice(0, 7));
+          categorias.push(d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''));
+        }
+      }
+      const idx = new Map(chaves.map((k, i) => [k, i]));
+      const janelaIni = semanal ? chaves[0] : chaves[0] + '-01';
+      const playerFiltro = stkPlayerEl.value;
+      const series = CLIP_PLAYERS.filter(p => !playerFiltro || playerFiltro === p.nome)
+        .map(p => ({ nome: p.nome, cor: p.cor, valores: chaves.map(() => 0) }));
+      clippingNews.forEach(n => {
+        if(n.data < janelaIni) return;
+        const chave = semanal ? n.data : n.data.slice(0, 7);
+        const i = idx.get(chave);
+        if(i === undefined) return;
+        series.forEach(s => { if((n.players || []).includes(s.nome)) s.valores[i]++; });
+      });
+      return { categorias, series };
+    }
+
+    // Top N categorias por volume de notícias no período.
+    function stkDadosCategorias(lista){
+      const cont = new Map();
+      lista.forEach(n => { const c = n.categoria || 'Outros'; cont.set(c, (cont.get(c) || 0) + 1); });
+      const linhas = [...cont.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+      return { categorias: linhas.map(l => l[0]), valores: linhas.map(l => l[1]) };
+    }
+
+    // Top N veículos (portais) por volume de notícias no período.
+    function stkDadosVeiculos(lista){
+      const cont = new Map();
+      lista.forEach(n => { const k = n.portal || n.fonte || 'Outros'; cont.set(k, (cont.get(k) || 0) + 1); });
+      const linhas = [...cont.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+      return { categorias: linhas.map(l => l[0]), valores: linhas.map(l => l[1]) };
+    }
+
     function stkAbrir(){
-      const carregar = stockProducts.length ? Promise.resolve() : loadStock();
+      const carregar = stkPainelEl.value === 'clipping'
+        ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
+        : (stockProducts.length ? Promise.resolve() : loadStock());
       Promise.resolve(carregar).then(stkRender);
     }
 
+    // Despacha para o painel selecionado — os dois compartilham toda a
+    // infraestrutura visual (dbKpi/stkCard/rosca/gráficos/tooltip).
     function stkRender(){
+      stkAlternarFiltrosPorPainel();
+      if(stkPainelEl.value === 'clipping') return stkRenderClipping();
+      return stkRenderEstoque();
+    }
+
+    function stkRenderEstoque(){
       if(!stockProducts.length){
         stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhum produto cadastrado. Confira se o seu usuário tem acesso ao Estoque.</div></div>`;
         return;
@@ -6687,6 +6797,151 @@ ${clipPlayerPills(n)}
       if(grafValorSaida) stkDesenharBarrasValor(grafValorSaida, VS.categorias, VS.valores, 'Valor de saída por setor');
     }
 
+    function stkRenderClipping(){
+      if(!clippingNews.length){
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhuma notícia carregada. Confira se o seu usuário tem acesso ao Clipping News.</div></div>`;
+        return;
+      }
+      stkPreencherFiltros();
+      const substituido = !!(stkMesEl.value || stkAnoEl.value);
+      stkSegmented.classList.toggle('stk-segmented-inativo', substituido);
+      stkSegmented.querySelectorAll('.stk-seg-btn').forEach(b => {
+        const ativo = !substituido && b.dataset.periodo === stkPeriodoAtual;
+        b.classList.toggle('active', ativo);
+        b.setAttribute('aria-selected', ativo ? 'true' : 'false');
+      });
+      const range = stkRange(stkPeriodoAtual);
+      const rangeAnt = stkRangeAnterior(range);
+      const atual = stkNewsEntre(range.ini, range.fim);
+      const anterior = stkNewsEntre(rangeAnt.ini, rangeAnt.fim);
+
+      // ---- KPIs ----
+      const foco = (stkPlayerEl.value && CLIP_PLAYERS.find(p => p.nome === stkPlayerEl.value)) || CLIP_PLAYERS[0];
+      const menc = (lista, nome) => lista.filter(n => (n.players || []).includes(nome)).length;
+      const totMenc = lista => CLIP_PLAYERS.reduce((s, p) => s + menc(lista, p.nome), 0);
+      const sovDe = (l, nome) => totMenc(l) ? menc(l, nome) / totMenc(l) : 0;
+      const sov = l => sovDe(l, foco.nome);
+      const portais = l => new Set(l.map(clipPortalKey).filter(Boolean)).size;
+      const fracSent = (l, nome) => l.length ? l.filter(n => n.sentimento === nome).length / l.length : 0;
+
+      const kTotal = stkKpi('jornal', 'Total de notícias', stkNum(atual.length), stkDelta(atual.length, anterior.length));
+      const kSov = stkKpi('megafone', `Share of Voice · ${esc(foco.nome)}`, stkPct(sov(atual)), stkDelta(sov(atual), sov(anterior)));
+      const kVeic = stkKpi('globo', 'Veículos distintos', stkNum(portais(atual)), stkDelta(portais(atual), portais(anterior)));
+      const kPos = stkKpi('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkDelta(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo')));
+      const kNeg = stkKpi('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkDelta(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo')));
+
+      // ---- Volume de notícias por player (linhas suaves com área) ----
+      const V = stkDadosVolumePorPlayer(stkFluxoModo);
+      const wVolume = `<div class="stk-card">
+          <div class="stk-card-head"><h3>Volume de notícias</h3>
+            <select class="stk-chart-filtro" id="stkFluxoFiltro">
+              <option value="semanal" ${stkFluxoModo === 'semanal' ? 'selected' : ''}>Semanal</option>
+              <option value="mensal" ${stkFluxoModo === 'mensal' ? 'selected' : ''}>Mensal</option>
+            </select>
+          </div>
+          <div class="stk-card-body">
+            <div class="stk-legenda">${V.series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>
+            <div id="stkFluxoGraf"></div>
+          </div>
+        </div>`;
+
+      // ---- Notícias por categoria ----
+      const CAT = stkDadosCategorias(atual);
+      const wCategorias = `<div class="stk-card">
+          <div class="stk-card-head"><h3>Notícias por categoria</h3></div>
+          <div class="stk-card-body"><div id="stkComprasGraf"></div></div>
+        </div>`;
+
+      // ---- Alertas (notícias negativas recentes) — 3ª coluna, linhas 2-3 ----
+      const negativas = atual.filter(n => n.sentimento === 'Negativo')
+        .slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
+      const wAlertas = `<div class="stk-card stk-row-span-2">
+          <div class="stk-card-head"><h3>Notícias negativas</h3></div>
+          <div class="stk-card-body">${negativas.length ? `<ul class="stk-alerta-lista">${negativas.map(n => {
+              const href = clipHref(n);
+              return `<li class="stk-alerta-item">
+                <span class="stk-alerta-ic danger">${stkIcone('alerta')}</span>
+                <div class="stk-alerta-txt">${href
+                  ? `<a class="stk-alerta-nome" href="${esc(href)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">${esc(n.titulo)}</a>`
+                  : `<div class="stk-alerta-nome">${esc(n.titulo)}</div>`}
+                  <div class="stk-alerta-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</div></div>
+              </li>`;
+            }).join('')}</ul>` : '<div class="stk-vazio">Nenhuma notícia negativa no período.</div>'}</div>
+        </div>`;
+
+      // ---- Sentimento (rosca) ----
+      const dadosSent = STK_SENT.map(s => ({ nome: s.nome, cor: s.cor, valor: atual.filter(n => n.sentimento === s.nome).length }));
+      const totalSent = dadosSent.reduce((s, d) => s + d.valor, 0) || 1;
+      const wSentimento = `<div class="stk-card">
+          <div class="stk-card-head"><h3>Sentimento</h3></div>
+          <div class="stk-card-body stk-rosca-body">
+            <div class="stk-rosca-wrap"><div class="stk-rosca-graf" id="stkDistribGraf"></div><ul class="stk-rosca-legenda" id="stkDistribLegenda">${dadosSent.map(d => `
+              <li class="stk-setor-linha"><span class="dot" style="background:${d.cor}"></span><span class="nome">${esc(d.nome)}</span></li>`).join('')}</ul></div>
+            <div class="stk-rosca-total">${stkNum(totalSent)} notícias no período</div>
+          </div>
+        </div>`;
+
+      // ---- Principais veículos ----
+      const VEIC = stkDadosVeiculos(atual);
+      const wVeiculos = `<div class="stk-card">
+          <div class="stk-card-head"><h3>Principais veículos</h3></div>
+          <div class="stk-card-body"><div id="stkValorSaidaGraf"></div></div>
+        </div>`;
+
+      // ---- Notícias / Por player (switch replicado do Estoque) ----
+      const STK_SENT_CLS = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
+      const listaNoticias = atual.filter(n => !stkNoticiaSelecionadaId || n.id === stkNoticiaSelecionadaId)
+        .slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
+      const corpoNoticias = listaNoticias.length ? `<table class="stk-table">
+          <thead><tr><th>Data</th><th>Título</th><th>Portal</th><th>Player</th><th>Sentimento</th></tr></thead>
+          <tbody>${listaNoticias.map(n => {
+            const href = clipHref(n);
+            return `<tr><td>${formatClipDateBR(n.data)}</td>
+              <td>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" style="color:inherit;">${esc(n.titulo)}</a>` : esc(n.titulo)}</td>
+              <td>${esc(n.portal || n.fonte || '—')}</td>
+              <td>${esc((n.players || []).join(', ') || '—')}</td>
+              <td><span class="stk-badge ${STK_SENT_CLS[n.sentimento] || 'ongoing'}">${esc(n.sentimento || 'Neutro')}</span></td></tr>`;
+          }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhuma notícia encontrada.</div>';
+
+      const corpoPorPlayer = `<table class="stk-table">
+          <thead><tr><th>Player</th><th style="text-align:right;">Menções</th><th style="text-align:right;">Share of Voice</th><th style="text-align:right;">Veículos</th><th style="text-align:right;">% Positivas</th></tr></thead>
+          <tbody>${CLIP_PLAYERS.map(p => {
+            const doPlayer = atual.filter(n => (n.players || []).includes(p.nome));
+            return `<tr><td>${esc(p.nome)}</td><td class="num">${stkNum(doPlayer.length)}</td>
+              <td class="num">${stkPct(sovDe(atual, p.nome))}</td>
+              <td class="num">${stkNum(portais(doPlayer))}</td>
+              <td class="num">${stkPct(fracSent(doPlayer, 'Positivo'))}</td></tr>`;
+          }).join('')}</tbody></table>`;
+
+      const wTabela = `<div class="stk-card stk-span-4">
+          <div class="stk-card-head">
+            <h3>${stkTabelaAba === 'produtos' ? 'Notícias' : 'Por player'}</h3>
+            <div class="wa-view-toggle" id="stkTabelaToggle">
+              <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'produtos' ? ' active' : ''}" data-tab="produtos">${stkIcone('jornal')}Notícias</button>
+              <button type="button" class="wa-view-toggle-btn${stkTabelaAba === 'movimentacoes' ? ' active' : ''}" data-tab="movimentacoes">${stkIcone('megafone')}Por player</button>
+            </div>
+          </div>
+          <div class="stk-card-body"><div class="stk-table-wrap">${stkTabelaAba === 'produtos' ? corpoNoticias : corpoPorPlayer}</div></div>
+        </div>`;
+
+      stkGrid.innerHTML = `<div class="stk-kpi-row">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
+        + `<div class="stk-grid-3">${wVolume}${wCategorias}${wAlertas}${wSentimento}${wVeiculos}</div>`
+        + `<div class="stk-grid">${wTabela}</div>`;
+      const grafDistrib = document.getElementById('stkDistribGraf');
+      if(grafDistrib){
+        const legenda = document.getElementById('stkDistribLegenda');
+        const livre = grafDistrib.parentElement.clientWidth - (legenda ? legenda.offsetWidth : 0) - 16;
+        const tamanho = Math.max(140, Math.min(210, Math.floor(livre)));
+        stkDesenharRosca(grafDistrib, dadosSent, tamanho);
+      }
+      const grafFluxo = document.getElementById('stkFluxoGraf');
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series);
+      const grafCategorias = document.getElementById('stkComprasGraf');
+      if(grafCategorias) stkDesenharBarrasValor(grafCategorias, CAT.categorias, CAT.valores, 'Notícias por categoria', stkNum, stkNum);
+      const grafVeiculos = document.getElementById('stkValorSaidaGraf');
+      if(grafVeiculos) stkDesenharBarrasValor(grafVeiculos, VEIC.categorias, VEIC.valores, 'Principais veículos', stkNum, stkNum);
+    }
+
     stkSegmented.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
@@ -6695,16 +6950,37 @@ ${clipPlayerPills(n)}
       stkMesEl.value = ''; stkAnoEl.value = '';
       stkRender();
     });
-    [stkMesEl, stkAnoEl, stkSetorEl].forEach(el => el.addEventListener('change', stkRender));
+    [stkMesEl, stkAnoEl, stkSetorEl, stkPlayerEl].forEach(el => el.addEventListener('change', stkRender));
+    stkPainelEl.addEventListener('change', () => {
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
+      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkNoticiaSelecionadaId = null; stkBuscaLista.hidden = true;
+      stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos';
+      stkAbrir();
+    });
     document.getElementById('stkLimpar').addEventListener('click', () => {
-      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = '';
-      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkBuscaLista.hidden = true;
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
+      stkBuscaInput.value = ''; stkProdutoSelecionadoId = null; stkNoticiaSelecionadaId = null; stkBuscaLista.hidden = true;
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos';
       stkRender();
     });
-    // Busca de produto: pré-visualização (nome, código, saldo, situação) para seleção.
+    // Busca: pré-visualização para seleção — produto (Estoque) ou notícia (Clipping).
     stkBuscaInput.addEventListener('input', () => {
       const termo = stkBuscaInput.value.trim().toLowerCase();
+      if(stkPainelEl.value === 'clipping'){
+        if(stkNoticiaSelecionadaId && clippingNews.find(n => n.id === stkNoticiaSelecionadaId)?.titulo.toLowerCase() !== termo){
+          stkNoticiaSelecionadaId = null;
+        }
+        if(!termo){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
+        const achadas = clippingNews.filter(n => n.titulo.toLowerCase().includes(termo) || (n.resumo || '').toLowerCase().includes(termo) || (n.portal || n.fonte || '').toLowerCase().includes(termo)).slice(0, 8);
+        const STK_SENT_CLS = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
+        stkBuscaLista.innerHTML = achadas.length ? achadas.map(n => `<button type="button" class="stk-busca-item" data-id="${n.id}">
+            <span class="stk-busca-nome">${esc(n.titulo)}</span>
+            <span class="stk-busca-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</span>
+            <span class="stk-badge ${STK_SENT_CLS[n.sentimento] || 'ongoing'}">${esc(n.sentimento || 'Neutro')}</span>
+          </button>`).join('') : '<div class="stk-busca-vazio">Nenhuma notícia encontrada.</div>';
+        stkBuscaLista.hidden = false;
+        return;
+      }
       if(stkProdutoSelecionadoId && stockProducts.find(p => p.id === stkProdutoSelecionadoId)?.nome.toLowerCase() !== termo){
         stkProdutoSelecionadoId = null;
       }
@@ -6723,6 +6999,15 @@ ${clipPlayerPills(n)}
     stkBuscaLista.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-busca-item');
       if(!btn) return;
+      if(stkPainelEl.value === 'clipping'){
+        const n = clippingNews.find(x => x.id === btn.dataset.id);
+        stkNoticiaSelecionadaId = btn.dataset.id;
+        stkBuscaInput.value = n ? n.titulo : '';
+        stkBuscaLista.hidden = true;
+        stkTabelaAba = 'produtos';
+        stkRender();
+        return;
+      }
       const p = stockProducts.find(x => x.id === btn.dataset.id);
       stkProdutoSelecionadoId = btn.dataset.id;
       stkBuscaInput.value = p ? p.nome : '';
@@ -6764,6 +7049,32 @@ ${clipPlayerPills(n)}
       const range = stkRange(stkPeriodoAtual);
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
+      if(stkPainelEl.value === 'clipping'){
+        const noticias = stkNewsEntre(range.ini, range.fim).filter(n => !stkNoticiaSelecionadaId || n.id === stkNoticiaSelecionadaId);
+        if(stkTabelaAba === 'produtos'){
+          rows = [['Data', 'Título', 'Portal', 'Players', 'Categoria', 'Sentimento', 'Link']]
+            .concat(noticias.map(n => [formatClipDateBR(n.data), n.titulo, n.portal || n.fonte || '', (n.players || []).join(' / '), n.categoria || '', n.sentimento || '', clipHref(n) || '']));
+          filename = `clipping_dashboard_noticias_${range.ini}_a_${range.fim}.csv`;
+        } else {
+          const menc = (lista, nome) => lista.filter(n => (n.players || []).includes(nome)).length;
+          const portais = l => new Set(l.map(clipPortalKey).filter(Boolean)).size;
+          const totMenc = CLIP_PLAYERS.reduce((s, p) => s + menc(noticias, p.nome), 0);
+          rows = [['Player', 'Menções', 'Share of voice', 'Veículos', '% Positivas']]
+            .concat(CLIP_PLAYERS.map(p => {
+              const doPlayer = noticias.filter(n => (n.players || []).includes(p.nome));
+              const sov = totMenc ? doPlayer.length / totMenc : 0;
+              const pos = doPlayer.length ? doPlayer.filter(n => n.sentimento === 'Positivo').length / doPlayer.length : 0;
+              return [p.nome, stkNum(doPlayer.length), stkPct(sov), stkNum(portais(doPlayer)), stkPct(pos)];
+            }));
+          filename = `clipping_dashboard_por_player_${range.ini}_a_${range.fim}.csv`;
+        }
+        const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
       if(stkTabelaAba === 'produtos'){
         rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Situação']]
