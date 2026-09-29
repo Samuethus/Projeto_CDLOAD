@@ -6179,12 +6179,15 @@ ${clipPlayerPills(n)}
     const dbGrid = document.getElementById('dbGrid');
     const dbStatus = document.getElementById('dbStatus');
     const dbTip = document.getElementById('dbTooltip');
-    // Sentimento: polaridade (divergente centrado no neutro), cores validadas
-    // para daltonismo — o verde x vermelho reprovou na validação.
+    // Sentimento: polaridade (divergente centrado no neutro). Cores de marca
+    // (verde/vermelho) — para quem tem daltonismo vermelho-verde (o mais
+    // comum) a distinção por cor sozinha é fraca; por isso cada segmento
+    // também se apoia em posição (esquerda/direita da barra), rótulo de
+    // texto e legenda (ver dbSentimentoHtml), nunca só na cor.
     const DB_SENT = [
-      { nome: 'Negativo', cor: '#DC2626', texto: '#fff' },
+      { nome: 'Negativo', cor: '#DA0000', texto: '#fff' },
       { nome: 'Neutro', cor: '#CBD5E1', texto: '#0F172A' },
-      { nome: 'Positivo', cor: '#0891B2', texto: '#fff' }
+      { nome: 'Positivo', cor: '#74B230', texto: '#0F172A' }
     ];
     const DB_STOP = new Set(('a o as os um uma uns umas de da do das dos em no na nos nas por para pra com sem sob sobre entre ate e ou que se ao aos e sao ser foi sera seu sua seus suas mais menos muito ja nao como quando onde qual quais este esta estes estas esse essa isso isto aquele aquela diz apos durante contra desde pelo pela pelos pelas tambem novo nova novos novas ano anos dia dias mes hoje vai vao tem ter faz fazer ha sim so ainda cada todo toda todos todas outro outra seus lhe eles elas ele ela voce the of and ' +
       'cdl cuiaba fecomercio mt mato grosso camara dirigentes lojistas federacao fundacao').split(' '));
@@ -6320,6 +6323,25 @@ ${clipPlayerPills(n)}
       return { chaves, series, semanal, rotulo };
     }
 
+    // Interpola uma curva suave (Catmull-Rom -> Bézier cúbica) por todos os
+    // pontos, em vez de segmentos retos — mesmo efeito visual de gráficos
+    // de linha "premium" (ex.: dashboards financeiros), sem depender de lib.
+    function dbCurvaSuave(pontos){
+      if(pontos.length < 2) return pontos.length ? `M${pontos[0].x.toFixed(1)},${pontos[0].y.toFixed(1)}` : '';
+      if(pontos.length === 2) return `M${pontos[0].x.toFixed(1)},${pontos[0].y.toFixed(1)} L${pontos[1].x.toFixed(1)},${pontos[1].y.toFixed(1)}`;
+      let d = `M${pontos[0].x.toFixed(1)},${pontos[0].y.toFixed(1)}`;
+      for(let i = 0; i < pontos.length - 1; i++){
+        const p0 = pontos[i === 0 ? 0 : i - 1];
+        const p1 = pontos[i];
+        const p2 = pontos[i + 1];
+        const p3 = pontos[i + 2 < pontos.length ? i + 2 : i + 1];
+        const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+        const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+        d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+      }
+      return d;
+    }
+
     function dbDesenharLinhas(el, S){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = 240;
       const m = { t: 10, r: 14, b: 26, l: 38 };
@@ -6338,10 +6360,26 @@ ${clipPlayerPills(n)}
       [...new Set(marcas)].forEach(i => {
         svg += `<text class="db-eixo" x="${x(i)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${S.rotulo(S.chaves[i])}</text>`;
       });
+      // Curva suave por série + área em gradiente (a cor da série esmaecendo
+      // até transparente) — IDs de gradiente por elemento, sem colidir entre
+      // widgets. A ordem do <defs> não importa: SVG resolve url(#id) pelo
+      // documento inteiro, não pela posição.
+      const base = m.t + ih;
+      S.series.forEach((s, si) => {
+        const pontos = s.valores.map((v, i) => ({ x: x(i), y: y(v) }));
+        const linha = dbCurvaSuave(pontos);
+        const gradId = `dbGrad-${el.id}-${si}`;
+        const area = `${linha} L${pontos[n - 1].x.toFixed(1)},${base.toFixed(1)} L${pontos[0].x.toFixed(1)},${base.toFixed(1)} Z`;
+        svg += `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${s.cor}" stop-opacity="0.22"></stop>
+          <stop offset="100%" stop-color="${s.cor}" stop-opacity="0"></stop>
+        </linearGradient></defs>`;
+        svg += `<path d="${area}" fill="url(#${gradId})" stroke="none"></path>`;
+      });
       S.series.forEach(s => {
-        const d = s.valores.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-        svg += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
-        svg += `<circle cx="${x(n - 1)}" cy="${y(s.valores[n - 1])}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
+        const linha = dbCurvaSuave(s.valores.map((v, i) => ({ x: x(i), y: y(v) })));
+        svg += `<path d="${linha}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
+        svg += `<circle cx="${x(n - 1).toFixed(1)}" cy="${y(s.valores[n - 1]).toFixed(1)}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
       });
       svg += `<line class="db-cruz" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"></line>`;
       S.series.forEach((s, k) => { svg += `<circle class="db-ponto" data-k="${k}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2" visibility="hidden"></circle>`; });
