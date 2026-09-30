@@ -957,7 +957,6 @@
   .wa-clip-pill-player{background:#fff;color:var(--wa-text);box-shadow:inset 0 0 0 1px var(--wa-border);display:inline-flex;align-items:center;gap:5px;}
   .wa-clip-pill-player i{width:8px;height:8px;border-radius:50%;display:inline-block;}
   .wa-clip-pill-categoria{background:var(--wa-primary-soft);color:var(--wa-primary);}
-  .wa-clip-pill-canal{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   .wa-clip-pill-positivo{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
   .wa-clip-pill-neutro{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   .wa-clip-pill-negativo{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
@@ -4490,7 +4489,6 @@
             <div class="wa-clip-tags">
 ${clipPlayerPills(n)}
               <span class="wa-clip-pill wa-clip-pill-categoria">${esc(n.categoria)}</span>
-              <span class="wa-clip-pill wa-clip-pill-canal">${esc(n.canal)}</span>
               <span class="wa-clip-pill ${sentimentoClass[n.sentimento] || 'wa-clip-pill-neutro'}">${esc(n.sentimento)}</span>
             </div>
           </div>
