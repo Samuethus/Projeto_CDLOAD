@@ -760,6 +760,46 @@
   .wa-toggle-chip:hover:not(.selected){border-color:#cbd5e1;}
   .wa-toggle-chip:disabled{cursor:not-allowed;opacity:.85;}
 
+  /* ---- Participantes (busca com lista suspensa) ---- */
+  .wa-participant-picker{position:relative;}
+  .wa-participant-picker input{width:100%;}
+  .wa-participant-dropdown{
+    position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;
+    background:#fff;border:1px solid var(--wa-border);border-radius:10px;
+    box-shadow:0 12px 28px rgba(15,23,42,.14);max-height:240px;overflow-y:auto;padding:4px;
+  }
+  .wa-participant-dropdown[hidden]{display:none;}
+  .wa-participant-option{
+    display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:none;border-radius:8px;
+    background:transparent;font-family:inherit;text-align:left;cursor:pointer;color:var(--wa-text);
+  }
+  .wa-participant-option.active, .wa-participant-option:hover{background:var(--wa-primary-soft);}
+  .wa-participant-option .wa-p-avatar{
+    flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:var(--wa-primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  }
+  .wa-participant-option .wa-p-name{font-size:13px;font-weight:600;}
+  .wa-participant-option .wa-p-email{font-size:11.5px;color:var(--wa-text-muted);}
+  .wa-participant-option mark{background:#fde68a;color:inherit;border-radius:2px;}
+  .wa-participant-empty{padding:10px;font-size:12px;color:#94a3b8;}
+  .wa-participant-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .wa-participant-chip{
+    display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 12px;border-radius:9999px;
+    background:var(--wa-primary-soft);color:#1e40af;font-size:12.5px;font-weight:600;
+  }
+  .wa-participant-chip.externo{background:#f1f5f9;color:#334155;}
+  .wa-participant-chip button{
+    display:flex;align-items:center;justify-content:center;width:18px;height:18px;border:none;border-radius:50%;
+    background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;
+  }
+  .wa-participant-chip button:hover{background:rgba(0,0,0,.08);}
+  .wa-field-hint{font-size:11.5px;color:var(--wa-text-muted);margin-top:6px;line-height:1.45;}
+  .wa-time-row{display:flex;gap:12px;}
+  .wa-time-row > div{flex:1;}
+  .wa-time-row label{font-weight:600 !important;color:var(--wa-text-muted) !important;}
+  .wa-review-participants{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  .wa-review-participants span{font-size:12.5px;}
+
   /* ---- Distribuição de budget por canal ---- */
   .wa-dist-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
   .wa-dist-row .wa-dist-label{flex:0 0 110px;font-size:12.5px;font-weight:700;color:var(--wa-text);}
@@ -2142,6 +2182,24 @@
                     <button type="button" class="wa-toggle-chip" data-team="Conteúdo">Conteúdo</button>
                   </div>
                 </div>
+                <div class="wa-field">
+                  <label for="waCampParticipantSearch">Participantes</label>
+                  <div class="wa-participant-picker">
+                    <input type="text" id="waCampParticipantSearch" placeholder="Buscar pelo nome ou digitar um e-mail…" autocomplete="off"
+                           role="combobox" aria-expanded="false" aria-controls="waCampParticipantDropdown" aria-autocomplete="list">
+                    <div class="wa-participant-dropdown" id="waCampParticipantDropdown" role="listbox" hidden></div>
+                  </div>
+                  <div class="wa-participant-chips" id="waCampParticipantChips"></div>
+                  <div class="wa-field-hint">Ao salvar, o evento é enviado para a agenda (Outlook / Google Calendar) de cada participante. Pessoas de fora da organização: digite o e-mail e pressione Enter.</div>
+                </div>
+                <div class="wa-field">
+                  <label>Horário na agenda <span style="font-weight:400;color:var(--wa-text-muted);">(opcional)</span></label>
+                  <div class="wa-time-row">
+                    <div><label for="waCampHoraInicio">Início</label><input type="time" id="waCampHoraInicio"></div>
+                    <div><label for="waCampHoraFim">Término</label><input type="time" id="waCampHoraFim"></div>
+                  </div>
+                  <div class="wa-field-hint">Sem horário, a agenda fica bloqueada o dia inteiro durante a vigência. Com horário, o bloqueio se repete diariamente nesse intervalo.</div>
+                </div>
               </div>
 
               <!-- ETAPA 5: Revisão & Confirmação -->
@@ -2754,7 +2812,8 @@
        planejamento_e_objetivos  jsonb not null default '{}'::jsonb, -- { tipo_agenda, local, sala_reservada, cpl_meta, data_inicio, data_fim }
        publico_e_midia           jsonb not null default '{}'::jsonb, -- { persona, quantidade_pessoas, descricao, canais: [] }
        gestao_financeira         jsonb not null default '{}'::jsonb, -- { budget_total, distribuicao_verba_por_canal: {} }
-       estrutura_tecnica         jsonb not null default '{}'::jsonb, -- { times_envolvidos: [] }
+       estrutura_tecnica         jsonb not null default '{}'::jsonb, -- { times_envolvidos: [], participantes: [{nome,email,externo}], horario_inicio, horario_fim }
+       agenda_sync               jsonb not null default '{}'::jsonb, -- ids dos eventos no Outlook/Google (supabase/schema_agenda.sql)
        created_at                timestamptz not null default now(),
        updated_at                timestamptz not null default now()
      );
@@ -3515,7 +3574,8 @@
         planejamento_e_objetivos: row.planejamento_e_objetivos || {},
         publico_e_midia: row.publico_e_midia || {},
         gestao_financeira: row.gestao_financeira || {},
-        estrutura_tecnica: row.estrutura_tecnica || {}
+        estrutura_tecnica: row.estrutura_tecnica || {},
+        agenda_sync: row.agenda_sync || {}
       }));
       renderCampaigns();
     }
@@ -3624,6 +3684,139 @@
       btn.classList.toggle('selected');
     });
 
+    // ---------------- Participantes (busca em `usuarios`) ----------------
+    const waCampParticipantSearch = document.getElementById('waCampParticipantSearch');
+    const waCampParticipantDropdown = document.getElementById('waCampParticipantDropdown');
+    const waCampParticipantChips = document.getElementById('waCampParticipantChips');
+    const waCampHoraInicio = document.getElementById('waCampHoraInicio');
+    const waCampHoraFim = document.getElementById('waCampHoraFim');
+    const PARTICIPANT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    let participantDirectory = null;
+    let selectedParticipants = new Map();
+    let participantMatches = [];
+    let participantActiveIdx = -1;
+
+    const normalizeSearch = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const initials = nome => String(nome || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+
+    async function loadParticipantDirectory(){
+      if(participantDirectory) return participantDirectory;
+      if(!supabaseReady){
+        participantDirectory = FALLBACK_USERS.filter(u => u.status === 'Ativo').map(u => ({ nome: u.nome, email: u.email.toLowerCase() }));
+        return participantDirectory;
+      }
+      const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('nome,email')
+        .eq('status', 'Ativo')
+        .order('nome', { ascending: true });
+      if(error){
+        console.error('Erro ao carregar participantes do Supabase:', error);
+        return [];
+      }
+      participantDirectory = (data || []).map(u => ({ nome: u.nome, email: String(u.email).toLowerCase() }));
+      return participantDirectory;
+    }
+
+    function highlightMatch(text, query){
+      const safe = esc(text);
+      if(!query) return safe;
+      const idx = normalizeSearch(text).indexOf(query);
+      if(idx < 0) return safe;
+      return esc(text.slice(0, idx)) + '<mark>' + esc(text.slice(idx, idx + query.length)) + '</mark>' + esc(text.slice(idx + query.length));
+    }
+
+    function renderParticipantChips(){
+      waCampParticipantChips.innerHTML = [...selectedParticipants.values()].map(p => `
+        <span class="wa-participant-chip${p.externo ? ' externo' : ''}" title="${esc(p.email)}">
+          ${esc(p.nome || p.email)}
+          <button type="button" data-remove="${esc(p.email)}" aria-label="Remover ${esc(p.nome || p.email)}">×</button>
+        </span>`).join('');
+    }
+
+    function closeParticipantDropdown(){
+      waCampParticipantDropdown.hidden = true;
+      waCampParticipantSearch.setAttribute('aria-expanded', 'false');
+      participantActiveIdx = -1;
+    }
+
+    async function renderParticipantDropdown(){
+      const raw = waCampParticipantSearch.value.trim();
+      const query = normalizeSearch(raw);
+      const directory = await loadParticipantDirectory();
+      participantMatches = directory
+        .filter(u => !selectedParticipants.has(u.email))
+        .filter(u => !query || normalizeSearch(u.nome).includes(query) || u.email.includes(query))
+        .slice(0, 8);
+
+      const typedEmail = raw.toLowerCase();
+      const canAddExternal = PARTICIPANT_EMAIL_RE.test(typedEmail) && !selectedParticipants.has(typedEmail) && !directory.some(u => u.email === typedEmail);
+      if(canAddExternal) participantMatches.push({ nome: '', email: typedEmail, externo: true });
+
+      if(participantActiveIdx >= participantMatches.length) participantActiveIdx = participantMatches.length - 1;
+
+      waCampParticipantDropdown.innerHTML = participantMatches.length
+        ? participantMatches.map((u, i) => u.externo
+            ? `<button type="button" class="wa-participant-option${i === participantActiveIdx ? ' active' : ''}" role="option" data-idx="${i}">
+                 <span class="wa-p-avatar" style="background:#64748b;">@</span>
+                 <span><div class="wa-p-name">Adicionar e-mail externo</div><div class="wa-p-email">${esc(u.email)}</div></span>
+               </button>`
+            : `<button type="button" class="wa-participant-option${i === participantActiveIdx ? ' active' : ''}" role="option" data-idx="${i}">
+                 <span class="wa-p-avatar">${esc(initials(u.nome))}</span>
+                 <span><div class="wa-p-name">${highlightMatch(u.nome, query)}</div><div class="wa-p-email">${esc(u.email)}</div></span>
+               </button>`).join('')
+        : `<div class="wa-participant-empty">${directory.length ? 'Nenhum usuário encontrado. Digite um e-mail completo para convidar alguém de fora.' : 'Nenhum usuário disponível. Digite um e-mail completo para convidar.'}</div>`;
+
+      waCampParticipantDropdown.hidden = false;
+      waCampParticipantSearch.setAttribute('aria-expanded', 'true');
+    }
+
+    function addParticipant(p){
+      if(!p || !p.email || selectedParticipants.has(p.email)) return;
+      selectedParticipants.set(p.email, { nome: p.nome || '', email: p.email, externo: !!p.externo });
+      waCampParticipantSearch.value = '';
+      participantActiveIdx = -1;
+      renderParticipantChips();
+      renderParticipantDropdown();
+      waCampParticipantSearch.focus();
+    }
+
+    waCampParticipantSearch.addEventListener('focus', renderParticipantDropdown);
+    waCampParticipantSearch.addEventListener('input', () => { participantActiveIdx = 0; renderParticipantDropdown(); });
+    waCampParticipantSearch.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        e.preventDefault();
+        if(!participantMatches.length) return;
+        const step = e.key === 'ArrowDown' ? 1 : -1;
+        participantActiveIdx = (participantActiveIdx + step + participantMatches.length) % participantMatches.length;
+        renderParticipantDropdown();
+      } else if(e.key === 'Enter'){
+        e.preventDefault();
+        const pick = participantMatches[participantActiveIdx >= 0 ? participantActiveIdx : 0];
+        if(pick) addParticipant(pick);
+      } else if(e.key === 'Escape'){
+        closeParticipantDropdown();
+      } else if(e.key === 'Backspace' && !waCampParticipantSearch.value && selectedParticipants.size){
+        const last = [...selectedParticipants.keys()].pop();
+        selectedParticipants.delete(last);
+        renderParticipantChips();
+      }
+    });
+    waCampParticipantDropdown.addEventListener('mousedown', (e) => {
+      const opt = e.target.closest('.wa-participant-option');
+      if(!opt) return;
+      e.preventDefault();
+      addParticipant(participantMatches[Number(opt.dataset.idx)]);
+    });
+    waCampParticipantChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-remove]');
+      if(!btn) return;
+      selectedParticipants.delete(btn.dataset.remove);
+      renderParticipantChips();
+    });
+    waCampParticipantSearch.addEventListener('blur', () => setTimeout(closeParticipantDropdown, 120));
+
     waCampBudgetTotal.addEventListener('input', updateBudgetSummary);
 
     function updateCampWizardView(){
@@ -3690,6 +3883,8 @@
         <div class="wa-review-section">
           <h4>Estrutura Técnica</h4>
           <div class="wa-review-row"><span class="label">Times envolvidos</span><div class="value wa-review-tags">${[...selectedTeams].map(t => `<span class="wa-pill-category">${t}</span>`).join('') || '—'}</div></div>
+          <div class="wa-review-row"><span class="label">Participantes</span><div class="value wa-review-participants">${[...selectedParticipants.values()].map(p => `<span>${esc(p.nome ? `${p.nome} · ${p.email}` : p.email)}</span>`).join('') || '—'}</div></div>
+          <div class="wa-review-row"><span class="label">Bloqueio na agenda</span><span class="value">${waCampHoraInicio.value && waCampHoraFim.value ? `Diário, ${esc(waCampHoraInicio.value)} – ${esc(waCampHoraFim.value)}` : 'Dia inteiro'}</span></div>
         </div>
       `;
     }
@@ -3713,6 +3908,14 @@
       } else if(step === 4){
         if(selectedTeams.size === 0){
           alert('Selecione ao menos um time envolvido na Etapa 4.');
+          return false;
+        }
+        if(!!waCampHoraInicio.value !== !!waCampHoraFim.value){
+          alert('Informe o horário de início e de término, ou deixe os dois em branco.');
+          return false;
+        }
+        if(waCampHoraInicio.value && waCampHoraFim.value <= waCampHoraInicio.value){
+          alert('O horário de término deve ser depois do horário de início.');
           return false;
         }
       }
@@ -3751,7 +3954,10 @@
           distribuicao_verba_por_canal: [...selectedChannels].reduce((acc, ch) => { acc[ch] = Number(distValues[ch]) || 0; return acc; }, {})
         },
         estrutura_tecnica: {
-          times_envolvidos: [...selectedTeams]
+          times_envolvidos: [...selectedTeams],
+          participantes: [...selectedParticipants.values()].map(p => ({ nome: p.nome, email: p.email, externo: p.externo })),
+          horario_inicio: waCampHoraInicio.value || null,
+          horario_fim: waCampHoraFim.value || null
         }
       };
     }
@@ -3769,22 +3975,68 @@
         }
         renderCampaigns();
         waCloseCampaignModal();
+        if(payload.estrutura_tecnica.participantes.length){
+          alert('Modo demonstração: a campanha foi salva em memória, mas o envio para as agendas só funciona com o Supabase configurado.');
+        }
         return;
       }
 
+      const previous = editingCampaignId ? campaigns.find(c => c.id === editingCampaignId) : null;
       const query = editingCampaignId
         ? supabaseClient.from('campanhas').update(payload).eq('id', editingCampaignId).select().single()
         : supabaseClient.from('campanhas').insert(payload).select().single();
 
-      const { error } = await query;
+      waCampNextBtn.disabled = true;
+      const { data: saved, error } = await query;
       if(error){
+        waCampNextBtn.disabled = false;
         console.error('Erro ao salvar campanha no Supabase:', error);
         alert('Erro ao salvar campanha no Supabase: ' + error.message);
         return;
       }
 
+      const hadCalendarEvent = hasCalendarEvent(previous);
+      if(payload.estrutura_tecnica.participantes.length || hadCalendarEvent){
+        waCampNextBtn.textContent = 'Sincronizando agendas…';
+        const result = await syncCampaignCalendar(saved.id, 'sincronizar');
+        alert(describeCalendarSync(result));
+      }
+
+      waCampNextBtn.disabled = false;
       await loadCampaigns();
       waCloseCampaignModal();
+    }
+
+    // ---------------- Agenda (Outlook / Google Calendar) via Edge Function ----------------
+    const CALENDAR_PROVIDER_LABEL = { outlook: 'Outlook', google: 'Google Calendar' };
+
+    function hasCalendarEvent(camp){
+      const sync = camp && camp.agenda_sync;
+      return !!(sync && ((sync.outlook && sync.outlook.event_id) || (sync.google && sync.google.event_id)));
+    }
+
+    async function syncCampaignCalendar(campanhaId, acao){
+      try{
+        const { data, error } = await supabaseClient.functions.invoke('sincronizar-agenda', { body: { campanha_id: campanhaId, acao } });
+        if(error){
+          let detail = error.message;
+          try{ const body = await error.context.json(); if(body && body.erro) detail = body.erro; }catch(_){}
+          return { ok: false, erro: detail };
+        }
+        return data;
+      }catch(err){
+        return { ok: false, erro: err.message };
+      }
+    }
+
+    function describeCalendarSync(result){
+      const lines = Object.entries((result && result.provedores) || {}).map(([k, v]) => `• ${CALENDAR_PROVIDER_LABEL[k] || k}: ${v}`);
+      if(result && result.ok !== false){
+        return 'Campanha salva.\n\nAgenda dos participantes:\n' + (lines.join('\n') || '• nada a sincronizar');
+      }
+      if(lines.length) return 'A campanha foi salva, mas houve erro ao sincronizar a agenda:\n' + lines.join('\n');
+      return 'A campanha foi salva, mas a agenda não foi sincronizada: ' + ((result && result.erro) || 'erro desconhecido') +
+        '\n\nConfira se a função "sincronizar-agenda" está publicada no Supabase (supabase/LEIA-ME.md).';
     }
 
     window.waOpenCampaignModal = function(id){
@@ -3818,6 +4070,13 @@
       const et = editing ? editing.estrutura_tecnica : {};
       selectedTeams = new Set(et.times_envolvidos || []);
       waCampTimesGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', selectedTeams.has(b.dataset.team)));
+      selectedParticipants = new Map((et.participantes || []).map(p => [p.email, { nome: p.nome || '', email: p.email, externo: !!p.externo }]));
+      renderParticipantChips();
+      waCampParticipantSearch.value = '';
+      closeParticipantDropdown();
+      waCampHoraInicio.value = et.horario_inicio || '';
+      waCampHoraFim.value = et.horario_fim || '';
+      loadParticipantDirectory();
 
       updateCampWizardView();
       waCampaignModal.classList.add('open');
@@ -3856,6 +4115,15 @@
         if(idx > -1) campaigns.splice(idx, 1);
         renderCampaigns();
         return;
+      }
+
+      const camp = campaigns.find(c => c.id === id);
+      if(hasCalendarEvent(camp)){
+        const result = await syncCampaignCalendar(id, 'cancelar');
+        if(!result || result.ok === false){
+          const seguir = confirm('Não foi possível cancelar o evento na agenda dos participantes (' + ((result && result.erro) || 'erro desconhecido') + ').\n\nRemover a campanha mesmo assim? O evento continuará nas agendas.');
+          if(!seguir) return;
+        }
       }
 
       const { error } = await supabaseClient.from('campanhas').delete().eq('id', id);

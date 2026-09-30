@@ -14,7 +14,8 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 2. Cole o conteúdo de [schema_relatorios.sql](schema_relatorios.sql) > **Run** (cria a tabela e o bucket de Storage do módulo Relatórios, também sem acesso ainda).
 3. Cole o conteúdo de [seguranca_rls.sql](seguranca_rls.sql) > **Run** (concede o acesso real: login + seção liberada; remover produto/movimentação do Estoque e remover relatório ficam restritos a Administrador).
 4. A última consulta lista os administradores. Confirme que o e-mail do administrador principal aparece (se não, use o `insert` comentado no fim do arquivo).
-5. Cole o conteúdo de [schema_clipping.sql](schema_clipping.sql) > **Run** (Clipping News: concede os privilégios da tabela `clipping_news` — resolve o erro *permission denied for table clipping_news* — e liga a coleta automática no Google Notícias a cada 30 minutos). O resultado da última linha deve trazer `"ok": true` e quantas notícias novas entraram.
+5. Cole o conteúdo de [schema_agenda.sql](schema_agenda.sql) > **Run** (coluna usada pela sincronização de agenda das Campanhas; ver seção abaixo).
+6. Cole o conteúdo de [schema_clipping.sql](schema_clipping.sql) > **Run** (Clipping News: concede os privilégios da tabela `clipping_news` — resolve o erro *permission denied for table clipping_news* — e liga a coleta automática no Google Notícias a cada 30 minutos). O resultado da última linha deve trazer `"ok": true` e quantas notícias novas entraram.
 
 ## Clipping News (Google Notícias)
 
@@ -30,6 +31,45 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 - Categoria, plataforma e sentimento são estimados pelo título e pelo veículo; corrija pelo botão **Editar** do card (a edição não é sobrescrita pelas próximas coletas).
 - Remover uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
 - Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.
+
+## Campanhas › Participantes e agenda (Outlook / Google Calendar)
+
+Na **Etapa 4** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que cria o evento na agenda de uma **conta organizadora** com todos os participantes como convidados. O Outlook/Google envia o convite e o período fica **bloqueado (Ocupado)** na agenda de cada um.
+
+- Sem horário: evento de **dia inteiro** do início ao fim da vigência. Com horário: bloqueio **diário** naquele intervalo, do início ao fim da vigência.
+- Editar a campanha **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento.
+- Fuso: America/Cuiaba.
+
+### Passo 1 — Banco
+SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`).
+
+### Passo 2 — Configure UMA agenda (ou as duas)
+A CDL usa Microsoft 365 (`@cdlcuiaba.onmicrosoft.com`), então o **Outlook** é o caminho principal: o convite do Exchange também chega e entra na agenda de quem usa Gmail/Google. Configure o Google só se a organização tiver Google Workspace — **com os dois ligados, cada participante recebe dois convites**.
+
+**Outlook (Microsoft 365)** — precisa de um administrador do Microsoft 365:
+1. Portal do Azure > **Microsoft Entra ID > Registros de aplicativo > Novo registro** (nome: `CDLoad Agenda`, só contas deste diretório).
+2. **Permissões de API > Adicionar > Microsoft Graph > Permissões de aplicativo > `Calendars.ReadWrite`** > **Conceder consentimento de administrador**.
+3. **Certificados e segredos > Novo segredo do cliente** (anote o valor).
+4. Escolha a caixa organizadora (ex.: `agenda@cdlcuiaba.onmicrosoft.com`). Recomendado: restringir o app só a essa caixa com uma *Application Access Policy* do Exchange (`New-ApplicationAccessPolicy -AppId <ID do app> -PolicyScopeGroupId agenda@... -AccessRight RestrictAccess`), senão o app pode escrever em qualquer agenda do tenant.
+
+**Google Calendar (Google Workspace)**:
+1. Google Cloud Console > crie um projeto > ative a **Google Calendar API** > **Contas de serviço > Criar** > gere uma chave **JSON**.
+2. Admin do Workspace > **Segurança > Controles de API > Delegação em todo o domínio** > adicione o *Client ID* da conta de serviço com o escopo `https://www.googleapis.com/auth/calendar.events`.
+3. Escolha a conta organizadora do Workspace (ex.: `agenda@suaempresa.com.br`).
+
+### Passo 3 — Publicar a função (Supabase CLI)
+```bash
+npx supabase login
+npx supabase link --project-ref SEU_PROJECT_REF
+# Outlook
+npx supabase secrets set MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... MS_ORGANIZADOR_EMAIL=agenda@cdlcuiaba.onmicrosoft.com
+# Google (opcional)
+npx supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON="$(cat chave-servico.json)" GOOGLE_ORGANIZADOR_EMAIL=agenda@suaempresa.com.br
+# Opcional: aceitar chamadas só do site publicado
+npx supabase secrets set APP_ORIGIN=https://SEU-USUARIO.github.io
+npx supabase functions deploy sincronizar-agenda
+```
+Os segredos ficam só no Supabase (nunca no `config.js` nem no GitHub). A função usa o login de quem salvou a campanha e só aceita quem tem a seção **Campanhas** liberada. Logs: Supabase > Edge Functions > sincronizar-agenda > Logs.
 
 ## 3. Primeiro acesso do administrador
 
