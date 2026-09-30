@@ -781,11 +781,18 @@
   }
 
   /* ---- Calendário de campanhas (carrossel com 2 meses lado a lado) ---- */
-  .wa-cal-carousel-card{padding:16px;}
+  /* overflow:visible sobrescreve o overflow:hidden padrão de .wa-card: aqui
+     ele quebraria o position:sticky das setas (o sticky passaria a valer
+     dentro do próprio card, e não da área rolável da página). */
+  .wa-cal-carousel-card{padding:16px;overflow:visible;}
   .wa-cal-carousel{display:flex;align-items:center;gap:10px;}
   .wa-cal-nav{
     flex:0 0 auto;background:var(--wa-card,#fff);border:1px solid var(--wa-border);border-radius:10px;
     padding:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);
+    /* Fixa a seta perto do topo da área rolável ao navegar por um mês com
+       muitos eventos, para o usuário conseguir clicar em sequência sem
+       precisar rolar a página de volta para reencontrar o botão. */
+    position:sticky;top:16px;z-index:2;
   }
   .wa-cal-nav svg{width:18px;height:18px;stroke-width:2.4;}
   .wa-cal-nav:disabled{opacity:.35;cursor:not-allowed;pointer-events:none;}
@@ -3257,8 +3264,9 @@
     });
 
     function formatCalMonthLabel(d){
-      const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-      return label.charAt(0).toUpperCase() + label.slice(1);
+      const monthName = d.toLocaleDateString('pt-BR', { month: 'long' });
+      const capitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+      return `${capitalized} - ${d.getFullYear()}`;
     }
 
     // Paleta pastel fixa — a cor de cada campanha é calculada de forma
