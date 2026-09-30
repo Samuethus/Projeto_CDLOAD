@@ -540,15 +540,17 @@ $$;
 -- pelo SQL Editor e pelo app ao abrir a seção (RPC). Para cada termo de
 -- clipping_players():
 --   * normal:   janelas de 1, 7 e 30 dias + busca geral;
---   * completa: + últimos 12 meses e mês a mês desde janeiro (cada mês
+--   * completa: + últimos 12 meses e mês a mês desde 01/01/2025 (cada mês
 --               rende até 100 notícias);
 --   * pelo app: só o termo principal de cada ator, últimos 7 dias (o app
 --               tem limite de ~8 s).
 -- Entra TUDO o que o Google devolver (sem checagem de texto), marcado com
--- o ator do termo. Só o ano corrente; repetidas são ignoradas pelo id do
--- Google e, quando a mesma notícia vem por termos dos dois atores, ela
--- fica marcada com os dois. Ficam de fora só o site oficial da CDL (lido
--- direto, clipping_coletar_site_cdl) e domínios bloqueados.
+-- o ator do termo. Desde 01/01/2025 (para permitir comparação ano a ano do
+-- mesmo período) e nunca com data futura (pubDate mal formado/fuso do
+-- Google); repetidas são ignoradas pelo id do Google e, quando a mesma
+-- notícia vem por termos dos dois atores, ela fica marcada com os dois.
+-- Ficam de fora só o site oficial da CDL (lido direto,
+-- clipping_coletar_site_cdl) e domínios bloqueados.
 -- ---------------------------------------------------------------------
 drop function if exists public.clipping_coletar();
 
@@ -580,7 +582,7 @@ declare
   v_nova       boolean;
   v_ts         timestamptz;
   v_data       date;
-  v_desde      date := date_trunc('year', now() at time zone 'America/Cuiaba')::date;
+  v_desde      date := date '2025-01-01';  -- fixo: permite comparar o mesmo período em anos diferentes
   v_origem     text := case when p_completa then 'completa' else 'automatica' end;
   v_app        boolean := false;
   v_ultima     timestamptz;
@@ -675,6 +677,9 @@ begin
 
         v_ts := coalesce(public.clipping_data_rss(it.pub), now());
         v_data := (v_ts at time zone 'America/Cuiaba')::date;
+        -- Nunca aceita data futura (pubDate mal formado ou fuso do Google) nem
+        -- anterior ao início da janela de comparação (v_desde).
+        continue when v_data > (now() at time zone 'America/Cuiaba')::date;
         continue when v_data < v_desde;
 
         -- Portal pelo domínio do veículo, sempre com o mesmo nome.
@@ -879,8 +884,9 @@ $$;
 -- versão 800x600 do próprio servidor da CDL). O site é ISO-8859-1: o texto
 -- passa por clipping_decodificar_resposta.
 --   * normal:   para na primeira página sem novidade;
---   * completa: percorre o ano inteiro e atualiza título/resumo/capa.
--- As mesmas matérias vindas pelos buscadores ficam 'duplicada'.
+--   * completa: percorre desde 01/01/2025 e atualiza título/resumo/capa.
+-- Datas futuras (linha fina mal formada) são descartadas. As mesmas
+-- matérias vindas pelos buscadores ficam 'duplicada'.
 -- ---------------------------------------------------------------------
 drop function if exists public.clipping_coletar_site_cdl();  -- versão anterior, sem parâmetro
 
@@ -892,7 +898,7 @@ set search_path = public, extensions
 as $$
 declare
   v_base      text := 'https://www.cdlcuiaba.com.br/includes/__index_lista_new.inc.php?sid=31&pageNum_Pagina=';
-  v_desde     date := date_trunc('year', now() at time zone 'America/Cuiaba')::date;
+  v_desde     date := date '2025-01-01';  -- fixo: permite comparar o mesmo período em anos diferentes
   v_pagina    integer := 0;
   resp        extensions.http_response;
   v_html      text;
@@ -961,6 +967,9 @@ begin
         end;
         v_ts   := coalesce(v_ts, now());
         v_data := (v_ts at time zone 'America/Cuiaba')::date;
+        -- Nunca aceita data futura (linha fina mal formada) — não conta nem
+        -- para a paginação (v_antiga/v_itens_pag).
+        continue when v_data > (now() at time zone 'America/Cuiaba')::date;
         v_antiga := least(coalesce(v_antiga, v_data), v_data);
         v_itens_pag := v_itens_pag + 1;
         continue when v_data < v_desde;
@@ -1107,10 +1116,11 @@ select cron.schedule('cdload-clipping-site-cdl', '15,45 * * * *', $$select publi
 -- Liga as notícias já gravadas aos portais (nome padronizado).
 select public.clipping_vincular_portais();
 
--- Primeira carga: site oficial COMPLETO (todas as matérias do ano) + busca
--- COMPLETA no Google Notícias para a CDL Cuiabá e a Fecomércio MT. Leva
--- cerca de 2 a 3 minutos.
---   "site_cdl": "ok": true e "materias_do_ano" com o total de 2026;
+-- Primeira carga: site oficial COMPLETO (todas as matérias desde 01/01/2025)
+-- + busca COMPLETA no Google Notícias para a CDL Cuiabá e a Fecomércio MT,
+-- também desde 01/01/2025 (permite comparar o mesmo período em anos
+-- diferentes). Leva alguns minutos a mais que antes, por cobrir mais meses.
+--   "site_cdl": "ok": true e "materias_do_ano" com o total desde 2025;
 --   "buscadores": "ok": true e quantas notícias novas entraram (já
 --   aparecem no app; link direto e imagem chegam em seguida, 15 a cada 5 min).
 -- Se "erros" vier preenchido, copie o texto e envie para ajuste.

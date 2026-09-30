@@ -1656,6 +1656,9 @@
             <option value="11">Novembro</option>
             <option value="12">Dezembro</option>
           </select>
+          <select class="filter-select" id="waClipYearFilter" title="Ano (combine com o Mês para comparar o mesmo período em anos diferentes)">
+            <option value="">Ano</option>
+          </select>
           <select class="filter-select" id="waClipCategoryFilter">
             <option value="">Categoria</option>
           </select>
@@ -4188,21 +4191,35 @@
       else await supabaseClient.auth.signOut();
     })();
 
-    // ---------------- Clipping News (CDL Cuiabá · 2026) ----------------
+    // ---------------- Clipping News (CDL Cuiabá · desde 2025) ----------------
     // Com Supabase, as notícias vêm do Google Notícias (clipping_coletar em
-    // supabase/schema_clipping.sql). A lista abaixo é só do modo
-    // demonstração: conteúdo ilustrativo, sem afirmar publicação real.
+    // supabase/schema_clipping.sql), buscadas desde 01/01/2025. A lista abaixo
+    // é só do modo demonstração: conteúdo ilustrativo, sem afirmar publicação
+    // real. Cobre 2025 e 2026 (até a data de hoje) para permitir comparar o
+    // mesmo período em anos diferentes — nunca com data futura (clipSemDataFutura
+    // descarta em runtime; por isso os temas de fim de ano de 2026 aqui embaixo
+    // só têm a edição de 2025, já que a de 2026 ainda não aconteceu).
     const FALLBACK_CLIPPING_NEWS = [
+      // 2026 (ano corrente, até hoje)
       { id: 'c1', titulo: 'CDL Cuiabá lança campanha para impulsionar as vendas do Dia das Mães', resumo: 'Ação reúne lojistas associados em promoções conjuntas e divulgação unificada durante o mês de maio.', fonte: 'PORTAL NOTÍCIAS MT', data: '2026-05-02', categoria: 'Comércio', canal: 'Portal', sentimento: 'Positivo' },
       { id: 'c2', titulo: 'Índice de Confiança do Comércio da CDL Cuiabá aponta otimismo para o 1º trimestre', resumo: 'Pesquisa mensal com associados mostra melhora nas expectativas de vendas e contratação.', fonte: 'JORNAL DO COMÉRCIO', data: '2026-03-18', categoria: 'Economia', canal: 'Jornal', sentimento: 'Positivo' },
       { id: 'c3', titulo: 'CDL Cuiabá promove capacitação gratuita para lojistas do centro histórico', resumo: 'Curso aborda atendimento ao cliente, precificação e uso de redes sociais para pequenos negócios.', fonte: 'SITE ECONOMIA MT', data: '2026-02-10', categoria: 'Capacitação', canal: 'Portal', sentimento: 'Positivo' },
       { id: 'c4', titulo: 'Pesquisa da CDL Cuiabá mostra queda na inadimplência do comércio local', resumo: 'Levantamento trimestral aponta melhora na saúde financeira das empresas associadas.', fonte: 'TV REGIONAL CUIABÁ', data: '2026-04-22', categoria: 'Economia', canal: 'TV', sentimento: 'Positivo' },
-      { id: 'c5', titulo: 'CDL Cuiabá alerta lojistas sobre golpes durante liquidações de fim de ano', resumo: 'Entidade orienta associados sobre boas práticas de segurança em vendas físicas e digitais.', fonte: 'RÁDIO CIDADE MT', data: '2026-11-05', categoria: 'Segurança', canal: 'Rádio', sentimento: 'Neutro' },
       { id: 'c6', titulo: 'CDL Cuiabá e Sebrae firmam parceria para digitalização do pequeno varejo', resumo: 'Iniciativa oferece consultoria gratuita para lojistas que querem vender também pela internet.', fonte: 'PORTAL REGIONAL', data: '2026-06-14', categoria: 'Tecnologia', canal: 'Portal', sentimento: 'Positivo' },
-      { id: 'c7', titulo: 'Comércio de Cuiabá projeta alta nas vendas de Black Friday, aponta CDL', resumo: 'Expectativa de crescimento em relação ao ano anterior, puxada por eletrônicos e vestuário.', fonte: '@CDLCUIABA', data: '2026-11-20', categoria: 'Comércio', canal: 'Instagram', sentimento: 'Positivo' },
       { id: 'c8', titulo: 'CDL Cuiabá debate reforma tributária em painel com empresários locais', resumo: 'Encontro discutiu impactos das novas regras fiscais para o comércio de médio e pequeno porte.', fonte: 'PODCAST NEGÓCIOS MT', data: '2026-08-09', categoria: 'Economia', canal: 'Podcast', sentimento: 'Neutro' },
       { id: 'c9', titulo: 'CDL Cuiabá registra queda no número de novas empresas abertas no semestre', resumo: 'Entidade associa retração a juros altos e cautela de empreendedores diante do cenário econômico.', fonte: 'REVISTA VAREJO MT', data: '2026-07-30', categoria: 'Economia', canal: 'Portal', sentimento: 'Negativo' },
-      { id: 'c10', titulo: 'CDL Cuiabá amplia atendimento a associados durante o Dia do Comerciário', resumo: 'Unidade central passou a funcionar em horário estendido para orientações e emissão de documentos.', fonte: 'JORNAL DA MANHÃ', data: '2026-10-12', categoria: 'Institucional', canal: 'Jornal', sentimento: 'Neutro' }
+
+      // 2025 (mesmo período do ano anterior, para comparação)
+      { id: 'h1', titulo: 'CDL Cuiabá lança campanha para impulsionar as vendas do Dia das Mães', resumo: 'Ação reúne lojistas associados em promoções conjuntas e divulgação unificada durante o mês de maio.', fonte: 'PORTAL NOTÍCIAS MT', data: '2025-05-04', categoria: 'Comércio', canal: 'Portal', sentimento: 'Positivo' },
+      { id: 'h2', titulo: 'Índice de Confiança do Comércio da CDL Cuiabá aponta otimismo para o 1º trimestre', resumo: 'Pesquisa mensal com associados mostra melhora nas expectativas de vendas e contratação.', fonte: 'JORNAL DO COMÉRCIO', data: '2025-03-20', categoria: 'Economia', canal: 'Jornal', sentimento: 'Positivo' },
+      { id: 'h3', titulo: 'CDL Cuiabá promove capacitação gratuita para lojistas do centro histórico', resumo: 'Curso aborda atendimento ao cliente, precificação e uso de redes sociais para pequenos negócios.', fonte: 'SITE ECONOMIA MT', data: '2025-02-12', categoria: 'Capacitação', canal: 'Portal', sentimento: 'Positivo' },
+      { id: 'h4', titulo: 'Pesquisa da CDL Cuiabá mostra queda na inadimplência do comércio local', resumo: 'Levantamento trimestral aponta melhora na saúde financeira das empresas associadas.', fonte: 'TV REGIONAL CUIABÁ', data: '2025-04-24', categoria: 'Economia', canal: 'TV', sentimento: 'Positivo' },
+      { id: 'h5', titulo: 'CDL Cuiabá e Sebrae firmam parceria para digitalização do pequeno varejo', resumo: 'Iniciativa oferece consultoria gratuita para lojistas que querem vender também pela internet.', fonte: 'PORTAL REGIONAL', data: '2025-06-16', categoria: 'Tecnologia', canal: 'Portal', sentimento: 'Positivo' },
+      { id: 'h6', titulo: 'CDL Cuiabá debate reforma tributária em painel com empresários locais', resumo: 'Encontro discutiu impactos das novas regras fiscais para o comércio de médio e pequeno porte.', fonte: 'PODCAST NEGÓCIOS MT', data: '2025-08-11', categoria: 'Economia', canal: 'Podcast', sentimento: 'Neutro' },
+      { id: 'h7', titulo: 'CDL Cuiabá registra queda no número de novas empresas abertas no semestre', resumo: 'Entidade associa retração a juros altos e cautela de empreendedores diante do cenário econômico.', fonte: 'REVISTA VAREJO MT', data: '2025-07-28', categoria: 'Economia', canal: 'Portal', sentimento: 'Negativo' },
+      { id: 'h8', titulo: 'CDL Cuiabá amplia atendimento a associados durante o Dia do Comerciário', resumo: 'Unidade central passou a funcionar em horário estendido para orientações e emissão de documentos.', fonte: 'JORNAL DA MANHÃ', data: '2025-10-12', categoria: 'Institucional', canal: 'Jornal', sentimento: 'Neutro' },
+      { id: 'h9', titulo: 'CDL Cuiabá alerta lojistas sobre golpes durante liquidações de fim de ano', resumo: 'Entidade orienta associados sobre boas práticas de segurança em vendas físicas e digitais.', fonte: 'RÁDIO CIDADE MT', data: '2025-11-05', categoria: 'Segurança', canal: 'Rádio', sentimento: 'Neutro' },
+      { id: 'h10', titulo: 'Comércio de Cuiabá projeta alta nas vendas de Black Friday, aponta CDL', resumo: 'Expectativa de crescimento em relação ao ano anterior, puxada por eletrônicos e vestuário.', fonte: '@CDLCUIABA', data: '2025-11-20', categoria: 'Comércio', canal: 'Instagram', sentimento: 'Positivo' }
     ];
 
     let clippingNews = [];
@@ -4212,6 +4229,7 @@
 
     const waClipSearch = document.getElementById('waClipSearch');
     const waClipMonthFilter = document.getElementById('waClipMonthFilter');
+    const waClipYearFilter = document.getElementById('waClipYearFilter');
     const waClipCategoryFilter = document.getElementById('waClipCategoryFilter');
     const waClipChannelFilter = document.getElementById('waClipChannelFilter');
     const waClipPortalFilter = document.getElementById('waClipPortalFilter');
@@ -4247,6 +4265,13 @@
     function formatClipDateBR(iso){
       const [y, m, d] = iso.split('-');
       return `${d}/${m}/${y}`;
+    }
+
+    // Nunca exibe notícia com data de publicação no futuro (pubDate mal
+    // formado, fuso do Google ou data digitada errada no cadastro manual).
+    function clipSemDataFutura(lista){
+      const hoje = new Date().toISOString().slice(0, 10);
+      return lista.filter(n => n.data <= hoje);
     }
 
     // Chave do portal: sem acento, caixa ou pontuação ("Diario de Cuiabá"
@@ -4349,6 +4374,11 @@
       const categorias = [...new Set(clippingNews.map(n => n.categoria))].sort();
       const canais = [...new Set(clippingNews.map(n => n.canal))].sort();
 
+      // Ano: mais recente primeiro. Combinado ao filtro de Mês, permite
+      // comparar o mesmo período (ex: "Setembro") entre anos diferentes.
+      const anos = [...new Set(clippingNews.map(n => n.data.slice(0, 4)))].sort().reverse();
+      fillSelect(waClipYearFilter, 'Ano', anos.map(a => ({ value: a, label: a })));
+
       const curCat = waClipCategoryFilter.value;
       waClipCategoryFilter.innerHTML = '<option value="">Categoria</option>' + categorias.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if(categorias.includes(curCat)) waClipCategoryFilter.value = curCat;
@@ -4385,6 +4415,7 @@
     function getFilteredClippingNews(){
       const term = waClipSearch.value.trim().toLowerCase();
       const month = waClipMonthFilter.value;
+      const year = waClipYearFilter.value;
       const categoria = waClipCategoryFilter.value;
       const canal = waClipChannelFilter.value;
       const portal = waClipPortalFilter.value;
@@ -4394,6 +4425,7 @@
       let list = clippingNews.filter(n => {
         if(term && !(n.titulo.toLowerCase().includes(term) || n.resumo.toLowerCase().includes(term) || n.fonte.toLowerCase().includes(term))) return false;
         if(month && n.data.slice(5, 7) !== month) return false;
+        if(year && n.data.slice(0, 4) !== year) return false;
         if(categoria && n.categoria !== categoria) return false;
         if(canal && n.canal !== canal) return false;
         if(portal && clipPortalKey(n) !== portal) return false;
@@ -4475,7 +4507,7 @@ ${clipPlayerPills(n)}
 
     async function loadClippingNews(){
       if(!supabaseReady){
-        clippingNews = FALLBACK_CLIPPING_NEWS.map(n => ({ players: ['CDL Cuiabá'], ...n }));
+        clippingNews = clipSemDataFutura(FALLBACK_CLIPPING_NEWS.map(n => ({ players: ['CDL Cuiabá'], ...n })));
         refreshClipFilterOptions();
         renderClippingNews();
         return;
@@ -4499,7 +4531,7 @@ ${clipPlayerPills(n)}
         return;
       }
 
-      clippingNews = (data || []).filter(row => !clipLinkBloqueado(row.link) && !clipLinkBloqueado(row.link_original) && !clipLinkBloqueado(row.portal && row.portal.url)).map(row => ({
+      clippingNews = clipSemDataFutura((data || []).filter(row => !clipLinkBloqueado(row.link) && !clipLinkBloqueado(row.link_original) && !clipLinkBloqueado(row.portal && row.portal.url)).map(row => ({
         id: row.id,
         titulo: row.titulo,
         resumo: row.resumo,
@@ -4516,7 +4548,7 @@ ${clipPlayerPills(n)}
         portal: row.portal ? row.portal.nome : null,
         portalUrl: row.portal ? row.portal.url : null,
         players: Array.isArray(row.players) ? row.players : []
-      }));
+      })));
       refreshClipFilterOptions();
       renderClippingNews();
       await loadClipStatus();
@@ -4661,6 +4693,7 @@ ${clipPlayerPills(n)}
 
     waClipSearch.addEventListener('input', renderClippingNews);
     waClipMonthFilter.addEventListener('change', renderClippingNews);
+    waClipYearFilter.addEventListener('change', renderClippingNews);
     waClipCategoryFilter.addEventListener('change', renderClippingNews);
     waClipChannelFilter.addEventListener('change', renderClippingNews);
     waClipPortalFilter.addEventListener('change', renderClippingNews);
@@ -4679,6 +4712,7 @@ ${clipPlayerPills(n)}
     waClipClearBtn.addEventListener('click', () => {
       waClipSearch.value = '';
       waClipMonthFilter.value = '';
+      waClipYearFilter.value = '';
       waClipCategoryFilter.value = '';
       waClipChannelFilter.value = '';
       waClipPortalFilter.value = '';
