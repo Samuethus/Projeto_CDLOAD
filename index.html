@@ -1109,7 +1109,7 @@
   .stk-kpi2-selo.ok{color:#16A34A;background:#E8F7EE;}
   .stk-kpi2-selo.alerta{color:#E5484D;background:#FDECEC;}
   .stk-kpi2-selo.neu{color:#6B7280;background:#F1F3F5;}
-  .stk-kpi2-rodape{font-size:13px;color:#6B7280;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;}
+  .stk-kpi2-rodape{font-size:13px;color:#6B7280;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
   .stk-kpi2-var{font-weight:600;white-space:nowrap;}
   .stk-kpi2-var.ok{color:#16A34A;}
   .stk-kpi2-var.alerta{color:#E5484D;}
@@ -6675,7 +6675,8 @@ ${clipPlayerPills(n)}
     // Player (quando escolhido) filtra as notícias em todo o painel de
     // Clipping — a notícia precisa citar aquele player especificamente.
     // A busca é o filtro principal: lista TODAS as notícias (sem período nem
-    // Player) e, com algo marcado, o painel mostra exatamente a seleção.
+    // Player); o que for marcado (ou o tema digitado) filtra o painel, que
+    // compara o período atual com o mesmo período do ano anterior.
     const stkNorm = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     // Tema: o texto digitado na busca do Clipping filtra o painel inteiro
     // (sem precisar marcar), mantendo a comparação Ano vs Ano. Ignora Player;
@@ -6687,12 +6688,12 @@ ${clipPlayerPills(n)}
       return clippingNews.filter(n => {
         if(n.data < ini || n.data > fim) return false;
         if(tema) return stkCasaTema(n, tema);
+        if(stkClipSelecionado()) return true;
         return !stkPlayerEl.value || (n.players || []).includes(stkPlayerEl.value);
       });
     };
     const stkNewsEntre = (ini, fim) => stkNewsJanela(ini, fim).filter(stkNewsOk);
     const stkClipSelecionado = () => stkSelecao.clipping.size > 0;
-    const stkNewsSelecionadas = () => clippingNews.filter(n => stkSelecao.clipping.has(n.id));
     // Sentimento: mesma paleta de marca já validada nesta conversa
     // (verde/vermelho, com posição + rótulo de texto reforçando a cor).
     const STK_SENT = [
@@ -7021,9 +7022,7 @@ ${clipPlayerPills(n)}
     // (respeita Player e a seleção da busca). No ano corrente, para no mês atual.
     function stkDadosVolumeYoY(){
       const selecao = stkClipSelecionado();
-      const ano = selecao
-        ? Math.max(...stkNewsSelecionadas().map(n => Number(String(n.data).slice(0, 4))))
-        : Number(stkRangeClipping().ini.slice(0, 4));
+      const ano = Number(stkRangeClipping().ini.slice(0, 4));
       const hoje = stkHojeIso();
       const ultimoMes = String(ano) === hoje.slice(0, 4) ? Number(hoje.slice(5, 7)) : 12;
       const categorias = Array.from({ length: ultimoMes }, (_, i) =>
@@ -7293,19 +7292,18 @@ ${clipPlayerPills(n)}
       const range = stkRangeClipping();
       const rangeAnt = stkRangeAnoAnterior(range);
       const anoAnt = rangeAnt.ano;
-      // Busca manda: com notícias selecionadas, o painel mostra exatamente
-      // a seleção (qualquer data/player) e não há comparação YoY.
       const modoSel = stkClipSelecionado();
       const tema = stkTemaClip();
-      [stkMesEl, stkAnoEl, stkPlayerEl].forEach(el => {
-        const ignorado = modoSel || (tema && el === stkPlayerEl);
-        el.classList.toggle('stk-filtro-ignorado', !!ignorado);
-        el.title = modoSel ? 'Ignorado enquanto houver notícias selecionadas na busca'
-          : ignorado ? 'Ignorado enquanto houver um tema digitado na busca' : '';
-      });
-      const atual = modoSel ? stkNewsSelecionadas() : stkNewsEntre(range.ini, range.fim);
-      const anterior = modoSel ? [] : stkNewsEntre(rangeAnt.ini, rangeAnt.fim);
-      const baseAnt = v => modoSel ? '' : `${anoAnt} (mesmo período): ${v}`;
+      const playerIgnorado = modoSel || !!tema;
+      stkPlayerEl.classList.toggle('stk-filtro-ignorado', playerIgnorado);
+      stkPlayerEl.title = modoSel ? 'Ignorado enquanto houver notícias selecionadas na busca'
+        : tema ? 'Ignorado enquanto houver um tema digitado na busca' : '';
+      [stkMesEl, stkAnoEl].forEach(el => { el.classList.remove('stk-filtro-ignorado'); el.title = ''; });
+      // Seleção e tema funcionam igual: filtram as matérias e comparam o
+      // período atual com o mesmo período do ano anterior.
+      const atual = stkNewsEntre(range.ini, range.fim);
+      const anterior = stkNewsEntre(rangeAnt.ini, rangeAnt.fim);
+      const baseAnt = v => `${anoAnt} (mesmo período): ${v}`;
 
       // ---- KPIs ----
       const foco = (!modoSel && !tema && stkPlayerEl.value && CLIP_PLAYERS.find(p => p.nome === stkPlayerEl.value)) || CLIP_PLAYERS[0];
@@ -7318,15 +7316,14 @@ ${clipPlayerPills(n)}
 
       const semBase = !anterior.length;
       const pctAnt = v => semBase ? '—' : stkPct(v);
-      const refAno = { vs: `vs ${anoAnt}`, vazio: `sem dados em ${anoAnt}` };
-      // Com seleção na busca não há comparação: selo "Seleção" em todos os cards.
-      const varClip = (...args) => modoSel ? { tom: 'neu', selo: 'Seleção', num: '—', txt: 'filtro da busca' } : stkVarCard(...args);
-      const kTotal = stkKpiCard('jornal', 'Total de notícias', stkNum(atual.length), varClip(atual.length, anterior.length, refAno), baseAnt(stkNum(anterior.length)));
-      const kSov = stkKpiCard('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), varClip(sov(atual), sov(anterior), refAno, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
-      const kVeic = stkKpiCard('globo', 'Veículos distintos', stkNum(portais(atual)), varClip(portais(atual), portais(anterior), refAno), baseAnt(stkNum(portais(anterior))));
-      const kPos = stkKpiCard('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), varClip(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), refAno, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
+      const qtdAnt = `${stkNum(anterior.length)} notícia${anterior.length === 1 ? '' : 's'}`;
+      const refAno = { vs: `vs ${anoAnt} (${qtdAnt})`, vazio: `sem dados em ${anoAnt}` };
+      const kTotal = stkKpiCard('jornal', 'Total de notícias', stkNum(atual.length), stkVarCard(atual.length, anterior.length, refAno), baseAnt(stkNum(anterior.length)));
+      const kSov = stkKpiCard('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), stkVarCard(sov(atual), sov(anterior), refAno, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
+      const kVeic = stkKpiCard('globo', 'Veículos distintos', stkNum(portais(atual)), stkVarCard(portais(atual), portais(anterior), refAno), baseAnt(stkNum(portais(anterior))));
+      const kPos = stkKpiCard('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkVarCard(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), refAno, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
       // Negativas: subir é ruim (selo "Atenção" em vermelho).
-      const kNeg = stkKpiCard('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), varClip(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), refAno, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
+      const kNeg = stkKpiCard('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkVarCard(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), refAno, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
 
       // ---- Volume de notícias: Ano vs Ano (padrão) ou por player ----
       const V = stkDadosVolumePorPlayer(stkVolumeModoClip);
@@ -7346,7 +7343,7 @@ ${clipPlayerPills(n)}
 
       // ---- Notícias por categoria ----
       const anosYoY = [range.ini.slice(0, 4), String(anoAnt)];
-      const antYoY = modoSel ? null : anterior;
+      const antYoY = anterior;
       const legendaYoY = series => `<div class="stk-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       const CAT = stkDadosTopYoY(atual, antYoY, n => n.categoria || 'Outros', anosYoY, 6);
       const wCategorias = `<div class="stk-card">
@@ -7378,8 +7375,8 @@ ${clipPlayerPills(n)}
           <div class="stk-card-head"><h3>Sentimento</h3></div>
           <div class="stk-card-body stk-rosca-body">
             <div class="stk-rosca-wrap"><div class="stk-rosca-graf" id="stkDistribGraf"></div><ul class="stk-rosca-legenda" id="stkDistribLegenda">${dadosSent.map(d => `
-              <li class="stk-setor-linha stk-sent-linha"><span class="dot" style="background:${d.cor}"></span><span class="nome">${esc(d.nome)}</span><span class="pct">${stkPct(atual.length ? d.valor / atual.length : 0)}</span>${modoSel ? '' : `<span class="stk-sent-ant">${anoAnt}: ${anterior.length ? stkPct(anterior.filter(n => n.sentimento === d.nome).length / anterior.length) : '—'}</span>`}</li>`).join('')}</ul></div>
-            <div class="stk-rosca-total">${stkNum(atual.length)} notícias no período${modoSel ? ' (seleção)' : ` · ${anoAnt}: ${stkNum(anterior.length)}`}</div>
+              <li class="stk-setor-linha stk-sent-linha"><span class="dot" style="background:${d.cor}"></span><span class="nome">${esc(d.nome)}</span><span class="pct">${stkPct(atual.length ? d.valor / atual.length : 0)}</span><span class="stk-sent-ant">${anoAnt}: ${anterior.length ? stkPct(anterior.filter(n => n.sentimento === d.nome).length / anterior.length) : '—'}</span></li>`).join('')}</ul></div>
+            <div class="stk-rosca-total">${stkNum(atual.length)} notícias no período · ${anoAnt}: ${stkNum(anterior.length)}</div>
           </div>
         </div>`;
 
@@ -7430,10 +7427,12 @@ ${clipPlayerPills(n)}
           <div class="stk-card-body"><div class="stk-table-wrap">${stkTabelaAba === 'produtos' ? corpoNoticias : corpoPorPlayer}</div></div>
         </div>`;
 
-      // Total do tema em todas as datas: avisa quando há matérias fora das duas janelas comparadas.
-      const temaTotal = tema ? clippingNews.filter(n => stkCasaTema(n, tema)).length : 0;
+      // Tema ou seleção: total em todas as datas, para avisar o que ficou fora das duas janelas comparadas.
+      const filtroBusca = modoSel || !!tema;
+      const temaTotal = modoSel ? stkSelecao.clipping.size : tema ? clippingNews.filter(n => stkCasaTema(n, tema)).length : 0;
       const temaFora = temaTotal - atual.length - anterior.length;
-      const avisoTema = tema ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Mês/Ano para comparar outro período` : ''}</span></div>` : '';
+      const rotuloBusca = modoSel ? `Seleção da busca <strong>(${stkNum(temaTotal)} marcada${temaTotal === 1 ? '' : 's'})</strong>` : `Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>`;
+      const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Mês/Ano para comparar outro período` : ''}</span></div>` : '';
       stkGrid.innerHTML = avisoTema + `<div class="stk-kpi-row">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
         + `<div class="stk-grid-3">${wVolume}${wCategorias}${wAlertas}${wSentimento}${wVeiculos}</div>`
         + `<div class="stk-grid">${wTabela}</div>`;
@@ -7594,7 +7593,7 @@ ${clipPlayerPills(n)}
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
       if(stkPainelEl.value === 'clipping'){
-        const noticias = stkClipSelecionado() ? stkNewsSelecionadas() : stkNewsEntre(range.ini, range.fim);
+        const noticias = stkNewsEntre(range.ini, range.fim);
         if(stkTabelaAba === 'produtos'){
           rows = [['Data', 'Título', 'Portal', 'Players', 'Categoria', 'Sentimento', 'Link']]
             .concat(noticias.map(n => [formatClipDateBR(n.data), n.titulo, n.portal || n.fonte || '', (n.players || []).join(' / '), n.categoria || '', n.sentimento || '', clipHref(n) || '']));
