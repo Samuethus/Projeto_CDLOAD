@@ -693,7 +693,9 @@
   .wa-category-card p{margin:4px 0 0;font-size:11.5px;color:var(--wa-text-muted);line-height:1.4;}
 
   /* ---- Home: galeria de painéis (layout Hub - Card02) ---- */
-  .wa-hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+  .wa-hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;}
+  @media (max-width:1100px){ .wa-hub-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:560px){ .wa-hub-grid{grid-template-columns:1fr;} }
   .wa-hub-card{display:flex;flex-direction:column;background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;overflow:hidden;
     text-decoration:none;color:inherit;position:relative;
     box-shadow:0 -3px 0 -1px #fff,0 -4px 0 -1px var(--wa-border);margin-top:4px;
@@ -7560,6 +7562,7 @@ ${clipPlayerPills(n)}
     // ---------------- Home: galeria de painéis Power BI ----------------
     // Fonte: links_power.txt. Painel sem "url" aparece desativado ("Link não cadastrado")
     // — é só preencher o link aqui. Sem "img", mostra a arte genérica.
+    // "oculto": true tira o painel da galeria sem apagar o link (reexibir: remover a linha).
     const HUB_PAINEIS = [
       {
             "t": "Painel Hub Núcleo",
@@ -7614,13 +7617,14 @@ ${clipPlayerPills(n)}
       {
             "t": "Painel Espaço CDL",
             "img": "",
+            "oculto": true,
             "url": "https://app.powerbi.com/links/RwmvVe4c7C?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       }
 ];
     function renderHubHome(){
       const icoExterno = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
       const icoPainel = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="8" y1="17" x2="8" y2="11"></line><line x1="12" y1="17" x2="12" y2="7"></line><line x1="16" y1="17" x2="16" y2="13"></line></svg>';
-      document.getElementById('waHubGrid').innerHTML = HUB_PAINEIS.map(p => {
+      document.getElementById('waHubGrid').innerHTML = HUB_PAINEIS.filter(p => !p.oculto).map(p => {
         const ativo = /^https:\/\/app\.powerbi\.com\//.test(p.url || '');
         const arte = p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="wa-hub-card-fallback">${icoPainel}</div>`;
         const corpo = `<div class="wa-hub-card-art">${arte}</div><div class="wa-hub-card-name">${esc(p.t)}${ativo ? icoExterno : ''}</div>`;
