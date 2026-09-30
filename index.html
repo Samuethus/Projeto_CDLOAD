@@ -693,9 +693,6 @@
   .wa-category-card p{margin:4px 0 0;font-size:11.5px;color:var(--wa-text-muted);line-height:1.4;}
 
   /* ---- Home: galeria de painéis (layout Hub - Card02) ---- */
-  .wa-hub-head{margin:0 0 20px;}
-  .wa-hub-head h2{margin:0;font-size:18px;font-weight:700;color:var(--wa-text);}
-  .wa-hub-head p{margin:4px 0 0;font-size:13px;color:var(--wa-text-muted);}
   .wa-hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
   .wa-hub-card{display:flex;flex-direction:column;background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;overflow:hidden;
     text-decoration:none;color:inherit;position:relative;
@@ -1332,7 +1329,7 @@
     <div class="header-divider"></div>
 
     <nav class="nav-menu" id="navMenu">
-      <button class="nav-item active" data-page="home" data-title="Bem-vindo ao CDLoad" data-desc="">
+      <button class="nav-item active" data-page="home" data-title="Bem-vindo ao CDLOAD" data-desc="Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 10L12 3L21 10" /> <path d="M5 10V20H10V16A2 2 0 0 1 14 16V20H19V10" /> </svg>
         <span>Home</span>
       </button>
@@ -1405,8 +1402,8 @@
   <div class="main">
     <header class="header">
       <div>
-        <div class="header-title" id="headerTitle">Bem-vindo ao CDLoad</div>
-        <div class="header-desc" id="headerDesc" style="display: none;"></div>
+        <div class="header-title" id="headerTitle">Bem-vindo ao CDLOAD</div>
+        <div class="header-desc" id="headerDesc">Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.</div>
       </div>
       <div class="header-actions" id="headerActions"></div>
     </header>
@@ -1425,10 +1422,6 @@
 
       <!-- HOME -->
       <section class="page active" id="page-home">
-        <div class="wa-hub-head">
-          <h2>Hub de Painéis</h2>
-          <p>Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.</p>
-        </div>
         <div class="wa-hub-grid" id="waHubGrid"></div>
       </section>
 
@@ -7570,52 +7563,52 @@ ${clipPlayerPills(n)}
     const HUB_PAINEIS = [
       {
             "t": "Painel Hub Núcleo",
-            "img": "assets/hub/hub-nucleo.webp",
+            "img": "assets/hub-nucleo.webp",
             "url": "https://app.powerbi.com/links/MdIxLThUng?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Pesquisas de Mercado",
-            "img": "assets/hub/pesquisas.webp",
+            "img": "assets/pesquisas.webp",
             "url": "https://app.powerbi.com/links/JOzp7VnybQ?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Ofícios e Liminares",
-            "img": "assets/hub/oficios.webp",
+            "img": "assets/oficios.webp",
             "url": "https://app.powerbi.com/links/UuF7D7MRLR?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Observatório Obras",
-            "img": "assets/hub/observatorio-obras.webp",
+            "img": "assets/observatorio-obras.webp",
             "url": "https://app.powerbi.com/links/EwwaUu20S6?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Controle de Estoque",
-            "img": "assets/hub/controle-estoque.webp",
+            "img": "assets/controle-estoque.webp",
             "url": "https://app.powerbi.com/links/LBsPBEa1e0?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Cronograma de Obras",
-            "img": "assets/hub/cronograma-obras.webp",
+            "img": "assets/cronograma-obras.webp",
             "url": "https://app.powerbi.com/links/RYeeEXMukj?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Financeiro Gestão à Vista",
-            "img": "assets/hub/gestao-a-vista.webp",
+            "img": "assets/gestao-a-vista.webp",
             "url": "https://app.powerbi.com/links/au1tE8RVbT?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Certificado Digital",
-            "img": "assets/hub/certificado-digital.webp",
+            "img": "assets/certificado-digital.webp",
             "url": "https://app.powerbi.com/links/WdTX7zzuCl?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel CAGED - Empregos",
-            "img": "assets/hub/caged.webp",
+            "img": "assets/caged.webp",
             "url": "https://app.powerbi.com/links/5zj1ahwWyk?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
             "t": "Painel Radar de Mercado",
-            "img": "assets/hub/radar.webp",
+            "img": "assets/radar.webp",
             "url": ""
       },
       {
