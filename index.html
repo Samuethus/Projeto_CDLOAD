@@ -1088,7 +1088,7 @@
   .stk-kpi-delta.pos{color:var(--stk-success);background:var(--stk-success-bg);}
   .stk-kpi-delta.neg{color:var(--stk-danger);background:var(--stk-danger-bg);}
   .stk-kpi-delta.neu{color:var(--stk-caption);background:var(--stk-neutral-bg);}
-  /* ---- Clipping: card de KPI clean/corporativo (título + ícone, número + selo, rodapé YoY) ---- */
+  /* ---- Dashboard (Clipping e Estoque): card de KPI clean/corporativo (título + ícone, número + selo, rodapé YoY) ---- */
   .stk-kpi2{font-family:'Poppins','Inter',system-ui,sans-serif;background:#fff;border:1px solid #EEF0F3;border-radius:14px;padding:18px 20px 16px;
     box-shadow:0 1px 3px rgba(16,24,40,.05);display:flex;flex-direction:column;gap:14px;min-width:0;}
   .stk-kpi2-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -6714,27 +6714,18 @@ ${clipPlayerPills(n)}
       if(anos.includes(curAno)) stkAnoEl.value = curAno;
     }
 
-    function stkDelta(atual, anterior){
-      if(!(anterior > 0)){
-        return atual > 0 ? { txt: 'sem base no período anterior', cls: 'neu', icone: '' } : { txt: 'sem variação', cls: 'neu', icone: '' };
-      }
-      const dif = (atual - anterior) / anterior;
-      if(Math.abs(dif) < 0.005) return { txt: '0% desde o período anterior', cls: 'neu', icone: '' };
-      const pos = dif > 0;
-      return { txt: `${pos ? '+' : ''}${(dif * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% desde o período anterior`, cls: pos ? 'pos' : 'neg', icone: stkIcone(pos ? 'trendUp' : 'trendDown') };
-    }
-
-    // Clipping: YoY para o card clean. Classifica o sentido como bom/ruim
-    // (subirEhRuim para "Notícias negativas") e gera selo + rodapé.
-    function stkYoYClip(atual, anterior, ano, pp, semBase, subirEhRuim){
-      if(semBase || (!pp && !(anterior > 0))) return { tom: 'neu', selo: 'Sem base', num: '—', txt: `sem dados em ${ano}` };
+    // Variação para o card de KPI clean (Clipping: vs ano anterior; Estoque:
+    // vs período anterior). ref = { vs: 'vs 2025', vazio: 'sem dados em 2024' }.
+    // Classifica o sentido como bom/ruim (subirEhRuim: Notícias negativas, Saídas).
+    function stkVarCard(atual, anterior, ref, pp, semBase, subirEhRuim){
+      if(semBase || (!pp && !(anterior > 0))) return { tom: 'neu', selo: 'Sem base', num: '—', txt: ref.vazio };
       const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
       const fmt = v => Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: pp ? 1 : 2 }) + (pp ? ' p.p.' : '%');
-      if(Math.abs(dif) < (pp ? 0.05 : 0.5)) return { tom: 'neu', selo: 'Estável', num: fmt(0) + ' →', txt: `vs ${ano}` };
+      if(Math.abs(dif) < (pp ? 0.05 : 0.5)) return { tom: 'neu', selo: 'Estável', num: fmt(0) + ' →', txt: ref.vs };
       const sobe = dif > 0, bom = sobe !== !!subirEhRuim;
-      return { tom: bom ? 'ok' : 'alerta', selo: bom ? 'Favorável' : 'Atenção', num: `${fmt(dif)} ${sobe ? '↗' : '↘'}`, txt: `vs ${ano}` };
+      return { tom: bom ? 'ok' : 'alerta', selo: bom ? 'Favorável' : 'Atenção', num: `${fmt(dif)} ${sobe ? '↗' : '↘'}`, txt: ref.vs };
     }
-    function stkKpiClip(icone, label, valor, yoy, base, dica){
+    function stkKpiCard(icone, label, valor, yoy, base, dica){
       const titulo = [dica, base].filter(Boolean).join(' · ');
       return `<div class="stk-kpi2"${titulo ? ` title="${esc(titulo)}"` : ''}>
         <div class="stk-kpi2-head"><div class="stk-kpi2-label">${esc(label)}</div><div class="stk-kpi2-icon">${stkIcone(icone)}</div></div>
@@ -6746,16 +6737,6 @@ ${clipPlayerPills(n)}
     function stkSeloFiltro(singular, plural){
       const n = stkSelAtual().size;
       return n ? ` <span class="stk-badge ongoing">Filtrado: ${n} ${n === 1 ? singular : plural}</span>` : '';
-    }
-
-    function stkKpi(icone, label, valor, delta){
-      return `<div class="stk-card">
-        <div class="stk-card-head">
-          <div><div class="stk-kpi-label">${esc(label)}</div><div class="stk-kpi-valor">${valor}</div></div>
-          <div class="stk-kpi-icon">${stkIcone(icone)}</div>
-        </div>
-        ${delta ? `<div class="stk-kpi-delta ${delta.cls}">${delta.icone}${esc(delta.txt)}</div>` : ''}
-      </div>`;
     }
 
     // Passo de eixo "redondo" (1/2/5 × 10^n), igual à régua usada no resto do app.
@@ -7102,11 +7083,21 @@ ${clipPlayerPills(n)}
       const qOk = ativos.filter(p => situacaoOf(p) === 'ok').length;
       const eficiencia = ativos.length ? qOk / ativos.length : 0;
 
-      const kTotal = stkKpi('layers', 'Total em estoque', stkNum(totalStockAtual), stkDelta(totalStockAtual, totalStockInicio));
-      const kOut = stkKpi('arrowUpRight', 'Saídas', stkNum(saidasQtd), stkDelta(saidasQtd, saidasQtdAnt));
-      const kIn = stkKpi('arrowDownLeft', 'Entradas', stkNum(entradasQtd), stkDelta(entradasQtd, entradasQtdAnt));
-      const kEfic = stkKpi('percent', 'Eficiência do armazém', stkPct(eficiencia), null);
-      const kCadastrados = stkKpi('caixa', 'Produtos cadastrados', stkNum(ativos.length), null);
+      // Comparação com a janela anterior de mesmo tamanho (Hoje/Semana/Mês ou Mês/Ano).
+      const vsAnt = (stkMesEl.value || stkAnoEl.value) ? 'vs período ant.' : ({ hoje: 'vs ontem', mes: 'vs mês ant.' }[stkPeriodoAtual] || 'vs semana ant.');
+      const refPer = { vs: vsAnt, vazio: 'sem histórico' };
+      const qAbaixo = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p))).length;
+      const kTotal = stkKpiCard('layers', 'Total em estoque', stkNum(totalStockAtual), stkVarCard(totalStockAtual, totalStockInicio, { vs: 'vs início', vazio: 'sem saldo no início' }), `Início do período: ${stkNum(totalStockInicio)}`);
+      // Saídas: subir consome o estoque (selo "Atenção"); Entradas: subir é favorável.
+      const kOut = stkKpiCard('arrowUpRight', 'Saídas', stkNum(saidasQtd), stkVarCard(saidasQtd, saidasQtdAnt, refPer, false, false, true), `Período anterior: ${stkNum(saidasQtdAnt)}`);
+      const kIn = stkKpiCard('arrowDownLeft', 'Entradas', stkNum(entradasQtd), stkVarCard(entradasQtd, entradasQtdAnt, refPer), `Período anterior: ${stkNum(entradasQtdAnt)}`);
+      // Sem comparação temporal: selo pela situação atual (meta de 80% dos produtos em estoque adequado).
+      const kEfic = stkKpiCard('percent', 'Eficiência do armazém', stkPct(eficiencia),
+        { tom: eficiencia >= 0.8 ? 'ok' : 'alerta', selo: eficiencia >= 0.8 ? 'Favorável' : 'Atenção', num: `${qOk}/${ativos.length}`, txt: 'com estoque ok' },
+        null, 'Produtos ativos com saldo acima do mínimo (meta: 80%)');
+      const kCadastrados = stkKpiCard('caixa', 'Produtos cadastrados', stkNum(ativos.length),
+        { tom: qAbaixo ? 'alerta' : 'ok', selo: qAbaixo ? 'Atenção' : 'Favorável', num: stkNum(qAbaixo), txt: 'abaixo do mínimo' },
+        null, 'Produtos ativos no catálogo');
 
       // ---- Fluxo de estoque (linhas suaves com área) ----
       const F = stkDadosFluxo(stkFluxoModo);
@@ -7265,12 +7256,13 @@ ${clipPlayerPills(n)}
 
       const semBase = !anterior.length;
       const pctAnt = v => semBase ? '—' : stkPct(v);
-      const kTotal = stkKpiClip('jornal', 'Total de notícias', stkNum(atual.length), stkYoYClip(atual.length, anterior.length, anoAnt), baseAnt(stkNum(anterior.length)));
-      const kSov = stkKpiClip('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), stkYoYClip(sov(atual), sov(anterior), anoAnt, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
-      const kVeic = stkKpiClip('globo', 'Veículos distintos', stkNum(portais(atual)), stkYoYClip(portais(atual), portais(anterior), anoAnt), baseAnt(stkNum(portais(anterior))));
-      const kPos = stkKpiClip('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkYoYClip(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), anoAnt, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
+      const refAno = { vs: `vs ${anoAnt}`, vazio: `sem dados em ${anoAnt}` };
+      const kTotal = stkKpiCard('jornal', 'Total de notícias', stkNum(atual.length), stkVarCard(atual.length, anterior.length, refAno), baseAnt(stkNum(anterior.length)));
+      const kSov = stkKpiCard('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), stkVarCard(sov(atual), sov(anterior), refAno, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
+      const kVeic = stkKpiCard('globo', 'Veículos distintos', stkNum(portais(atual)), stkVarCard(portais(atual), portais(anterior), refAno), baseAnt(stkNum(portais(anterior))));
+      const kPos = stkKpiCard('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkVarCard(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), refAno, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
       // Negativas: subir é ruim (selo "Atenção" em vermelho).
-      const kNeg = stkKpiClip('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkYoYClip(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), anoAnt, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
+      const kNeg = stkKpiCard('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkVarCard(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), refAno, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
 
       // ---- Volume de notícias: Ano vs Ano (padrão) ou por player ----
       const V = stkDadosVolumePorPlayer(stkVolumeModoClip);
