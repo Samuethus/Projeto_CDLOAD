@@ -692,6 +692,15 @@
   .wa-category-card h4{margin:0;font-size:13.5px;font-weight:700;color:var(--wa-text);}
   .wa-category-card p{margin:4px 0 0;font-size:11.5px;color:var(--wa-text-muted);line-height:1.4;}
 
+  /* ---- Estoque: central de operações (mesmo visual da etapa 1 do Template) ---- */
+  .wa-stock-hub-grid{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:820px){ .wa-stock-hub-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){ .wa-stock-hub-grid{grid-template-columns:1fr;} }
+  /* Corpo emprestado dos modais de Movimentação/Produto: sem o padding/rolagem próprios. */
+  .wa-stock-hub-panel > .wa-modal-body{padding:0;overflow:visible;}
+  /* O cartão escolhido já define o tipo — o seletor Entrada/Saída/Transferência some aqui. */
+  .wa-stock-hub-panel #waMovTipoField{display:none;}
+
   /* ---- Step 2: conteúdo + preview ---- */
   .wa-step2-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;}
   @media (max-width:820px){ .wa-step2-grid{grid-template-columns:1fr;} }
@@ -2430,6 +2439,62 @@
           </div>
         </div>
 
+        <!-- ===== MODAL: CENTRAL DE OPERAÇÕES (abre ao acessar o Estoque) =====
+             Mesmo layout da etapa 1 do "+ Adicionar Template". Os campos de cada
+             operação não são duplicados: o corpo de #waMovModal / #waProductModal
+             é movido para #waStockHubPanel ao escolher o cartão e devolvido ao
+             fechar. Desligar: STOCK_HUB_AUTO_OPEN = false (no script). -->
+        <div class="wa-modal-overlay" id="waStockHubModal">
+          <div class="wa-modal wa-modal-lg">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
+                </div>
+                <div>
+                  <div class="wa-modal-title">O que você deseja fazer?</div>
+                  <div class="wa-modal-sub">Escolha a operação de estoque e preencha os dados</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" onclick="waCloseStockHub()">&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <h3 class="wa-step-title">1. Tipo de Operação</h3>
+              <div class="wa-category-grid wa-stock-hub-grid" id="waStockHubGrid">
+                <div class="wa-category-card" data-acao="entrada">
+                  <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
+                  <h4>Entrada</h4>
+                  <p>Recebimento de produtos em um setor.</p>
+                </div>
+                <div class="wa-category-card" data-acao="saida">
+                  <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
+                  <h4>Saída</h4>
+                  <p>Consumo ou retirada de produtos de um setor.</p>
+                </div>
+                <div class="wa-category-card" data-acao="transferencia">
+                  <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
+                  <h4>Transferência</h4>
+                  <p>Move o saldo de um setor para outro.</p>
+                </div>
+                <div class="wa-category-card" data-acao="produto">
+                  <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg></div>
+                  <h4>Novo Produto</h4>
+                  <p>Cadastro de um item no catálogo.</p>
+                </div>
+              </div>
+              <div id="waStockHubStep" hidden>
+                <h3 class="wa-step-title" id="waStockHubStepTitle">2. Dados</h3>
+                <div class="wa-empty-hint" id="waStockHubEmpty" hidden>Cadastre um produto ativo antes de registrar movimentações.</div>
+                <div class="wa-stock-hub-panel" id="waStockHubPanel"></div>
+              </div>
+            </div>
+            <div class="wa-modal-footer">
+              <button class="wa-btn wa-btn-outline" onclick="waCloseStockHub()">Cancelar</button>
+              <button class="wa-btn wa-btn-primary" id="waStockHubSaveBtn" onclick="waStockHubSave()" disabled>Selecione uma operação</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ===== MODAL: NOVO/EDITAR PRODUTO ===== -->
         <div class="wa-modal-overlay" id="waProductModal">
           <div class="wa-modal wa-modal-lg" style="max-width:720px;">
@@ -2529,7 +2594,7 @@
                   </button>
                 </div>
               </div>
-              <div class="wa-field">
+              <div class="wa-field" id="waMovTipoField">
                 <label>Tipo</label>
                 <div class="wa-toggle-group" id="waMovTipoGroup">
                   <button type="button" class="wa-toggle-chip selected" data-tipo="entrada">Entrada</button>
@@ -5483,6 +5548,13 @@ ${clipPlayerPills(n)}
     // Cadastro cria só o produto (catálogo global) — para colocar saldo em
     // algum setor, use Nova Movimentação (Entrada) depois de salvar.
     window.waOpenProductModal = function(id, presetCode){
+      fillProductForm(id, presetCode);
+      waProductModal.classList.add('open');
+      setTimeout(() => (waProdCodigo.value ? waProdNome : waProdCodigo).focus(), 50);
+    };
+
+    // Preenche o formulário de produto sem abrir o modal (reusado pela central de operações).
+    function fillProductForm(id, presetCode){
       editingProductId = id || null;
       const p = stockProducts.find(x => x.id === editingProductId);
 
@@ -5497,13 +5569,11 @@ ${clipPlayerPills(n)}
       waProdCusto.value = p && p.preco_custo != null ? p.preco_custo : '';
       waProdDescricao.value = p ? (p.descricao || '') : '';
       waProdStatus.value = p && !p.ativo ? 'false' : 'true';
-
-      waProductModal.classList.add('open');
-      setTimeout(() => (waProdCodigo.value ? waProdNome : waProdCodigo).focus(), 50);
-    };
+    }
 
     window.waCloseProductModal = function(){
       waProductModal.classList.remove('open');
+      if(waStockHubModal.classList.contains('open')) waCloseStockHub();
     };
 
     waProdCodigo.addEventListener('keydown', (e) => {
@@ -5663,11 +5733,21 @@ ${clipPlayerPills(n)}
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
 
     window.waOpenMovModal = function(produtoId, tipo){
-      const ativos = stockProducts.filter(p => p.ativo);
-      if(!ativos.length){
+      if(!fillMovForm(produtoId, tipo)){
         alert('Cadastre um produto ativo antes de registrar movimentações.');
         return;
       }
+      waMovModal.classList.add('open');
+      setTimeout(() => {
+        if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovProduto.focus(); }
+      }, 50);
+    };
+
+    // Preenche o formulário de movimentação sem abrir o modal (reusado pela
+    // central de operações). Retorna false se não houver produto ativo.
+    function fillMovForm(produtoId, tipo){
+      const ativos = stockProducts.filter(p => p.ativo);
+      if(!ativos.length) return false;
       waMovSub.textContent = 'Escolha o setor e registre a entrada, saída ou transferência entre setores.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
@@ -5679,16 +5759,108 @@ ${clipPlayerPills(n)}
       waMovQtd.value = '1';
       waMovObs.value = '';
       setMovTipo(tipo || 'entrada');
-      waMovModal.classList.add('open');
-      setTimeout(() => {
-        if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovProduto.focus(); }
-      }, 50);
-    };
+      return true;
+    }
 
     window.waCloseMovModal = function(){
       waMovModal.classList.remove('open');
+      if(waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque' && window.matchMedia('(pointer: fine)').matches) waScanInput.focus();
     };
+
+    // ---------------- Central de operações (abre ao acessar o Estoque) ----------------
+    // Rollback: STOCK_HUB_AUTO_OPEN = false desliga a abertura automática;
+    // remover este bloco + #waStockHubModal volta ao comportamento anterior.
+    const STOCK_HUB_AUTO_OPEN = true;
+    const waStockHubModal = document.getElementById('waStockHubModal');
+    const waStockHubGrid = document.getElementById('waStockHubGrid');
+    const waStockHubStep = document.getElementById('waStockHubStep');
+    const waStockHubStepTitle = document.getElementById('waStockHubStepTitle');
+    const waStockHubEmpty = document.getElementById('waStockHubEmpty');
+    const waStockHubPanel = document.getElementById('waStockHubPanel');
+    const waStockHubSaveBtn = document.getElementById('waStockHubSaveBtn');
+    // Corpos emprestados e onde devolvê-los (antes do rodapé do modal de origem).
+    const hubForms = {
+      mov: waMovModal.querySelector('.wa-modal-body'),
+      produto: waProductModal.querySelector('.wa-modal-body')
+    };
+    const hubFormHome = {
+      mov: { parent: hubForms.mov.parentNode, next: hubForms.mov.nextElementSibling },
+      produto: { parent: hubForms.produto.parentNode, next: hubForms.produto.nextElementSibling }
+    };
+    const HUB_ACOES = {
+      entrada:       { titulo: '2. Dados da Entrada',       botao: 'Registrar Entrada' },
+      saida:         { titulo: '2. Dados da Saída',         botao: 'Registrar Saída' },
+      transferencia: { titulo: '2. Dados da Transferência', botao: 'Registrar Transferência' },
+      produto:       { titulo: '2. Dados do Produto',       botao: 'Salvar Produto' }
+    };
+    let hubAcao = null;
+
+    function hubDevolverFormularios(){
+      Object.keys(hubForms).forEach(k => {
+        if(hubForms[k].parentNode !== hubFormHome[k].parent) hubFormHome[k].parent.insertBefore(hubForms[k], hubFormHome[k].next);
+      });
+    }
+
+    function hubSelecionar(acao){
+      hubAcao = acao;
+      waStockHubGrid.querySelectorAll('.wa-category-card').forEach(c => c.classList.toggle('selected', c.dataset.acao === acao));
+      hubDevolverFormularios();
+      let ok = true;
+      if(acao === 'produto'){
+        fillProductForm(null);
+        waStockHubPanel.appendChild(hubForms.produto);
+      } else {
+        ok = fillMovForm(null, acao);
+        if(ok) waStockHubPanel.appendChild(hubForms.mov);
+      }
+      waStockHubEmpty.hidden = ok;
+      waStockHubStepTitle.textContent = HUB_ACOES[acao].titulo;
+      waStockHubSaveBtn.textContent = HUB_ACOES[acao].botao;
+      waStockHubSaveBtn.disabled = !ok;
+      waStockHubStep.hidden = false;
+      // Reinicia o fade a cada troca de cartão.
+      waStockHubStep.classList.remove('wa-fade-in');
+      void waStockHubStep.offsetWidth;
+      waStockHubStep.classList.add('wa-fade-in');
+      if(ok) setTimeout(() => (acao === 'produto' ? waProdCodigo : waMovProduto).focus(), 50);
+    }
+
+    waStockHubGrid.querySelectorAll('.wa-category-card').forEach(card => {
+      card.addEventListener('click', () => hubSelecionar(card.dataset.acao));
+    });
+
+    window.waOpenStockHub = function(){
+      hubDevolverFormularios();
+      hubAcao = null;
+      waStockHubGrid.querySelectorAll('.wa-category-card').forEach(c => c.classList.remove('selected'));
+      waStockHubStep.hidden = true;
+      waStockHubSaveBtn.textContent = 'Selecione uma operação';
+      waStockHubSaveBtn.disabled = true;
+      waStockHubModal.classList.add('open');
+    };
+
+    window.waCloseStockHub = function(){
+      waStockHubModal.classList.remove('open');
+      hubDevolverFormularios();
+      hubAcao = null;
+      if(currentPage === 'estoque' && window.matchMedia('(pointer: fine)').matches) waScanInput.focus();
+    };
+
+    // Salvar usa as mesmas funções dos modais originais (mesma validação);
+    // em caso de sucesso elas chamam waClose*Modal, que também fecha a central.
+    window.waStockHubSave = function(){
+      if(!hubAcao) return;
+      if(hubAcao === 'produto') waSaveProduct(); else waSaveMovement();
+    };
+
+    // Os produtos carregam depois que a central já abriu: se o usuário escolheu
+    // uma movimentação antes disso, refaz a seleção com a lista completa.
+    function hubAposCarregarEstoque(){
+      if(waStockHubModal.classList.contains('open') && hubAcao && hubAcao !== 'produto' && hubForms.mov.parentNode !== waStockHubPanel){
+        hubSelecionar(hubAcao);
+      }
+    }
 
     window.waSaveMovement = async function(){
       const p = stockProducts.find(x => x.id === waMovProduto.value);
@@ -7272,9 +7444,12 @@ ${clipPlayerPills(n)}
     document.addEventListener('cdload:pagechange', (e) => {
       currentPage = e.detail.page;
       updateCamAlert();
+      // Saindo do Estoque com a central aberta: fecha e devolve os formulários.
+      if(currentPage !== 'estoque' && waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque'){
-        loadStock();
-        if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
+        loadStock().then(hubAposCarregarEstoque);
+        if(STOCK_HUB_AUTO_OPEN) waOpenStockHub();
+        else if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
       } else if(currentPage === 'relatorios'){
         loadReports();
       } else if(currentPage === 'dashboard'){
