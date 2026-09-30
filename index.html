@@ -780,12 +780,25 @@
     .wa-view-toggle-btn{flex:1;justify-content:center;}
   }
 
-  /* ---- Calendário de campanhas ---- */
-  .wa-cal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--wa-border);}
+  /* ---- Calendário de campanhas (carrossel com 2 meses lado a lado) ---- */
+  .wa-cal-carousel-card{padding:16px;}
+  .wa-cal-carousel{display:flex;align-items:center;gap:10px;}
+  .wa-cal-nav{
+    flex:0 0 auto;background:var(--wa-card,#fff);border:1px solid var(--wa-border);border-radius:10px;
+    padding:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  .wa-cal-nav svg{width:18px;height:18px;stroke-width:2.4;}
+  .wa-cal-nav:disabled{opacity:.35;cursor:not-allowed;pointer-events:none;}
+  .wa-cal-months{display:flex;flex:1;gap:24px;min-width:0;align-items:stretch;}
+  .wa-cal-month-panel{
+    flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+    border:1px solid var(--wa-border-soft,#EEF2F6);border-radius:10px;overflow:hidden;
+  }
+  .wa-cal-header{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-bottom:1px solid var(--wa-border);}
   .wa-cal-title{font-size:14px;font-weight:700;color:var(--wa-text);text-transform:capitalize;}
   .wa-cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--wa-border);}
   .wa-cal-weekdays span{padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--wa-text-muted);text-transform:uppercase;}
-  .wa-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);align-items:stretch;}
+  .wa-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;align-items:stretch;flex:1;}
   .wa-cal-cell{min-height:96px;border-right:1px solid var(--wa-border-soft,#EEF2F6);border-bottom:1px solid var(--wa-border-soft,#EEF2F6);padding:6px;display:flex;flex-direction:column;gap:4px;transition:background .2s ease-in-out;}
   .wa-cal-cell-muted{background:#FAFBFC;}
   .wa-cal-cell-today{background:var(--wa-primary-soft);}
@@ -797,9 +810,20 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background .15s, color .15s;
   }
   .wa-cal-event:hover{background:var(--cal-pastel-text, var(--wa-primary));color:#fff;}
+  @media (max-width:900px){
+    .wa-cal-months{gap:12px;}
+    .wa-cal-cell{min-height:56px;padding:4px;}
+    .wa-cal-daynum{font-size:10px;}
+    .wa-cal-event{font-size:9px;padding:2px 4px;}
+    .wa-cal-title{font-size:12px;}
+    .wa-cal-header{padding:10px 8px;}
+    .wa-cal-weekdays span{font-size:9px;padding:6px 2px;}
+    .wa-cal-nav{padding:6px;}
+    .wa-cal-nav svg{width:14px;height:14px;}
+  }
   @media (max-width:640px){
-    .wa-cal-cell{min-height:64px;}
-    .wa-cal-weekdays span{font-size:9.5px;padding:6px 2px;}
+    .wa-cal-cell{min-height:46px;padding:2px;}
+    .wa-cal-event{font-size:8px;padding:1px 3px;}
   }
 
   /* ===================================================================
@@ -1887,27 +1911,26 @@
           </div>
         </div>
 
-        <div class="wa-topcard">
-          <div>
-            <div class="wa-topcard-title">Gestão de Disparos</div>
-            <div class="wa-topcard-sub">Monitore e envie mensagens em massa para suas listas</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div class="wa-view-toggle" id="waCampViewToggle">
-              <button type="button" class="wa-view-toggle-btn active" data-view="table">
-                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-                <span>Tabela</span>
-              </button>
-              <button type="button" class="wa-view-toggle-btn" data-view="calendar">
-                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span>Calendário</span>
-              </button>
-            </div>
-            <button class="wa-btn wa-btn-primary" onclick="waOpenCampaignModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Nova Campanha
+        <div class="filter-bar" id="waCampFilterBar">
+          <select class="filter-select" id="waCampTipoAgendaFiltro" title="Tipo de agenda (setor)">
+            <option value="">Tipo de agenda</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <div class="wa-view-toggle" id="waCampViewToggle">
+            <button type="button" class="wa-view-toggle-btn active" data-view="table">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+              <span>Tabela</span>
+            </button>
+            <button type="button" class="wa-view-toggle-btn" data-view="calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>Calendário</span>
             </button>
           </div>
+          <button class="wa-btn wa-btn-primary" onclick="waOpenCampaignModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nova Campanha
+          </button>
         </div>
 
         <div class="wa-card" id="waCampTableView">
@@ -1928,20 +1951,16 @@
           </div>
         </div>
 
-        <div class="wa-card" id="waCampCalendarView" style="display:none;">
-          <div class="wa-cal-header">
-            <button class="wa-icon-btn" id="waCalPrevBtn" title="Mês anterior">
+        <div class="wa-card wa-cal-carousel-card" id="waCampCalendarView" style="display:none;">
+          <div class="wa-cal-carousel">
+            <button class="wa-icon-btn wa-cal-nav" id="waCalPrevBtn" title="Mês anterior">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-            <div class="wa-cal-title" id="waCalTitle">—</div>
-            <button class="wa-icon-btn" id="waCalNextBtn" title="Próximo mês">
+            <div class="wa-cal-months" id="waCalMonths"></div>
+            <button class="wa-icon-btn wa-cal-nav" id="waCalNextBtn" title="Próximo mês">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
           </div>
-          <div class="wa-cal-weekdays">
-            <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
-          </div>
-          <div class="wa-cal-grid" id="waCalGrid"></div>
         </div>
 
         <!-- ===== MODAL: WIZARD DE CAMPANHA (4 ETAPAS + REVISÃO) ===== -->
@@ -3132,13 +3151,31 @@
     }
 
     const waCampaignTableBody = document.getElementById('waCampaignTableBody');
+    const waCampTipoAgendaFiltro = document.getElementById('waCampTipoAgendaFiltro');
+
+    // Filtro "Tipo de agenda": permite ao usuário isolar o calendário/tabela
+    // por setor (Institucional, Marketing, Comercial, ...).
+    function refreshCampFilterOptions(){
+      const tipos = [...new Set(campaigns.map(c => c.planejamento_e_objetivos && c.planejamento_e_objetivos.tipo_agenda).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      fillSelect(waCampTipoAgendaFiltro, 'Tipo de agenda', tipos.map(t => ({ value: t, label: t })));
+    }
+    function getFilteredCampaigns(){
+      const tipoAgenda = waCampTipoAgendaFiltro.value;
+      return campaigns.filter(c => !tipoAgenda || c.planejamento_e_objetivos.tipo_agenda === tipoAgenda);
+    }
+    waCampTipoAgendaFiltro.addEventListener('change', renderCampaigns);
+
     function renderCampaigns(){
+      refreshCampFilterOptions();
+      const filteredCampaigns = getFilteredCampaigns();
       waCampaignTableBody.innerHTML = '';
-      if(!campaigns.length){
+      if(!filteredCampaigns.length){
         waCampaignTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="6">Nenhuma campanha cadastrada.</td></tr>';
+        if(campViewMode === 'calendar') renderCampaignCalendar();
         return;
       }
-      campaigns.forEach(camp => {
+      filteredCampaigns.forEach(camp => {
         const p = camp.planejamento_e_objetivos;
         const canais = camp.publico_e_midia.canais || [];
         const status = computeCampaignStatus(camp);
@@ -3177,8 +3214,9 @@
     const waCampViewToggle = document.getElementById('waCampViewToggle');
     const waCampTableView = document.getElementById('waCampTableView');
     const waCampCalendarView = document.getElementById('waCampCalendarView');
-    const waCalTitle = document.getElementById('waCalTitle');
-    const waCalGrid = document.getElementById('waCalGrid');
+    const waCalMonths = document.getElementById('waCalMonths');
+    const waCalPrevBtn = document.getElementById('waCalPrevBtn');
+    const waCalNextBtn = document.getElementById('waCalNextBtn');
 
     function getCampViewModeFromURL(){
       const params = new URLSearchParams(window.location.search);
@@ -3191,7 +3229,16 @@
     }
 
     let campViewMode = getCampViewModeFromURL();
+
+    // Carrossel do calendário: sempre exibe 2 meses lado a lado, navegando por
+    // todo o intervalo de Janeiro/2025 a Dezembro/2026. `calDate` guarda o
+    // mês exibido à esquerda; o mês da direita é sempre o mês seguinte.
+    const CAL_MIN_DATE = new Date(2025, 0, 1);
+    const CAL_MAX_LEFT_DATE = new Date(2026, 10, 1); // Nov/2026, para a direita cair em Dez/2026
     let calDate = new Date();
+    calDate.setDate(1);
+    if(calDate < CAL_MIN_DATE) calDate = new Date(CAL_MIN_DATE);
+    if(calDate > CAL_MAX_LEFT_DATE) calDate = new Date(CAL_MAX_LEFT_DATE);
 
     function applyCampViewMode(){
       waCampTableView.style.display = campViewMode === 'table' ? 'block' : 'none';
@@ -3240,56 +3287,82 @@
       return CAL_PASTEL_PALETTE[hash % CAL_PASTEL_PALETTE.length];
     }
 
-    function renderCampaignCalendar(){
-      const year = calDate.getFullYear();
-      const month = calDate.getMonth();
-      waCalTitle.textContent = formatCalMonthLabel(calDate);
-
+    // Monta o HTML de um único painel de mês (cabeçalho + dias da semana + grade).
+    // A grade sempre tem 6 semanas (42 células) para que os dois painéis do
+    // carrossel fiquem sempre com a mesma altura, independente de quantas
+    // semanas o mês realmente ocupa.
+    function buildCalMonthPanelHTML(year, month, filteredCampaigns){
       const firstDay = new Date(year, month, 1);
       const startOffset = firstDay.getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+      const totalCells = 42;
       const todayStr = new Date().toISOString().slice(0, 10);
 
-      waCalGrid.innerHTML = '';
+      let cellsHTML = '';
       for(let i = 0; i < totalCells; i++){
         const dayNum = i - startOffset + 1;
-        const cell = document.createElement('div');
-        cell.className = 'wa-cal-cell';
 
         if(dayNum < 1 || dayNum > daysInMonth){
-          cell.classList.add('wa-cal-cell-muted');
-          waCalGrid.appendChild(cell);
+          cellsHTML += '<div class="wa-cal-cell wa-cal-cell-muted"></div>';
           continue;
         }
 
         const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-        if(cellDateStr === todayStr) cell.classList.add('wa-cal-cell-today');
+        const isToday = cellDateStr === todayStr;
 
-        const dayCampaigns = campaigns.filter(c => {
+        const dayCampaigns = filteredCampaigns.filter(c => {
           const p = c.planejamento_e_objetivos;
           return p.data_inicio && p.data_fim && cellDateStr >= p.data_inicio && cellDateStr <= p.data_fim;
         });
 
-        cell.innerHTML = `
-          <div class="wa-cal-daynum">${dayNum}</div>
-          <div class="wa-cal-events">
-            ${dayCampaigns.map(c => {
-              const color = getCampaignCalColor(c.nome_campanha);
-              return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};" onclick="waOpenCampaignModal('${c.id}')" title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
-            }).join('')}
+        cellsHTML += `
+          <div class="wa-cal-cell${isToday ? ' wa-cal-cell-today' : ''}">
+            <div class="wa-cal-daynum">${dayNum}</div>
+            <div class="wa-cal-events">
+              ${dayCampaigns.map(c => {
+                const color = getCampaignCalColor(c.nome_campanha);
+                return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};" onclick="waOpenCampaignModal('${c.id}')" title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
+              }).join('')}
+            </div>
           </div>
         `;
-        waCalGrid.appendChild(cell);
       }
+
+      return `
+        <div class="wa-cal-month-panel">
+          <div class="wa-cal-header"><div class="wa-cal-title">${formatCalMonthLabel(new Date(year, month, 1))}</div></div>
+          <div class="wa-cal-weekdays">
+            <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+          </div>
+          <div class="wa-cal-grid">${cellsHTML}</div>
+        </div>
+      `;
     }
 
-    document.getElementById('waCalPrevBtn').addEventListener('click', () => {
-      calDate = new Date(calDate.getFullYear(), calDate.getMonth() - 1, 1);
+    function renderCampaignCalendar(){
+      const filteredCampaigns = getFilteredCampaigns();
+      const leftYear = calDate.getFullYear();
+      const leftMonth = calDate.getMonth();
+      const rightDate = new Date(leftYear, leftMonth + 1, 1);
+
+      waCalMonths.innerHTML =
+        buildCalMonthPanelHTML(leftYear, leftMonth, filteredCampaigns) +
+        buildCalMonthPanelHTML(rightDate.getFullYear(), rightDate.getMonth(), filteredCampaigns);
+
+      waCalPrevBtn.disabled = calDate <= CAL_MIN_DATE;
+      waCalNextBtn.disabled = calDate >= CAL_MAX_LEFT_DATE;
+    }
+
+    waCalPrevBtn.addEventListener('click', () => {
+      const prev = new Date(calDate.getFullYear(), calDate.getMonth() - 1, 1);
+      if(prev < CAL_MIN_DATE) return;
+      calDate = prev;
       renderCampaignCalendar();
     });
-    document.getElementById('waCalNextBtn').addEventListener('click', () => {
-      calDate = new Date(calDate.getFullYear(), calDate.getMonth() + 1, 1);
+    waCalNextBtn.addEventListener('click', () => {
+      const next = new Date(calDate.getFullYear(), calDate.getMonth() + 1, 1);
+      if(next > CAL_MAX_LEFT_DATE) return;
+      calDate = next;
       renderCampaignCalendar();
     });
 
