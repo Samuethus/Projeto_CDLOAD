@@ -543,7 +543,7 @@
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard{
+  #page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -691,6 +691,30 @@
   .wa-category-icon svg{width:15px;height:15px;stroke-width:2;}
   .wa-category-card h4{margin:0;font-size:13.5px;font-weight:700;color:var(--wa-text);}
   .wa-category-card p{margin:4px 0 0;font-size:11.5px;color:var(--wa-text-muted);line-height:1.4;}
+
+  /* ---- Home: galeria de painéis (layout Hub - Card02) ---- */
+  .wa-hub-head{margin:0 0 20px;}
+  .wa-hub-head h2{margin:0;font-size:18px;font-weight:700;color:var(--wa-text);}
+  .wa-hub-head p{margin:4px 0 0;font-size:13px;color:var(--wa-text-muted);}
+  .wa-hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+  .wa-hub-card{display:flex;flex-direction:column;background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;overflow:hidden;
+    text-decoration:none;color:inherit;position:relative;
+    box-shadow:0 -3px 0 -1px #fff,0 -4px 0 -1px var(--wa-border);margin-top:4px;
+    transition:transform .18s,box-shadow .18s,border-color .18s;}
+  a.wa-hub-card:hover,a.wa-hub-card:focus-visible{transform:translateY(-3px);border-color:var(--wa-primary);outline:none;
+    box-shadow:0 -3px 0 -1px #fff,0 -4px 0 -1px var(--wa-primary),0 12px 28px rgba(15,23,42,.12);}
+  .wa-hub-card-art{aspect-ratio:1268/508;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .wa-hub-card-art img{width:100%;height:100%;object-fit:contain;display:block;}
+  .wa-hub-card-art .wa-hub-card-fallback{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--wa-primary);font-weight:700;font-size:15px;}
+  .wa-hub-card-fallback svg{width:44px;height:44px;stroke:currentColor;stroke-width:1.6;}
+  .wa-hub-card-name{border-top:1px solid var(--wa-border);padding:14px 16px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;text-align:center;color:#3f3f46;background:#fff;}
+  .wa-hub-card-name svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;flex:0 0 auto;opacity:0;transition:opacity .15s;}
+  a.wa-hub-card:hover .wa-hub-card-name svg,a.wa-hub-card:focus-visible .wa-hub-card-name svg{opacity:1;color:var(--wa-primary);}
+  .wa-hub-card.indisponivel{cursor:not-allowed;}
+  .wa-hub-card.indisponivel .wa-hub-card-art{filter:grayscale(1);opacity:.55;}
+  .wa-hub-card.indisponivel .wa-hub-card-name{color:#94a3b8;}
+  .wa-hub-card-badge{position:absolute;top:10px;right:10px;background:var(--wa-slate-bg,#F1F5F9);color:var(--wa-slate-text,#475569);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;}
 
   /* ---- Estoque: central de operações (mesmo visual da etapa 1 do Template) ---- */
   .wa-stock-hub-grid{grid-template-columns:repeat(4,1fr);}
@@ -1401,11 +1425,11 @@
 
       <!-- HOME -->
       <section class="page active" id="page-home">
-        <div class="empty-state">
-          <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
-          <div class="empty-title">Nenhum notícia disponível</div>
-          <div class="empty-subtitle">Integração com APIs do google news para exibição dos notícias mais recentes.</div>
+        <div class="wa-hub-head">
+          <h2>Hub de Painéis</h2>
+          <p>Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.</p>
         </div>
+        <div class="wa-hub-grid" id="waHubGrid"></div>
       </section>
 
 
@@ -7540,6 +7564,79 @@ ${clipPlayerPills(n)}
     });
 
     renderTemplates();
+    // ---------------- Home: galeria de painéis Power BI ----------------
+    // Fonte: links_power.txt. Painel sem "url" aparece desativado ("Link não cadastrado")
+    // — é só preencher o link aqui. Sem "img", mostra a arte genérica.
+    const HUB_PAINEIS = [
+      {
+            "t": "Painel Hub Núcleo",
+            "img": "assets/hub/hub-nucleo.webp",
+            "url": "https://app.powerbi.com/links/MdIxLThUng?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Pesquisas de Mercado",
+            "img": "assets/hub/pesquisas.webp",
+            "url": "https://app.powerbi.com/links/JOzp7VnybQ?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Ofícios e Liminares",
+            "img": "assets/hub/oficios.webp",
+            "url": "https://app.powerbi.com/links/UuF7D7MRLR?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Observatório Obras",
+            "img": "assets/hub/observatorio-obras.webp",
+            "url": "https://app.powerbi.com/links/EwwaUu20S6?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Controle de Estoque",
+            "img": "assets/hub/controle-estoque.webp",
+            "url": "https://app.powerbi.com/links/LBsPBEa1e0?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Cronograma de Obras",
+            "img": "assets/hub/cronograma-obras.webp",
+            "url": "https://app.powerbi.com/links/RYeeEXMukj?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Financeiro Gestão à Vista",
+            "img": "assets/hub/gestao-a-vista.webp",
+            "url": "https://app.powerbi.com/links/au1tE8RVbT?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Certificado Digital",
+            "img": "assets/hub/certificado-digital.webp",
+            "url": "https://app.powerbi.com/links/WdTX7zzuCl?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel CAGED - Empregos",
+            "img": "assets/hub/caged.webp",
+            "url": "https://app.powerbi.com/links/5zj1ahwWyk?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      },
+      {
+            "t": "Painel Radar de Mercado",
+            "img": "assets/hub/radar.webp",
+            "url": ""
+      },
+      {
+            "t": "Painel Espaço CDL",
+            "img": "",
+            "url": "https://app.powerbi.com/links/RwmvVe4c7C?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
+      }
+];
+    function renderHubHome(){
+      const icoExterno = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
+      const icoPainel = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="8" y1="17" x2="8" y2="11"></line><line x1="12" y1="17" x2="12" y2="7"></line><line x1="16" y1="17" x2="16" y2="13"></line></svg>';
+      document.getElementById('waHubGrid').innerHTML = HUB_PAINEIS.map(p => {
+        const ativo = /^https:\/\/app\.powerbi\.com\//.test(p.url || '');
+        const arte = p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="wa-hub-card-fallback">${icoPainel}</div>`;
+        const corpo = `<div class="wa-hub-card-art">${arte}</div><div class="wa-hub-card-name">${esc(p.t)}${ativo ? icoExterno : ''}</div>`;
+        return ativo
+          ? `<a class="wa-hub-card" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer" title="Abrir ${esc(p.t)} em nova janela">${corpo}</a>`
+          : `<div class="wa-hub-card indisponivel" aria-disabled="true" title="Link ainda não cadastrado"><span class="wa-hub-card-badge">Link não cadastrado</span>${corpo}</div>`;
+      }).join('');
+    }
+    renderHubHome();
     // Dados só são buscados depois do login (as policies de RLS exigem sessão).
     function loadAllData(){
       loadCampaigns();
