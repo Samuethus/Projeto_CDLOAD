@@ -4295,8 +4295,11 @@
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
     // player vai só no marcador ao lado.
+    // Rótulo curto só na tag do card (cabe numa linha com categoria e
+    // sentimento); o nome completo continua no tooltip, filtros e dados.
+    const CLIP_PLAYER_ROTULO_CURTO = { 'Fecomércio MT': 'Fecomércio' };
     function clipPlayerPills(n){
-      return (n.players || []).map(p => `<span class="wa-clip-pill wa-clip-pill-player"><i style="background:${clipPlayerCor(p)}"></i>${esc(p)}</span>`).join('');
+      return (n.players || []).map(p => `<span class="wa-clip-pill wa-clip-pill-player" title="${esc(p)}"><i style="background:${clipPlayerCor(p)}"></i>${esc(CLIP_PLAYER_ROTULO_CURTO[p] || p)}</span>`).join('');
     }
 
     // Portais bloqueados (alerta de segurança do antivírus): nunca exibidos
