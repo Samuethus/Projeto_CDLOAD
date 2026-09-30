@@ -12,7 +12,7 @@
 <title>CDLoad · Núcleo de Inteligência</title>
 <link rel="preconnect" href="https://fonts.googleapis.com/">
 <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme: light;
@@ -1088,8 +1088,25 @@
   .stk-kpi-delta.pos{color:var(--stk-success);background:var(--stk-success-bg);}
   .stk-kpi-delta.neg{color:var(--stk-danger);background:var(--stk-danger-bg);}
   .stk-kpi-delta.neu{color:var(--stk-caption);background:var(--stk-neutral-bg);}
-  /* Clipping: valor do mesmo período no ano anterior, abaixo do selo YoY. */
-  .stk-kpi-base{font-size:11.5px;color:var(--stk-caption);margin-top:6px;}
+  /* ---- Clipping: card de KPI clean/corporativo (título + ícone, número + selo, rodapé YoY) ---- */
+  .stk-kpi2{font-family:'Poppins','Inter',system-ui,sans-serif;background:#fff;border:1px solid #EEF0F3;border-radius:14px;padding:18px 20px 16px;
+    box-shadow:0 1px 3px rgba(16,24,40,.05);display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .stk-kpi2-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .stk-kpi2-label{font-size:14px;font-weight:500;color:#2D2D2D;line-height:1.3;min-width:0;}
+  .stk-kpi2-icon{width:42px;height:42px;border-radius:50%;background:#EAF3FF;color:#3B82F6;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .stk-kpi2-icon svg{width:19px;height:19px;stroke-width:2.2;}
+  .stk-kpi2-mid{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;}
+  .stk-kpi2-valor{font-size:34px;font-weight:600;color:#1F1F1F;line-height:1;letter-spacing:-.01em;}
+  @media (max-width:1440px){ .stk-kpi2{padding:16px 16px 14px;} .stk-kpi2-valor{font-size:28px;} }
+  .stk-kpi2-selo{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:4px;white-space:nowrap;}
+  .stk-kpi2-selo.ok{color:#16A34A;background:#E8F7EE;}
+  .stk-kpi2-selo.alerta{color:#E5484D;background:#FDECEC;}
+  .stk-kpi2-selo.neu{color:#6B7280;background:#F1F3F5;}
+  .stk-kpi2-rodape{font-size:13px;color:#6B7280;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;}
+  .stk-kpi2-var{font-weight:600;white-space:nowrap;}
+  .stk-kpi2-var.ok{color:#16A34A;}
+  .stk-kpi2-var.alerta{color:#E5484D;}
+  .stk-kpi2-var.neu{color:#6B7280;}
   .stk-segmented[hidden]{display:none;}
 
   /* ---- Gráfico "Stock Flow" (barras duplas) ---- */
@@ -6707,19 +6724,37 @@ ${clipPlayerPills(n)}
       return { txt: `${pos ? '+' : ''}${(dif * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% desde o período anterior`, cls: pos ? 'pos' : 'neg', icone: stkIcone(pos ? 'trendUp' : 'trendDown') };
     }
 
+    // Clipping: YoY para o card clean. Classifica o sentido como bom/ruim
+    // (subirEhRuim para "Notícias negativas") e gera selo + rodapé.
+    function stkYoYClip(atual, anterior, ano, pp, semBase, subirEhRuim){
+      if(semBase || (!pp && !(anterior > 0))) return { tom: 'neu', selo: 'Sem base', num: '—', txt: `sem dados em ${ano}` };
+      const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
+      const fmt = v => Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: pp ? 1 : 2 }) + (pp ? ' p.p.' : '%');
+      if(Math.abs(dif) < (pp ? 0.05 : 0.5)) return { tom: 'neu', selo: 'Estável', num: fmt(0) + ' →', txt: `vs ${ano}` };
+      const sobe = dif > 0, bom = sobe !== !!subirEhRuim;
+      return { tom: bom ? 'ok' : 'alerta', selo: bom ? 'Favorável' : 'Atenção', num: `${fmt(dif)} ${sobe ? '↗' : '↘'}`, txt: `vs ${ano}` };
+    }
+    function stkKpiClip(icone, label, valor, yoy, base, dica){
+      const titulo = [dica, base].filter(Boolean).join(' · ');
+      return `<div class="stk-kpi2"${titulo ? ` title="${esc(titulo)}"` : ''}>
+        <div class="stk-kpi2-head"><div class="stk-kpi2-label">${esc(label)}</div><div class="stk-kpi2-icon">${stkIcone(icone)}</div></div>
+        <div class="stk-kpi2-mid"><div class="stk-kpi2-valor">${valor}</div><span class="stk-kpi2-selo ${yoy.tom}">${esc(yoy.selo)}</span></div>
+        <div class="stk-kpi2-rodape"><span class="stk-kpi2-var ${yoy.tom}">${esc(yoy.num)}</span><span>${esc(yoy.txt)}</span></div>
+      </div>`;
+    }
+
     function stkSeloFiltro(singular, plural){
       const n = stkSelAtual().size;
       return n ? ` <span class="stk-badge ongoing">Filtrado: ${n} ${n === 1 ? singular : plural}</span>` : '';
     }
 
-    function stkKpi(icone, label, valor, delta, base){
+    function stkKpi(icone, label, valor, delta){
       return `<div class="stk-card">
         <div class="stk-card-head">
           <div><div class="stk-kpi-label">${esc(label)}</div><div class="stk-kpi-valor">${valor}</div></div>
           <div class="stk-kpi-icon">${stkIcone(icone)}</div>
         </div>
         ${delta ? `<div class="stk-kpi-delta ${delta.cls}">${delta.icone}${esc(delta.txt)}</div>` : ''}
-        ${base ? `<div class="stk-kpi-base">${esc(base)}</div>` : ''}
       </div>`;
     }
 
@@ -7230,14 +7265,12 @@ ${clipPlayerPills(n)}
 
       const semBase = !anterior.length;
       const pctAnt = v => semBase ? '—' : stkPct(v);
-      const kTotal = stkKpi('jornal', 'Total de notícias', stkNum(atual.length), stkDeltaYoY(atual.length, anterior.length, anoAnt), baseAnt(stkNum(anterior.length)));
-      const kSov = stkKpi('megafone', `Share of Voice · ${esc(foco.nome)}`, stkPct(sov(atual)), stkDeltaYoY(sov(atual), sov(anterior), anoAnt, true, semBase), baseAnt(pctAnt(sov(anterior))));
-      const kVeic = stkKpi('globo', 'Veículos distintos', stkNum(portais(atual)), stkDeltaYoY(portais(atual), portais(anterior), anoAnt), baseAnt(stkNum(portais(anterior))));
-      const kPos = stkKpi('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkDeltaYoY(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), anoAnt, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
-      // Negativas: subir é ruim — inverte a cor do selo (seta continua indicando a direção).
-      const dNeg = stkDeltaYoY(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), anoAnt, true, semBase);
-      if(dNeg.cls !== 'neu') dNeg.cls = dNeg.cls === 'pos' ? 'neg' : 'pos';
-      const kNeg = stkKpi('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), dNeg, baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
+      const kTotal = stkKpiClip('jornal', 'Total de notícias', stkNum(atual.length), stkYoYClip(atual.length, anterior.length, anoAnt), baseAnt(stkNum(anterior.length)));
+      const kSov = stkKpiClip('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), stkYoYClip(sov(atual), sov(anterior), anoAnt, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
+      const kVeic = stkKpiClip('globo', 'Veículos distintos', stkNum(portais(atual)), stkYoYClip(portais(atual), portais(anterior), anoAnt), baseAnt(stkNum(portais(anterior))));
+      const kPos = stkKpiClip('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkYoYClip(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), anoAnt, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
+      // Negativas: subir é ruim (selo "Atenção" em vermelho).
+      const kNeg = stkKpiClip('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkYoYClip(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), anoAnt, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
 
       // ---- Volume de notícias: Ano vs Ano (padrão) ou por player ----
       const V = stkDadosVolumePorPlayer(stkVolumeModoClip);
