@@ -94,6 +94,16 @@ def main():
         },
         'mun_mt': dim('Municipio', where=[p.filtro_in('b', 'Estado', ['MT'])]),
     }
+    # Modelos de cada fabricante (nome "FABRICANTE|MODELO"), para o subtítulo do ranking de fabricantes.
+    fg = p.consultar(E, BASE + [('f', p.col('b', 'Fabricante')), ('g', p.col('b', 'GrupoModeloVeiculo')), ('qtd', p.medida('b', 'Quantidade'))], [F_TEC])
+    agfg = {}
+    for r in fg:
+        if r['ano'] and r['mes'] and chave(r) in im and r['f'] and r['g'] and (r['qtd'] or 0):
+            k = (im[chave(r)], f"{str(r['f']).strip()}|{str(r['g']).strip()}")
+            agfg[k] = agfg.get(k, 0) + int(r['qtd'])
+    nfg = sorted({k[1] for k in agfg})
+    ifg = {n: i for i, n in enumerate(nfg)}
+    dados['dims']['fabgrupo'] = {'nomes': nfg, 'linhas': sorted([[k[0], ifg[k[1]], v] for k, v in agfg.items()])}
     # A base de vendas traz o município sem acento; o cadastro tem a grafia correta.
     sem_acento = lambda t: unicodedata.normalize('NFD', str(t)).encode('ascii', 'ignore').decode().upper().strip()
     cad = p.consultar({'c': 'Cadastro_Municipio'}, [('mun', p.col('c', 'Município')), ('uf', p.col('c', 'Estado'))],
@@ -121,6 +131,15 @@ def main():
     dados['mun_br'] = {'nomes': nomes_br, 'linhas': sorted([[k[0], ino[k[1]], v] for k, v in agreg.items()])}
 
     os.makedirs(os.path.dirname(SAIDA), exist_ok=True)
+    corpo = lambda d: json.dumps({k: v for k, v in d.items() if k != 'extraido_em'}, ensure_ascii=False, separators=(',', ':'))
+    try:
+        with open(SAIDA, encoding='utf-8') as f:
+            antigo = json.loads(f.read().split('window.ABVE_FROTAS = ', 1)[1].rstrip().rstrip(';'))
+        if corpo(antigo) == corpo(dados):
+            print('Sem mudanças na ABVE — arquivo mantido.')
+            return
+    except (OSError, IndexError, ValueError):
+        pass
     js = ('// Gerado por scripts/abve_extrair.py — não editar à mão.\n'
           'window.ABVE_FROTAS = ' + json.dumps(dados, ensure_ascii=False, separators=(',', ':')) + ';\n')
     with open(SAIDA, 'w', encoding='utf-8') as f:

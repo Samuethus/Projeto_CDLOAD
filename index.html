@@ -1214,6 +1214,7 @@
   .cd-rank li:last-child{border-bottom:none;}
   .cd-rank-pos{width:24px;height:24px;border-radius:7px;background:var(--cd-azul-bg);color:var(--cd-azul);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
   .cd-rank-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cd-rank-sub{color:var(--cd-muted);font-size:12.5px;font-weight:400;}
   .cd-rank strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;}
   .cd-rank-pct{color:var(--cd-muted);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;}
 
@@ -8073,6 +8074,23 @@ ${clipPlayerPills(n)}
       const j = await r.json();
       PAN_API.modelo = j.models[0].id; PAN_API.dataset = j.models[0].dbName; PAN_API.relatorio = j.exploration.report.objectId;
     }
+    // Cache diário: cada consulta distinta vai à ABVE no máximo uma vez por dia neste navegador.
+    const panDia = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+    function panCacheChave(q){
+      const t = JSON.stringify(q); let h = 5381;
+      for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+      return `abve|${h}|${t.length}`;
+    }
+    function panCacheLer(chave){
+      try { const x = JSON.parse(localStorage.getItem(chave) || 'null'); return x && x.dia === panDia() ? x.dados : null; } catch(e){ return null; }
+    }
+    function panCacheGravar(chave, dados){
+      try {
+        const dia = panDia();
+        Object.keys(localStorage).filter(k => k.startsWith('abve|')).forEach(k => { try { if(JSON.parse(localStorage.getItem(k)).dia !== dia) localStorage.removeItem(k); } catch(e){ localStorage.removeItem(k); } });
+        localStorage.setItem(chave, JSON.stringify({ dia, dados }));
+      } catch(e){ /* sem espaço ou permissão: segue sem cache */ }
+    }
     async function panConsulta(entidades, selects, where, tentativa){
       const query = { Version: 2, From: Object.entries(entidades).map(([k, v]) => ({ Name: k, Entity: v, Type: 0 })),
         Select: selects.map(([nome, expr]) => ({ ...expr, Name: nome })) };
@@ -8081,11 +8099,15 @@ ${clipPlayerPills(n)}
         ApplicationContext: { DatasetId: PAN_API.dataset, Sources: [{ ReportId: PAN_API.relatorio }] },
         Query: { Commands: [{ SemanticQueryDataShapeCommand: { Query: query, ExecutionMetricsKind: 1,
           Binding: { Primary: { Groupings: [{ Projections: selects.map((_, i) => i) }] }, DataReduction: { DataVolume: 4, Primary: { Window: { Count: 30000 } } }, Version: 1 } } }] } }] };
+      const chaveCache = panCacheChave(query), emCache = panCacheLer(chaveCache);
+      if(emCache) return emCache;
       try {
         const r = await fetch(`${PAN_API.cluster}/public/reports/querydata?synchronous=true`, { method: 'POST',
           headers: { 'Content-Type': 'application/json;charset=UTF-8', 'X-PowerBI-ResourceKey': PAN_API.chave }, body: JSON.stringify(corpo) });
         if(!r.ok) throw new Error('HTTP ' + r.status);
-        return panDecodificar(await r.json(), selects.map(s => s[0]));
+        const linhas = panDecodificar(await r.json(), selects.map(s => s[0]));
+        panCacheGravar(chaveCache, linhas);
+        return linhas;
       } catch(e){
         if(tentativa) throw e;
         await panAtualizarIds();
@@ -8163,7 +8185,7 @@ ${clipPlayerPills(n)}
         panConsulta(PAN_E, [A, ['mes', panCol('t', 'MêsNúmero')], Q], [PAN_F_TEC, anos, ...geo, ...busca]),
         panConsulta(PAN_E, [A, ['k', panCol('b', 'Tipo_Tecnologia')], Q], [PAN_F_TEC, anos, meses, ...geo, ...busca]),
         panConsulta(PAN_E, [A, ['k', panCol('b', 'Fabricante')], Q], [PAN_F_TEC, anos, meses, ...geo, ...busca]),
-        panConsulta(PAN_E, [A, ['k', panCol('b', 'GrupoModeloVeiculo')], Q], [PAN_F_TEC, panIn('t', 'Ano', [J.ano]), meses, ...geo, ...busca]),
+        panConsulta(PAN_E, [A, ['k', panCol('b', 'GrupoModeloVeiculo')], ['f', panCol('b', 'Fabricante')], Q], [PAN_F_TEC, panIn('t', 'Ano', [J.ano]), meses, ...geo, ...busca]),
         panConsulta(PAN_E, [A, ['k', panCol('b', 'Estado')], Q], [PAN_F_TEC, anos, meses, ...busca]),
         panConsulta(PAN_E, [A, ['cod', panCol('b', 'Municipio_Codigo')], ['k', panCol('b', 'Municipio')], ['uf', panCol('b', 'Estado')], Q],
           [PAN_F_TEC, anos, meses, ...(escopo ? [panIn('b', 'Estado', [escopo])] : []), ...busca]),
@@ -8203,6 +8225,13 @@ ${clipPlayerPills(n)}
         });
     }
 
+    // Fabricante -> Map(modelo -> vendas), a partir da dimensão "FABRICANTE|MODELO" da extração.
+    function panModelosFab(D, meses){
+      const out = new Map(), dim = D.dims.fabgrupo;
+      if(!dim) return out;
+      dim.linhas.forEach(([i, n, q]) => { if(!meses.has(i)) return; const [f, g] = dim.nomes[n].split('|'); const m = out.get(f) || new Map(); m.set(g, (m.get(g) || 0) + q); out.set(f, m); });
+      return out;
+    }
     // ---- Modelo da visão Brasil (dados extraídos) ----
     function panModeloBrasil(D, J){
       const { atual, anterior } = J;
@@ -8213,7 +8242,7 @@ ${clipPlayerPills(n)}
       return { J, local: 'Brasil', filtrado: false,
         vendas: panTotal(D.total, atual), vendasAnt: panTotal(D.total, anterior),
         kpi2: { rotulo: 'Market share', atual: share(atual), ant: share(anterior), dica: 'Participação dos eletrificados no total de veículos leves emplacados' },
-        fab: panSomar(D.dims.fab, atual), fabAnt: panSomar(D.dims.fab, anterior),
+        fab: panSomar(D.dims.fab, atual), fabAnt: panSomar(D.dims.fab, anterior), modelosFab: panModelosFab(D, atual),
         tec: panSomar(D.dims.tec, atual), tecAnt: panSomar(D.dims.tec, anterior),
         mensal: { [J.ano]: serieAno(J.ano), [J.anoAnt]: serieAno(J.anoAnt) },
         ufs: uf, ufSel: '', grupos: panSomar(D.dims.grupo, atual),
@@ -8229,13 +8258,15 @@ ${clipPlayerPills(n)}
       const vendas = naJanela(J.ano), vendasAnt = naJanela(J.anoAnt);
       const nac = M => panTotal(D.total, M);
       const tec = panPorAno(R.tec, J), fab = panPorAno(R.fab, J), ufs = panPorAno(R.ufs, J), grupos = panPorAno(R.grupo, J);
+      const modelosFab = new Map();
+      R.grupo.forEach(r => { if(r.f && r.k){ const m = modelosFab.get(r.f) || new Map(); m.set(r.k, (m.get(r.k) || 0) + (Number(r.qtd) || 0)); modelosFab.set(r.f, m); } });
       const munCod = panPorAno(R.mun.map(r => ({ ...r, k: r.cod })), J);
       // Nome do município: no estado filtrado só o nome; no Brasil, "Município (UF)".
       const munNome = new Map(R.mun.filter(r => r.cod).map(r => { const n = R.grafia.get(`${r.uf}|${panChaveNome(r.k)}`) || panTitulo(r.k);
         return [String(r.cod), R.escopo ? n : `${n} (${r.uf})`]; }));
       return { J, local, filtrado: true, vendas, vendasAnt,
         kpi2: { rotulo: 'Fatia no Brasil', atual: nac(J.atual) ? vendas / nac(J.atual) : 0, ant: nac(J.anterior) ? vendasAnt / nac(J.anterior) : 0, dica: `Participação de ${local} nos emplacamentos de eletrificados do Brasil` },
-        fab: fab[J.ano], fabAnt: fab[J.anoAnt], tec: tec[J.ano], tecAnt: tec[J.anoAnt], mensal,
+        fab: fab[J.ano], fabAnt: fab[J.anoAnt], modelosFab, tec: tec[J.ano], tecAnt: tec[J.anoAnt], mensal,
         ufs: ufs[J.ano], ufSel: uf, grupos: grupos[J.ano],
         mun: { uf: R.escopo, atual: munCod[J.ano], ant: munCod[J.anoAnt], nomes: k => munNome.get(k) || k, sel: cod } };
     }
@@ -8293,8 +8324,9 @@ ${clipPlayerPills(n)}
 
       // ---- Principais fabricantes ----
       const fabs = [...M.fab.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const wFabs = cdCard('Principais fabricantes', M.filtrado ? `Market share · ${M.local}` : 'Market share entre os eletrificados', fabs.length ? `<ol class="cd-rank">${fabs.map(([nome, v], i) => `
-          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(vendas ? v / vendas : 0, 1)}</span></li>`).join('')}</ol>`
+      const subModelos = nome => [...((M.modelosFab && M.modelosFab.get(nome)) || new Map()).entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([g]) => panTitulo(g)).join(', ');
+      const wFabs = cdCard('Principais fabricantes', M.filtrado ? `Market share · ${M.local}` : 'Market share entre os eletrificados', fabs.length ? `<ol class="cd-rank">${fabs.map(([nome, v], i) => { const sub = subModelos(nome); return `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}${sub ? ' (' + esc(sub) + ')' : ''}">${esc(nome)}${sub ? ` <span class="cd-rank-sub">(${esc(sub)})</span>` : ''}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(vendas ? v / vendas : 0, 1)}</span></li>`; }).join('')}</ol>`
         : '<div class="stk-vazio">Sem vendas no período.</div>');
 
       // ---- Destaques no estado (MT na visão Brasil; o estado filtrado; a cidade filtrada fica marcada) ----
