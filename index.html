@@ -1149,15 +1149,15 @@
   .cd-kpi-ic svg{width:20px;height:20px;stroke-width:2;}
   .cd-kpi-in{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:'ic txt' '. rod';column-gap:14px;align-items:start;}
   .cd-kpi-ic{grid-area:ic;} .cd-kpi-txt{grid-area:txt;min-width:0;} .cd-kpi-rodape{grid-area:rod;}
-  .cd-kpi-label{font-size:14px;font-weight:600;color:var(--cd-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-kpi-label{font-size:14px;line-height:20px;font-weight:600;color:var(--cd-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cd-kpi-valor{font-size:30px;font-weight:700;color:var(--cd-texto);line-height:1.15;margin-top:4px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
   /* Variação + referência sempre em uma linha, sem sair do card. */
-  .cd-kpi-rodape{display:flex;align-items:baseline;gap:6px;margin-top:8px;font-size:12.5px;white-space:nowrap;min-width:0;overflow:hidden;}
+  .cd-kpi-rodape{display:flex;align-items:baseline;gap:6px;margin-top:8px;font-size:12.5px;line-height:18px;height:18px;white-space:nowrap;min-width:0;overflow:hidden;}
   .cd-kpi-var{font-weight:600;flex:0 0 auto;}
   .cd-kpi-var.up{color:#16A34A;} .cd-kpi-var.down{color:var(--cd-verm);} .cd-kpi-var.neu{color:var(--cd-muted);}
   .cd-kpi-ref{color:var(--cd-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;}
   /* Card estreito: rodapé usa a largura toda, ícone menor e a unidade ("notícias") sai. */
-  @container (max-width:250px){ .cd-kpi-in{grid-template-areas:'ic txt' 'rod rod';column-gap:12px;} .cd-kpi-ic{width:40px;height:40px;} .cd-kpi-rodape{font-size:12px;gap:5px;} .cd-kpi-label{font-size:13.5px;white-space:normal;line-height:1.25;} }
+  @container (max-width:250px){ .cd-kpi-in{grid-template-areas:'ic txt' 'rod rod';column-gap:12px;} .cd-kpi-ic{width:40px;height:40px;} .cd-kpi-rodape{font-size:12px;gap:5px;} .cd-kpi-label{font-size:13.5px;} }
   @container (max-width:215px){ .cd-kpi-un{display:none;} .cd-kpi-valor{font-size:27px;} }
 
   .cd-row{display:grid;gap:16px;margin-bottom:16px;}
@@ -1237,7 +1237,7 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    #page-dashboard .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;}
+    #page-dashboard .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
     #page-dashboard .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:130px;flex:1 1 130px;}
     #page-dashboard .wa-stock-filters .wa-clip-search{min-width:160px;flex:2 1 160px;}
@@ -1245,8 +1245,13 @@
     #page-dashboard.active{padding-top:18px;}
     #page-dashboard .stk-segmented{padding:2px;}
     #page-dashboard .stk-seg-btn{padding:6px 9px;}
-    #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
-    #stkGrid.cd-fit > .stk-tema-aviso{flex:0 0 auto;margin-bottom:12px;}
+    #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;}
+    /* A "tela" (KPIs + 2 linhas) tem sempre a altura da área visível em todos os painéis:
+       cards na mesma posição e tamanho ao trocar de painel. Conteúdo extra (tabela do
+       Estoque) fica abaixo e rola dentro da grade; a reserva da barra (gutter) é igual. */
+    #stkGrid.cd-fit > .cd-tela{flex:0 0 100%;min-height:0;display:flex;flex-direction:column;}
+    #stkGrid.cd-fit > .cd-extra{flex:0 0 auto;margin:14px 0 0;}
+    #stkGrid.cd-fit .stk-tema-aviso{flex:0 0 auto;margin-bottom:12px;}
     #stkGrid.cd-fit .cd-kpis{flex:0 0 auto;margin-bottom:14px;}
     #stkGrid.cd-fit .cd-kpi{padding-top:14px;padding-bottom:12px;}
     #stkGrid.cd-fit .cd-kpi-valor{font-size:28px;}
@@ -1650,6 +1655,7 @@
           <select class="filter-select" id="stkPainelFiltro" title="Painel exibido">
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
+            <option value="panorama">Painel · Panorama Econômico</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
@@ -6967,7 +6973,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainelEl.value];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -7020,6 +7026,10 @@ ${clipPlayerPills(n)}
       escudo: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>',
       predio: '<rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"></path>',
       pontos: '<circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>',
+      raio: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>',
+      mapa: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>',
+      setaBaixo: '<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>',
+      carro: '<path d="M5 17h14M5 17a2 2 0 1 1-4 0v-4l2-5a2 2 0 0 1 2-1.4h14A2 2 0 0 1 21 8l2 5v4a2 2 0 1 1-4 0"></path><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle>',
       sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>'
     };
     const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
@@ -7146,16 +7156,25 @@ ${clipPlayerPills(n)}
     // período (segmentado/Mês/Ano) são os únicos que os dois sempre têm.
     function stkAlternarFiltrosPorPainel(){
       const clipping = stkPainelEl.value === 'clipping';
-      stkSetorEl.hidden = clipping;
+      const panorama = stkPainelEl.value === 'panorama';
+      stkSetorEl.hidden = clipping || panorama;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
-      stkSegmented.hidden = clipping;
+      // Panorama: dados mensais da ABVE — só Mês/Ano (sem busca nem período em dias).
+      stkSegmented.hidden = clipping || panorama;
       stkPeriodoClipEl.hidden = !clipping;
+      stkBuscaInput.closest('.wa-clip-search').hidden = panorama;
       stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
+      if(stkPainelEl.value === 'panorama'){
+        const anosPan = [...new Set((window.ABVE_FROTAS ? window.ABVE_FROTAS.meses : []).map(m => m.slice(0, 4)))].sort().reverse();
+        stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosPan.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        if(anosPan.includes(curAno)) stkAnoEl.value = curAno;
+        return;
+      }
       if(stkPainelEl.value === 'clipping'){
         const curPlayer = stkPlayerEl.value;
         stkPlayerEl.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
@@ -7227,7 +7246,8 @@ ${clipPlayerPills(n)}
     // uma para Entradas e uma para Saídas (ambas preenchidas).
     function stkDesenharLinhasFluxo(el, categorias, series, altura){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
-      const m = { t: 10, r: 10, b: 26, l: 36 };
+      const maxSerie = Math.max(1, ...series.flatMap(s => s.valores));
+      const m = { t: 10, r: 10, b: 26, l: Math.max(36, stkNum(Math.ceil(maxSerie / stkPasso(maxSerie)) * stkPasso(maxSerie)).length * 6.6 + 12) };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
       const max = Math.max(1, ...series.flatMap(s => s.valores));
       const passo = stkPasso(max);
@@ -7587,8 +7607,10 @@ ${clipPlayerPills(n)}
     }
 
     function stkAbrir(){
-      const carregar = stkPainelEl.value === 'clipping'
+      const painel = stkPainelEl.value;
+      const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
+        : painel === 'panorama' ? panCarregar().catch(() => {})
         : (stockProducts.length ? Promise.resolve() : loadStock());
       Promise.resolve(carregar).then(stkRender);
     }
@@ -7599,6 +7621,7 @@ ${clipPlayerPills(n)}
       stkAlternarFiltrosPorPainel();
       stkAtualizarContagem();
       if(stkPainelEl.value === 'clipping') return stkRenderClipping();
+      if(stkPainelEl.value === 'panorama') return stkRenderPanorama();
       return stkRenderEstoque();
     }
 
@@ -7646,10 +7669,10 @@ ${clipPlayerPills(n)}
         `${vsAnt} (${unid(entradasQtdAnt, 'unidade', 'unidades')})`);
       // Sem comparação temporal: situação atual frente à meta de 80% dos produtos com estoque adequado.
       const eficOk = eficiencia >= 0.8;
-      const kEfic = cdKpiCard('percent', eficOk ? 'verde' : 'vermelho', 'Eficiência do armazém', stkPct(eficiencia),
-        { cls: eficOk ? 'up' : 'down', txt: `${qOk}/${ativos.length}` }, 'ok · meta 80%', 'Produtos ativos com saldo acima do mínimo (meta: 80%)');
-      const kCadastrados = cdKpiCard('caixa', 'azul', 'Produtos cadastrados', stkNum(ativos.length),
-        { cls: qAbaixo ? 'down' : 'up', txt: stkNum(qAbaixo) }, `abaixo do mínimo`, 'Produtos ativos no catálogo');
+      const kEfic = cdKpiCard('percent', eficOk ? 'verde' : 'vermelho', 'Eficiência', stkPct(eficiencia),
+        { cls: eficOk ? 'up' : 'down', txt: `${qOk}/${ativos.length}` }, 'ok · meta 80%', 'Eficiência do armazém: produtos ativos com saldo acima do mínimo (meta: 80%)');
+      const kCadastrados = cdKpiCard('caixa', 'azul', 'Produtos ativos', stkNum(ativos.length),
+        { cls: qAbaixo ? 'down' : 'up', txt: stkNum(qAbaixo) }, `abaixo do mínimo`, 'Produtos cadastrados e ativos no catálogo');
 
       // ---- Fluxo de estoque (linhas: Entradas escuro, Saídas claro) + seletor Semanal/Mensal ----
       const F = stkDadosFluxo(stkFluxoModo);
@@ -7750,14 +7773,15 @@ ${clipPlayerPills(n)}
           <div class="stk-card-body"><div class="stk-table-wrap">${stkTabelaAba === 'produtos' ? corpoProdutos : corpoMovimentacoes}</div></div>
         </div>`;
 
-      stkGrid.classList.remove('cd-fit');
-      stkGrid.innerHTML = `<div class="cd-kpis">${kTotal}${kOut}${kIn}${kEfic}${kCadastrados}</div>`
+      stkGrid.classList.add('cd-fit');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kTotal}${kOut}${kIn}${kEfic}${kCadastrados}</div>`
         + `<div class="cd-row cd-row-a">${wFluxo}${wCompras}${wDistribuicao}</div>`
-        + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div>`
-        + `<div class="stk-grid">${wTabela}</div>`;
+        + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div></div>`
+        + `<div class="stk-grid cd-extra">${wTabela}</div>`;
       stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: fmtQty(s.qtd) + ' un.' })), 'Distribuição por setor');
       const grafFluxo = document.getElementById('stkFluxoGraf');
-      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, 200);
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200));
+      cdAjustarListas();
     }
 
     // ===== Clipping (layout "cd"): paleta, temas, cards e barras HTML =====
@@ -7803,6 +7827,13 @@ ${clipPlayerPills(n)}
     function cdAlturaLivre(el, padrao){
       const fit = stkGrid.classList.contains('cd-fit') && getComputedStyle(stkGrid).display === 'flex';
       return fit ? Math.max(120, Math.floor(el.clientHeight)) : padrao;
+    }
+    // Sem rolagem: cada lista mostra só os itens que cabem inteiros no card.
+    function cdAjustarListas(){
+      if(!cdAlturaLivre(stkGrid, 0)) return;
+      stkGrid.querySelectorAll('.cd-tela .cd-barras, .cd-tela .cd-rank, .cd-tela .cd-dest').forEach(l => {
+        while(l.children.length > 1 && l.scrollHeight > l.clientHeight + 1) l.lastElementChild.remove();
+      });
     }
     function stkDesenharRoscaCd(dados, titulo){
       const el = document.getElementById('stkDistribGraf');
@@ -7927,16 +7958,154 @@ ${clipPlayerPills(n)}
       const rotuloBusca = modoSel ? `Seleção da busca <strong>(${stkNum(temaTotal)} marcada${temaTotal === 1 ? '' : 's'})</strong>` : `Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>`;
       const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Período ou Mês/Ano para comparar outro período` : ''}</span></div>` : '';
       stkGrid.classList.add('cd-fit');
-      stkGrid.innerHTML = avisoTema + `<div class="cd-kpis">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
+      stkGrid.innerHTML = `<div class="cd-tela">${avisoTema}<div class="cd-kpis">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
         + `<div class="cd-row cd-row-a">${wVolume}${wTemas}${wSentimento}</div>`
-        + `<div class="cd-row cd-row-b">${wCategorias}${wVeiculos}${wDestaques}</div>`;
+        + `<div class="cd-row cd-row-b">${wCategorias}${wVeiculos}${wDestaques}</div></div>`;
       stkDesenharRoscaCd(dadosSent, 'Sentimento das notícias');
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
-      // Sem rolagem: cada lista mostra só os itens que cabem inteiros no card.
-      if(cdAlturaLivre(stkGrid, 0)) stkGrid.querySelectorAll('.cd-barras, .cd-rank, .cd-dest').forEach(l => {
-        while(l.children.length > 1 && l.scrollHeight > l.clientHeight + 1) l.lastElementChild.remove();
+      cdAjustarListas();
+    }
+    // ===== Panorama Econômico — eletrificados (ABVE Data · BI Frotas) =====
+    // Dados mensais extraídos do Power BI público da ABVE por scripts/abve_extrair.py
+    // (assets/data/abve_frotas.js, carregado só quando o painel é aberto).
+    let panDadosPromessa = null;
+    function panCarregar(){
+      if(window.ABVE_FROTAS) return Promise.resolve();
+      if(!panDadosPromessa) panDadosPromessa = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/abve_frotas.js';
+        sc.onload = ok;
+        sc.onerror = () => { panDadosPromessa = null; falha(new Error('abve_frotas.js')); };
+        document.head.appendChild(sc);
       });
+      return panDadosPromessa;
+    }
+    const PAN_MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const PAN_TEC = [
+      { nome: 'BEV', rotulo: 'Elétrico (BEV)', cor: CD_COR.verde },
+      { nome: 'PHEV', rotulo: 'Plug-in (PHEV)', cor: CD_COR.azul },
+      { nome: 'HEV FLEX', rotulo: 'Híbrido flex', cor: CD_COR.azulClaro },
+      { nome: 'HEV', rotulo: 'Híbrido (HEV)', cor: CD_COR.cinza },
+      { nome: 'MHEV', rotulo: 'Micro-híbrido', cor: '#64748B' }
+    ];
+    const PAN_UF_NOME = { AC: 'Acre', AL: 'Alagoas', AM: 'Amazonas', AP: 'Amapá', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo',
+      GO: 'Goiás', MA: 'Maranhão', MG: 'Minas Gerais', MS: 'Mato Grosso do Sul', MT: 'Mato Grosso', PA: 'Pará', PB: 'Paraíba', PE: 'Pernambuco',
+      PI: 'Piauí', PR: 'Paraná', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RO: 'Rondônia', RR: 'Roraima', RS: 'Rio Grande do Sul',
+      SC: 'Santa Catarina', SE: 'Sergipe', SP: 'São Paulo', TO: 'Tocantins' };
+    const panTitulo = t => String(t).toLowerCase().replace(/(^|[\s\-/(])([a-zà-ú])/g, (m, a, b) => a + b.toUpperCase());
+
+    // Janela: Mês/Ano escolhidos ou, sem filtro, o ano mais recente até o último mês
+    // publicado. Comparação sempre com os mesmos meses do ano anterior (YoY).
+    function panJanela(D){
+      const ultimo = D.meses[D.meses.length - 1];
+      const anoUlt = Number(ultimo.slice(0, 4)), mesUlt = Number(ultimo.slice(5, 7));
+      const ano = Number(stkAnoEl.value) || anoUlt;
+      const mes = Number(stkMesEl.value) || 0;
+      let mIni, mFim;
+      if(mes){ mIni = mFim = mes; }
+      else { mIni = 1; mFim = ano === anoUlt ? mesUlt : 12; }
+      const idx = a => D.meses.map((m, i) => [m, i]).filter(([m]) => Number(m.slice(0, 4)) === a && Number(m.slice(5, 7)) >= mIni && Number(m.slice(5, 7)) <= mFim).map(([, i]) => i);
+      const rotulo = mes ? `${STK_MESES[mes - 1]} de ${ano}` : (mIni === 1 && mFim === 12 ? `ano de ${ano}` : `${PAN_MES_CURTO[mIni - 1]}–${PAN_MES_CURTO[mFim - 1]} de ${ano}`);
+      return { ano, anoAnt: ano - 1, atual: new Set(idx(ano)), anterior: new Set(idx(ano - 1)), rotulo };
+    }
+    // Soma uma dimensão ({nomes, linhas:[[iMes, iNome, qtd]]}) nos meses do conjunto.
+    function panSomar(dim, meses){
+      const m = new Map();
+      dim.linhas.forEach(([i, n, q]) => { if(meses.has(i)) m.set(dim.nomes[n], (m.get(dim.nomes[n]) || 0) + q); });
+      return m;
+    }
+    const panTotal = (arr, meses) => arr.reduce((s, v, i) => s + (meses.has(i) ? v : 0), 0);
+
+    function stkRenderPanorama(){
+      const D = window.ABVE_FROTAS;
+      if(!D){
+        stkGrid.classList.remove('cd-fit');
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados da ABVE (assets/data/abve_frotas.js).</div></div>`;
+        return;
+      }
+      stkPreencherFiltros();
+      const J = panJanela(D);
+      const { atual, anterior, anoAnt } = J;
+      const semBase = !anterior.size;
+
+      // ---- KPIs ----
+      const vendas = panTotal(D.total, atual), vendasAnt = panTotal(D.total, anterior);
+      const share = M => { const t = panTotal(D.mercado.total, M); return t ? panTotal(D.mercado.vendas, M) / t : 0; };
+      const fab = panSomar(D.dims.fab, atual), fabAnt = panSomar(D.dims.fab, anterior);
+      const nFab = [...fab.values()].filter(v => v > 0).length, nFabAnt = [...fabAnt.values()].filter(v => v > 0).length;
+      const tec = panSomar(D.dims.tec, atual), tecAnt = panSomar(D.dims.tec, anterior);
+      const fracBev = (m, tot) => tot ? (m.get('BEV') || 0) / tot : 0;
+      const uf = panSomar(D.dims.uf, atual), ufAnt = panSomar(D.dims.uf, anterior);
+      const mt = uf.get('MT') || 0, mtAnt = ufAnt.get('MT') || 0;
+      const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
+      const kVendas = cdKpiCard('raio', 'azul', 'Emplacamentos', stkNum(vendas), cdDelta(vendas, vendasAnt), `vs. ${anoAnt} (${unid(vendasAnt, 'unidade', 'unidades')})`, `Emplacamentos de eletrificados · ${J.rotulo}`);
+      const kShare = cdKpiCard('pizza', 'azul', 'Market share', stkPct(share(atual), 1), cdDelta(share(atual), share(anterior), true, semBase),
+        `vs. ${anoAnt} (${semBase ? '—' : stkPct(share(anterior), 1)})`, 'Participação dos eletrificados no total de veículos leves emplacados');
+      const kFab = cdKpiCard('predio', 'azul', 'Fabricantes ativos', stkNum(nFab), cdDelta(nFab, nFabAnt), `vs. ${anoAnt} (${unid(nFabAnt, 'marca', 'marcas')})`, 'Fabricantes com ao menos um emplacamento no período');
+      const kBev = cdKpiCard('raio', 'verde', '100% elétricos', stkPct(fracBev(tec, vendas), 1), cdDelta(fracBev(tec, vendas), fracBev(tecAnt, vendasAnt), true, semBase),
+        `vs. ${anoAnt} (${semBase ? '—' : stkPct(fracBev(tecAnt, vendasAnt), 1)})`, 'Participação dos elétricos a bateria (BEV) nas vendas de eletrificados');
+      const kMt = cdKpiCard('mapa', 'azul', 'Vendas em MT', stkNum(mt), cdDelta(mt, mtAnt), `vs. ${anoAnt} (${unid(mtAnt, 'unidade', 'unidades')})`, `Emplacamentos de eletrificados em MT · ${J.rotulo}`);
+
+      // ---- Evolução das vendas (mensal, ano da janela vs ano anterior) ----
+      const serieAno = a => {
+        const v = Array(12).fill(null);
+        D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) === a) v[Number(m.slice(5, 7)) - 1] = D.total[i]; });
+        return v;
+      };
+      const vA = serieAno(J.ano), vB = serieAno(anoAnt);
+      const nMeses = Math.max(1, vA.reduce((u, v, i) => v != null ? i + 1 : u, 0));
+      const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
+        { nome: String(J.ano), cor: CD_COR.azul, valores: vA.slice(0, nMeses).map(v => v || 0) },
+        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: vB.slice(0, nMeses).map(v => v || 0) }
+      ] };
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const ultimo = D.meses[D.meses.length - 1];
+      const wVolume = cdCard('Evolução das vendas', `Emplacamentos por mês · ABVE Data (até ${PAN_MES_CURTO[Number(ultimo.slice(5, 7)) - 1]}/${ultimo.slice(0, 4)})`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+
+      // ---- Vendas por estado (top UFs) ----
+      const ufs = [...uf.entries()].filter(([k]) => PAN_UF_NOME[k]).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      const wEstados = cdCard('Vendas por estado', 'Estados com mais emplacamentos',
+        cdBarras(ufs.map(([k, v], i) => ({ nome: PAN_UF_NOME[k], valor: v, cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ufs.length > 1 ? i / (ufs.length - 1) : 0) })), 'Vendas por estado', 'Sem vendas no período.'));
+
+      // ---- Tecnologia (rosca) ----
+      const dadosTec = PAN_TEC.map(t => ({ nome: t.rotulo, cor: t.cor, valor: tec.get(t.nome) || 0 }));
+      const wTec = cdCard('Vendas por tecnologia', '', `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(Math.round(vendas / 1000))}</strong><span>mil veículos</span></div></div>
+          <ul class="cd-rosca-legenda">${dadosTec.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(vendas ? d.valor / vendas : 0)}</strong></li>`).join('')}</ul>
+        </div>`);
+
+      // ---- Principais modelos (grupos de modelo) ----
+      const grupos = [...panSomar(D.dims.grupo, atual).entries()].filter(([k]) => k !== 'Outros' && k !== 'Não informado').sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const wModelos = cdCard('Principais modelos', 'Modelos de eletrificados mais vendidos',
+        cdBarras(grupos.map(([k, v]) => ({ nome: panTitulo(k), valor: v, cor: CD_COR.azul, icone: 'carro' })), 'Principais modelos', 'Sem vendas no período.'));
+
+      // ---- Principais fabricantes (ranking) ----
+      const fabs = [...fab.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const wFabs = cdCard('Principais fabricantes', 'Market share entre os eletrificados', fabs.length ? `<ol class="cd-rank">${fabs.map(([nome, v], i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(vendas ? v / vendas : 0, 1)}</span></li>`).join('')}</ol>`
+        : '<div class="stk-vazio">Sem vendas no período.</div>');
+
+      // ---- Destaques em Mato Grosso (municípios) ----
+      const mun = panSomar(D.mun_mt, atual), munAnt = panSomar(D.mun_mt, anterior);
+      const muns = [...mun.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const wMt = cdCard('Destaques em Mato Grosso', 'Municípios com mais emplacamentos', muns.length ? `<ul class="cd-dest">${muns.map(([nome, v]) => {
+          const ant = munAnt.get(nome) || 0;
+          const d = cdDelta(v, ant);
+          const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
+          return `<li><div title="${esc(nome)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplacamento${v === 1 ? '' : 's'}</span>
+              <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(mt ? v / mt : 0)} do estado</span></span></div></li>`;
+        }).join('')}</ul>` : '<div class="stk-vazio">Sem vendas em MT no período.</div>');
+
+      stkGrid.classList.add('cd-fit');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kVendas}${kShare}${kFab}${kBev}${kMt}</div>`
+        + `<div class="cd-row cd-row-a">${wVolume}${wEstados}${wTec}</div>`
+        + `<div class="cd-row cd-row-b">${wModelos}${wFabs}${wMt}</div></div>`;
+      stkDesenharRoscaCd(dadosTec, 'Vendas por tecnologia');
+      const grafFluxo = document.getElementById('stkFluxoGraf');
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      cdAjustarListas();
     }
 
     stkSegmented.addEventListener('click', ev => {
@@ -8086,6 +8255,22 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
+      if(stkPainelEl.value === 'panorama'){
+        const D = window.ABVE_FROTAS;
+        if(!D) return;
+        const J = panJanela(D);
+        const fab = panSomar(D.dims.fab, J.atual), fabAnt = panSomar(D.dims.fab, J.anterior);
+        const tot = panTotal(D.total, J.atual);
+        const linhas = [['Fabricante', `Vendas (${J.rotulo})`, 'Market share', `Vendas ${J.anoAnt} (mesmo período)`]]
+          .concat([...fab.entries()].sort((a, b) => b[1] - a[1]).map(([n, v]) => [n, v, stkPct(tot ? v / tot : 0, 2), fabAnt.get(n) || 0]));
+        const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const url = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `panorama_eletrificados_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       const range = stkPainelEl.value === 'clipping' ? stkRangeClipping() : stkRange(stkPeriodoAtual);
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
