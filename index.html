@@ -4688,7 +4688,7 @@
     // tooltip), nunca sozinha num traço fino de linha ou ponto pequeno.
     const CLIP_PLAYERS = [
       { nome: 'CDL Cuiabá', cor: '#00A389', corGrafico: '#0050A2' },
-      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#007794' }
+      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#00B16D' }
     ];
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
@@ -6889,7 +6889,7 @@ ${clipPlayerPills(n)}
       const i = STOCK_SETORES.indexOf(setor);
       if(i === -1) return '#8297A8';
       const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
-      return stkMisturarCor('#0050A2', '#007794', t);
+      return stkMisturarCor('#0050A2', '#00B16D', t);
     };
 
     // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
@@ -7325,7 +7325,7 @@ ${clipPlayerPills(n)}
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
         { nome: String(ano), cor: '#0050A2', valores: categorias.map(() => 0) },
-        { nome: String(ano - 1), cor: '#007794', valores: categorias.map(() => 0) }
+        { nome: String(ano - 1), cor: '#00B16D', valores: categorias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7347,7 +7347,7 @@ ${clipPlayerPills(n)}
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
         { nome: range.ini.slice(0, 4), cor: '#0050A2', valores: dias.map(() => 0) },
-        { nome: String(rangeAnt.ano), cor: '#007794', valores: dias.map(() => 0) }
+        { nome: String(rangeAnt.ano), cor: '#00B16D', valores: dias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7367,7 +7367,7 @@ ${clipPlayerPills(n)}
         .sort((a, b) => (cA.get(b) || 0) - (cA.get(a) || 0) || (cB.get(b) || 0) - (cB.get(a) || 0))
         .slice(0, limite || 6);
       const series = [{ nome: anos[0], cor: '#0050A2', valores: categorias.map(k => cA.get(k) || 0) }];
-      if(anterior) series.push({ nome: anos[1], cor: '#007794', valores: categorias.map(k => cB.get(k) || 0) });
+      if(anterior) series.push({ nome: anos[1], cor: '#00B16D', valores: categorias.map(k => cB.get(k) || 0) });
       return { categorias, series };
     }
 
@@ -7511,7 +7511,7 @@ ${clipPlayerPills(n)}
             </select>
           </div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:#0050A2"></i>Entradas</span><span><i style="background:#007794"></i>Saídas</span></div>
+            <div class="stk-legenda"><span><i style="background:#0050A2"></i>Entradas</span><span><i style="background:#00B16D"></i>Saídas</span></div>
             <div id="stkFluxoGraf"></div>
           </div>
         </div>`;
@@ -7625,7 +7625,7 @@ ${clipPlayerPills(n)}
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
         { nome: 'Entradas', cor: '#0050A2', valores: F.entradas },
-        { nome: 'Saídas', cor: '#007794', valores: F.saidas }
+        { nome: 'Saídas', cor: '#00B16D', valores: F.saidas }
       ]);
       const grafCompras = document.getElementById('stkComprasGraf');
       if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores, 'Valor gasto com compras por mês');
