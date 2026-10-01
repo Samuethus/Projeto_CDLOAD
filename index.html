@@ -1237,9 +1237,14 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    #page-dashboard:has(#stkGrid.cd-fit) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;}
-    #page-dashboard:has(#stkGrid.cd-fit) .wa-stock-filters .filter-select{min-width:96px;flex:1 1 96px;}
-    #page-dashboard:has(#stkGrid.cd-fit) .wa-stock-filters .wa-clip-search{min-width:190px;flex:2 1 190px;}
+    #page-dashboard .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;}
+    #page-dashboard .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
+    #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:130px;flex:1 1 130px;}
+    #page-dashboard .wa-stock-filters .wa-clip-search{min-width:160px;flex:2 1 160px;}
+    /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
+    #page-dashboard.active{padding-top:18px;}
+    #page-dashboard .stk-segmented{padding:2px;}
+    #page-dashboard .stk-seg-btn{padding:6px 9px;}
     #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
     #stkGrid.cd-fit > .stk-tema-aviso{flex:0 0 auto;margin-bottom:12px;}
     #stkGrid.cd-fit .cd-kpis{flex:0 0 auto;margin-bottom:14px;}
