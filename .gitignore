@@ -34,3 +34,4 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+.claude/settings.local.json

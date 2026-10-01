@@ -1119,6 +1119,17 @@
   .stk-row-span-2{grid-row:span 2;}
   @media (max-width:1100px){ .stk-grid-3{grid-template-columns:repeat(2,minmax(0,1fr));} }
   @media (max-width:640px){ .stk-grid-3{grid-template-columns:1fr;} .stk-row-span-2{grid-row:auto;} }
+  /* Clipping: Principais Portais na 1ª coluna (linhas 2-3); Volume/Sentimento na
+     2ª; Categorias/Notícias negativas na 3ª. O gráfico horizontal e a lista de
+     negativas ocupam a altura que sobra sem esticar a linha (conteúdo absoluto). */
+  .stk-card-body.stk-hbar-body{display:flex;flex-direction:column;}
+  .stk-hbar-graf{flex:1;position:relative;min-height:260px;}
+  .stk-hbar-graf > svg{position:absolute;inset:0;}
+  .stk-clip-negativas .stk-card-body{min-height:220px;}
+  .stk-clip-rolagem{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;}
+  .stk-clip-negativas .stk-alerta-nome{display:block;}
+  .stk-clip-negativas .stk-alerta-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  @media (max-width:640px){ .stk-hbar-graf{min-height:320px;} }
   .stk-card{background:var(--stk-white);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,43,84,.04),0 8px 20px -16px rgba(0,43,84,.18);display:flex;flex-direction:column;min-width:0;}
   .stk-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   .stk-card-head h3{margin:0;font-size:14px;font-weight:500;color:var(--stk-secondary-dark);}
@@ -1149,8 +1160,10 @@
   .stk-kpi2-selo.ok{color:#16A34A;background:#E8F7EE;}
   .stk-kpi2-selo.alerta{color:#E5484D;background:#FDECEC;}
   .stk-kpi2-selo.neu{color:#6B7280;background:#F1F3F5;}
-  .stk-kpi2-rodape{font-size:13px;color:#6B7280;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
-  .stk-kpi2-var{font-weight:600;white-space:nowrap;}
+  /* Rodapé comparativo sempre em uma linha: o texto de referência encolhe com reticências. */
+  .stk-kpi2-rodape{font-size:12.5px;color:#6B7280;display:flex;flex-direction:row;align-items:baseline;gap:6px;white-space:nowrap;min-width:0;overflow:hidden;}
+  .stk-kpi2-rodape > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .stk-kpi2-var{font-weight:600;white-space:nowrap;flex:0 0 auto;}
   .stk-kpi2-var.ok{color:#16A34A;}
   .stk-kpi2-var.alerta{color:#E5484D;}
   .stk-kpi2-var.neu{color:#6B7280;}
@@ -1531,6 +1544,13 @@
             <button type="button" class="stk-seg-btn active" data-periodo="semana" role="tab" aria-selected="true">Esta semana</button>
             <button type="button" class="stk-seg-btn" data-periodo="mes" role="tab" aria-selected="false">Este mês</button>
           </div>
+          <select class="filter-select" id="stkPeriodoClipFiltro" title="Período (substitui Mês/Ano)" hidden>
+            <option value="">Período</option>
+            <option value="hoje">Hoje</option>
+            <option value="semana">Esta semana</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="60d">Últimos 60 dias</option>
+          </select>
           <select class="filter-select" id="stkPlayerFiltro" title="Player" hidden>
             <option value="">Player</option>
           </select>
@@ -6806,6 +6826,7 @@ ${clipPlayerPills(n)}
     const stkAnoEl = document.getElementById('stkAnoFiltro');
     const stkSetorEl = document.getElementById('stkSetorFiltro');
     const stkPlayerEl = document.getElementById('stkPlayerFiltro');
+    const stkPeriodoClipEl = document.getElementById('stkPeriodoClipFiltro');
     let stkPeriodoAtual = 'semana';
     let stkFluxoModo = 'semanal';
     let stkVolumeModoClip = 'yoy'; // Volume de notícias (Clipping): yoy | semanal | mensal
@@ -6889,12 +6910,16 @@ ${clipPlayerPills(n)}
       if(modo === 'mes') return { ini: fim.slice(0, 7) + '-01', fim, rotulo: 'este mês' };
       return { ini: stkSomaDias(fim, -6), fim, rotulo: 'esta semana' };
     }
-    // Clipping não tem Hoje/Semana/Mês: a janela é o ano atual até hoje, ou o
-    // Mês/Ano escolhido. Nunca passa de hoje, para o YoY comparar só dias já
-    // decorridos com os mesmos dias do ano anterior.
+    // Clipping: a janela é o Período (Hoje/Esta semana/Últimos 30/60 dias), o
+    // Mês/Ano escolhido ou, sem nenhum dos dois, o ano atual até hoje. Nunca
+    // passa de hoje, para o YoY comparar só dias já decorridos com os mesmos
+    // dias do ano anterior.
+    const STK_PERIODO_CLIP = { hoje: [0, 'hoje'], semana: [6, 'esta semana'], '30d': [29, 'últimos 30 dias'], '60d': [59, 'últimos 60 dias'] };
     function stkRangeClipping(){
       const hoje = stkHojeIso();
-      const r = (stkMesEl.value || stkAnoEl.value) ? stkRange()
+      const per = STK_PERIODO_CLIP[stkPeriodoClipEl.value];
+      const r = per ? { ini: stkSomaDias(hoje, -per[0]), fim: hoje, rotulo: per[1] }
+        : (stkMesEl.value || stkAnoEl.value) ? stkRange()
         : { ini: hoje.slice(0, 4) + '-01-01', fim: hoje, rotulo: `${hoje.slice(0, 4)} até hoje` };
       if(r.fim > hoje) r.fim = hoje;
       return r;
@@ -6977,8 +7002,9 @@ ${clipPlayerPills(n)}
       const clipping = stkPainelEl.value === 'clipping';
       stkSetorEl.hidden = clipping;
       stkPlayerEl.hidden = !clipping;
-      // Clipping compara Ano vs Ano (YoY) — sem Hoje/Esta semana/Este mês.
+      // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       stkSegmented.hidden = clipping;
+      stkPeriodoClipEl.hidden = !clipping;
       stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : 'Buscar produto por nome ou código...';
     }
 
@@ -7289,6 +7315,7 @@ ${clipPlayerPills(n)}
     // (respeita Player e a seleção da busca). No ano corrente, para no mês atual.
     function stkDadosVolumeYoY(){
       const selecao = stkClipSelecionado();
+      if(stkPeriodoClipEl.value) return stkDadosVolumeYoYDiario(selecao);
       const ano = Number(stkRangeClipping().ini.slice(0, 4));
       const hoje = stkHojeIso();
       const ultimoMes = String(ano) === hoje.slice(0, 4) ? Number(hoje.slice(5, 7)) : 12;
@@ -7305,6 +7332,28 @@ ${clipPlayerPills(n)}
         const a = Number(String(n.data).slice(0, 4)), m = Number(String(n.data).slice(5, 7));
         const s = a === ano ? series[0] : a === ano - 1 ? series[1] : null;
         if(s && m >= 1 && m <= ultimoMes) s.valores[m - 1]++;
+      });
+      return { categorias, series };
+    }
+    // Com Período escolhido: um ponto por dia da janela contra os mesmos
+    // dias do ano anterior.
+    function stkDadosVolumeYoYDiario(selecao){
+      const range = stkRangeClipping(), rangeAnt = stkRangeAnoAnterior(range);
+      const dias = [];
+      for(let d = range.ini; d <= range.fim; d = stkSomaDias(d, 1)) dias.push(d);
+      const idx = new Map(dias.map((d, i) => [d.slice(5), i]));
+      const categorias = dias.map(d => `${d.slice(8, 10)}/${d.slice(5, 7)}`);
+      const tema = stkTemaClip();
+      const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
+      const series = [
+        { nome: range.ini.slice(0, 4), cor: '#0056D2', valores: dias.map(() => 0) },
+        { nome: String(rangeAnt.ano), cor: '#52A0FF', valores: dias.map(() => 0) }
+      ];
+      clippingNews.forEach(n => {
+        if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
+        const s = (n.data >= range.ini && n.data <= range.fim) ? series[0] : (n.data >= rangeAnt.ini && n.data <= rangeAnt.fim) ? series[1] : null;
+        const i = s && idx.get(String(n.data).slice(5));
+        if(s && i !== undefined) s.valores[i]++;
       });
       return { categorias, series };
     }
@@ -7348,6 +7397,41 @@ ${clipPlayerPills(n)}
           svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="3" fill="${s.cor}" fill-opacity="${k === 0 ? 0.85 : 0.45}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
         });
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle"><title>${esc(cat)}</title>${esc(curto(cat))}</text>`;
+      });
+      if(!categorias.length) svg += `<text class="stk-eixo" x="${(W / 2).toFixed(1)}" y="${(H / 2).toFixed(1)}" text-anchor="middle">Sem notícias no período</text>`;
+      el.innerHTML = svg + '</svg>';
+    }
+
+    // Barras horizontais agrupadas (uma por série) — Principais Portais Ano vs
+    // Ano. Ocupa a altura disponível do contêiner (card de duas linhas).
+    function stkDesenharBarrasHorizontais(el, categorias, series, rotulo){
+      const W = Math.max(240, Math.floor(el.clientWidth)), H = Math.max(260, Math.floor(el.clientHeight));
+      const n = Math.max(1, categorias.length);
+      const maxChars = Math.max(6, Math.floor(W * 0.36 / 6.4));
+      const curto = t => t.length > maxChars ? t.slice(0, maxChars - 1) + '…' : t;
+      const rotL = Math.min(W * 0.38, Math.max(40, ...categorias.map(c => curto(c).length * 6.2)));
+      const m = { t: 4, r: 34, b: 22, l: rotL + 10 };
+      const iw = W - m.l - m.r, ih = H - m.t - m.b;
+      const max = Math.max(1, ...series.flatMap(s => s.valores));
+      const passo = Math.max(1, stkPasso(max));
+      const topo = Math.ceil(max / passo) * passo;
+      const x = v => m.l + (v / topo) * iw;
+      const grupoA = ih / n;
+      const barraA = Math.min(16, (grupoA * 0.72) / series.length);
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo)}">`;
+      for(let v = 0; v <= topo + 1e-9; v += passo){
+        svg += `<line class="stk-grade" x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="${m.t}" y2="${m.t + ih}"></line>`;
+        svg += `<text class="stk-eixo" x="${x(v).toFixed(1)}" y="${H - 6}" text-anchor="middle">${stkNum(v)}</text>`;
+      }
+      categorias.forEach((cat, i) => {
+        const cy = m.t + grupoA * i + grupoA / 2;
+        const y0 = cy - (barraA * series.length + 2 * (series.length - 1)) / 2;
+        series.forEach((s, k) => {
+          const v = s.valores[i], y = y0 + k * (barraA + 2), w = Math.max(0, x(v) - m.l);
+          svg += `<rect x="${m.l}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barraA.toFixed(1)}" rx="3" fill="${s.cor}" fill-opacity="${k === 0 ? 0.85 : 0.45}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
+          if(v > 0) svg += `<text class="stk-eixo" x="${(m.l + w + 4).toFixed(1)}" y="${(y + barraA / 2 + 3.5).toFixed(1)}" text-anchor="start">${stkNum(v)}</text>`;
+        });
+        svg += `<text class="stk-eixo" x="${rotL.toFixed(1)}" y="${(cy + 3.5).toFixed(1)}" text-anchor="end" style="fill:var(--stk-secondary-dark);font-size:11.5px;"><title>${esc(cat)}</title>${esc(curto(cat))}</text>`;
       });
       if(!categorias.length) svg += `<text class="stk-eixo" x="${(W / 2).toFixed(1)}" y="${(H / 2).toFixed(1)}" text-anchor="middle">Sem notícias no período</text>`;
       el.innerHTML = svg + '</svg>';
@@ -7621,9 +7705,9 @@ ${clipPlayerPills(n)}
       // ---- Alertas (notícias negativas recentes) — 3ª coluna, linhas 2-3 ----
       const negativas = atual.filter(n => n.sentimento === 'Negativo')
         .slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
-      const wAlertas = `<div class="stk-card stk-row-span-2">
+      const wAlertas = `<div class="stk-card stk-clip-negativas">
           <div class="stk-card-head"><h3>Notícias negativas</h3></div>
-          <div class="stk-card-body">${negativas.length ? `<ul class="stk-alerta-lista">${negativas.map(n => {
+          <div class="stk-card-body"><div class="stk-clip-rolagem">${negativas.length ? `<ul class="stk-alerta-lista">${negativas.map(n => {
               const href = clipHref(n);
               return `<li class="stk-alerta-item">
                 <span class="stk-alerta-ic danger">${stkIcone('alerta')}</span>
@@ -7632,7 +7716,7 @@ ${clipPlayerPills(n)}
                   : `<div class="stk-alerta-nome">${esc(n.titulo)}</div>`}
                   <div class="stk-alerta-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</div></div>
               </li>`;
-            }).join('')}</ul>` : '<div class="stk-vazio">Nenhuma notícia negativa no período.</div>'}</div>
+            }).join('')}</ul>` : '<div class="stk-vazio">Nenhuma notícia negativa no período.</div>'}</div></div>
         </div>`;
 
       // ---- Sentimento (rosca) ----
@@ -7647,11 +7731,11 @@ ${clipPlayerPills(n)}
           </div>
         </div>`;
 
-      // ---- Principais veículos ----
-      const VEIC = stkDadosTopYoY(atual, antYoY, n => n.portal || n.fonte || 'Outros', anosYoY, 6);
-      const wVeiculos = `<div class="stk-card">
-          <div class="stk-card-head"><h3>Principais veículos</h3></div>
-          <div class="stk-card-body">${legendaYoY(VEIC.series)}<div id="stkValorSaidaGraf"></div></div>
+      // ---- Principais Portais (barras horizontais, 1ª coluna nas linhas 2-3) ----
+      const VEIC = stkDadosTopYoY(atual, antYoY, n => n.portal || n.fonte || 'Outros', anosYoY, 10);
+      const wVeiculos = `<div class="stk-card stk-row-span-2 stk-clip-portais">
+          <div class="stk-card-head"><h3>Principais Portais</h3></div>
+          <div class="stk-card-body stk-hbar-body">${legendaYoY(VEIC.series)}<div class="stk-hbar-graf" id="stkValorSaidaGraf"></div></div>
         </div>`;
 
       // ---- Notícias / Por player (switch replicado do Estoque) ----
@@ -7699,9 +7783,9 @@ ${clipPlayerPills(n)}
       const temaTotal = modoSel ? stkSelecao.clipping.size : tema ? clippingNews.filter(n => stkCasaTema(n, tema)).length : 0;
       const temaFora = temaTotal - atual.length - anterior.length;
       const rotuloBusca = modoSel ? `Seleção da busca <strong>(${stkNum(temaTotal)} marcada${temaTotal === 1 ? '' : 's'})</strong>` : `Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>`;
-      const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Mês/Ano para comparar outro período` : ''}</span></div>` : '';
+      const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Período ou Mês/Ano para comparar outro período` : ''}</span></div>` : '';
       stkGrid.innerHTML = avisoTema + `<div class="stk-kpi-row">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
-        + `<div class="stk-grid-3">${wVolume}${wCategorias}${wAlertas}${wSentimento}${wVeiculos}</div>`
+        + `<div class="stk-grid-3 stk-grid-clip">${wVeiculos}${wVolume}${wCategorias}${wSentimento}${wAlertas}</div>`
         + `<div class="stk-grid">${wTabela}</div>`;
       const grafDistrib = document.getElementById('stkDistribGraf');
       if(grafDistrib){
@@ -7715,7 +7799,7 @@ ${clipPlayerPills(n)}
       const grafCategorias = document.getElementById('stkComprasGraf');
       if(grafCategorias) stkDesenharBarrasGrupo(grafCategorias, CAT.categorias, CAT.series, 'Notícias por categoria · Ano vs Ano');
       const grafVeiculos = document.getElementById('stkValorSaidaGraf');
-      if(grafVeiculos) stkDesenharBarrasGrupo(grafVeiculos, VEIC.categorias, VEIC.series, 'Principais veículos · Ano vs Ano');
+      if(grafVeiculos) stkDesenharBarrasHorizontais(grafVeiculos, VEIC.categorias, VEIC.series, 'Principais Portais · Ano vs Ano');
     }
 
     stkSegmented.addEventListener('click', ev => {
@@ -7726,15 +7810,24 @@ ${clipPlayerPills(n)}
       stkMesEl.value = ''; stkAnoEl.value = '';
       stkRender();
     });
-    [stkMesEl, stkAnoEl, stkSetorEl, stkPlayerEl].forEach(el => el.addEventListener('change', stkRender));
+    [stkSetorEl, stkPlayerEl].forEach(el => el.addEventListener('change', stkRender));
+    // Clipping: Período e Mês/Ano se substituem — escolher um limpa o outro.
+    [stkMesEl, stkAnoEl].forEach(el => el.addEventListener('change', () => {
+      if(el.value) stkPeriodoClipEl.value = '';
+      stkRender();
+    }));
+    stkPeriodoClipEl.addEventListener('change', () => {
+      if(stkPeriodoClipEl.value){ stkMesEl.value = ''; stkAnoEl.value = ''; }
+      stkRender();
+    });
     stkPainelEl.addEventListener('change', () => {
-      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = '';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     });
     document.getElementById('stkLimpar').addEventListener('click', () => {
-      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = '';
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = '';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
