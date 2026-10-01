@@ -1132,7 +1132,7 @@
   @media (max-width:640px){ .stk-hbar-graf{min-height:320px;} }
   .stk-card{background:var(--stk-white);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,43,84,.04),0 8px 20px -16px rgba(0,43,84,.18);display:flex;flex-direction:column;min-width:0;}
   .stk-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-  .stk-card-head h3{margin:0;font-size:14px;font-weight:500;color:var(--stk-secondary-dark);}
+  .stk-card-head h3{margin:0;font-size:15.5px;font-weight:500;color:var(--stk-secondary-dark);}
   .stk-card-body{flex:1;min-width:0;position:relative;}
   .stk-vazio{font-size:13px;color:var(--stk-caption);padding:18px 0;text-align:center;}
   .stk-chart-filtro{border:1px solid var(--stk-neutral-bg);background:var(--stk-white);color:var(--stk-secondary-dark);font-family:inherit;font-size:12px;font-weight:500;padding:5px 10px;border-radius:8px;cursor:pointer;}
@@ -1150,18 +1150,18 @@
   .stk-kpi2{font-family:'Poppins','Inter',system-ui,sans-serif;background:#fff;border:1px solid #EEF0F3;border-radius:14px;padding:18px 20px 16px;
     box-shadow:0 1px 3px rgba(16,24,40,.05);display:flex;flex-direction:column;gap:14px;min-width:0;}
   .stk-kpi2-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .stk-kpi2-label{font-size:14px;font-weight:500;color:#2D2D2D;line-height:1.3;min-width:0;}
+  .stk-kpi2-label{font-size:15px;font-weight:500;color:#2D2D2D;line-height:1.3;min-width:0;}
   .stk-kpi2-icon{width:42px;height:42px;border-radius:50%;background:#EAF3FF;color:#3B82F6;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
   .stk-kpi2-icon svg{width:19px;height:19px;stroke-width:2.2;}
   .stk-kpi2-mid{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;}
-  .stk-kpi2-valor{font-size:34px;font-weight:600;color:#1F1F1F;line-height:1;letter-spacing:-.01em;}
-  @media (max-width:1440px){ .stk-kpi2{padding:16px 16px 14px;} .stk-kpi2-valor{font-size:28px;} }
-  .stk-kpi2-selo{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:4px;white-space:nowrap;}
+  .stk-kpi2-valor{font-size:38px;font-weight:600;color:#1F1F1F;line-height:1;letter-spacing:-.01em;}
+  @media (max-width:1440px){ .stk-kpi2{padding:16px 16px 14px;} .stk-kpi2-valor{font-size:31px;} }
+  .stk-kpi2-selo{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:4px;white-space:nowrap;}
   .stk-kpi2-selo.ok{color:#16A34A;background:#E8F7EE;}
   .stk-kpi2-selo.alerta{color:#E5484D;background:#FDECEC;}
   .stk-kpi2-selo.neu{color:#6B7280;background:#F1F3F5;}
   /* Rodapé comparativo sempre em uma linha: o texto de referência encolhe com reticências. */
-  .stk-kpi2-rodape{font-size:12.5px;color:#6B7280;display:flex;flex-direction:row;align-items:baseline;gap:6px;white-space:nowrap;min-width:0;overflow:hidden;}
+  .stk-kpi2-rodape{font-size:13.5px;color:#6B7280;display:flex;flex-direction:row;align-items:baseline;gap:6px;white-space:nowrap;min-width:0;overflow:hidden;}
   .stk-kpi2-rodape > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;}
   .stk-kpi2-var{font-weight:600;white-space:nowrap;flex:0 0 auto;}
   .stk-kpi2-var.ok{color:#16A34A;}
@@ -1170,17 +1170,17 @@
   .stk-segmented[hidden]{display:none;}
 
   /* ---- Gráfico "Stock Flow" (barras duplas) ---- */
-  .stk-legenda{display:flex;gap:16px;font-size:12px;color:var(--stk-secondary-dark);margin-bottom:10px;}
+  .stk-legenda{display:flex;gap:16px;font-size:13px;color:var(--stk-secondary-dark);margin-bottom:10px;}
   .stk-legenda span{display:inline-flex;align-items:center;gap:6px;}
   .stk-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
   /* stroke:none — sem isto os gráficos herdam o `svg{stroke:currentColor}` dos
      ícones: o texto dos eixos ganha contorno escuro (parece negrito). */
   .stk-svg{display:block;overflow:visible;stroke:none;}
-  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:10.5px;font-weight:400;font-family:inherit;}
+  .stk-svg .stk-eixo{fill:var(--stk-caption);font-size:11.5px;font-weight:400;font-family:inherit;}
   .stk-svg .stk-grade{stroke:#EEF1F4;stroke-width:1;}
 
   /* ---- "Warehouse Utilization" (ocupação por setor) ---- */
-  .stk-setor-linha{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--stk-secondary-dark);margin-bottom:8px;}
+  .stk-setor-linha{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--stk-secondary-dark);margin-bottom:8px;}
   .stk-setor-linha .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
   .stk-setor-linha .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-setor-linha .pct{font-weight:700;color:var(--stk-primary-dark);font-variant-numeric:tabular-nums;}
@@ -1202,9 +1202,9 @@
   .stk-alerta-ic.warn{background:var(--stk-warning-bg);color:var(--stk-warning);}
   .stk-alerta-ic.danger{background:var(--stk-danger-bg);color:var(--stk-danger);}
   .stk-alerta-txt{flex:1;min-width:0;}
-  .stk-alerta-nome{font-size:13px;font-weight:500;color:var(--stk-secondary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .stk-alerta-meta{font-size:11px;color:var(--stk-caption);margin-top:2px;}
-  .stk-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;flex:0 0 auto;}
+  .stk-alerta-nome{font-size:14px;font-weight:500;color:var(--stk-secondary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stk-alerta-meta{font-size:12px;color:var(--stk-caption);margin-top:2px;}
+  .stk-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;flex:0 0 auto;}
   .stk-badge.ok{background:var(--stk-success-bg);color:var(--stk-success);}
   .stk-badge.delay{background:var(--stk-warning-bg);color:var(--stk-warning);}
   .stk-badge.danger{background:var(--stk-danger-bg);color:var(--stk-danger);}
@@ -1212,7 +1212,7 @@
 
   /* ---- Tabela "Produtos" / "Movimentações" (switch replicado do Estoque) ---- */
   .stk-table-wrap{overflow:auto;max-height:360px;}
-  .stk-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .stk-table{width:100%;border-collapse:collapse;font-size:14px;}
   .stk-table th{text-transform:uppercase;font-size:11px;font-weight:600;color:var(--stk-secondary-dark);text-align:left;padding:10px 16px;border-bottom:1px solid var(--stk-neutral-bg);white-space:nowrap;position:sticky;top:0;background:var(--stk-white);}
   .stk-table td{padding:12px 16px;border-bottom:1px solid var(--stk-neutral-bg);color:var(--stk-secondary-dark);white-space:nowrap;}
   .stk-table tr:last-child td{border-bottom:none;}
@@ -4687,8 +4687,8 @@
     // então essa cor só é confiável junto de um rótulo de texto (legenda,
     // tooltip), nunca sozinha num traço fino de linha ou ponto pequeno.
     const CLIP_PLAYERS = [
-      { nome: 'CDL Cuiabá', cor: '#00A389' },
-      { nome: 'Fecomércio MT', cor: '#E6F5F0' }
+      { nome: 'CDL Cuiabá', cor: '#00A389', corGrafico: '#00D2C8' },
+      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#415160' }
     ];
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
@@ -6885,11 +6885,12 @@ ${clipPlayerPills(n)}
       const mix = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
       return `#${mix(ra, rb)}${mix(ga, gb)}${mix(ba, bb)}`;
     };
+    const STK_PALETA = ['#00D2C8', '#1DCAD3', '#7BE0DF', '#A2EAF0', '#415160', '#8E9AA8', '#383838'];
     const stkSetorCor = setor => {
       const i = STOCK_SETORES.indexOf(setor);
       if(i === -1) return '#8297A8';
       const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
-      return stkMisturarCor('#0056D2', '#52A0FF', t);
+      return STK_PALETA[i % STK_PALETA.length];
     };
 
     // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
@@ -6990,7 +6991,7 @@ ${clipPlayerPills(n)}
     // (verde/vermelho, com posição + rótulo de texto reforçando a cor).
     const STK_SENT = [
       { nome: 'Negativo', cor: '#DA0000' },
-      { nome: 'Neutro', cor: '#CBD5E1' },
+      { nome: 'Neutro', cor: '#8E9AA8' },
       { nome: 'Positivo', cor: '#74B230' }
     ];
 
@@ -7145,7 +7146,7 @@ ${clipPlayerPills(n)}
     // Gráfico de barras (série única, eixo Y em R$). Cor = azul de destaque
     // da seção selecionada no menu (--sidebar-selected); contorno sólido +
     // preenchimento chapado a 20% de opacidade.
-    const STK_COR_BARRA = '#0052CC';
+    const STK_COR_BARRA = '#00D2C8';
     // `formatador` estiliza o eixo Y e o valor no tooltip — R$ compacto por
     // padrão (Estoque); Clipping passa stkNum para contagens simples.
     function stkDesenharBarrasValor(el, categorias, valores, rotulo, formatador, formatadorDica){
@@ -7300,7 +7301,7 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (stkClipSelecionado() || tema) ? '' : stkPlayerEl.value;
       const series = CLIP_PLAYERS.filter(p => !playerFiltro || playerFiltro === p.nome)
-        .map(p => ({ nome: p.nome, cor: p.cor, valores: chaves.map(() => 0) }));
+        .map(p => ({ nome: p.nome, cor: p.corGrafico || p.cor, valores: chaves.map(() => 0) }));
       clippingNews.forEach(n => {
         if(n.data < janelaIni || !stkNewsOk(n) || (tema && !stkCasaTema(n, tema))) return;
         const chave = semanal ? n.data : n.data.slice(0, 7);
@@ -7324,8 +7325,8 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
-        { nome: String(ano), cor: '#0056D2', valores: categorias.map(() => 0) },
-        { nome: String(ano - 1), cor: '#52A0FF', valores: categorias.map(() => 0) }
+        { nome: String(ano), cor: '#00D2C8', valores: categorias.map(() => 0) },
+        { nome: String(ano - 1), cor: '#415160', valores: categorias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7346,8 +7347,8 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
-        { nome: range.ini.slice(0, 4), cor: '#0056D2', valores: dias.map(() => 0) },
-        { nome: String(rangeAnt.ano), cor: '#52A0FF', valores: dias.map(() => 0) }
+        { nome: range.ini.slice(0, 4), cor: '#00D2C8', valores: dias.map(() => 0) },
+        { nome: String(rangeAnt.ano), cor: '#415160', valores: dias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7366,8 +7367,8 @@ ${clipPlayerPills(n)}
       const categorias = [...new Set([...cA.keys(), ...cB.keys()])]
         .sort((a, b) => (cA.get(b) || 0) - (cA.get(a) || 0) || (cB.get(b) || 0) - (cB.get(a) || 0))
         .slice(0, limite || 6);
-      const series = [{ nome: anos[0], cor: '#0056D2', valores: categorias.map(k => cA.get(k) || 0) }];
-      if(anterior) series.push({ nome: anos[1], cor: '#52A0FF', valores: categorias.map(k => cB.get(k) || 0) });
+      const series = [{ nome: anos[0], cor: '#00D2C8', valores: categorias.map(k => cA.get(k) || 0) }];
+      if(anterior) series.push({ nome: anos[1], cor: '#415160', valores: categorias.map(k => cB.get(k) || 0) });
       return { categorias, series };
     }
 
@@ -7522,7 +7523,7 @@ ${clipPlayerPills(n)}
       const wCompras = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor gasto com compras</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,210,200,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
             <div id="stkComprasGraf"></div>
           </div>
         </div>`;
@@ -7563,7 +7564,7 @@ ${clipPlayerPills(n)}
       const wValorSaida = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor de saída por setor</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,210,200,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
             <div id="stkValorSaidaGraf"></div>
           </div>
         </div>`;
@@ -7624,8 +7625,8 @@ ${clipPlayerPills(n)}
       }
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
-        { nome: 'Entradas', cor: '#0056D2', valores: F.entradas },
-        { nome: 'Saídas', cor: '#52A0FF', valores: F.saidas }
+        { nome: 'Entradas', cor: '#00D2C8', valores: F.entradas },
+        { nome: 'Saídas', cor: '#415160', valores: F.saidas }
       ]);
       const grafCompras = document.getElementById('stkComprasGraf');
       if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores, 'Valor gasto com compras por mês');
