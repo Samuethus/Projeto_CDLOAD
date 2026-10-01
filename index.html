@@ -1668,6 +1668,9 @@
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
           </select>
+          <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
+            <option value="abve">ABVE</option>
+          </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
             <option value="01">Janeiro</option>
@@ -7180,6 +7183,7 @@ ${clipPlayerPills(n)}
       // Panorama: dados mensais da ABVE — só Mês/Ano (sem busca nem período em dias).
       stkSegmented.hidden = clipping || panorama;
       stkPeriodoClipEl.hidden = !clipping;
+      document.getElementById('stkIndicadorFiltro').hidden = !panorama;
       stkUfEl.hidden = !panorama;
       stkCidadeEl.hidden = !panorama;
       stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : panorama ? 'Buscar fabricante ou modelo...' : 'Buscar produto por nome ou código...';
