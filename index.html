@@ -7,7 +7,7 @@
      e força HTTPS. 'unsafe-inline' é necessário porque o app é um HTML único com scripts/estilos embutidos;
      para removê-lo, extrair o JS/CSS para arquivos e usar nonce/hash. frame-ancestors não funciona via <meta>:
      configure o cabeçalho HTTP no host (ver SECURITY.md). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.analysis.windows.net; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>CDLoad · Núcleo de Inteligência</title>
 <link rel="preconnect" href="https://fonts.googleapis.com/">
@@ -1231,6 +1231,14 @@
   .cd-dest-meta{font-size:11.5px;color:var(--cd-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cd-dest-seta{color:#94A3B8;flex:0 0 auto;display:flex;}
   .cd-dest-seta svg{width:16px;height:16px;stroke-width:2;}
+  /* Panorama: legenda do tamanho do conteúdo e espaçamento menor — sobra mais largura para a rosca. */
+  .cd-rosca-legenda.cd-rosca-legenda-pan{flex:0 0 auto;min-width:0;max-width:none;}
+  .cd-rosca-wrap:has(.cd-rosca-legenda-pan){gap:10px;}
+  .cd-rosca-legenda-pan li{gap:7px;font-size:12.5px;}
+  .cd-rosca-legenda-pan li i{width:9px;height:9px;}
+  .cd-dest li.cd-dest-sel{background:var(--cd-azul-bg);border-radius:8px;}
+  .cd-dest li.cd-dest-sel .cd-dest-tit{color:var(--cd-azul);font-weight:600;}
+  #stkGrid.cd-carregando .cd-tela{opacity:.55;transition:opacity .15s;pointer-events:none;}
   /* Clipping: o painel cabe na altura da tela (sem rolagem da página). KPIs com
      altura natural; as duas linhas de gráficos dividem o espaço restante. Em telas
      baixas/estreitas volta ao fluxo normal com rolagem. */
@@ -1674,6 +1682,12 @@
           </select>
           <select class="filter-select" id="stkAnoFiltro" title="Ano (substitui o período acima)">
             <option value="">Ano</option>
+          </select>
+          <select class="filter-select" id="stkUfFiltro" title="Estado" hidden>
+            <option value="">Estado</option>
+          </select>
+          <select class="filter-select" id="stkCidadeFiltro" title="Cidade (escolha um estado)" hidden disabled>
+            <option value="">Cidade</option>
           </select>
           <select class="filter-select" id="stkSetorFiltro" title="Setor">
             <option value="">Setor</option>
@@ -7163,8 +7177,9 @@ ${clipPlayerPills(n)}
       // Panorama: dados mensais da ABVE — só Mês/Ano (sem busca nem período em dias).
       stkSegmented.hidden = clipping || panorama;
       stkPeriodoClipEl.hidden = !clipping;
-      stkBuscaInput.closest('.wa-clip-search').hidden = panorama;
-      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : 'Buscar produto por nome ou código...';
+      stkUfEl.hidden = !panorama;
+      stkCidadeEl.hidden = !panorama;
+      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : panorama ? 'Buscar fabricante ou modelo...' : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
@@ -7835,12 +7850,13 @@ ${clipPlayerPills(n)}
         while(l.children.length > 1 && l.scrollHeight > l.clientHeight + 1) l.lastElementChild.remove();
       });
     }
-    function stkDesenharRoscaCd(dados, titulo){
+    function stkDesenharRoscaCd(dados, titulo, maximo){
       const el = document.getElementById('stkDistribGraf');
       if(!el) return;
       const wrap = el.closest('.cd-rosca-wrap'), leg = wrap.querySelector('.cd-rosca-legenda');
-      const livre = Math.min(wrap.clientWidth - (leg ? leg.offsetWidth : 130) - 16, cdAlturaLivre(wrap, 999) - 4);
-      stkDesenharRosca(el, dados, Math.max(110, Math.min(170, Math.floor(livre))), titulo);
+      const gap = parseFloat(getComputedStyle(wrap).columnGap) || 16;
+      const livre = Math.min(wrap.clientWidth - (leg ? leg.offsetWidth : 130) - gap - 4, cdAlturaLivre(wrap, 999) - 2);
+      stkDesenharRosca(el, dados, Math.max(110, Math.min(maximo || 170, Math.floor(livre))), titulo);
     }
     function cdBarras(itens, titulo, vazio){
       if(!itens.length) return `<div class="stk-vazio">${esc(vazio)}</div>`;
@@ -7983,10 +7999,10 @@ ${clipPlayerPills(n)}
     }
     const PAN_MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const PAN_TEC = [
-      { nome: 'BEV', rotulo: 'Elétrico (BEV)', cor: CD_COR.verde },
-      { nome: 'PHEV', rotulo: 'Plug-in (PHEV)', cor: CD_COR.azul },
+      { nome: 'BEV', rotulo: 'Elétrico', cor: CD_COR.verde },
+      { nome: 'PHEV', rotulo: 'Plug-in', cor: CD_COR.azul },
       { nome: 'HEV FLEX', rotulo: 'Híbrido flex', cor: CD_COR.azulClaro },
-      { nome: 'HEV', rotulo: 'Híbrido (HEV)', cor: CD_COR.cinza },
+      { nome: 'HEV', rotulo: 'Híbrido', cor: CD_COR.cinza },
       { nome: 'MHEV', rotulo: 'Micro-híbrido', cor: '#64748B' }
     ];
     const PAN_UF_NOME = { AC: 'Acre', AL: 'Alagoas', AM: 'Amazonas', AP: 'Amapá', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo',
@@ -8007,7 +8023,8 @@ ${clipPlayerPills(n)}
       else { mIni = 1; mFim = ano === anoUlt ? mesUlt : 12; }
       const idx = a => D.meses.map((m, i) => [m, i]).filter(([m]) => Number(m.slice(0, 4)) === a && Number(m.slice(5, 7)) >= mIni && Number(m.slice(5, 7)) <= mFim).map(([, i]) => i);
       const rotulo = mes ? `${STK_MESES[mes - 1]} de ${ano}` : (mIni === 1 && mFim === 12 ? `ano de ${ano}` : `${PAN_MES_CURTO[mIni - 1]}–${PAN_MES_CURTO[mFim - 1]} de ${ano}`);
-      return { ano, anoAnt: ano - 1, atual: new Set(idx(ano)), anterior: new Set(idx(ano - 1)), rotulo };
+      const mesesNum = []; for(let m = mIni; m <= mFim; m++) mesesNum.push(m);
+      return { ano, anoAnt: ano - 1, atual: new Set(idx(ano)), anterior: new Set(idx(ano - 1)), rotulo, mesesNum };
     }
     // Soma uma dimensão ({nomes, linhas:[[iMes, iNome, qtd]]}) nos meses do conjunto.
     function panSomar(dim, meses){
@@ -8017,95 +8034,291 @@ ${clipPlayerPills(n)}
     }
     const panTotal = (arr, meses) => arr.reduce((s, v, i) => s + (meses.has(i) ? v : 0), 0);
 
+    // ---- Filtros do Panorama: busca (fabricante/modelo), Estado e Cidade ----
+    // Visão Brasil (sem filtro) = dados extraídos (abve_frotas.js). Com Estado, Cidade ou
+    // busca, o painel consulta o Power BI público da ABVE já filtrado (API `querydata`,
+    // a mesma do relatório; CORS aberto), e todos os gráficos acompanham.
+    const stkUfEl = document.getElementById('stkUfFiltro');
+    const stkCidadeEl = document.getElementById('stkCidadeFiltro');
+    const PAN_API = {
+      chave: '079ec3b8-1fd6-4c00-93b0-fd22b9258970',
+      cluster: 'https://wabi-brazil-south-b-primary-api.analysis.windows.net',
+      dataset: 'bf99f664-ff4f-43e7-a258-139c3e11a6e2', relatorio: '8dfea0d6-d8e9-4d9c-b5bb-9de3509781b7', modelo: 8592399
+    };
+    const panCol = (s, p) => ({ Column: { Expression: { SourceRef: { Source: s } }, Property: p } });
+    const panMed = (s, p) => ({ Measure: { Expression: { SourceRef: { Source: s } }, Property: p } });
+    const panLit = v => ({ Literal: { Value: typeof v === 'number' ? `${v}L` : `'${String(v).replace(/'/g, "''")}'` } });
+    const panIn = (s, p, vals) => ({ Condition: { In: { Expressions: [panCol(s, p)], Values: vals.map(v => [panLit(v)]) } } });
+    const PAN_E = { b: 'BaseVendas_ABVE', t: 'Tcalendario' };
+    // Eletrificados na definição da ABVE (a mesma do total do BI e da extração): sem MHEV 12V/48V.
+    const PAN_F_TEC = panIn('b', 'Tipo_Tecnologia', ['BEV', 'PHEV', 'HEV', 'HEV FLEX', 'MHEV']);
+    const panBusca = () => stkPainelEl.value === 'panorama' ? stkBuscaInput.value.trim() : '';
+    // Busca: fabricante OU modelo contém o texto (sem diferenciar maiúsculas).
+    const panFiltroBusca = q => ({ Condition: { Or: {
+      Left: { Contains: { Left: panCol('b', 'Fabricante'), Right: panLit(q) } },
+      Right: { Contains: { Left: panCol('b', 'GrupoModeloVeiculo'), Right: panLit(q) } } } } });
+
+    // IDs do modelo mudam quando a ABVE republica o relatório: em caso de erro, relê pela chave pública.
+    async function panAtualizarIds(){
+      const r = await fetch(`${PAN_API.cluster}/public/reports/${PAN_API.chave}/modelsAndExploration?preferReadOnlySession=true`,
+        { headers: { 'X-PowerBI-ResourceKey': PAN_API.chave } });
+      if(!r.ok) throw new Error('ABVE indisponível (' + r.status + ')');
+      const j = await r.json();
+      PAN_API.modelo = j.models[0].id; PAN_API.dataset = j.models[0].dbName; PAN_API.relatorio = j.exploration.report.objectId;
+    }
+    async function panConsulta(entidades, selects, where, tentativa){
+      const query = { Version: 2, From: Object.entries(entidades).map(([k, v]) => ({ Name: k, Entity: v, Type: 0 })),
+        Select: selects.map(([nome, expr]) => ({ ...expr, Name: nome })) };
+      if(where && where.length) query.Where = where;
+      const corpo = { version: '1.0.0', cancelQueries: [], modelId: PAN_API.modelo, queries: [{ QueryId: '',
+        ApplicationContext: { DatasetId: PAN_API.dataset, Sources: [{ ReportId: PAN_API.relatorio }] },
+        Query: { Commands: [{ SemanticQueryDataShapeCommand: { Query: query, ExecutionMetricsKind: 1,
+          Binding: { Primary: { Groupings: [{ Projections: selects.map((_, i) => i) }] }, DataReduction: { DataVolume: 4, Primary: { Window: { Count: 30000 } } }, Version: 1 } } }] } }] };
+      try {
+        const r = await fetch(`${PAN_API.cluster}/public/reports/querydata?synchronous=true`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json;charset=UTF-8', 'X-PowerBI-ResourceKey': PAN_API.chave }, body: JSON.stringify(corpo) });
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return panDecodificar(await r.json(), selects.map(s => s[0]));
+      } catch(e){
+        if(tentativa) throw e;
+        await panAtualizarIds();
+        return panConsulta(entidades, selects, where, true);
+      }
+    }
+    // Formato DSR do Power BI: linhas comprimidas (R = repete a coluna anterior, Ø = nulo, DN = dicionário).
+    function panDecodificar(resp, nomes){
+      const dados = resp.results[0].result.data;
+      const ds = dados.dsr && dados.dsr.DS[0];
+      if(!ds || ds['odata.error']) throw new Error('ABVE: consulta recusada');
+      const dic = ds.ValueDicts || {};
+      let esquema = null, ant = [];
+      return ((ds.PH[0] || {}).DM0 || []).map(ln => {
+        if(ln.S) esquema = ln.S;
+        const c = (ln.C || []).slice(), rep = ln.R || 0, nul = ln['Ø'] || 0;
+        const v = esquema.map((s, i) => {
+          if(rep & (1 << i)) return ant[i];
+          if(nul & (1 << i)) return null;
+          let x = c.shift();
+          if(s.DN && typeof x === 'number') x = dic[s.DN][x];
+          return x;
+        });
+        ant = v;
+        return Object.fromEntries(nomes.map((n, i) => [n, v[i]]));
+      });
+    }
+
+    // Grafia correta dos municípios (a base de vendas vem sem acento) e cidades do estado.
+    const panChaveNome = t => stkNorm(t).toUpperCase().trim();
+    const panGrafias = new Map();
+    function panGrafia(uf){
+      if(!panGrafias.has(uf)) panGrafias.set(uf, panConsulta({ c: 'Cadastro_Municipio' }, [['mun', panCol('c', 'Município')], ['uf', panCol('c', 'Estado')]], [panIn('c', 'Estado', [uf])])
+        .then(rs => new Map(rs.filter(r => r.mun).map(r => [panChaveNome(r.mun), r.mun])))
+        .catch(e => { panGrafias.delete(uf); throw e; }));
+      return panGrafias.get(uf);
+    }
+    const panCidades = new Map();
+    function panCarregarCidades(uf){
+      if(!panCidades.has(uf)) panCidades.set(uf, Promise.all([
+        panConsulta(PAN_E, [['cod', panCol('b', 'Municipio_Codigo')], ['mun', panCol('b', 'Municipio')], ['qtd', panMed('b', 'Quantidade')]], [PAN_F_TEC, panIn('b', 'Estado', [uf])]),
+        panGrafia(uf).catch(() => new Map())
+      ]).then(([rs, gr]) => rs.filter(r => r.cod && r.mun && Number(r.qtd) > 0)
+          .map(r => ({ cod: String(r.cod), nome: gr.get(panChaveNome(r.mun)) || panTitulo(r.mun) }))
+          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')))
+        .catch(e => { panCidades.delete(uf); throw e; }));
+      return panCidades.get(uf);
+    }
+    function panPreencherUfs(){
+      if(stkUfEl.options.length > 1) return;
+      stkUfEl.innerHTML = '<option value="">Estado</option>' + Object.entries(PAN_UF_NOME).sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'))
+        .map(([uf, nome]) => `<option value="${uf}">${esc(nome)}</option>`).join('');
+    }
+    async function panPreencherCidades(){
+      const uf = stkUfEl.value;
+      stkCidadeEl.disabled = !uf;
+      if(!uf){ stkCidadeEl.innerHTML = '<option value="">Cidade</option>'; return; }
+      stkCidadeEl.innerHTML = '<option value="">Carregando…</option>';
+      const cidades = await panCarregarCidades(uf).catch(() => []);
+      if(stkUfEl.value !== uf) return;
+      stkCidadeEl.innerHTML = '<option value="">Cidade</option>' + cidades.map(c => `<option value="${esc(c.cod)}">${esc(c.nome)}</option>`).join('');
+    }
+
+    // Recorte filtrado (Estado/Cidade/busca + janela), consultado em paralelo e com cache.
+    const panRecortes = new Map();
+    function panRecorte(J, uf, cod, q){
+      const chave = [uf, cod, q.toLowerCase(), J.ano, J.mesesNum.join(',')].join('|');
+      if(panRecortes.has(chave)) return panRecortes.get(chave);
+      const busca = q ? [panFiltroBusca(q)] : [];
+      const geo = (uf ? [panIn('b', 'Estado', [uf])] : []).concat(cod ? [panIn('b', 'Municipio_Codigo', [cod])] : []);
+      const anos = panIn('t', 'Ano', [J.ano, J.anoAnt]), meses = panIn('t', 'MêsNúmero', J.mesesNum);
+      const A = ['ano', panCol('t', 'Ano')], Q = ['qtd', panMed('b', 'Quantidade')];
+      const escopo = uf || 'MT'; // municípios: do estado filtrado (ou MT, como na visão Brasil)
+      const pr = Promise.all([
+        panConsulta(PAN_E, [A, ['mes', panCol('t', 'MêsNúmero')], Q], [PAN_F_TEC, anos, ...geo, ...busca]),
+        panConsulta(PAN_E, [A, ['k', panCol('b', 'Tipo_Tecnologia')], Q], [PAN_F_TEC, anos, meses, ...geo, ...busca]),
+        panConsulta(PAN_E, [A, ['k', panCol('b', 'Fabricante')], Q], [PAN_F_TEC, anos, meses, ...geo, ...busca]),
+        panConsulta(PAN_E, [A, ['k', panCol('b', 'GrupoModeloVeiculo')], Q], [PAN_F_TEC, panIn('t', 'Ano', [J.ano]), meses, ...geo, ...busca]),
+        panConsulta(PAN_E, [A, ['k', panCol('b', 'Estado')], Q], [PAN_F_TEC, anos, meses, ...busca]),
+        panConsulta(PAN_E, [A, ['cod', panCol('b', 'Municipio_Codigo')], ['k', panCol('b', 'Municipio')], Q], [PAN_F_TEC, anos, meses, panIn('b', 'Estado', [escopo]), ...busca]),
+        panGrafia(escopo).catch(() => new Map())
+      ]).then(([mensal, tec, fab, grupo, ufs, mun, grafia]) => ({ mensal, tec, fab, grupo, ufs, mun, grafia, escopo }))
+        .catch(e => { panRecortes.delete(chave); throw e; });
+      panRecortes.set(chave, pr);
+      return pr;
+    }
+    // Soma linhas {ano, k, qtd} em Map por ano.
+    function panPorAno(rs, J){
+      const m = { [J.ano]: new Map(), [J.anoAnt]: new Map() };
+      rs.forEach(r => { const a = Number(r.ano); if(m[a] && r.k != null && r.k !== '') m[a].set(String(r.k), (m[a].get(String(r.k)) || 0) + (Number(r.qtd) || 0)); });
+      return m;
+    }
+
+    let panRenderSeq = 0, panUltimo = null;
     function stkRenderPanorama(){
       const D = window.ABVE_FROTAS;
       if(!D){
-        stkGrid.classList.remove('cd-fit');
+        stkGrid.classList.remove('cd-fit', 'cd-carregando');
         stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados da ABVE (assets/data/abve_frotas.js).</div></div>`;
         return;
       }
       stkPreencherFiltros();
+      panPreencherUfs();
       const J = panJanela(D);
-      const { atual, anterior, anoAnt } = J;
-      const semBase = !anterior.size;
+      const uf = stkUfEl.value, cod = uf ? stkCidadeEl.value : '', q = panBusca();
+      const seq = ++panRenderSeq;
+      if(!uf && !cod && !q){ stkGrid.classList.remove('cd-carregando'); return panDesenhar(panModeloBrasil(D, J)); }
+      stkGrid.classList.add('cd-carregando');
+      panRecorte(J, uf, cod, q).then(R => { if(seq === panRenderSeq) panDesenhar(panModeloFiltro(D, J, R, uf, cod, q)); })
+        .catch(() => {
+          if(seq !== panRenderSeq) return;
+          stkGrid.classList.remove('cd-fit', 'cd-carregando');
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível consultar a ABVE com esse filtro agora. Verifique a conexão ou limpe os filtros para ver a visão Brasil.</div></div>`;
+        });
+    }
 
-      // ---- KPIs ----
-      const vendas = panTotal(D.total, atual), vendasAnt = panTotal(D.total, anterior);
+    // ---- Modelo da visão Brasil (dados extraídos) ----
+    function panModeloBrasil(D, J){
+      const { atual, anterior } = J;
       const share = M => { const t = panTotal(D.mercado.total, M); return t ? panTotal(D.mercado.vendas, M) / t : 0; };
-      const fab = panSomar(D.dims.fab, atual), fabAnt = panSomar(D.dims.fab, anterior);
-      const nFab = [...fab.values()].filter(v => v > 0).length, nFabAnt = [...fabAnt.values()].filter(v => v > 0).length;
-      const tec = panSomar(D.dims.tec, atual), tecAnt = panSomar(D.dims.tec, anterior);
-      const fracBev = (m, tot) => tot ? (m.get('BEV') || 0) / tot : 0;
+      const serieAno = a => { const v = Array(12).fill(0); D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) === a) v[Number(m.slice(5, 7)) - 1] = D.total[i]; }); return v; };
       const uf = panSomar(D.dims.uf, atual), ufAnt = panSomar(D.dims.uf, anterior);
-      const mt = uf.get('MT') || 0, mtAnt = ufAnt.get('MT') || 0;
-      const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
-      const kVendas = cdKpiCard('raio', 'azul', 'Emplacamentos', stkNum(vendas), cdDelta(vendas, vendasAnt), `vs. ${anoAnt} (${unid(vendasAnt, 'unidade', 'unidades')})`, `Emplacamentos de eletrificados · ${J.rotulo}`);
-      const kShare = cdKpiCard('pizza', 'azul', 'Market share', stkPct(share(atual), 1), cdDelta(share(atual), share(anterior), true, semBase),
-        `vs. ${anoAnt} (${semBase ? '—' : stkPct(share(anterior), 1)})`, 'Participação dos eletrificados no total de veículos leves emplacados');
-      const kFab = cdKpiCard('predio', 'azul', 'Fabricantes ativos', stkNum(nFab), cdDelta(nFab, nFabAnt), `vs. ${anoAnt} (${unid(nFabAnt, 'marca', 'marcas')})`, 'Fabricantes com ao menos um emplacamento no período');
-      const kBev = cdKpiCard('raio', 'verde', '100% elétricos', stkPct(fracBev(tec, vendas), 1), cdDelta(fracBev(tec, vendas), fracBev(tecAnt, vendasAnt), true, semBase),
-        `vs. ${anoAnt} (${semBase ? '—' : stkPct(fracBev(tecAnt, vendasAnt), 1)})`, 'Participação dos elétricos a bateria (BEV) nas vendas de eletrificados');
-      const kMt = cdKpiCard('mapa', 'azul', 'Vendas em MT', stkNum(mt), cdDelta(mt, mtAnt), `vs. ${anoAnt} (${unid(mtAnt, 'unidade', 'unidades')})`, `Emplacamentos de eletrificados em MT · ${J.rotulo}`);
+      const mun = panSomar(D.mun_mt, atual), munAnt = panSomar(D.mun_mt, anterior);
+      return { J, local: 'Brasil', filtrado: false,
+        vendas: panTotal(D.total, atual), vendasAnt: panTotal(D.total, anterior),
+        kpi2: { rotulo: 'Market share', atual: share(atual), ant: share(anterior), dica: 'Participação dos eletrificados no total de veículos leves emplacados' },
+        fab: panSomar(D.dims.fab, atual), fabAnt: panSomar(D.dims.fab, anterior),
+        tec: panSomar(D.dims.tec, atual), tecAnt: panSomar(D.dims.tec, anterior),
+        kpi5: { tipo: 'qtd', rotulo: 'Vendas em MT', atual: uf.get('MT') || 0, ant: ufAnt.get('MT') || 0, dica: `Emplacamentos de eletrificados em MT · ${J.rotulo}` },
+        mensal: { [J.ano]: serieAno(J.ano), [J.anoAnt]: serieAno(J.anoAnt) },
+        ufs: uf, ufSel: '', grupos: panSomar(D.dims.grupo, atual),
+        mun: { uf: 'MT', atual: mun, ant: munAnt, nomes: n => n, sel: '' } };
+    }
+    // ---- Modelo filtrado (consulta à ABVE) ----
+    function panModeloFiltro(D, J, R, uf, cod, q){
+      const cidade = cod ? (stkCidadeEl.selectedOptions[0] || {}).textContent : '';
+      const local = (cod ? cidade : uf ? PAN_UF_NOME[uf] : 'Brasil') + (q ? ` · “${q}”` : '');
+      const mensal = { [J.ano]: Array(12).fill(0), [J.anoAnt]: Array(12).fill(0) };
+      R.mensal.forEach(r => { const a = Number(r.ano); if(mensal[a] && r.mes) mensal[a][Number(r.mes) - 1] += Number(r.qtd) || 0; });
+      const naJanela = a => J.mesesNum.reduce((s, m) => s + mensal[a][m - 1], 0);
+      const vendas = naJanela(J.ano), vendasAnt = naJanela(J.anoAnt);
+      const nac = M => panTotal(D.total, M);
+      const tec = panPorAno(R.tec, J), fab = panPorAno(R.fab, J), ufs = panPorAno(R.ufs, J), grupos = panPorAno(R.grupo, J);
+      const munCod = panPorAno(R.mun.map(r => ({ ...r, k: r.cod })), J);
+      const munNome = new Map(R.mun.filter(r => r.cod).map(r => [String(r.cod), R.grafia.get(panChaveNome(r.k)) || panTitulo(r.k)]));
+      // KPI 5: Vendas em MT (sem filtro geográfico) ou posição no ranking (estado entre estados; cidade no estado).
+      const posicao = (mapa, chave) => { const ord = [...mapa.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]); const i = ord.findIndex(([k]) => k === chave); return i < 0 ? 0 : i + 1; };
+      let kpi5;
+      if(cod) kpi5 = { tipo: 'rank', rotulo: 'Ranking no estado', atual: posicao(munCod[J.ano], cod), ant: posicao(munCod[J.anoAnt], cod), dica: `Posição de ${cidade} entre os municípios de ${PAN_UF_NOME[uf]}` };
+      else if(uf) kpi5 = { tipo: 'rank', rotulo: 'Ranking nacional', atual: posicao(ufs[J.ano], uf), ant: posicao(ufs[J.anoAnt], uf), dica: `Posição de ${PAN_UF_NOME[uf]} entre os estados` };
+      else kpi5 = { tipo: 'qtd', rotulo: 'Vendas em MT', atual: ufs[J.ano].get('MT') || 0, ant: ufs[J.anoAnt].get('MT') || 0, dica: `Emplacamentos em MT · ${local}` };
+      return { J, local, filtrado: true, vendas, vendasAnt,
+        kpi2: { rotulo: 'Fatia no Brasil', atual: nac(J.atual) ? vendas / nac(J.atual) : 0, ant: nac(J.anterior) ? vendasAnt / nac(J.anterior) : 0, dica: `Participação de ${local} nos emplacamentos de eletrificados do Brasil` },
+        fab: fab[J.ano], fabAnt: fab[J.anoAnt], tec: tec[J.ano], tecAnt: tec[J.anoAnt], kpi5, mensal,
+        ufs: ufs[J.ano], ufSel: uf, grupos: grupos[J.ano],
+        mun: { uf: R.escopo, atual: munCod[J.ano], ant: munCod[J.anoAnt], nomes: k => munNome.get(k) || k, sel: cod } };
+    }
 
-      // ---- Evolução das vendas (mensal, ano da janela vs ano anterior) ----
-      const serieAno = a => {
-        const v = Array(12).fill(null);
-        D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) === a) v[Number(m.slice(5, 7)) - 1] = D.total[i]; });
-        return v;
-      };
-      const vA = serieAno(J.ano), vB = serieAno(anoAnt);
-      const nMeses = Math.max(1, vA.reduce((u, v, i) => v != null ? i + 1 : u, 0));
+    // ---- Desenho (o mesmo para a visão Brasil e para os filtros) ----
+    function panDesenhar(M){
+      const D = window.ABVE_FROTAS, J = M.J, anoAnt = J.anoAnt;
+      const vendas = M.vendas, vendasAnt = M.vendasAnt, semBase = !vendasAnt;
+      const soma = mp => [...mp.values()].reduce((s, v) => s + v, 0);
+      const nFab = mp => [...mp.values()].filter(v => v > 0).length;
+      const fracBev = (mp) => { const t = soma(mp); return t ? (mp.get('BEV') || 0) / t : 0; };
+      const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
+      const kVendas = cdKpiCard('raio', 'azul', 'Emplacamentos', stkNum(vendas), cdDelta(vendas, vendasAnt), `vs. ${anoAnt} (${unid(vendasAnt, 'unidade', 'unidades')})`, `Emplacamentos de eletrificados · ${M.local} · ${J.rotulo}`);
+      const k2 = M.kpi2, k2Base = !k2.ant;
+      const kShare = cdKpiCard('pizza', 'azul', k2.rotulo, stkPct(k2.atual, 1), cdDelta(k2.atual, k2.ant, true, k2Base), `vs. ${anoAnt} (${k2Base ? '—' : stkPct(k2.ant, 1)})`, k2.dica);
+      const kFab = cdKpiCard('predio', 'azul', 'Fabricantes ativos', stkNum(nFab(M.fab)), cdDelta(nFab(M.fab), nFab(M.fabAnt)), `vs. ${anoAnt} (${unid(nFab(M.fabAnt), 'marca', 'marcas')})`, 'Fabricantes com ao menos um emplacamento no período');
+      const kBev = cdKpiCard('raio', 'verde', '100% elétricos', stkPct(fracBev(M.tec), 1), cdDelta(fracBev(M.tec), fracBev(M.tecAnt), true, semBase),
+        `vs. ${anoAnt} (${semBase ? '—' : stkPct(fracBev(M.tecAnt), 1)})`, 'Participação dos elétricos a bateria (BEV) nas vendas de eletrificados');
+      const k5 = M.kpi5;
+      const kQuinto = k5.tipo === 'rank'
+        ? cdKpiCard('mapa', 'azul', k5.rotulo, k5.atual ? `${k5.atual}º` : '—',
+          !k5.atual || !k5.ant ? { cls: 'neu', txt: '— sem base' } : k5.atual === k5.ant ? { cls: 'neu', txt: '→ mesma' }
+            : { cls: k5.atual < k5.ant ? 'up' : 'down', txt: `${k5.atual < k5.ant ? '↑' : '↓'} ${Math.abs(k5.ant - k5.atual)} pos.` },
+          `vs. ${anoAnt} (${k5.ant ? k5.ant + 'º' : '—'})`, k5.dica)
+        : cdKpiCard('mapa', 'azul', k5.rotulo, stkNum(k5.atual), cdDelta(k5.atual, k5.ant), `vs. ${anoAnt} (${unid(k5.ant, 'unidade', 'unidades')})`, k5.dica);
+
+      // ---- Evolução das vendas ----
+      const ultimo = D.meses[D.meses.length - 1], ultAno = Number(ultimo.slice(0, 4)), ultMes = Number(ultimo.slice(5, 7));
+      const nMeses = J.ano === ultAno ? ultMes : 12;
       const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
-        { nome: String(J.ano), cor: CD_COR.azul, valores: vA.slice(0, nMeses).map(v => v || 0) },
-        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: vB.slice(0, nMeses).map(v => v || 0) }
+        { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, nMeses) },
+        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, nMeses) }
       ] };
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const ultimo = D.meses[D.meses.length - 1];
-      const wVolume = cdCard('Evolução das vendas', `Emplacamentos por mês · ABVE Data (até ${PAN_MES_CURTO[Number(ultimo.slice(5, 7)) - 1]}/${ultimo.slice(0, 4)})`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+      const fonte = `ABVE Data (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
+      const wVolume = cdCard('Evolução das vendas', M.filtrado ? `${M.local} · ${fonte}` : `Emplacamentos por mês · ${fonte}`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
 
-      // ---- Vendas por estado (top UFs) ----
-      const ufs = [...uf.entries()].filter(([k]) => PAN_UF_NOME[k]).sort((a, b) => b[1] - a[1]).slice(0, 7);
-      const wEstados = cdCard('Vendas por estado', 'Estados com mais emplacamentos',
-        cdBarras(ufs.map(([k, v], i) => ({ nome: PAN_UF_NOME[k], valor: v, cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ufs.length > 1 ? i / (ufs.length - 1) : 0) })), 'Vendas por estado', 'Sem vendas no período.'));
+      // ---- Vendas por estado (o estado filtrado fica em destaque e sempre aparece) ----
+      const ufs = [...M.ufs.entries()].filter(([k]) => PAN_UF_NOME[k]).sort((a, b) => b[1] - a[1]);
+      const topUfs = ufs.slice(0, 7);
+      if(M.ufSel && !topUfs.some(([k]) => k === M.ufSel) && M.ufs.has(M.ufSel)) topUfs.splice(6, 1, [M.ufSel, M.ufs.get(M.ufSel)]);
+      const wEstados = cdCard('Vendas por estado', M.ufSel ? `${PAN_UF_NOME[M.ufSel]} em destaque` : 'Estados com mais emplacamentos',
+        cdBarras(topUfs.map(([k, v], i) => ({ nome: PAN_UF_NOME[k], valor: v,
+          cor: M.ufSel ? (k === M.ufSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUfs.length > 1 ? i / (topUfs.length - 1) : 0) })), 'Vendas por estado', 'Sem vendas no período.'));
 
-      // ---- Tecnologia (rosca) ----
-      const dadosTec = PAN_TEC.map(t => ({ nome: t.rotulo, cor: t.cor, valor: tec.get(t.nome) || 0 }));
-      const wTec = cdCard('Vendas por tecnologia', '', `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(Math.round(vendas / 1000))}</strong><span>mil veículos</span></div></div>
-          <ul class="cd-rosca-legenda">${dadosTec.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(vendas ? d.valor / vendas : 0)}</strong></li>`).join('')}</ul>
+      // ---- Vendas por tecnologia (rosca) ----
+      const dadosTec = PAN_TEC.map(t => ({ nome: t.rotulo, sigla: t.nome, cor: t.cor, valor: M.tec.get(t.nome) || 0 }));
+      const centro = vendas >= 10000 ? [stkNum(Math.round(vendas / 1000)), 'mil veículos'] : [stkNum(vendas), vendas === 1 ? 'veículo' : 'veículos'];
+      const wTec = cdCard('Vendas por tecnologia', M.filtrado ? M.local : '', `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centro[0]}</strong><span>${centro[1]}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosTec.map(d => `<li title="${esc(d.nome)} (${esc(d.sigla)}): ${esc(stkNum(d.valor))}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(vendas ? d.valor / vendas : 0)}</strong></li>`).join('')}</ul>
         </div>`);
 
-      // ---- Principais modelos (grupos de modelo) ----
-      const grupos = [...panSomar(D.dims.grupo, atual).entries()].filter(([k]) => k !== 'Outros' && k !== 'Não informado').sort((a, b) => b[1] - a[1]).slice(0, 6);
-      const wModelos = cdCard('Principais modelos', 'Modelos de eletrificados mais vendidos',
+      // ---- Principais modelos ----
+      const grupos = [...M.grupos.entries()].filter(([k]) => k !== 'Outros' && k !== 'Não informado' && k !== 'null').sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const wModelos = cdCard('Principais modelos', M.filtrado ? `Mais vendidos · ${M.local}` : 'Modelos de eletrificados mais vendidos',
         cdBarras(grupos.map(([k, v]) => ({ nome: panTitulo(k), valor: v, cor: CD_COR.azul, icone: 'carro' })), 'Principais modelos', 'Sem vendas no período.'));
 
-      // ---- Principais fabricantes (ranking) ----
-      const fabs = [...fab.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const wFabs = cdCard('Principais fabricantes', 'Market share entre os eletrificados', fabs.length ? `<ol class="cd-rank">${fabs.map(([nome, v], i) => `
+      // ---- Principais fabricantes ----
+      const fabs = [...M.fab.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const wFabs = cdCard('Principais fabricantes', M.filtrado ? `Market share · ${M.local}` : 'Market share entre os eletrificados', fabs.length ? `<ol class="cd-rank">${fabs.map(([nome, v], i) => `
           <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(vendas ? v / vendas : 0, 1)}</span></li>`).join('')}</ol>`
         : '<div class="stk-vazio">Sem vendas no período.</div>');
 
-      // ---- Destaques em Mato Grosso (municípios) ----
-      const mun = panSomar(D.mun_mt, atual), munAnt = panSomar(D.mun_mt, anterior);
-      const muns = [...mun.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const wMt = cdCard('Destaques em Mato Grosso', 'Municípios com mais emplacamentos', muns.length ? `<ul class="cd-dest">${muns.map(([nome, v]) => {
-          const ant = munAnt.get(nome) || 0;
-          const d = cdDelta(v, ant);
+      // ---- Destaques no estado (MT na visão Brasil; o estado filtrado; a cidade filtrada fica marcada) ----
+      const Mu = M.mun, totUf = soma(Mu.atual);
+      let muns = [...Mu.atual.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if(Mu.sel && !muns.some(([k]) => k === Mu.sel) && Mu.atual.has(Mu.sel)) muns.splice(4, 1, [Mu.sel, Mu.atual.get(Mu.sel)]);
+      const wMt = cdCard(`Destaques em ${PAN_UF_NOME[Mu.uf]}`, 'Municípios com mais emplacamentos', muns.length ? `<ul class="cd-dest">${muns.map(([k, v]) => {
+          const nome = Mu.nomes(k), ant = Mu.ant.get(k) || 0, d = cdDelta(v, ant);
           const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
-          return `<li><div title="${esc(nome)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+          return `<li${Mu.sel && k === Mu.sel ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
             <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplacamento${v === 1 ? '' : 's'}</span>
-              <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(mt ? v / mt : 0)} do estado</span></span></div></li>`;
-        }).join('')}</ul>` : '<div class="stk-vazio">Sem vendas em MT no período.</div>');
+              <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(totUf ? v / totUf : 0)} do estado</span></span></div></li>`;
+        }).join('')}</ul>` : `<div class="stk-vazio">Sem vendas em ${esc(PAN_UF_NOME[Mu.uf])} no período.</div>`);
 
       stkGrid.classList.add('cd-fit');
-      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kVendas}${kShare}${kFab}${kBev}${kMt}</div>`
+      stkGrid.classList.remove('cd-carregando');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kVendas}${kShare}${kFab}${kBev}${kQuinto}</div>`
         + `<div class="cd-row cd-row-a">${wVolume}${wEstados}${wTec}</div>`
         + `<div class="cd-row cd-row-b">${wModelos}${wFabs}${wMt}</div></div>`;
-      stkDesenharRoscaCd(dadosTec, 'Vendas por tecnologia');
+      stkDesenharRoscaCd(dadosTec, 'Vendas por tecnologia', 196);
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
+      panUltimo = M;
     }
 
     stkSegmented.addEventListener('click', ev => {
@@ -8122,18 +8335,26 @@ ${clipPlayerPills(n)}
       if(el.value) stkPeriodoClipEl.value = '';
       stkRender();
     }));
+    stkUfEl.addEventListener('change', () => {
+      stkCidadeEl.value = '';
+      panPreencherCidades();
+      stkRender();
+    });
+    stkCidadeEl.addEventListener('change', stkRender);
     stkPeriodoClipEl.addEventListener('change', () => {
       if(stkPeriodoClipEl.value){ stkMesEl.value = ''; stkAnoEl.value = ''; }
       stkRender();
     });
     stkPainelEl.addEventListener('change', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
+      stkUfEl.value = ''; panPreencherCidades();
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     });
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
+      stkUfEl.value = ''; panPreencherCidades();
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
@@ -8166,6 +8387,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
+      if(stkPainelEl.value === 'panorama'){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -8193,6 +8415,8 @@ ${clipPlayerPills(n)}
       stkMostrarBusca();
       // Clipping: o texto é um tema que filtra o painel (com leve atraso ao digitar).
       if(stkPainelEl.value === 'clipping'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
+      if(stkPainelEl.value === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -8256,17 +8480,14 @@ ${clipPlayerPills(n)}
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
       if(stkPainelEl.value === 'panorama'){
-        const D = window.ABVE_FROTAS;
-        if(!D) return;
-        const J = panJanela(D);
-        const fab = panSomar(D.dims.fab, J.atual), fabAnt = panSomar(D.dims.fab, J.anterior);
-        const tot = panTotal(D.total, J.atual);
-        const linhas = [['Fabricante', `Vendas (${J.rotulo})`, 'Market share', `Vendas ${J.anoAnt} (mesmo período)`]]
-          .concat([...fab.entries()].sort((a, b) => b[1] - a[1]).map(([n, v]) => [n, v, stkPct(tot ? v / tot : 0, 2), fabAnt.get(n) || 0]));
+        if(!panUltimo) return;
+        const { J, local, fab, fabAnt, vendas } = panUltimo;
+        const linhas = [['Fabricante', `Vendas · ${local} (${J.rotulo})`, 'Market share', `Vendas ${J.anoAnt} (mesmo período)`]]
+          .concat([...fab.entries()].sort((a, b) => b[1] - a[1]).map(([n, v]) => [n, v, stkPct(vendas ? v / vendas : 0, 2), fabAnt.get(n) || 0]));
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
         const url = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
-        a.href = url; a.download = `panorama_eletrificados_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`;
+        a.href = url; a.download = `panorama_eletrificados_${stkNorm(local).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return;
