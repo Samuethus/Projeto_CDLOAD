@@ -1231,6 +1231,33 @@
   .cd-dest-meta{font-size:11.5px;color:var(--cd-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cd-dest-seta{color:#94A3B8;flex:0 0 auto;display:flex;}
   .cd-dest-seta svg{width:16px;height:16px;stroke-width:2;}
+  /* Clipping: o painel cabe na altura da tela (sem rolagem da página). KPIs com
+     altura natural; as duas linhas de gráficos dividem o espaço restante. Em telas
+     baixas/estreitas volta ao fluxo normal com rolagem. */
+  @media (min-width:1201px) and (min-height:720px){
+    .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
+    #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
+    #page-dashboard:has(#stkGrid.cd-fit) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;}
+    #page-dashboard:has(#stkGrid.cd-fit) .wa-stock-filters .filter-select{min-width:96px;flex:1 1 96px;}
+    #page-dashboard:has(#stkGrid.cd-fit) .wa-stock-filters .wa-clip-search{min-width:190px;flex:2 1 190px;}
+    #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+    #stkGrid.cd-fit > .stk-tema-aviso{flex:0 0 auto;margin-bottom:12px;}
+    #stkGrid.cd-fit .cd-kpis{flex:0 0 auto;margin-bottom:14px;}
+    #stkGrid.cd-fit .cd-kpi{padding-top:14px;padding-bottom:12px;}
+    #stkGrid.cd-fit .cd-kpi-valor{font-size:28px;}
+    #stkGrid.cd-fit .cd-kpi-rodape{margin-top:6px;}
+    #stkGrid.cd-fit .cd-row{flex:1 1 0;min-height:0;margin-bottom:14px;}
+    #stkGrid.cd-fit .cd-row:last-child{margin-bottom:0;}
+    #stkGrid.cd-fit .cd-card{min-height:0;overflow:hidden;padding:14px 18px;}
+    #stkGrid.cd-fit .cd-card-head{margin-bottom:10px;}
+    #stkGrid.cd-fit .cd-card-body{min-height:0;}
+    #stkGrid.cd-fit .cd-card-body > *{min-height:0;overflow:hidden;}
+    #stkGrid.cd-fit .cd-barras{gap:2px;}
+    #stkGrid.cd-fit .cd-barra{min-height:18px;}
+    #stkGrid.cd-fit .cd-rank li{padding:4px 0;}
+    #stkGrid.cd-fit .cd-dest a, #stkGrid.cd-fit .cd-dest li > div{padding:4px 2px;}
+    #stkGrid.cd-fit .cd-rosca-legenda{gap:10px;}
+  }
   .stk-card{background:var(--stk-white);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,43,84,.04),0 8px 20px -16px rgba(0,43,84,.18);display:flex;flex-direction:column;min-width:0;}
   .stk-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   .stk-card-head h3{margin:0;font-size:15.5px;font-weight:500;color:var(--stk-secondary-dark);}
@@ -7718,6 +7745,7 @@ ${clipPlayerPills(n)}
           <div class="stk-card-body"><div class="stk-table-wrap">${stkTabelaAba === 'produtos' ? corpoProdutos : corpoMovimentacoes}</div></div>
         </div>`;
 
+      stkGrid.classList.remove('cd-fit');
       stkGrid.innerHTML = `<div class="cd-kpis">${kTotal}${kOut}${kIn}${kEfic}${kCadastrados}</div>`
         + `<div class="cd-row cd-row-a">${wFluxo}${wCompras}${wDistribuicao}</div>`
         + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div>`
@@ -7765,12 +7793,18 @@ ${clipPlayerPills(n)}
     }
     // Barras horizontais em HTML: rótulo (com ícone opcional) | trilho | valor.
     // Rosca ao lado da legenda: tamanho pelo espaço livre do card (120–170px).
+    // Altura útil do gráfico quando o painel ocupa exatamente a tela (stkGrid.cd-fit
+    // ativo pelo CSS); fora disso, a altura padrão.
+    function cdAlturaLivre(el, padrao){
+      const fit = stkGrid.classList.contains('cd-fit') && getComputedStyle(stkGrid).display === 'flex';
+      return fit ? Math.max(120, Math.floor(el.clientHeight)) : padrao;
+    }
     function stkDesenharRoscaCd(dados, titulo){
       const el = document.getElementById('stkDistribGraf');
       if(!el) return;
       const wrap = el.closest('.cd-rosca-wrap'), leg = wrap.querySelector('.cd-rosca-legenda');
-      const livre = wrap.clientWidth - (leg ? leg.offsetWidth : 130) - 16;
-      stkDesenharRosca(el, dados, Math.max(120, Math.min(170, Math.floor(livre))), titulo);
+      const livre = Math.min(wrap.clientWidth - (leg ? leg.offsetWidth : 130) - 16, cdAlturaLivre(wrap, 999) - 4);
+      stkDesenharRosca(el, dados, Math.max(110, Math.min(170, Math.floor(livre))), titulo);
     }
     function cdBarras(itens, titulo, vazio){
       if(!itens.length) return `<div class="stk-vazio">${esc(vazio)}</div>`;
@@ -7887,12 +7921,17 @@ ${clipPlayerPills(n)}
       const temaFora = temaTotal - atual.length - anterior.length;
       const rotuloBusca = modoSel ? `Seleção da busca <strong>(${stkNum(temaTotal)} marcada${temaTotal === 1 ? '' : 's'})</strong>` : `Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>`;
       const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Período ou Mês/Ano para comparar outro período` : ''}</span></div>` : '';
+      stkGrid.classList.add('cd-fit');
       stkGrid.innerHTML = avisoTema + `<div class="cd-kpis">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
         + `<div class="cd-row cd-row-a">${wVolume}${wTemas}${wSentimento}</div>`
         + `<div class="cd-row cd-row-b">${wCategorias}${wVeiculos}${wDestaques}</div>`;
       stkDesenharRoscaCd(dadosSent, 'Sentimento das notícias');
       const grafFluxo = document.getElementById('stkFluxoGraf');
-      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, 200);
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      // Sem rolagem: cada lista mostra só os itens que cabem inteiros no card.
+      if(cdAlturaLivre(stkGrid, 0)) stkGrid.querySelectorAll('.cd-barras, .cd-rank, .cd-dest').forEach(l => {
+        while(l.children.length > 1 && l.scrollHeight > l.clientHeight + 1) l.lastElementChild.remove();
+      });
     }
 
     stkSegmented.addEventListener('click', ev => {
