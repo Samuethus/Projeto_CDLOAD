@@ -4687,8 +4687,8 @@
     // então essa cor só é confiável junto de um rótulo de texto (legenda,
     // tooltip), nunca sozinha num traço fino de linha ou ponto pequeno.
     const CLIP_PLAYERS = [
-      { nome: 'CDL Cuiabá', cor: '#00A389', corGrafico: '#00D2C8' },
-      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#415160' }
+      { nome: 'CDL Cuiabá', cor: '#00A389' },
+      { nome: 'Fecomércio MT', cor: '#E6F5F0' }
     ];
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
@@ -6885,12 +6885,11 @@ ${clipPlayerPills(n)}
       const mix = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
       return `#${mix(ra, rb)}${mix(ga, gb)}${mix(ba, bb)}`;
     };
-    const STK_PALETA = ['#00D2C8', '#1DCAD3', '#7BE0DF', '#A2EAF0', '#415160', '#8E9AA8', '#383838'];
     const stkSetorCor = setor => {
       const i = STOCK_SETORES.indexOf(setor);
       if(i === -1) return '#8297A8';
       const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
-      return STK_PALETA[i % STK_PALETA.length];
+      return stkMisturarCor('#0056D2', '#52A0FF', t);
     };
 
     // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
@@ -6991,7 +6990,7 @@ ${clipPlayerPills(n)}
     // (verde/vermelho, com posição + rótulo de texto reforçando a cor).
     const STK_SENT = [
       { nome: 'Negativo', cor: '#DA0000' },
-      { nome: 'Neutro', cor: '#8E9AA8' },
+      { nome: 'Neutro', cor: '#CBD5E1' },
       { nome: 'Positivo', cor: '#74B230' }
     ];
 
@@ -7146,7 +7145,7 @@ ${clipPlayerPills(n)}
     // Gráfico de barras (série única, eixo Y em R$). Cor = azul de destaque
     // da seção selecionada no menu (--sidebar-selected); contorno sólido +
     // preenchimento chapado a 20% de opacidade.
-    const STK_COR_BARRA = '#00D2C8';
+    const STK_COR_BARRA = '#0052CC';
     // `formatador` estiliza o eixo Y e o valor no tooltip — R$ compacto por
     // padrão (Estoque); Clipping passa stkNum para contagens simples.
     function stkDesenharBarrasValor(el, categorias, valores, rotulo, formatador, formatadorDica){
@@ -7301,7 +7300,7 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (stkClipSelecionado() || tema) ? '' : stkPlayerEl.value;
       const series = CLIP_PLAYERS.filter(p => !playerFiltro || playerFiltro === p.nome)
-        .map(p => ({ nome: p.nome, cor: p.corGrafico || p.cor, valores: chaves.map(() => 0) }));
+        .map(p => ({ nome: p.nome, cor: p.cor, valores: chaves.map(() => 0) }));
       clippingNews.forEach(n => {
         if(n.data < janelaIni || !stkNewsOk(n) || (tema && !stkCasaTema(n, tema))) return;
         const chave = semanal ? n.data : n.data.slice(0, 7);
@@ -7325,8 +7324,8 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
-        { nome: String(ano), cor: '#00D2C8', valores: categorias.map(() => 0) },
-        { nome: String(ano - 1), cor: '#415160', valores: categorias.map(() => 0) }
+        { nome: String(ano), cor: '#0056D2', valores: categorias.map(() => 0) },
+        { nome: String(ano - 1), cor: '#52A0FF', valores: categorias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7347,8 +7346,8 @@ ${clipPlayerPills(n)}
       const tema = stkTemaClip();
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
-        { nome: range.ini.slice(0, 4), cor: '#00D2C8', valores: dias.map(() => 0) },
-        { nome: String(rangeAnt.ano), cor: '#415160', valores: dias.map(() => 0) }
+        { nome: range.ini.slice(0, 4), cor: '#0056D2', valores: dias.map(() => 0) },
+        { nome: String(rangeAnt.ano), cor: '#52A0FF', valores: dias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7367,8 +7366,8 @@ ${clipPlayerPills(n)}
       const categorias = [...new Set([...cA.keys(), ...cB.keys()])]
         .sort((a, b) => (cA.get(b) || 0) - (cA.get(a) || 0) || (cB.get(b) || 0) - (cB.get(a) || 0))
         .slice(0, limite || 6);
-      const series = [{ nome: anos[0], cor: '#00D2C8', valores: categorias.map(k => cA.get(k) || 0) }];
-      if(anterior) series.push({ nome: anos[1], cor: '#415160', valores: categorias.map(k => cB.get(k) || 0) });
+      const series = [{ nome: anos[0], cor: '#0056D2', valores: categorias.map(k => cA.get(k) || 0) }];
+      if(anterior) series.push({ nome: anos[1], cor: '#52A0FF', valores: categorias.map(k => cB.get(k) || 0) });
       return { categorias, series };
     }
 
@@ -7512,7 +7511,7 @@ ${clipPlayerPills(n)}
             </select>
           </div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:#00D2C8"></i>Entradas</span><span><i style="background:#415160"></i>Saídas</span></div>
+            <div class="stk-legenda"><span><i style="background:#0056D2"></i>Entradas</span><span><i style="background:#52A0FF"></i>Saídas</span></div>
             <div id="stkFluxoGraf"></div>
           </div>
         </div>`;
@@ -7523,7 +7522,7 @@ ${clipPlayerPills(n)}
       const wCompras = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor gasto com compras</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,210,200,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
             <div id="stkComprasGraf"></div>
           </div>
         </div>`;
@@ -7564,7 +7563,7 @@ ${clipPlayerPills(n)}
       const wValorSaida = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor de saída por setor</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,210,200,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
+            <div class="stk-legenda"><span><i style="background:rgba(0,82,204,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
             <div id="stkValorSaidaGraf"></div>
           </div>
         </div>`;
@@ -7625,8 +7624,8 @@ ${clipPlayerPills(n)}
       }
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
-        { nome: 'Entradas', cor: '#00D2C8', valores: F.entradas },
-        { nome: 'Saídas', cor: '#415160', valores: F.saidas }
+        { nome: 'Entradas', cor: '#0056D2', valores: F.entradas },
+        { nome: 'Saídas', cor: '#52A0FF', valores: F.saidas }
       ]);
       const grafCompras = document.getElementById('stkComprasGraf');
       if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores, 'Valor gasto com compras por mês');
