@@ -1241,9 +1241,10 @@
   .cd-rosca-legenda-pan li{gap:7px;font-size:12.5px;}
   .cd-rosca-legenda-pan li i{width:9px;height:9px;}
   /* Panorama: resultado do município em uma única linha (reticências se não couber). */
-  .cd-dest-uma{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;}
-  .cd-dest-uma .cd-dest-tit{display:inline;font-size:13px;}
-  .cd-dest-uma .cd-dest-meta{display:inline;font-size:12px;}
+  #stkGrid.cd-fit .cd-card:has(.cd-dest-uma){padding-left:14px;padding-right:12px;}
+  .cd-dest-uma{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;letter-spacing:-.1px;}
+  .cd-dest-uma .cd-dest-tit{display:inline;font-size:12px;}
+  .cd-dest-uma .cd-dest-meta{display:inline;font-size:11px;}
   /* Telas menores: sem o ícone circular, para o texto da linha ganhar espaço. */
   @media (max-width:1600px){ .cd-dest li:has(.cd-dest-uma) .cd-dest-ic{display:none;} }
   .cd-dest li.cd-dest-sel{background:var(--cd-azul-bg);border-radius:8px;}
@@ -7833,10 +7834,10 @@ ${clipPlayerPills(n)}
       return `<div class="cd-card"><div class="cd-card-head"><div class="cd-card-tits"><h3>${esc(titulo)}</h3>${sub ? `<div class="cd-sub">${esc(sub)}</div>` : ''}</div>${extra || ''}</div><div class="cd-card-body">${corpo}</div></div>`;
     }
     // Variação vs. ano anterior: seta + valor (verde se sobe, vermelho se cai, como na referência).
-    function cdDelta(atual, anterior, pp, semBase, inverso){
+    function cdDelta(atual, anterior, pp, semBase, inverso, casas){
       if(semBase || (!pp && !(anterior > 0))) return { cls: 'neu', txt: '— sem base' };
       const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
-      const v = Math.abs(dif).toLocaleString('pt-BR', { maximumFractionDigits: pp ? 1 : 2 }) + (pp ? ' p.p.' : '%');
+      const v = Math.abs(dif).toLocaleString('pt-BR', { maximumFractionDigits: casas != null ? casas : (pp ? 1 : 2) }) + (pp ? ' p.p.' : '%');
       if(Math.abs(dif) < (pp ? 0.05 : 0.005)) return { cls: 'neu', txt: pp ? '→ 0 p.p.' : '→ 0%' };
       const bom = (dif > 0) !== !!inverso;
       return { cls: bom ? 'up' : 'down', txt: (dif > 0 ? '↑ ' : '↓ ') + v };
@@ -8340,10 +8341,10 @@ ${clipPlayerPills(n)}
       let muns = [...Mu.atual.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
       if(Mu.sel && !muns.some(([k]) => k === Mu.sel) && Mu.atual.has(Mu.sel)) muns.splice(4, 1, [Mu.sel, Mu.atual.get(Mu.sel)]);
       const wMt = cdCard(Mu.uf ? `Destaques em ${PAN_UF_NOME[Mu.uf]}` : 'Destaques no Brasil', 'Municípios com mais emplacamentos', muns.length ? `<ul class="cd-dest">${muns.map(([k, v]) => {
-          const nome = Mu.nomes(k), ant = Mu.ant.get(k) || 0, d = cdDelta(v, ant);
+          const nome = Mu.nomes(k), ant = Mu.ant.get(k) || 0, d = cdDelta(v, ant, false, false, false, 0);
           const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
           return `<li${Mu.sel && k === Mu.sel ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
-            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplac.</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(totBase ? v / totBase : 0, Mu.uf ? 0 : 1)} ${Mu.uf ? 'do estado' : 'do Brasil'}</span></span></span></div></li>`;
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplac.</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(totBase ? v / totBase : 0, 0)} ${Mu.uf ? 'do estado' : 'do Brasil'}</span></span></span></div></li>`;
         }).join('')}</ul>` : `<div class="stk-vazio">Sem vendas ${Mu.uf ? 'em ' + esc(PAN_UF_NOME[Mu.uf]) : ''} no período.</div>`);
 
       stkGrid.classList.add('cd-fit');
