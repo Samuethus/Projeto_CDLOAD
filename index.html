@@ -7021,10 +7021,11 @@ ${clipPlayerPills(n)}
 
     const stkHojeIso = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
     const stkSomaDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-    const stkNum = v => Number(v || 0).toLocaleString('pt-BR');
-    const stkPct = (v, casas) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: casas || 0, maximumFractionDigits: casas || 0 }) + '%';
+    const stkNum = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+    const stkQtd = v => (Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 }); // Dashboard: no máximo 1 casa decimal
+    const stkPct = (v, casas) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: Math.min(casas || 0, 1), maximumFractionDigits: Math.min(casas || 0, 1) }) + '%';
     const stkDataHoraBR = iso => { const d = new Date(iso); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
-    const stkMoeda = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const stkMoeda = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
     const stkMoedaCompacta = v => v >= 1000000 ? 'R$ ' + (v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'mi'
       : v >= 1000 ? 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'mil'
       : 'R$ ' + Math.round(v).toLocaleString('pt-BR');
@@ -7229,7 +7230,7 @@ ${clipPlayerPills(n)}
     function stkVarCard(atual, anterior, ref, pp, semBase, subirEhRuim){
       if(semBase || (!pp && !(anterior > 0))) return { tom: 'neu', selo: 'Sem base', num: '—', txt: ref.vazio };
       const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
-      const fmt = v => Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: pp ? 1 : 2 }) + (pp ? ' p.p.' : '%');
+      const fmt = v => Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + (pp ? ' p.p.' : '%');
       if(Math.abs(dif) < (pp ? 0.05 : 0.5)) return { tom: 'neu', selo: 'Estável', num: fmt(0) + ' →', txt: ref.vs };
       const sobe = dif > 0, bom = sobe !== !!subirEhRuim;
       return { tom: bom ? 'ok' : 'alerta', selo: bom ? 'Favorável' : 'Atenção', num: `${fmt(dif)} ${sobe ? '↗' : '↘'}`, txt: ref.vs };
@@ -7729,7 +7730,7 @@ ${clipPlayerPills(n)}
       const totalSetores = setores.reduce((s, x) => s + x.qtd, 0);
       const wDistribuicao = cdCard('Distribuição por setor', 'Saldo atual por setor', `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(totalSetores)}</strong><span>unidade${totalSetores === 1 ? '' : 's'}</span></div></div>
-          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(fmtQty(s.qtd))} un."><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalSetores ? s.qtd / totalSetores : 0)}</strong></li>`).join('')}</ul>
+          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(stkQtd(s.qtd))} un."><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalSetores ? s.qtd / totalSetores : 0)}</strong></li>`).join('')}</ul>
         </div>`);
 
       // ---- Valor de saída por setor (custo das saídas, todo o histórico) ----
@@ -7747,7 +7748,7 @@ ${clipPlayerPills(n)}
       const wTopSaidas = cdCard('Maiores saídas', `Produtos mais retirados · ${range.rotulo}`, topSaidas.length ? `<ol class="cd-rank">${topSaidas.map(([id, q], i) => {
           const p = prodById.get(id);
           const nome = p ? p.nome : '—';
-          return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${esc(fmtQty(q))}${p ? ` <span class="cd-rank-un">${esc(p.unidade)}</span>` : ''}</strong><span class="cd-rank-pct">${stkPct(saidasQtd ? q / saidasQtd : 0)}</span></li>`;
+          return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${esc(stkQtd(q))}${p ? ` <span class="cd-rank-un">${esc(p.unidade)}</span>` : ''}</strong><span class="cd-rank-pct">${stkPct(saidasQtd ? q / saidasQtd : 0)}</span></li>`;
         }).join('')}</ol>` : '<div class="stk-vazio">Nenhuma saída no período.</div>');
 
       // ---- Alertas de estoque (zerados primeiro) ----
@@ -7757,7 +7758,7 @@ ${clipPlayerPills(n)}
       const wAlertas = cdCard('Alertas de estoque', qAbaixo ? `${stkNum(qAbaixo)} produto${qAbaixo === 1 ? '' : 's'} abaixo do mínimo` : 'Produtos abaixo do mínimo', alertas.length ? `<ul class="cd-dest">${alertas.map(p => {
           const zerado = situacaoOf(p) === 'zerado';
           return `<li><div title="${esc(p.nome)}"><span class="cd-dest-ic ${zerado ? 'vermelho' : 'amarelo'}">${stkIcone('alerta')}</span>
-            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(p.nome)}</span><span class="cd-dest-meta">${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} / mín. ${fmtQty(p.estoque_minimo)} ${esc(p.unidade)}</span></span>
+            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(p.nome)}</span><span class="cd-dest-meta">${stkQtd(saldoOf(p.id, STOCK_SETOR_TODOS))} / mín. ${stkQtd(p.estoque_minimo)} ${esc(p.unidade)}</span></span>
             <span class="stk-badge ${zerado ? 'danger' : 'delay'}">${zerado ? 'Sem estoque' : 'Estoque baixo'}</span></div></li>`;
         }).join('')}</ul>` : '<div class="stk-vazio">Nenhum produto abaixo do mínimo.</div>');
 
@@ -7771,7 +7772,7 @@ ${clipPlayerPills(n)}
           <tbody>${listaProdutos.map(p => {
             const sit = situacaoOf(p);
             return `<tr><td>${esc(p.codigo_barras)}</td><td>${esc(p.nome)}</td><td>${esc(p.unidade)}</td>
-              <td class="num">${fmtQty(saldoOf(p.id, setorAtivo))}</td><td class="num">${fmtQty(p.estoque_minimo)}</td>
+              <td class="num">${stkQtd(saldoOf(p.id, setorAtivo))}</td><td class="num">${stkQtd(p.estoque_minimo)}</td>
               <td><span class="stk-badge ${STK_SIT_CLS[sit]}">${esc(SITUACAO[sit].label)}</span></td></tr>`;
           }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhum produto encontrado.</div>';
 
@@ -7786,7 +7787,7 @@ ${clipPlayerPills(n)}
               <td>${p ? esc(p.nome) : '—'}</td>
               <td>${esc(m.setor)}</td>
               <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${saida ? 'danger' : 'ok'}">${saida ? 'Saída' : 'Entrada'}</span></td>
-              <td class="num">${fmtQty(m.quantidade)} ${p ? esc(p.unidade) : ''}</td>
+              <td class="num">${stkQtd(m.quantidade)} ${p ? esc(p.unidade) : ''}</td>
               <td>${esc(userNameOf(m.usuario_email) || m.usuario_email || '—')}</td>
             </tr>`;
           }).join('')}</tbody></table>` : '<div class="stk-vazio">Nenhuma movimentação no período.</div>';
@@ -7808,7 +7809,7 @@ ${clipPlayerPills(n)}
         + `<div class="cd-row cd-row-a">${wFluxo}${wCompras}${wDistribuicao}</div>`
         + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div></div>`
         + `<div class="stk-grid cd-extra">${wTabela}</div>`;
-      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: fmtQty(s.qtd) + ' un.' })), 'Distribuição por setor');
+      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: stkQtd(s.qtd) + ' un.' })), 'Distribuição por setor');
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
@@ -7837,7 +7838,7 @@ ${clipPlayerPills(n)}
     function cdDelta(atual, anterior, pp, semBase, inverso, casas){
       if(semBase || (!pp && !(anterior > 0))) return { cls: 'neu', txt: '— sem base' };
       const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
-      const v = Math.abs(dif).toLocaleString('pt-BR', { maximumFractionDigits: casas != null ? casas : (pp ? 1 : 2) }) + (pp ? ' p.p.' : '%');
+      const v = Math.abs(dif).toLocaleString('pt-BR', { maximumFractionDigits: casas != null ? Math.min(casas, 1) : 1 }) + (pp ? ' p.p.' : '%');
       if(Math.abs(dif) < (pp ? 0.05 : 0.005)) return { cls: 'neu', txt: pp ? '→ 0 p.p.' : '→ 0%' };
       const bom = (dif > 0) !== !!inverso;
       return { cls: bom ? 'up' : 'down', txt: (dif > 0 ? '↑ ' : '↓ ') + v };
@@ -8416,7 +8417,7 @@ ${clipPlayerPills(n)}
         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
         .map(p => {
           const sit = situacaoOf(p);
-          return { id: p.id, nome: p.nome, meta: `${p.codigo_barras} · ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${p.unidade}`, badge: STK_SIT_CLS[sit], rotulo: SITUACAO[sit].label };
+          return { id: p.id, nome: p.nome, meta: `${p.codigo_barras} · ${stkQtd(saldoOf(p.id, STOCK_SETOR_TODOS))} ${p.unidade}`, badge: STK_SIT_CLS[sit], rotulo: SITUACAO[sit].label };
         });
     }
     function stkAtualizarContagem(){
@@ -8563,14 +8564,14 @@ ${clipPlayerPills(n)}
       if(stkTabelaAba === 'produtos'){
         rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Situação']]
           .concat(stockProducts.filter(p => stkProdOk(p.id))
-            .map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, setorAtivo)), fmtQty(p.estoque_minimo), SITUACAO[situacaoOf(p)].label]));
+            .map(p => [p.codigo_barras, p.nome, p.unidade, stkQtd(saldoOf(p.id, setorAtivo)), stkQtd(p.estoque_minimo), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_dashboard_produtos_${stkHojeIso()}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
         rows = [['Data/hora', 'Produto', 'Setor', 'Tipo', 'Quantidade', 'Usuário']]
           .concat(stkMovsEntre(range.ini, range.fim).map(m => {
             const p = byId.get(m.produto_id);
-            return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', fmtQty(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
+            return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', stkQtd(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_dashboard_movimentacoes_${range.ini}_a_${range.fim}.csv`;
       }
