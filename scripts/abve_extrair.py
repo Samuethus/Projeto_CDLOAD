@@ -27,6 +27,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, 'assets', 'data', 'abve_frotas.js')
 E = {'b': 'BaseVendas_ABVE', 't': 'Tcalendario'}
 BASE = [('ano', p.col('t', 'Ano')), ('mes', p.col('t', 'MêsNúmero'))]
+MUN_BR_MAX = 120  # "Destaques no Brasil": municípios que mais emplacaram no histórico
 GRUPOS_MAX = 80  # modelos: só os mais vendidos no histórico (o resto vira "Outros")
 # Eletrificados na definição da ABVE (a mesma do total exibido no BI): sem MHEV 12V/48V.
 TECNOLOGIAS = ['BEV', 'PHEV', 'HEV', 'HEV FLEX', 'MHEV']
@@ -99,6 +100,26 @@ def main():
                       [p.filtro_in('c', 'Estado', ['MT'])])
     grafia = {sem_acento(r['mun']): r['mun'] for r in cad if r['mun']}
     dados['mun_mt']['nomes'] = [grafia.get(sem_acento(n), n) for n in dados['mun_mt']['nomes']]
+
+    # Destaques no Brasil: municípios que mais emplacaram no histórico (MUN_BR_MAX), por mês.
+    # Nome no formato "Município (UF)", com a grafia do cadastro.
+    tot_mun = p.consultar(E, [('cod', p.col('b', 'Municipio_Codigo')), ('qtd', p.medida('b', 'Quantidade'))], [F_TEC])
+    top = [r['cod'] for r in sorted((r for r in tot_mun if r['cod']), key=lambda r: -(r['qtd'] or 0))[:MUN_BR_MAX]]
+    rs = p.consultar(E, BASE + [('cod', p.col('b', 'Municipio_Codigo')), ('mun', p.col('b', 'Municipio')),
+                                ('uf', p.col('b', 'Estado')), ('qtd', p.medida('b', 'Quantidade'))],
+                     [F_TEC, p.filtro_in('b', 'Municipio_Codigo', top)])
+    cad_br = p.consultar({'c': 'Cadastro_Municipio'}, [('mun', p.col('c', 'Município')), ('uf', p.col('c', 'Estado'))])
+    grafia_br = {(r['uf'], sem_acento(r['mun'])): r['mun'] for r in cad_br if r['mun'] and r['uf']}
+    nome_br = lambda r: f"{grafia_br.get((r['uf'], sem_acento(r['mun'])), str(r['mun']).title())} ({r['uf']})"
+    agreg = {}
+    for r in rs:
+        if r['ano'] and r['mes'] and chave(r) in im and r['mun'] and (r['qtd'] or 0):
+            k = (im[chave(r)], nome_br(r))
+            agreg[k] = agreg.get(k, 0) + int(r['qtd'])
+    nomes_br = sorted({k[1] for k in agreg})
+    ino = {n: i for i, n in enumerate(nomes_br)}
+    dados['mun_br'] = {'nomes': nomes_br, 'linhas': sorted([[k[0], ino[k[1]], v] for k, v in agreg.items()])}
+
     os.makedirs(os.path.dirname(SAIDA), exist_ok=True)
     js = ('// Gerado por scripts/abve_extrair.py — não editar à mão.\n'
           'window.ABVE_FROTAS = ' + json.dumps(dados, ensure_ascii=False, separators=(',', ':')) + ';\n')
@@ -106,7 +127,7 @@ def main():
         f.write(js)
     print(f'{SAIDA}: {len(js) // 1024} KB · {meses[0]}..{meses[-1]} · '
           + ', '.join(f"{k}={len(v['linhas'])}" for k, v in dados['dims'].items())
-          + f", mun_mt={len(dados['mun_mt']['linhas'])}")
+          + f", mun_mt={len(dados['mun_mt']['linhas'])}, mun_br={len(dados['mun_br']['linhas'])}")
 
 
 if __name__ == '__main__':
