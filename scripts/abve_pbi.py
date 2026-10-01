@@ -1,10 +1,11 @@
-"""Cliente mínimo do Power BI "Publicar na Web" (relatório público da ABVE).
+"""Cliente mínimo do Power BI "Publicar na Web" (relatórios públicos da ABVE e do CAGED).
 
 O relatório BI Frotas (https://abve.org.br/abve-data/bi-frotas/) é um Power BI
 público. O navegador consulta o modelo pela API pública `querydata`, com a chave
 do link de publicação; aqui fazemos o mesmo, com consultas agregadas próprias.
 
-Uso: importado por scripts/abve_extrair.py. Só a biblioteca padrão do Python.
+Uso: importado por scripts/abve_extrair.py (padrão: ABVE) e scripts/caged_extrair.py
+(chama usar(CAGED)). Só a biblioteca padrão do Python.
 """
 import json
 import urllib.request
@@ -15,6 +16,28 @@ CLUSTER = 'https://wabi-brazil-south-b-primary-api.analysis.windows.net'
 DATASET_ID = 'bf99f664-ff4f-43e7-a258-139c3e11a6e2'
 REPORT_ID = '8dfea0d6-d8e9-4d9c-b5bb-9de3509781b7'
 MODEL_ID = 8592399
+
+# Novo CAGED — Ministério do Trabalho e Emprego (painel público "Painel Novo CAGED").
+CAGED = {'chave': '5b95b481-bfbc-4287-935e-ce2b20015ab6',
+         'cluster': 'https://wabi-brazil-south-d-primary-api.analysis.windows.net',
+         'dataset': '4859b5fd-e3ad-4a7c-95fe-aa62fc046d96',
+         'relatorio': '45733ae9-0c13-4764-ae62-0692962108d1', 'modelo': 528307}
+
+
+def usar(rel):
+    """Passa a consultar outro relatório público (dict como CAGED)."""
+    global RESOURCE_KEY, CLUSTER, DATASET_ID, REPORT_ID, MODEL_ID
+    RESOURCE_KEY, CLUSTER, DATASET_ID, REPORT_ID, MODEL_ID = rel['chave'], rel['cluster'], rel['dataset'], rel['relatorio'], rel['modelo']
+
+
+def atualizar_ids():
+    """IDs do modelo mudam quando o relatório é republicado: relê pela chave pública."""
+    global DATASET_ID, REPORT_ID, MODEL_ID
+    req = urllib.request.Request(f'{CLUSTER}/public/reports/{RESOURCE_KEY}/modelsAndExploration?preferReadOnlySession=true',
+                                 headers={'X-PowerBI-ResourceKey': RESOURCE_KEY, 'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        j = json.load(r)
+    MODEL_ID, DATASET_ID, REPORT_ID = j['models'][0]['id'], j['models'][0]['dbName'], j['exploration']['report']['objectId']
 
 
 def col(src, prop):
@@ -35,6 +58,14 @@ def filtro_in(src, prop, valores):
 
 
 def consultar(entidades, selects, where=None, limite=30000):
+    try:
+        return _consultar(entidades, selects, where, limite)
+    except Exception:
+        atualizar_ids()
+        return _consultar(entidades, selects, where, limite)
+
+
+def _consultar(entidades, selects, where=None, limite=30000):
     """entidades: {'b': 'BaseVendas_ABVE', ...}; selects: [(nome, expressão)].
 
     Retorna lista de dicts {nome: valor}."""
