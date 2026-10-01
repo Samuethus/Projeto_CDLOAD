@@ -1130,6 +1130,99 @@
   .stk-clip-negativas .stk-alerta-nome{display:block;}
   .stk-clip-negativas .stk-alerta-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   @media (max-width:640px){ .stk-hbar-graf{min-height:320px;} }
+
+  /* ===== Clipping (layout "cd") — KPIs com acento lateral, cards com título +
+     subtítulo, barras com trilho, ranking e destaques ===== */
+  #page-dashboard{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
+    --cd-texto:#0F1E3D;--cd-muted:#64748B;--cd-borda:#E6EBF2;--cd-trilho:#EEF2F7;}
+  .cd-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:16px;}
+  @media (max-width:1200px){ .cd-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  @media (max-width:760px){ .cd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:480px){ .cd-kpis{grid-template-columns:1fr;} }
+  .cd-kpi{position:relative;min-width:0;overflow:hidden;container-type:inline-size;
+    background:#fff;border:1px solid var(--cd-borda);border-radius:12px;padding:18px 14px 16px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04);
+    --cd-ac:var(--cd-azul);--cd-ac-bg:var(--cd-azul-bg);}
+  .cd-kpi.verde{--cd-ac:var(--cd-verde);--cd-ac-bg:var(--cd-verde-bg);}
+  .cd-kpi.vermelho{--cd-ac:var(--cd-verm);--cd-ac-bg:var(--cd-verm-bg);}
+  .cd-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cd-ac);}
+  .cd-kpi-ic{width:44px;height:44px;border-radius:50%;background:var(--cd-ac-bg);color:var(--cd-ac);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .cd-kpi-ic svg{width:20px;height:20px;stroke-width:2;}
+  .cd-kpi-in{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:'ic txt' '. rod';column-gap:14px;align-items:start;}
+  .cd-kpi-ic{grid-area:ic;} .cd-kpi-txt{grid-area:txt;min-width:0;} .cd-kpi-rodape{grid-area:rod;}
+  .cd-kpi-label{font-size:14px;font-weight:600;color:var(--cd-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-kpi-valor{font-size:30px;font-weight:700;color:var(--cd-texto);line-height:1.15;margin-top:4px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+  /* Variação + referência sempre em uma linha, sem sair do card. */
+  .cd-kpi-rodape{display:flex;align-items:baseline;gap:6px;margin-top:8px;font-size:12.5px;white-space:nowrap;min-width:0;overflow:hidden;}
+  .cd-kpi-var{font-weight:600;flex:0 0 auto;}
+  .cd-kpi-var.up{color:#16A34A;} .cd-kpi-var.down{color:var(--cd-verm);} .cd-kpi-var.neu{color:var(--cd-muted);}
+  .cd-kpi-ref{color:var(--cd-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  /* Card estreito: rodapé usa a largura toda, ícone menor e a unidade ("notícias") sai. */
+  @container (max-width:250px){ .cd-kpi-in{grid-template-areas:'ic txt' 'rod rod';column-gap:12px;} .cd-kpi-ic{width:40px;height:40px;} .cd-kpi-rodape{font-size:12px;gap:5px;} .cd-kpi-label{font-size:13.5px;white-space:normal;line-height:1.25;} }
+  @container (max-width:215px){ .cd-kpi-un{display:none;} .cd-kpi-valor{font-size:27px;} }
+
+  .cd-row{display:grid;gap:16px;margin-bottom:16px;}
+  .cd-row-a{grid-template-columns:1.5fr 1fr 1.05fr;}
+  .cd-row-b{grid-template-columns:1.15fr 1fr 1.4fr;}
+  @media (max-width:1200px){ .cd-row-a,.cd-row-b{grid-template-columns:repeat(2,minmax(0,1fr));} .cd-row > :first-child{grid-column:1 / -1;} }
+  @media (max-width:700px){ .cd-row-a,.cd-row-b{grid-template-columns:1fr;} }
+  .cd-card{background:#fff;border:1px solid var(--cd-borda);border-radius:12px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;min-width:0;}
+  .cd-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .cd-card-tits{min-width:0;}
+  .cd-card-head h3{margin:0;font-size:16px;font-weight:600;color:var(--cd-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-sub{font-size:12.5px;color:var(--cd-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-card-body{flex:1;min-width:0;position:relative;}
+  .cd-legenda{display:flex;gap:14px;font-size:12.5px;color:var(--cd-texto);flex:0 0 auto;padding-top:2px;}
+  .cd-legenda span{display:inline-flex;align-items:center;gap:6px;}
+  .cd-legenda i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  /* Barras horizontais (temas / categorias) */
+  .cd-barras{display:flex;flex-direction:column;gap:12px;}
+  .cd-barra{display:grid;grid-template-columns:minmax(0,108px) 1fr 34px;align-items:center;gap:12px;font-size:13px;color:var(--cd-texto);outline:none;}
+  .cd-barra:focus-visible{box-shadow:0 0 0 2px var(--cd-azul);border-radius:6px;}
+  .cd-barra-rot{display:flex;align-items:center;gap:9px;min-width:0;}
+  .cd-barra-rot > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cd-barra-rot svg{width:16px;height:16px;stroke-width:2;flex:0 0 auto;color:var(--cd-texto);}
+  .cd-barra-trilho{height:10px;background:var(--cd-trilho);border-radius:9999px;overflow:hidden;}
+  .cd-barra-trilho i{display:block;height:100%;border-radius:9999px;}
+  .cd-barra-val{text-align:right;font-size:12.5px;color:var(--cd-texto);font-variant-numeric:tabular-nums;}
+
+  /* Rosca de sentimento: total no centro + legenda à direita */
+  .cd-rosca-wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:100%;}
+  .cd-rosca{position:relative;flex:0 0 auto;margin:0 auto;}
+  .cd-rosca-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .cd-rosca-centro strong{font-size:22px;font-weight:700;color:var(--cd-texto);line-height:1.1;}
+  .cd-rosca-centro span{font-size:12px;color:var(--cd-muted);}
+  .cd-rosca-legenda{list-style:none;margin:0 auto;padding:0;display:flex;flex-direction:column;gap:14px;flex:0 0 112px;}
+  .cd-rosca-legenda li{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--cd-texto);}
+  .cd-rosca-legenda i{width:10px;height:10px;border-radius:3px;flex:0 0 auto;}
+  .cd-rosca-legenda span{flex:1;min-width:0;}
+  .cd-rosca-legenda strong{font-weight:600;font-variant-numeric:tabular-nums;}
+
+  /* Ranking de veículos */
+  .cd-rank{list-style:none;margin:0;padding:0;}
+  .cd-rank li{display:grid;grid-template-columns:26px minmax(0,1fr) auto 44px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--cd-trilho);font-size:13px;color:var(--cd-texto);}
+  .cd-rank li:last-child{border-bottom:none;}
+  .cd-rank-pos{width:24px;height:24px;border-radius:7px;background:var(--cd-azul-bg);color:var(--cd-azul);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+  .cd-rank-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cd-rank strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;}
+  .cd-rank-pct{color:var(--cd-muted);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* Destaques do período */
+  .cd-dest{list-style:none;margin:0;padding:0;}
+  .cd-dest li{border-bottom:1px solid var(--cd-trilho);}
+  .cd-dest li:last-child{border-bottom:none;}
+  .cd-dest a, .cd-dest li > div{display:flex;align-items:center;gap:12px;padding:8px 2px;text-decoration:none;color:inherit;border-radius:8px;}
+  .cd-dest a:hover{background:#F7F9FC;}
+  .cd-dest-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .cd-dest-ic svg{width:15px;height:15px;stroke-width:2.2;}
+  .cd-dest-ic.verde{background:var(--cd-verde-bg);color:var(--cd-verde);}
+  .cd-dest-ic.vermelho{background:var(--cd-verm-bg);color:var(--cd-verm);}
+  .cd-dest-ic.azul{background:var(--cd-azul-bg);color:var(--cd-azul);}
+  .cd-dest-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .cd-dest-tit{font-size:13px;font-weight:500;color:var(--cd-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-dest-meta{font-size:11.5px;color:var(--cd-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-dest-seta{color:#94A3B8;flex:0 0 auto;display:flex;}
+  .cd-dest-seta svg{width:16px;height:16px;stroke-width:2;}
   .stk-card{background:var(--stk-white);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,43,84,.04),0 8px 20px -16px rgba(0,43,84,.18);display:flex;flex-direction:column;min-width:0;}
   .stk-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   .stk-card-head h3{margin:0;font-size:15.5px;font-weight:500;color:var(--stk-secondary-dark);}
@@ -6828,6 +6921,7 @@ ${clipPlayerPills(n)}
     const stkPlayerEl = document.getElementById('stkPlayerFiltro');
     const stkPeriodoClipEl = document.getElementById('stkPeriodoClipFiltro');
     let stkPeriodoAtual = 'semana';
+    let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
     let stkVolumeModoClip = 'yoy'; // Volume de notícias (Clipping): yoy | semanal | mensal
     let stkTabelaAba = 'produtos';
@@ -6874,6 +6968,18 @@ ${clipPlayerPills(n)}
       jornal: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>',
       megafone: '<path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>',
       globo: '<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>',
+      documento: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line>',
+      pizza: '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path>',
+      setaCima: '<line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>',
+      chevron: '<polyline points="9 18 15 12 9 6"></polyline>',
+      carrinho: '<circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>',
+      barras: '<line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line>',
+      banco: '<line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon>',
+      capelo: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path>',
+      chip: '<rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"></path>',
+      escudo: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>',
+      predio: '<rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"></path>',
+      pontos: '<circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>',
       sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>'
     };
     const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
@@ -7013,7 +7119,8 @@ ${clipPlayerPills(n)}
       if(stkPainelEl.value === 'clipping'){
         const curPlayer = stkPlayerEl.value;
         stkPlayerEl.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
-        if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) stkPlayerEl.value = curPlayer;
+        if(stkPlayerPadrao){ stkPlayerPadrao = false; stkPlayerEl.value = 'CDL Cuiabá'; }
+        else if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) stkPlayerEl.value = curPlayer;
         const anosClip = [...new Set(clippingNews.map(n => String(n.data).slice(0, 4)))].sort().reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosClip.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
         if(anosClip.includes(curAno)) stkAnoEl.value = curAno;
@@ -7068,8 +7175,9 @@ ${clipPlayerPills(n)}
       let d = `M${pontos[0].x.toFixed(1)},${pontos[0].y.toFixed(1)}`;
       for(let i = 0; i < pontos.length - 1; i++){
         const p0 = pontos[i === 0 ? 0 : i - 1], p1 = pontos[i], p2 = pontos[i + 1], p3 = pontos[i + 2 < pontos.length ? i + 2 : i + 1];
-        const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
-        const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+        const lo = Math.min(p1.y, p2.y), hi = Math.max(p1.y, p2.y), lim = v => Math.max(lo, Math.min(hi, v));
+        const c1x = p1.x + (p2.x - p0.x) / 6, c1y = lim(p1.y + (p2.y - p0.y) / 6);
+        const c2x = p2.x - (p3.x - p1.x) / 6, c2y = lim(p2.y - (p3.y - p1.y) / 6);
         d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
       }
       return d;
@@ -7077,8 +7185,8 @@ ${clipPlayerPills(n)}
 
     // Gráfico "Fluxo de estoque": linhas suaves com área semitransparente,
     // uma para Entradas e uma para Saídas (ambas preenchidas).
-    function stkDesenharLinhasFluxo(el, categorias, series){
-      const W = Math.max(260, Math.floor(el.clientWidth)), H = 220;
+    function stkDesenharLinhasFluxo(el, categorias, series, altura){
+      const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const m = { t: 10, r: 10, b: 26, l: 36 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
       const max = Math.max(1, ...series.flatMap(s => s.valores));
@@ -7091,7 +7199,7 @@ ${clipPlayerPills(n)}
         svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
         svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkNum(v)}</text>`;
       }
-      const nRot = Math.min(n, W < 420 ? 4 : 7);
+      const nRot = Math.min(n, Math.max(4, Math.floor(W / 40)));
       const marcas = nRot <= 1 ? [0] : Array.from({ length: nRot }, (_, k) => Math.round(k * (n - 1) / (nRot - 1)));
       [...new Set(marcas)].forEach(i => {
         svg += `<text class="stk-eixo" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${esc(categorias[i])}</text>`;
@@ -7178,7 +7286,8 @@ ${clipPlayerPills(n)}
     }
 
     // Rosca (donut) — usada em "Distribuição por setor".
-    function stkDesenharRosca(el, dados, tamanho){
+    function stkDesenharRosca(el, dados, tamanho, titulo){
+      titulo = titulo || 'Distribuição por setor';
       const ativos = dados.filter(d => d.valor > 0);
       const total = ativos.reduce((s, d) => s + d.valor, 0) || 1;
       const espessura = Math.round(tamanho * 0.24);
@@ -7188,7 +7297,7 @@ ${clipPlayerPills(n)}
       ativos.forEach(d => {
         const frac = d.valor / total;
         const len = Math.max(0, frac * circ - gap);
-        arcos += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.cor}" stroke-width="${espessura}" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(circ - len).toFixed(1)}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" tabindex="0" data-stk-dica="Distribuição por setor|${esc(d.nome)}|${esc(d.rotuloValor || stkNum(d.valor))} (${stkPct(frac, 1)})|${d.cor}"></circle>`;
+        arcos += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.cor}" stroke-width="${espessura}" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(circ - len).toFixed(1)}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" tabindex="0" data-stk-dica="${esc(titulo)}|${esc(d.nome)}|${esc(d.rotuloValor || stkNum(d.valor))} (${stkPct(frac, 1)})|${d.cor}"></circle>`;
         if(frac >= 0.08){
           const ang = (-90 + (cumFrac + frac / 2) * 360) * Math.PI / 180;
           const lx = (cx + r * Math.cos(ang)).toFixed(1), ly = (cy + r * Math.sin(ang)).toFixed(1);
@@ -7196,7 +7305,7 @@ ${clipPlayerPills(n)}
         }
         cum += frac * circ; cumFrac += frac;
       });
-      el.innerHTML = `<svg class="stk-svg" width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}" role="img" aria-label="Distribuição por setor">
+      el.innerHTML = `<svg class="stk-svg" width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}" role="img" aria-label="${esc(titulo)}">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--stk-neutral-bg)" stroke-width="${espessura}"></circle>
         ${arcos}${rotulos}
       </svg>`;
@@ -7633,6 +7742,51 @@ ${clipPlayerPills(n)}
       if(grafValorSaida) stkDesenharBarrasValor(grafValorSaida, VS.categorias, VS.valores, 'Valor de saída por setor');
     }
 
+    // ===== Clipping (layout "cd"): paleta, temas, cards e barras HTML =====
+    const CD_COR = { azul: '#1D5FD3', azulClaro: '#A7C7F4', verde: '#5DB14E', cinza: '#A5B1C2', vermelho: '#EF4444' };
+    // Temas por palavra-chave (sem acento, minúsculas) no título + resumo; uma notícia pode ter vários.
+    const CD_TEMAS = [
+      ['Economia', /econom|\bpib\b|inflac|juros|\brenda\b|credito|inadimpl|divida|tribut|imposto|fiscal|\bpreco/],
+      ['Comércio', /comerci|varej|lojist|\bloja|vendas?\b|consum|shopping|black friday/],
+      ['Política', /politic|prefeit|governo|governad|deputad|vereador|assembleia|eleic|senad|ministr/],
+      ['Infraestrutura', /\bobras?\b|infraestrutur|asfalt|paviment|ponte|viaduto|saneamento|mobilidade|transporte|\bbrt\b|\bvlt\b|rodovia|estrada/],
+      ['Emprego', /emprego|\bvagas?\b|contrata|desempreg|trabalhador|salario|carteira assinada/],
+      ['Educação', /educac|escola|capacita|\bcursos?\b|treinament|ensino|universid|qualifica/],
+      ['Saúde', /\bsaude|hospital|vacina|medic|\bsus\b|doenca|dengue/],
+      ['Segurança', /seguranca|policia|crime|furto|roubo|violencia/],
+      ['Tecnologia', /tecnolog|digital|inovac|internet|aplicativo|startup|inteligencia artificial/]
+    ].map(([nome, re]) => ({ nome, re }));
+    const CD_CAT_ICONE = { 'Comércio': 'carrinho', 'Economia': 'barras', 'Infraestrutura': 'banco', 'Educação': 'capelo', 'Capacitação': 'capelo',
+      'Tecnologia': 'chip', 'Segurança': 'escudo', 'Campanhas': 'megafone', 'Institucional': 'predio', 'Outros': 'pontos' };
+    function cdCard(titulo, sub, corpo, extra){
+      return `<div class="cd-card"><div class="cd-card-head"><div class="cd-card-tits"><h3>${esc(titulo)}</h3>${sub ? `<div class="cd-sub">${esc(sub)}</div>` : ''}</div>${extra || ''}</div><div class="cd-card-body">${corpo}</div></div>`;
+    }
+    // Variação vs. ano anterior: seta + valor (verde se sobe, vermelho se cai, como na referência).
+    function cdDelta(atual, anterior, pp, semBase){
+      if(semBase || (!pp && !(anterior > 0))) return { cls: 'neu', txt: '— sem base' };
+      const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
+      const v = Math.abs(dif).toLocaleString('pt-BR', { minimumFractionDigits: pp ? 0 : 2, maximumFractionDigits: pp ? 1 : 2 }) + (pp ? ' p.p.' : '%');
+      if(Math.abs(dif) < (pp ? 0.05 : 0.005)) return { cls: 'neu', txt: pp ? '→ 0 p.p.' : '→ 0%' };
+      return dif > 0 ? { cls: 'up', txt: '↑ ' + v } : { cls: 'down', txt: '↓ ' + v };
+    }
+    function cdKpiCard(icone, tom, label, valor, delta, ref, dica){
+      const refTxt = ref.replace(/<[^>]+>/g, '');
+      return `<div class="cd-kpi ${tom}" title="${esc([dica, `${delta.txt} ${refTxt}`].filter(Boolean).join(' · '))}"><div class="cd-kpi-in">
+        <span class="cd-kpi-ic">${stkIcone(icone)}</span>
+        <div class="cd-kpi-txt"><div class="cd-kpi-label">${esc(label)}</div><div class="cd-kpi-valor">${valor}</div></div>
+        <div class="cd-kpi-rodape"><span class="cd-kpi-var ${delta.cls}">${esc(delta.txt)}</span><span class="cd-kpi-ref">${ref}</span></div>
+      </div></div>`;
+    }
+    // Barras horizontais em HTML: rótulo (com ícone opcional) | trilho | valor.
+    function cdBarras(itens, titulo, vazio){
+      if(!itens.length) return `<div class="stk-vazio">${esc(vazio)}</div>`;
+      const max = Math.max(1, ...itens.map(i => i.valor));
+      return `<div class="cd-barras">${itens.map(i => `<div class="cd-barra" tabindex="0" data-stk-dica="${esc(titulo)}|${esc(i.nome)}|${esc(stkNum(i.valor))}|${i.cor}">
+          <span class="cd-barra-rot">${i.icone ? stkIcone(i.icone) : ''}<span>${esc(i.nome)}</span></span>
+          <span class="cd-barra-trilho"><i style="width:${(i.valor / max * 100).toFixed(1)}%;background:${i.cor}"></i></span>
+          <span class="cd-barra-val">${stkNum(i.valor)}</span></div>`).join('')}</div>`;
+    }
+
     function stkRenderClipping(){
       if(!clippingNews.length){
         stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhuma notícia carregada. Confira se o seu usuário tem acesso ao Clipping News.</div></div>`;
@@ -7656,7 +7810,7 @@ ${clipPlayerPills(n)}
       const anterior = stkNewsEntre(rangeAnt.ini, rangeAnt.fim);
       const baseAnt = v => `${anoAnt} (mesmo período): ${v}`;
 
-      // ---- KPIs ----
+      // ---- KPIs (layout "cd": acento lateral + ícone + número + variação em 1 linha) ----
       const foco = (!modoSel && !tema && stkPlayerEl.value && CLIP_PLAYERS.find(p => p.nome === stkPlayerEl.value)) || CLIP_PLAYERS[0];
       const menc = (lista, nome) => lista.filter(n => (n.players || []).includes(nome)).length;
       const totMenc = lista => CLIP_PLAYERS.reduce((s, p) => s + menc(lista, p.nome), 0);
@@ -7664,79 +7818,74 @@ ${clipPlayerPills(n)}
       const sov = l => sovDe(l, foco.nome);
       const portais = l => new Set(l.map(clipPortalKey).filter(Boolean)).size;
       const fracSent = (l, nome) => l.length ? l.filter(n => n.sentimento === nome).length / l.length : 0;
-
       const semBase = !anterior.length;
-      const pctAnt = v => semBase ? '—' : stkPct(v);
-      const qtdAnt = `${stkNum(anterior.length)} notícia${anterior.length === 1 ? '' : 's'}`;
-      const refAno = { vs: `vs ${anoAnt} (${qtdAnt})`, vazio: `sem dados em ${anoAnt}` };
-      const kTotal = stkKpiCard('jornal', 'Total de notícias', stkNum(atual.length), stkVarCard(atual.length, anterior.length, refAno), baseAnt(stkNum(anterior.length)));
-      const kSov = stkKpiCard('megafone', `SoV · ${foco.nome}`, stkPct(sov(atual)), stkVarCard(sov(atual), sov(anterior), refAno, true, semBase), baseAnt(pctAnt(sov(anterior))), `Share of Voice (participação nas menções) · ${foco.nome}`);
-      const kVeic = stkKpiCard('globo', 'Veículos distintos', stkNum(portais(atual)), stkVarCard(portais(atual), portais(anterior), refAno), baseAnt(stkNum(portais(anterior))));
-      const kPos = stkKpiCard('sorriso', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), stkVarCard(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), refAno, true, semBase), baseAnt(pctAnt(fracSent(anterior, 'Positivo'))));
-      // Negativas: subir é ruim (selo "Atenção" em vermelho).
-      const kNeg = stkKpiCard('alerta', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), stkVarCard(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), refAno, true, semBase, true), baseAnt(pctAnt(fracSent(anterior, 'Negativo'))));
+      // A unidade some em cards estreitos (container query) para o rodapé caber em 1 linha.
+      const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
+      const refNot = `vs. ${anoAnt} (${unid(anterior.length, 'notícia', 'notícias')})`;
+      const kTotal = cdKpiCard('documento', 'azul', 'Total de notícias', stkNum(atual.length), cdDelta(atual.length, anterior.length), refNot);
+      const kSov = cdKpiCard('pizza', 'azul', `SoV · ${foco.nome}`, stkPct(sov(atual)), cdDelta(sov(atual), sov(anterior), true, semBase),
+        `vs. ${anoAnt} (${semBase ? '—' : stkPct(sov(anterior))})`, `Share of Voice (participação nas menções) · ${foco.nome}`);
+      const kVeic = cdKpiCard('megafone', 'azul', 'Veículos distintos', stkNum(portais(atual)), cdDelta(portais(atual), portais(anterior)),
+        `vs. ${anoAnt} (${unid(portais(anterior), 'veículo', 'veículos')})`);
+      const kPos = cdKpiCard('sorriso', 'verde', 'Notícias positivas', stkPct(fracSent(atual, 'Positivo')), cdDelta(fracSent(atual, 'Positivo'), fracSent(anterior, 'Positivo'), true, semBase), refNot);
+      const kNeg = cdKpiCard('alerta', 'vermelho', 'Notícias negativas', stkPct(fracSent(atual, 'Negativo')), cdDelta(fracSent(atual, 'Negativo'), fracSent(anterior, 'Negativo'), true, semBase), refNot);
 
-      // ---- Volume de notícias: Ano vs Ano (padrão) ou por player ----
-      const V = stkDadosVolumePorPlayer(stkVolumeModoClip);
-      const wVolume = `<div class="stk-card">
-          <div class="stk-card-head"><h3>Volume de notícias</h3>
-            <select class="stk-chart-filtro" id="stkFluxoFiltro">
-              <option value="yoy" ${stkVolumeModoClip === 'yoy' ? 'selected' : ''}>Ano vs Ano</option>
-              <option value="semanal" ${stkVolumeModoClip === 'semanal' ? 'selected' : ''}>Semanal</option>
-              <option value="mensal" ${stkVolumeModoClip === 'mensal' ? 'selected' : ''}>Mensal</option>
-            </select>
-          </div>
-          <div class="stk-card-body">
-            <div class="stk-legenda">${V.series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>
-            <div id="stkFluxoGraf"></div>
-          </div>
-        </div>`;
+      // ---- Evolução da cobertura (linhas: ano atual escuro, ano anterior claro) ----
+      const V = stkDadosVolumeYoY();
+      V.series[0].cor = CD_COR.azul;
+      if(V.series[1]) V.series[1].cor = CD_COR.azulClaro;
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const wVolume = cdCard('Evolução da cobertura', 'Volume de notícias ao longo do período', '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
 
-      // ---- Notícias por categoria ----
-      const anosYoY = [range.ini.slice(0, 4), String(anoAnt)];
-      const antYoY = anterior;
-      const legendaYoY = series => `<div class="stk-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const CAT = stkDadosTopYoY(atual, antYoY, n => n.categoria || 'Outros', anosYoY, 6);
-      const wCategorias = `<div class="stk-card">
-          <div class="stk-card-head"><h3>Notícias por categoria</h3></div>
-          <div class="stk-card-body">${legendaYoY(CAT.series)}<div id="stkComprasGraf"></div></div>
-        </div>`;
+      // ---- Principais Temas (palavras-chave no título/resumo) ----
+      const contTemas = new Map();
+      atual.forEach(n => {
+        const txt = stkNorm(`${n.titulo} ${n.resumo || ''}`);
+        CD_TEMAS.forEach(t => { if(t.re.test(txt)) contTemas.set(t.nome, (contTemas.get(t.nome) || 0) + 1); });
+      });
+      const temas = [...contTemas.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7);
+      const wTemas = cdCard('Principais Temas', 'Assuntos mais abordados nas notícias',
+        cdBarras(temas.map(([nome, v], i) => ({ nome, valor: v, cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', temas.length > 1 ? i / (temas.length - 1) : 0) })),
+          'Principais Temas', 'Nenhum tema identificado no período.'));
 
-      // ---- Alertas (notícias negativas recentes) — 3ª coluna, linhas 2-3 ----
-      const negativas = atual.filter(n => n.sentimento === 'Negativo')
-        .slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
-      const wAlertas = `<div class="stk-card stk-clip-negativas">
-          <div class="stk-card-head"><h3>Notícias negativas</h3></div>
-          <div class="stk-card-body"><div class="stk-clip-rolagem">${negativas.length ? `<ul class="stk-alerta-lista">${negativas.map(n => {
-              const href = clipHref(n);
-              return `<li class="stk-alerta-item">
-                <span class="stk-alerta-ic danger">${stkIcone('alerta')}</span>
-                <div class="stk-alerta-txt">${href
-                  ? `<a class="stk-alerta-nome" href="${esc(href)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">${esc(n.titulo)}</a>`
-                  : `<div class="stk-alerta-nome">${esc(n.titulo)}</div>`}
-                  <div class="stk-alerta-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</div></div>
-              </li>`;
-            }).join('')}</ul>` : '<div class="stk-vazio">Nenhuma notícia negativa no período.</div>'}</div></div>
-        </div>`;
+      // ---- Sentimento das notícias (rosca + total no centro, sem texto descritivo) ----
+      const dadosSent = [
+        { nome: 'Positivo', cor: CD_COR.verde }, { nome: 'Neutro', cor: CD_COR.cinza }, { nome: 'Negativo', cor: CD_COR.vermelho }
+      ].map(s => ({ ...s, valor: atual.filter(n => (n.sentimento || 'Neutro') === s.nome).length }));
+      const wSentimento = cdCard('Sentimento das notícias', '', `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(atual.length)}</strong><span>notícia${atual.length === 1 ? '' : 's'}</span></div></div>
+          <ul class="cd-rosca-legenda">${dadosSent.map(d => `<li><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(atual.length ? d.valor / atual.length : 0)}</strong></li>`).join('')}</ul>
+        </div>`);
 
-      // ---- Sentimento (rosca) ----
-      const dadosSent = STK_SENT.map(s => ({ nome: s.nome, cor: s.cor, valor: atual.filter(n => n.sentimento === s.nome).length }));
-      const totalSent = dadosSent.reduce((s, d) => s + d.valor, 0) || 1;
-      const wSentimento = `<div class="stk-card">
-          <div class="stk-card-head"><h3>Sentimento</h3></div>
-          <div class="stk-card-body stk-rosca-body">
-            <div class="stk-rosca-wrap"><div class="stk-rosca-graf" id="stkDistribGraf"></div><ul class="stk-rosca-legenda" id="stkDistribLegenda">${dadosSent.map(d => `
-              <li class="stk-setor-linha stk-sent-linha"><span class="dot" style="background:${d.cor}"></span><span class="nome">${esc(d.nome)}</span><span class="pct">${stkPct(atual.length ? d.valor / atual.length : 0)}</span><span class="stk-sent-ant">${anoAnt}: ${anterior.length ? stkPct(anterior.filter(n => n.sentimento === d.nome).length / anterior.length) : '—'}</span></li>`).join('')}</ul></div>
-            <div class="stk-rosca-total">${stkNum(atual.length)} notícias no período · ${anoAnt}: ${stkNum(anterior.length)}</div>
-          </div>
-        </div>`;
+      // ---- Notícias por categoria (ícone + barra; top 5 + Outros) ----
+      const contCat = new Map();
+      atual.forEach(n => { const c = n.categoria || 'Outros'; contCat.set(c, (contCat.get(c) || 0) + 1); });
+      const cats = [...contCat.entries()].filter(([c]) => c !== 'Outros').sort((a, b) => b[1] - a[1]);
+      const outros = (contCat.get('Outros') || 0) + cats.slice(5).reduce((s, c) => s + c[1], 0);
+      const linhasCat = cats.slice(0, 5).concat(outros ? [['Outros', outros]] : []);
+      const wCategorias = cdCard('Notícias por categoria', 'Distribuição das matérias por área',
+        cdBarras(linhasCat.map(([nome, v]) => ({ nome, valor: v, cor: CD_COR.azul, icone: CD_CAT_ICONE[nome] || 'jornal' })),
+          'Notícias por categoria', 'Nenhuma notícia no período.'));
 
-      // ---- Principais Portais (barras horizontais, 1ª coluna nas linhas 2-3) ----
-      const VEIC = stkDadosTopYoY(atual, antYoY, n => n.portal || n.fonte || 'Outros', anosYoY, 10);
-      const wVeiculos = `<div class="stk-card stk-row-span-2 stk-clip-portais">
-          <div class="stk-card-head"><h3>Principais Portais</h3></div>
-          <div class="stk-card-body stk-hbar-body">${legendaYoY(VEIC.series)}<div class="stk-hbar-graf" id="stkValorSaidaGraf"></div></div>
-        </div>`;
+      // ---- Principais veículos (ranking) ----
+      const contVeic = new Map();
+      atual.forEach(n => { const v = n.portal || n.fonte || 'Outros'; contVeic.set(v, (contVeic.get(v) || 0) + 1); });
+      const veics = [...contVeic.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const wVeiculos = cdCard('Principais veículos', 'Mais citados no período', veics.length ? `<ol class="cd-rank">${veics.map(([nome, v], i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(atual.length ? v / atual.length : 0)}</span></li>`).join('')}</ol>`
+        : '<div class="stk-vazio">Nenhuma notícia no período.</div>');
+
+      // ---- Destaques do período (notícias mais recentes) ----
+      const CD_DEST = { Positivo: ['setaCima', 'verde'], Negativo: ['alerta', 'vermelho'], Neutro: ['megafone', 'azul'] };
+      const destaques = atual.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
+      const wDestaques = cdCard('Destaques do período', 'Principais notícias', destaques.length ? `<ul class="cd-dest">${destaques.map(n => {
+          const [ic, tom] = CD_DEST[n.sentimento] || CD_DEST.Neutro;
+          const href = clipHref(n);
+          const corpo = `<span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(n.titulo)}</span><span class="cd-dest-meta">${esc(n.portal || n.fonte || '')} · ${formatClipDateBR(n.data)}</span></span>
+            <span class="cd-dest-seta">${stkIcone('chevron')}</span>`;
+          return `<li>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(n.titulo)}">${corpo}</a>` : `<div title="${esc(n.titulo)}">${corpo}</div>`}</li>`;
+        }).join('')}</ul>` : '<div class="stk-vazio">Nenhuma notícia no período.</div>');
 
       // ---- Notícias / Por player (switch replicado do Estoque) ----
       const STK_SENT_CLS = { Positivo: 'ok', Negativo: 'danger', Neutro: 'ongoing' };
@@ -7784,22 +7933,18 @@ ${clipPlayerPills(n)}
       const temaFora = temaTotal - atual.length - anterior.length;
       const rotuloBusca = modoSel ? `Seleção da busca <strong>(${stkNum(temaTotal)} marcada${temaTotal === 1 ? '' : 's'})</strong>` : `Tema <strong>“${esc(stkBuscaInput.value.trim())}”</strong>`;
       const avisoTema = filtroBusca ? `<div class="stk-tema-aviso">${stkIcone('jornal')}<span>${rotuloBusca}: ${stkNum(atual.length)} matéria${atual.length === 1 ? '' : 's'} de ${formatClipDateBR(range.ini)} a ${formatClipDateBR(range.fim)} vs ${stkNum(anterior.length)} no mesmo período de ${anoAnt}${temaFora > 0 ? ` · <strong>${stkNum(temaFora)}</strong> fora desses períodos (${stkNum(temaTotal)} no total) — use Período ou Mês/Ano para comparar outro período` : ''}</span></div>` : '';
-      stkGrid.innerHTML = avisoTema + `<div class="stk-kpi-row">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
-        + `<div class="stk-grid-3 stk-grid-clip">${wVeiculos}${wVolume}${wCategorias}${wSentimento}${wAlertas}</div>`
+      stkGrid.innerHTML = avisoTema + `<div class="cd-kpis">${kTotal}${kSov}${kVeic}${kPos}${kNeg}</div>`
+        + `<div class="cd-row cd-row-a">${wVolume}${wTemas}${wSentimento}</div>`
+        + `<div class="cd-row cd-row-b">${wCategorias}${wVeiculos}${wDestaques}</div>`
         + `<div class="stk-grid">${wTabela}</div>`;
       const grafDistrib = document.getElementById('stkDistribGraf');
       if(grafDistrib){
-        const legenda = document.getElementById('stkDistribLegenda');
-        const livre = grafDistrib.parentElement.clientWidth - (legenda ? legenda.offsetWidth : 0) - 16;
-        const tamanho = Math.max(140, Math.min(210, Math.floor(livre)));
-        stkDesenharRosca(grafDistrib, dadosSent, tamanho);
+        // Rosca ao lado da legenda: tamanho pelo espaço livre do card (120–170px).
+        const livre = grafDistrib.closest('.cd-rosca-wrap').clientWidth - 112 - 16;
+        stkDesenharRosca(grafDistrib, dadosSent, Math.max(120, Math.min(170, Math.floor(livre))), 'Sentimento das notícias');
       }
       const grafFluxo = document.getElementById('stkFluxoGraf');
-      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series);
-      const grafCategorias = document.getElementById('stkComprasGraf');
-      if(grafCategorias) stkDesenharBarrasGrupo(grafCategorias, CAT.categorias, CAT.series, 'Notícias por categoria · Ano vs Ano');
-      const grafVeiculos = document.getElementById('stkValorSaidaGraf');
-      if(grafVeiculos) stkDesenharBarrasHorizontais(grafVeiculos, VEIC.categorias, VEIC.series, 'Principais Portais · Ano vs Ano');
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, 200);
     }
 
     stkSegmented.addEventListener('click', ev => {
@@ -7821,13 +7966,13 @@ ${clipPlayerPills(n)}
       stkRender();
     });
     stkPainelEl.addEventListener('change', () => {
-      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = '';
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     });
     document.getElementById('stkLimpar').addEventListener('click', () => {
-      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = '';
+      stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
