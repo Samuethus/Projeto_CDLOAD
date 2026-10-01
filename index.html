@@ -1240,6 +1240,12 @@
   .cd-rosca-wrap:has(.cd-rosca-legenda-pan){gap:10px;}
   .cd-rosca-legenda-pan li{gap:7px;font-size:12.5px;}
   .cd-rosca-legenda-pan li i{width:9px;height:9px;}
+  /* Panorama: resultado do município em uma única linha (reticências se não couber). */
+  .cd-dest-uma{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;}
+  .cd-dest-uma .cd-dest-tit{display:inline;font-size:13px;}
+  .cd-dest-uma .cd-dest-meta{display:inline;font-size:12px;}
+  /* Telas menores: sem o ícone circular, para o texto da linha ganhar espaço. */
+  @media (max-width:1600px){ .cd-dest li:has(.cd-dest-uma) .cd-dest-ic{display:none;} }
   .cd-dest li.cd-dest-sel{background:var(--cd-azul-bg);border-radius:8px;}
   .cd-dest li.cd-dest-sel .cd-dest-tit{color:var(--cd-azul);font-weight:600;}
   #stkGrid.cd-carregando .cd-tela{opacity:.55;transition:opacity .15s;pointer-events:none;}
@@ -8337,8 +8343,7 @@ ${clipPlayerPills(n)}
           const nome = Mu.nomes(k), ant = Mu.ant.get(k) || 0, d = cdDelta(v, ant);
           const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
           return `<li${Mu.sel && k === Mu.sel ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
-            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplacamento${v === 1 ? '' : 's'}</span>
-              <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(totBase ? v / totBase : 0, Mu.uf ? 0 : 1)} ${Mu.uf ? 'do estado' : 'do Brasil'}</span></span></div></li>`;
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} emplac.</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${stkNum(ant)}) · ${stkPct(totBase ? v / totBase : 0, Mu.uf ? 0 : 1)} ${Mu.uf ? 'do estado' : 'do Brasil'}</span></span></span></div></li>`;
         }).join('')}</ul>` : `<div class="stk-vazio">Sem vendas ${Mu.uf ? 'em ' + esc(PAN_UF_NOME[Mu.uf]) : ''} no período.</div>`);
 
       stkGrid.classList.add('cd-fit');
