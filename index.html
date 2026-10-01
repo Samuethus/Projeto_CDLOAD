@@ -4688,7 +4688,7 @@
     // tooltip), nunca sozinha num traço fino de linha ou ponto pequeno.
     const CLIP_PLAYERS = [
       { nome: 'CDL Cuiabá', cor: '#00A389', corGrafico: '#0050A2' },
-      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#00B16D' }
+      { nome: 'Fecomércio MT', cor: '#E6F5F0', corGrafico: '#5B6573' }
     ];
     const clipPlayerCor = nome => (CLIP_PLAYERS.find(p => p.nome === nome) || { cor: '#94A3B8' }).cor;
     // Etiqueta do player no card: o texto fica na cor de texto; a cor do
@@ -6889,7 +6889,7 @@ ${clipPlayerPills(n)}
       const i = STOCK_SETORES.indexOf(setor);
       if(i === -1) return '#8297A8';
       const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
-      return stkMisturarCor('#0050A2', '#00B16D', t);
+      return stkMisturarCor('#0050A2', '#5B6573', t);
     };
 
     // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
@@ -7170,7 +7170,7 @@ ${clipPlayerPills(n)}
         const cx = m.l + grupoL * i + grupoL / 2;
         const x = cx - barraL / 2;
         const yy = y(valores[i]);
-        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${STK_COR_BARRA}" fill-opacity="0.2" stroke="${STK_COR_BARRA}" stroke-width="1.5" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(fmtDica(valores[i]))}|${STK_COR_BARRA}"></rect>`;
+        svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${STK_COR_BARRA}" tabindex="0" data-stk-dica="${esc(cat)}|Valor|${esc(fmtDica(valores[i]))}|${STK_COR_BARRA}"></rect>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cat)}</text>`;
       });
       svg += `</svg>`;
@@ -7325,7 +7325,7 @@ ${clipPlayerPills(n)}
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
         { nome: String(ano), cor: '#0050A2', valores: categorias.map(() => 0) },
-        { nome: String(ano - 1), cor: '#00B16D', valores: categorias.map(() => 0) }
+        { nome: String(ano - 1), cor: '#5B6573', valores: categorias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7347,7 +7347,7 @@ ${clipPlayerPills(n)}
       const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
       const series = [
         { nome: range.ini.slice(0, 4), cor: '#0050A2', valores: dias.map(() => 0) },
-        { nome: String(rangeAnt.ano), cor: '#00B16D', valores: dias.map(() => 0) }
+        { nome: String(rangeAnt.ano), cor: '#5B6573', valores: dias.map(() => 0) }
       ];
       clippingNews.forEach(n => {
         if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
@@ -7367,7 +7367,7 @@ ${clipPlayerPills(n)}
         .sort((a, b) => (cA.get(b) || 0) - (cA.get(a) || 0) || (cB.get(b) || 0) - (cB.get(a) || 0))
         .slice(0, limite || 6);
       const series = [{ nome: anos[0], cor: '#0050A2', valores: categorias.map(k => cA.get(k) || 0) }];
-      if(anterior) series.push({ nome: anos[1], cor: '#00B16D', valores: categorias.map(k => cB.get(k) || 0) });
+      if(anterior) series.push({ nome: anos[1], cor: '#5B6573', valores: categorias.map(k => cB.get(k) || 0) });
       return { categorias, series };
     }
 
@@ -7394,7 +7394,7 @@ ${clipPlayerPills(n)}
         const x0 = cx - (barraL * series.length + 2 * (series.length - 1)) / 2;
         series.forEach((s, k) => {
           const v = s.valores[i], yy = y(v), x = x0 + k * (barraL + 2);
-          svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="3" fill="${s.cor}" fill-opacity="${k === 0 ? 0.85 : 0.45}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
+          svg += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="3" fill="${s.cor}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
         });
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle"><title>${esc(cat)}</title>${esc(curto(cat))}</text>`;
       });
@@ -7428,7 +7428,7 @@ ${clipPlayerPills(n)}
         const y0 = cy - (barraA * series.length + 2 * (series.length - 1)) / 2;
         series.forEach((s, k) => {
           const v = s.valores[i], y = y0 + k * (barraA + 2), w = Math.max(0, x(v) - m.l);
-          svg += `<rect x="${m.l}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barraA.toFixed(1)}" rx="3" fill="${s.cor}" fill-opacity="${k === 0 ? 0.85 : 0.45}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
+          svg += `<rect x="${m.l}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barraA.toFixed(1)}" rx="3" fill="${s.cor}" tabindex="0" data-stk-dica="${esc(cat)}|${esc(s.nome)}|${esc(stkNum(v))}|${s.cor}"></rect>`;
           if(v > 0) svg += `<text class="stk-eixo" x="${(m.l + w + 4).toFixed(1)}" y="${(y + barraA / 2 + 3.5).toFixed(1)}" text-anchor="start">${stkNum(v)}</text>`;
         });
         svg += `<text class="stk-eixo" x="${rotL.toFixed(1)}" y="${(cy + 3.5).toFixed(1)}" text-anchor="end" style="fill:var(--stk-secondary-dark);font-size:11.5px;"><title>${esc(cat)}</title>${esc(curto(cat))}</text>`;
@@ -7511,7 +7511,7 @@ ${clipPlayerPills(n)}
             </select>
           </div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:#0050A2"></i>Entradas</span><span><i style="background:#00B16D"></i>Saídas</span></div>
+            <div class="stk-legenda"><span><i style="background:#0050A2"></i>Entradas</span><span><i style="background:#5B6573"></i>Saídas</span></div>
             <div id="stkFluxoGraf"></div>
           </div>
         </div>`;
@@ -7522,7 +7522,7 @@ ${clipPlayerPills(n)}
       const wCompras = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor gasto com compras</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,80,162,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
+            <div class="stk-legenda"><span><i style="background:${STK_COR_BARRA}"></i>Total últimos 6 meses: ${esc(stkMoeda(totalCompras))}</span></div>
             <div id="stkComprasGraf"></div>
           </div>
         </div>`;
@@ -7563,7 +7563,7 @@ ${clipPlayerPills(n)}
       const wValorSaida = `<div class="stk-card">
           <div class="stk-card-head"><h3>Valor de saída por setor</h3></div>
           <div class="stk-card-body">
-            <div class="stk-legenda"><span><i style="background:rgba(0,80,162,.2);border:1.5px solid ${STK_COR_BARRA};box-sizing:border-box"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
+            <div class="stk-legenda"><span><i style="background:${STK_COR_BARRA}"></i>Total: ${esc(stkMoeda(totalValorSaida))}</span></div>
             <div id="stkValorSaidaGraf"></div>
           </div>
         </div>`;
@@ -7625,7 +7625,7 @@ ${clipPlayerPills(n)}
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, [
         { nome: 'Entradas', cor: '#0050A2', valores: F.entradas },
-        { nome: 'Saídas', cor: '#00B16D', valores: F.saidas }
+        { nome: 'Saídas', cor: '#5B6573', valores: F.saidas }
       ]);
       const grafCompras = document.getElementById('stkComprasGraf');
       if(grafCompras) stkDesenharBarrasValor(grafCompras, C.categorias, C.valores, 'Valor gasto com compras por mês');
