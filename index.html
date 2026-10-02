@@ -7165,6 +7165,7 @@ ${clipPlayerPills(n)}
     let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
     let stkVolumeModoClip = 'yoy'; // Volume de notícias (Clipping): yoy | semanal | mensal
+    let stkCoberturaVisao = 'mensal'; // Evolução da cobertura (Clipping): mensal (linhas) | anual (barras)
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
@@ -7729,6 +7730,48 @@ ${clipPlayerPills(n)}
       return { categorias, series };
     }
 
+    // Visão anual da Evolução da cobertura: total de notícias por ano (todos os
+    // anos com dados até o atual), com os mesmos filtros de player/tema/seleção.
+    function stkDadosVolumeAnual(){
+      const selecao = stkClipSelecionado();
+      const tema = stkTemaClip();
+      const playerFiltro = (selecao || tema) ? '' : stkPlayerEl.value;
+      const anoAtual = Number(stkHojeIso().slice(0, 4));
+      const cont = new Map();
+      clippingNews.forEach(n => {
+        if(!stkNewsOk(n) || (tema && !stkCasaTema(n, tema)) || (playerFiltro && !(n.players || []).includes(playerFiltro))) return;
+        const a = Number(String(n.data).slice(0, 4));
+        if(a && a <= anoAtual) cont.set(a, (cont.get(a) || 0) + 1);
+      });
+      const primeiro = cont.size ? Math.min(...cont.keys()) : anoAtual;
+      const anos = [];
+      for(let a = primeiro; a <= anoAtual; a++) anos.push(a);
+      return { anos, valores: anos.map(a => cont.get(a) || 0), anoAtual };
+    }
+    function stkDesenharBarrasAno(el, anos, valores, cores, altura, dicaAno){
+      const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
+      const max = Math.max(1, ...valores);
+      const passo = Math.max(1, stkPasso(max));
+      const topo = Math.ceil(max / passo) * passo;
+      const m = { t: 22, r: 10, b: 26, l: Math.max(36, stkNum(topo).length * 6.6 + 12) };
+      const iw = W - m.l - m.r, ih = H - m.t - m.b, n = Math.max(1, anos.length);
+      const y = v => m.t + ih - (v / topo) * ih;
+      const grupoL = iw / n, base = m.t + ih;
+      const barraL = Math.min(64, grupoL * 0.55);
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Notícias por ano">`;
+      for(let v = 0; v <= topo + 1e-9; v += passo){
+        svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
+        svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkNum(v)}</text>`;
+      }
+      anos.forEach((ano, i) => {
+        const cx = m.l + grupoL * i + grupoL / 2, v = valores[i], yy = y(v);
+        svg += `<rect x="${(cx - barraL / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${cores[i]}" tabindex="0" data-stk-dica="${esc(dicaAno(ano))}|Notícias|${esc(stkNum(v))}|${cores[i]}"></rect>`;
+        svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${(yy - 6).toFixed(1)}" text-anchor="middle" style="font-weight:600;fill:var(--cd-texto, #1F2937)">${stkNum(v)}</text>`;
+        svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${ano}</text>`;
+      });
+      el.innerHTML = svg + '</svg>';
+    }
+
     // Top N chaves (categoria, veículo...) comparando o período atual com o
     // mesmo período do ano anterior. Sem "anterior" (seleção manual), 1 série.
     function stkDadosTopYoY(atual, anterior, chave, anos, limite){
@@ -8102,7 +8145,17 @@ ${clipPlayerPills(n)}
       V.series[0].cor = CD_COR.azul;
       if(V.series[1]) V.series[1].cor = CD_COR.azulClaro;
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const wVolume = cdCard('Evolução da cobertura', 'Volume de notícias ao longo do período', '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+      const visaoAnual = stkCoberturaVisao === 'anual';
+      const A = visaoAnual ? stkDadosVolumeAnual() : null;
+      const coresAno = A ? A.anos.map(a => a === A.anoAtual ? CD_COR.azul : CD_COR.azulClaro) : [];
+      const switchVisao = `<div class="stk-segmented" id="stkCoberturaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['mensal', 'Mensal'], ['anual', 'Anual']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${stkCoberturaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${stkCoberturaVisao === k}">${rot}</button>`).join('')}
+        </div>`;
+      const legendaVolume = visaoAnual
+        ? legendaDots([{ nome: `${A.anoAtual} (até hoje)`, cor: CD_COR.azul }, { nome: 'Anos anteriores', cor: CD_COR.azulClaro }])
+        : legendaDots(V.series);
+      const wVolume = cdCard('Evolução da cobertura', visaoAnual ? 'Total de notícias por ano' : 'Volume de notícias ao longo do período',
+        '<div id="stkFluxoGraf"></div>', `<div class="cd-head-acoes">${legendaVolume}${switchVisao}</div>`);
 
       // ---- Principais Temas (palavras-chave no título/resumo) ----
       const contTemas = new Map();
@@ -8166,7 +8219,13 @@ ${clipPlayerPills(n)}
         + `<div class="cd-row cd-row-b">${wCategorias}${wVeiculos}${wDestaques}</div></div>`;
       stkDesenharRoscaCd(dadosSent, 'Sentimento das notícias');
       const grafFluxo = document.getElementById('stkFluxoGraf');
-      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      if(grafFluxo){
+        if(visaoAnual){
+          const hojeBR = formatClipDateBR(stkHojeIso());
+          stkDesenharBarrasAno(grafFluxo, A.anos, A.valores, coresAno, cdAlturaLivre(grafFluxo, 200),
+            ano => ano === A.anoAtual ? `${ano} (até ${hojeBR})` : String(ano));
+        } else stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      }
       cdAjustarListas();
     }
     // ===== Panorama Econômico — eletrificados (ABVE Data · BI Frotas) =====
@@ -8890,6 +8949,12 @@ ${clipPlayerPills(n)}
         if(stkPainelEl.value === 'clipping') stkVolumeModoClip = ev.target.value; else stkFluxoModo = ev.target.value;
         stkRender();
       }
+    });
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#stkCoberturaVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === stkCoberturaVisao) return;
+      stkCoberturaVisao = btn.dataset.visao;
+      stkRender();
     });
     stkGrid.addEventListener('click', ev => {
       const btn = ev.target.closest('#stkTabelaToggle .wa-view-toggle-btn');
