@@ -11,7 +11,8 @@
 // Passo a passo em supabase/LEIA-ME.md.
 //
 // Segurança: a função usa o login de quem chamou (nada de service_role).
-// Só passa quem tem a seção "campanhas" liberada (mesma regra do RLS).
+// Só passa quem tem a seção "campanhas" liberada (mesma regra do RLS);
+// alterar ou cancelar o evento de uma campanha existente é só do Administrador.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -360,6 +361,14 @@ Deno.serve(async (req) => {
   }
   if (!camp) return json({ ok: false, erro: 'Campanha não encontrada.' }, 404);
 
+  // Editar/remover é só do Administrador: os demais só sincronizam a campanha
+  // que acabaram de criar (ainda sem evento) e nunca cancelam.
+  const { data: admin } = await supabase.rpc('cdl_admin');
+  const temEvento = Object.keys(camp.agenda_sync ?? {}).length > 0;
+  if (admin !== true && (acao === 'cancelar' || temEvento)) {
+    return json({ ok: false, erro: 'Só um Administrador pode alterar ou cancelar a agenda de uma campanha existente.' }, 403);
+  }
+
   let evento: Evento | null = null;
   if (acao === 'sincronizar') {
     try {
@@ -417,7 +426,9 @@ Deno.serve(async (req) => {
     return json({ ok: false, erro: 'Nenhuma agenda configurada no Supabase (secrets do Outlook ou do Google).', provedores }, 503);
   }
 
-  const { error: erroGravar } = await supabase.from('campanhas').update({ agenda_sync: sync }).eq('id', campanhaId);
+  // UPDATE direto em `campanhas` é só do Administrador (RLS); a função do banco
+  // deixa quem criou a campanha gravar os ids do evento (supabase/somente_admin_edita.sql).
+  const { error: erroGravar } = await supabase.rpc('cdl_gravar_agenda_sync', { p_campanha: campanhaId, p_sync: sync });
   if (erroGravar) console.error('[sincronizar-agenda] gravar agenda_sync:', erroGravar);
 
   return json({

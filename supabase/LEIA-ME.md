@@ -16,6 +16,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 4. A última consulta lista os administradores. Confirme que o e-mail do administrador principal aparece (se não, use o `insert` comentado no fim do arquivo).
 5. Cole o conteúdo de [schema_agenda.sql](schema_agenda.sql) > **Run** (coluna usada pela sincronização de agenda das Campanhas; ver seção abaixo).
 6. Cole o conteúdo de [schema_clipping.sql](schema_clipping.sql) > **Run** (Clipping News: concede os privilégios da tabela `clipping_news` — resolve o erro *permission denied for table clipping_news* — e liga a coleta automática no Google Notícias a cada 30 minutos). O resultado da última linha deve trazer `"ok": true` e quantas notícias novas entraram.
+7. Cole o conteúdo de [somente_admin_edita.sql](somente_admin_edita.sql) > **Run** (**só Administrador edita e exclui**: quem tem a seção liberada — mesmo todas — apenas lê e cria registros em Campanhas, Clipping, Estoque e Relatórios). A consulta final lista as policies de UPDATE/DELETE; todas devem usar `cdl_admin()`. Depois, republique a Edge Function (`npx supabase functions deploy sincronizar-agenda`), que passa a gravar a agenda por essa função.
 
 ## Clipping News (Google Notícias)
 
@@ -28,8 +29,8 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 - **Verificação e imagens:** a cada 5 minutos, `clipping_verificar_materias()` descobre o link direto e a imagem de capa de até 15 matérias. Não filtra mais nada: a notícia aparece no app desde a coleta. Sem imagem, o app mostra uma arte gerada pela categoria.
 - Conferir o volume por player: `select unnest(players) as player, count(*) from clipping_news where coalesce(verificacao, '') not in ('duplicada', 'bloqueada', 'fora_escopo') group by 1;`
 - **Dashboard › Painel Clipping News:** lê essas mesmas notícias e compara os players (volume, share of voice, veículos, tom, evolução, palavras, temas). Não precisa de SQL próprio.
-- Categoria, plataforma e sentimento são estimados pelo título e pelo veículo; corrija pelo botão **Editar** do card (a edição não é sobrescrita pelas próximas coletas).
-- Remover uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
+- Categoria, plataforma e sentimento são estimados pelo título e pelo veículo; um Administrador corrige pelo botão **Editar** do card (a edição não é sobrescrita pelas próximas coletas).
+- Remover (só Administrador) uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
 - Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.
 
 ## Campanhas › Participantes e agenda (Outlook / Google Calendar)
@@ -37,7 +38,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 Na **Etapa 4** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que cria o evento na agenda de uma **conta organizadora** com todos os participantes como convidados. O Outlook/Google envia o convite e o período fica **bloqueado (Ocupado)** na agenda de cada um.
 
 - Sem horário: evento de **dia inteiro** do início ao fim da vigência. Com horário: bloqueio **diário** naquele intervalo, do início ao fim da vigência.
-- Editar a campanha **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento.
+- Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento.
 - Fuso: America/Cuiaba.
 
 ### Passo 1 — Banco

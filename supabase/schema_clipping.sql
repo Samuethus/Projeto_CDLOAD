@@ -151,8 +151,8 @@ drop policy if exists clipping_update on public.clipping_news;
 drop policy if exists clipping_delete on public.clipping_news;
 create policy clipping_select on public.clipping_news for select to authenticated using (public.cdl_secao('clipping'));
 create policy clipping_insert on public.clipping_news for insert to authenticated with check (public.cdl_secao('clipping'));
-create policy clipping_update on public.clipping_news for update to authenticated using (public.cdl_secao('clipping')) with check (public.cdl_secao('clipping'));
-create policy clipping_delete on public.clipping_news for delete to authenticated using (public.cdl_secao('clipping'));
+create policy clipping_update on public.clipping_news for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
+create policy clipping_delete on public.clipping_news for delete to authenticated using (public.cdl_admin());
 
 drop policy if exists clipping_coletas_select on public.clipping_coletas;
 create policy clipping_coletas_select on public.clipping_coletas for select to authenticated using (public.cdl_secao('clipping'));

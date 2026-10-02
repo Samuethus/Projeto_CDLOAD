@@ -10,7 +10,10 @@
 --   3. Libera acesso só para quem está logado (Supabase Auth), tem e-mail
 --      confirmado, está cadastrado e Ativo em `usuarios`, e tem a seção
 --      correspondente liberada (ou é Administrador).
---   4. Apaga a coluna `usuarios.senha` (senhas passam a ficar no Supabase Auth, com hash).
+--   4. Editar (UPDATE) e excluir (DELETE) dados é exclusivo de Administrador,
+--      mesmo para quem tem todas as seções liberadas. Quem tem a seção só
+--      lê e cria registros.
+--   5. Apaga a coluna `usuarios.senha` (senhas passam a ficar no Supabase Auth, com hash).
 --
 -- ATENÇÃO: depois deste script o app só funciona com login pelo Supabase Auth.
 -- Cada pessoa precisa fazer o "Primeiro acesso" na tela de login.
@@ -103,11 +106,11 @@ create policy usuarios_insert on public.usuarios for insert to authenticated wit
 create policy usuarios_update on public.usuarios for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
 create policy usuarios_delete on public.usuarios for delete to authenticated using (public.cdl_admin());
 
--- campanhas: seção "campanhas"
+-- campanhas: seção "campanhas" lê e cria; editar/remover só Administrador.
 create policy campanhas_select on public.campanhas for select to authenticated using (public.cdl_secao('campanhas'));
 create policy campanhas_insert on public.campanhas for insert to authenticated with check (public.cdl_secao('campanhas'));
-create policy campanhas_update on public.campanhas for update to authenticated using (public.cdl_secao('campanhas')) with check (public.cdl_secao('campanhas'));
-create policy campanhas_delete on public.campanhas for delete to authenticated using (public.cdl_secao('campanhas'));
+create policy campanhas_update on public.campanhas for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
+create policy campanhas_delete on public.campanhas for delete to authenticated using (public.cdl_admin());
 
 -- local (salas do wizard de campanhas): lê quem tem "campanhas"; só administrador altera
 create policy local_select on public.local for select to authenticated using (public.cdl_secao('campanhas'));
@@ -115,17 +118,18 @@ create policy local_insert on public.local for insert to authenticated with chec
 create policy local_update on public.local for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
 create policy local_delete on public.local for delete to authenticated using (public.cdl_admin());
 
--- clipping_news: seção "clipping"
+-- clipping_news: seção "clipping" lê e cria; editar/ocultar/remover só
+-- Administrador (as coletas automáticas rodam em funções security definer).
 create policy clipping_select on public.clipping_news for select to authenticated using (public.cdl_secao('clipping'));
 create policy clipping_insert on public.clipping_news for insert to authenticated with check (public.cdl_secao('clipping'));
-create policy clipping_update on public.clipping_news for update to authenticated using (public.cdl_secao('clipping')) with check (public.cdl_secao('clipping'));
-create policy clipping_delete on public.clipping_news for delete to authenticated using (public.cdl_secao('clipping'));
+create policy clipping_update on public.clipping_news for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
+create policy clipping_delete on public.clipping_news for delete to authenticated using (public.cdl_admin());
 
--- estoque: seção "estoque" lê/cria/edita; remover produto (e todo o
+-- estoque: seção "estoque" lê e cria; editar ou remover produto (e todo o
 -- histórico junto, por causa do cascade) fica só para Administrador.
 create policy produtos_select on public.cadastro_de_produtos for select to authenticated using (public.cdl_secao('estoque'));
 create policy produtos_insert on public.cadastro_de_produtos for insert to authenticated with check (public.cdl_secao('estoque'));
-create policy produtos_update on public.cadastro_de_produtos for update to authenticated using (public.cdl_secao('estoque')) with check (public.cdl_secao('estoque'));
+create policy produtos_update on public.cadastro_de_produtos for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
 create policy produtos_delete on public.cadastro_de_produtos for delete to authenticated using (public.cdl_admin());
 
 -- movimentações são imutáveis (sem UPDATE), o autor não pode ser forjado,
