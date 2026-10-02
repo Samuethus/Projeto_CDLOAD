@@ -17,6 +17,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 5. Cole o conteúdo de [schema_agenda.sql](schema_agenda.sql) > **Run** (coluna usada pela sincronização de agenda das Campanhas; ver seção abaixo).
 6. Cole o conteúdo de [schema_clipping.sql](schema_clipping.sql) > **Run** (Clipping News: concede os privilégios da tabela `clipping_news` — resolve o erro *permission denied for table clipping_news* — e liga a coleta automática no Google Notícias a cada 30 minutos). O resultado da última linha deve trazer `"ok": true` e quantas notícias novas entraram.
 7. Cole o conteúdo de [somente_admin_edita.sql](somente_admin_edita.sql) > **Run** (**só Administrador edita e exclui**: quem tem a seção liberada — mesmo todas — apenas lê e cria registros em Campanhas, Clipping, Estoque e Relatórios). A consulta final lista as policies de UPDATE/DELETE; todas devem usar `cdl_admin()`. Depois, republique a Edge Function (`npx supabase functions deploy sincronizar-agenda`), que passa a gravar a agenda por essa função.
+8. Cole o conteúdo de [schema_power_bi.sql](schema_power_bi.sql) > **Run** (campo **Power BI** em Usuários: quem está com "Não" vê os cards dos painéis na página inicial, mas o clique não abre nada; Administrador sempre tem acesso. Quem já estava cadastrado mantém o acesso; cadastros novos começam com "Não").
 
 ## Clipping News (Google Notícias)
 
