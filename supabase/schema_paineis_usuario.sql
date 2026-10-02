@@ -18,4 +18,8 @@ alter table public.usuarios
 comment on column public.usuarios.paineis_permitidos is
   'Ids dos painéis Power BI exibidos na Home (null = todos).';
 
+-- O antigo campo "Power BI" (Sim/Não, travava o clique) foi substituído por
+-- esta lista e saiu do app: a coluna dele deixa de existir.
+alter table public.usuarios drop column if exists acesso_power_bi;
+
 select nome, email, cargo, paineis_permitidos from public.usuarios order by nome;

@@ -711,7 +711,6 @@
   .wa-hub-card-name svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;flex:0 0 auto;opacity:0;transition:opacity .15s;}
   a.wa-hub-card:hover .wa-hub-card-name svg,a.wa-hub-card:focus-visible .wa-hub-card-name svg{opacity:1;color:var(--wa-primary);}
   .wa-hub-card.indisponivel{cursor:not-allowed;}
-  a.wa-hub-card:not([href]){cursor:pointer;}  /* sem permissão de Power BI: hover igual, clique sem efeito */
   .wa-hub-card.indisponivel .wa-hub-card-art{filter:grayscale(1);opacity:.55;}
   .wa-hub-card.indisponivel .wa-hub-card-name{color:#94a3b8;}
   .wa-hub-card-badge{position:absolute;top:10px;right:10px;background:var(--wa-slate-bg,#F1F5F9);color:var(--wa-slate-text,#475569);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;}
@@ -2524,13 +2523,6 @@
                     <select id="waUserCargo">
                       <option value="Usuário">Usuário</option>
                       <option value="Administrador">Administrador</option>
-                    </select>
-                  </div>
-                  <div class="wa-field" style="flex:1;min-width:120px;">
-                    <label for="waUserPowerBi">Power BI</label>
-                    <select id="waUserPowerBi" title="Libera o clique nos painéis do Power BI da página inicial">
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
                     </select>
                   </div>
                   <div class="wa-field" style="flex:1;min-width:120px;">
@@ -4435,8 +4427,8 @@
 
     // ---------------- Estado: Usuários & Permissões ----------------
     const FALLBACK_USERS = [
-      { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', secoes_permitidas: ALL_SECTIONS.map(s => s.key), acesso_power_bi: true },
-      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', secoes_permitidas: ['home', 'campanhas', 'templates'], acesso_power_bi: false }
+      { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', secoes_permitidas: ALL_SECTIONS.map(s => s.key) },
+      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', secoes_permitidas: ['home', 'campanhas', 'templates'] }
     ];
 
     let users = [];
@@ -4526,7 +4518,6 @@
     const waUserEmail = document.getElementById('waUserEmail');
     const waUserCargo = document.getElementById('waUserCargo');
     const waUserStatus = document.getElementById('waUserStatus');
-    const waUserPowerBi = document.getElementById('waUserPowerBi');
     const waUserSectionsGroup = document.getElementById('waUserSectionsGroup');
     const waUserAdminHint = document.getElementById('waUserAdminHint');
 
@@ -4620,7 +4611,6 @@
         email: waUserEmail.value.trim().toLowerCase(),
         cargo: waUserCargo.value,
         status: waUserStatus.value,
-        acesso_power_bi: waUserPowerBi.value === 'sim',
         // null = todos os painéis (Administrador)
         paineis_permitidos: waUserCargo.value === 'Administrador' ? null : [...selectedUserPaineis],
         secoes_permitidas: waUserCargo.value === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : [...selectedUserSections]
@@ -4632,7 +4622,6 @@
       const cu = window.__getCurrentUser();
       if(cu && cu.email === payload.email){
         const updated = { email: payload.email, nome: payload.nome, cargo: payload.cargo, status: payload.status, secoes: payload.secoes_permitidas,
-          power_bi: payload.cargo === 'Administrador' || payload.acesso_power_bi,
           paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos };
         window.__setCurrentUser(updated);
         window.applySectionPermissions();
@@ -4687,7 +4676,6 @@
       waUserCargo.value = editing ? editing.cargo : 'Usuário';
       waUserCargo.disabled = isFixedAdmin;
       waUserStatus.value = editing ? editing.status : 'Ativo';
-      waUserPowerBi.value = editing && editing.acesso_power_bi ? 'sim' : 'nao';
 
       selectedUserSections = new Set(editing ? (editing.secoes_permitidas || []) : []);
       // Cadastro antigo (coluna vazia) = todos os painéis; usuário novo começa sem nenhum.
@@ -4782,9 +4770,8 @@
       }
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
       const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : (row.secoes_permitidas || []);
-      const power_bi = isAdminEmail || row.cargo === 'Administrador' || row.acesso_power_bi === true;
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
-      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, power_bi, paineis } };
+      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis } };
     }
 
     async function resolveIdentity(rawEmail, rawSenha){
@@ -9091,10 +9078,10 @@ ${clipPlayerPills(n)}
             "url": "https://app.powerbi.com/links/RwmvVe4c7C?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       }
 ];
-    // Sem permissão de Power BI o card mantém a animação de hover, mas não tem link: o clique não faz nada.
+    // Mostra só os painéis liberados para o usuário (Usuários > Etapa 2); antes do login, nenhum.
     function renderHubHome(){
-      const cu = window.__getCurrentUser() || {};
-      const podeAbrir = !!cu.power_bi;
+      const cu = window.__getCurrentUser();
+      if(!cu){ document.getElementById('waHubGrid').innerHTML = ''; return; }
       const liberados = Array.isArray(cu.paineis) ? new Set(cu.paineis) : null;  // null = todos
       const icoExterno = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
       const icoPainel = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="8" y1="17" x2="8" y2="11"></line><line x1="12" y1="17" x2="12" y2="7"></line><line x1="16" y1="17" x2="16" y2="13"></line></svg>';
@@ -9108,46 +9095,36 @@ ${clipPlayerPills(n)}
         const arte = p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="wa-hub-card-fallback">${icoPainel}</div>`;
         const corpo = `<div class="wa-hub-card-art">${arte}</div><div class="wa-hub-card-name">${esc(p.t)}${ativo ? icoExterno : ''}</div>`;
         return ativo
-          ? (podeAbrir
-            ? `<a class="wa-hub-card" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer" title="Abrir ${esc(p.t)} em nova janela">${corpo}</a>`
-            : `<a class="wa-hub-card" role="link" aria-disabled="true" tabindex="0" title="Sem acesso ao Power BI. Fale com um administrador.">${corpo}</a>`)
+          ? `<a class="wa-hub-card" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer" title="Abrir ${esc(p.t)} em nova janela">${corpo}</a>`
           : `<div class="wa-hub-card indisponivel" aria-disabled="true" title="Link ainda não cadastrado"><span class="wa-hub-card-badge">Link não cadastrado</span>${corpo}</div>`;
       }).join('');
     }
     window.__renderHubHome = renderHubHome;
     renderHubHome();
 
-    // A permissão de Power BI é relida do banco ao abrir a Home e ao voltar
-    // para a aba: se um administrador mudar o campo, a sessão aberta já obedece
+    // Os painéis liberados são relidos do banco ao abrir a Home e ao voltar
+    // para a aba: se um administrador mudar o cadastro, a sessão aberta já obedece
     // (sem isso, valia o que estava no cadastro no momento do login).
-    async function atualizarPermissaoPowerBi(){
+    async function atualizarPaineisLiberados(){
       const cu = window.__getCurrentUser();
       if(!cu || !supabaseReady) return;
       const { data, error } = await supabaseClient.from('usuarios').select('*').eq('email', cu.email).maybeSingle();
       if(error) return;
-      const pode = !!data && data.status === 'Ativo' && (
-        cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || data.acesso_power_bi === true);
       const paineis = !data || cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || !Array.isArray(data.paineis_permitidos)
         ? null : data.paineis_permitidos;
-      if(pode !== !!cu.power_bi || JSON.stringify(paineis) !== JSON.stringify(cu.paineis ?? null)){
-        cu.power_bi = pode;
+      if(JSON.stringify(paineis) !== JSON.stringify(cu.paineis ?? null)){
         cu.paineis = paineis;
         renderHubHome();
       }
     }
-    document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home') atualizarPermissaoPowerBi(); });
-    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') atualizarPermissaoPowerBi(); });
-    window.addEventListener('focus', atualizarPermissaoPowerBi);
+    document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home') atualizarPaineisLiberados(); });
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') atualizarPaineisLiberados(); });
+    window.addEventListener('focus', atualizarPaineisLiberados);
 
-    // Trava extra: sem permissão, nenhum clique em card abre painel.
-    document.getElementById('waHubGrid').addEventListener('click', (e) => {
-      const card = e.target.closest('a.wa-hub-card');
-      if(card && !(window.__getCurrentUser() || {}).power_bi) e.preventDefault();
-    });
     // Dados só são buscados depois do login (as policies de RLS exigem sessão).
     function loadAllData(){
       renderTemplates();  // botões de editar/remover dependem do perfil logado
-      renderHubHome();    // clique nos painéis depende da permissão de Power BI
+      renderHubHome();    // painéis exibidos dependem do usuário logado
       loadCampaigns();
       loadUsers();
       loadClippingNews();
