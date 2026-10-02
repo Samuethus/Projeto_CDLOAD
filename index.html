@@ -2270,7 +2270,6 @@
                 <tr>
                   <th>Campanha</th>
                   <th>Canais</th>
-                  <th>Budget Total</th>
                   <th>Vigência</th>
                   <th>Status</th>
                   <th class="wa-table-actions">Ações</th>
@@ -2303,7 +2302,7 @@
                 </div>
                 <div>
                   <div class="wa-modal-title" id="waCampaignModalTitle">Criar Nova Campanha</div>
-                  <div class="wa-modal-sub" id="waCampaignModalSub">Planejamento, público, verba e estrutura em 4 etapas</div>
+                  <div class="wa-modal-sub" id="waCampaignModalSub">Planejamento, público e estrutura em 4 etapas</div>
                 </div>
               </div>
               <button class="wa-modal-close" onclick="waCloseCampaignModal()">&times;</button>
@@ -2382,23 +2381,9 @@
                 </div>
               </div>
 
-              <!-- ETAPA 3: Gestão Financeira -->
+              <!-- ETAPA 3: Estrutura Técnica -->
               <div id="waCampStep3" style="display:none;">
-                <h3 class="wa-step-title">3. Gestão Financeira</h3>
-                <div class="wa-field">
-                  <label for="waCampBudgetTotal">Budget total</label>
-                  <input type="number" id="waCampBudgetTotal" min="0" step="0.01" placeholder="0,00">
-                </div>
-                <div class="wa-field">
-                  <label>Distribuição de verba por canal</label>
-                  <div id="waCampDistWrap"></div>
-                  <div class="wa-budget-summary" id="waCampBudgetSummary"></div>
-                </div>
-              </div>
-
-              <!-- ETAPA 4: Estrutura Técnica -->
-              <div id="waCampStep4" style="display:none;">
-                <h3 class="wa-step-title">4. Estrutura Técnica</h3>
+                <h3 class="wa-step-title">3. Estrutura Técnica</h3>
                 <div class="wa-field">
                   <label>Times envolvidos</label>
                   <div class="wa-toggle-group" id="waCampTimesGroup">
@@ -2429,15 +2414,15 @@
               </div>
 
               <!-- ETAPA 5: Revisão & Confirmação -->
-              <div id="waCampStep5" style="display:none;">
-                <h3 class="wa-step-title">5. Revisão &amp; Confirmação</h3>
+              <div id="waCampStep4" style="display:none;">
+                <h3 class="wa-step-title">4. Revisão &amp; Confirmação</h3>
                 <div id="waCampReview"></div>
               </div>
 
             </div>
 
             <div class="wa-wizard-footer">
-              <span class="wa-wizard-steps" id="waCampStepLabel">Etapa 1 de 5</span>
+              <span class="wa-wizard-steps" id="waCampStepLabel">Etapa 1 de 4</span>
               <div style="display:flex;gap:10px;">
                 <button class="wa-btn wa-btn-outline" id="waCampBackBtn" style="visibility:hidden;" onclick="waCampWizardBack()">Voltar</button>
                 <button class="wa-btn wa-btn-primary" id="waCampNextBtn" onclick="waCampWizardNext()">Avançar</button>
@@ -3610,7 +3595,7 @@
       const filteredCampaigns = getFilteredCampaigns();
       waCampaignTableBody.innerHTML = '';
       if(!filteredCampaigns.length){
-        waCampaignTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="6">Nenhuma campanha cadastrada.</td></tr>';
+        waCampaignTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="5">Nenhuma campanha cadastrada.</td></tr>';
         if(campViewMode === 'calendar') renderCampaignCalendar();
         return;
       }
@@ -3625,7 +3610,6 @@
             <div style="font-size:11.5px;font-weight:400;color:var(--wa-text-muted);margin-top:2px;">${esc(p.tipo_agenda)}</div>
           </td>
           <td><div class="wa-channel-tags">${canais.map(c => `<span class="wa-pill-category">${esc(c)}</span>`).join('') || '<span class="wa-empty-hint">—</span>'}</div></td>
-          <td>${formatCurrencyBRL(camp.gestao_financeira.budget_total)}</td>
           <td>${formatDateBR(p.data_inicio)} – ${formatDateBR(p.data_fim)}</td>
           <td><span class="wa-badge ${campaignStatusClass[status] || 'wa-status-agendado'}">${status}</span></td>
           <td class="wa-table-actions">
@@ -3915,9 +3899,6 @@
     const waCampDescricao = document.getElementById('waCampDescricao');
     const waCampCanaisGroup = document.getElementById('waCampCanaisGroup');
 
-    const waCampBudgetTotal = document.getElementById('waCampBudgetTotal');
-    const waCampDistWrap = document.getElementById('waCampDistWrap');
-    const waCampBudgetSummary = document.getElementById('waCampBudgetSummary');
 
     const waCampTimesGroup = document.getElementById('waCampTimesGroup');
     const waCampReview = document.getElementById('waCampReview');
@@ -3926,7 +3907,6 @@
     let editingCampaignId = null;
     let selectedChannels = new Set();
     let selectedTeams = new Set();
-    let distValues = {};
 
     waCampCanaisGroup.addEventListener('click', (e) => {
       const btn = e.target.closest('.wa-toggle-chip');
@@ -4077,47 +4057,15 @@
     });
     waCampParticipantSearch.addEventListener('blur', () => setTimeout(closeParticipantDropdown, 120));
 
-    waCampBudgetTotal.addEventListener('input', updateBudgetSummary);
-
     function updateCampWizardView(){
-      for(let i = 1; i <= 5; i++){ document.getElementById('waCampStep' + i).style.display = campStep === i ? 'block' : 'none'; }
+      for(let i = 1; i <= 4; i++){ document.getElementById('waCampStep' + i).style.display = campStep === i ? 'block' : 'none'; }
       waCampBackBtn.style.visibility = campStep > 1 ? 'visible' : 'hidden';
-      waCampNextBtn.textContent = campStep === 5 ? (editingCampaignId ? 'Salvar Alterações' : 'Confirmar e Salvar') : 'Avançar';
-      waCampStepLabel.textContent = `Etapa ${campStep} de 5`;
-      if(campStep === 3) waBuildDistributionRows();
-      if(campStep === 5) waBuildCampaignReview();
-    }
-
-    function waBuildDistributionRows(){
-      waCampDistWrap.innerHTML = '';
-      if(!selectedChannels.size){
-        waCampDistWrap.innerHTML = '<div class="wa-empty-hint">Selecione os canais na Etapa 2 para distribuir a verba.</div>';
-      } else {
-        selectedChannels.forEach(ch => {
-          const row = document.createElement('div');
-          row.className = 'wa-dist-row';
-          row.innerHTML = `<span class="wa-dist-label">${ch}</span><input type="number" min="0" step="0.01" data-channel="${ch}" value="${distValues[ch] != null ? distValues[ch] : ''}" placeholder="0,00">`;
-          waCampDistWrap.appendChild(row);
-        });
-        waCampDistWrap.querySelectorAll('input[data-channel]').forEach(inp => {
-          inp.addEventListener('input', () => { distValues[inp.dataset.channel] = inp.value; updateBudgetSummary(); });
-        });
-      }
-      updateBudgetSummary();
-    }
-
-    function updateBudgetSummary(){
-      const total = Number(waCampBudgetTotal.value) || 0;
-      const distributed = Object.values(distValues).reduce((s, v) => s + (Number(v) || 0), 0);
-      const remaining = total - distributed;
-      waCampBudgetSummary.textContent = remaining < 0
-        ? `Distribuído: ${formatCurrencyBRL(distributed)} de ${formatCurrencyBRL(total)} — excedido em ${formatCurrencyBRL(Math.abs(remaining))}`
-        : `Distribuído: ${formatCurrencyBRL(distributed)} de ${formatCurrencyBRL(total)}`;
-      waCampBudgetSummary.classList.toggle('over', remaining < 0);
+      waCampNextBtn.textContent = campStep === 4 ? (editingCampaignId ? 'Salvar Alterações' : 'Confirmar e Salvar') : 'Avançar';
+      waCampStepLabel.textContent = `Etapa ${campStep} de 4`;
+      if(campStep === 4) waBuildCampaignReview();
     }
 
     function waBuildCampaignReview(){
-      const dist = [...selectedChannels].map(ch => [ch, distValues[ch]]);
       waCampReview.innerHTML = `
         <div class="wa-review-section">
           <h4>Planejamento &amp; Objetivos</h4>
@@ -4134,11 +4082,6 @@
           <div class="wa-review-row"><span class="label">Quantidade de Pessoas</span><span class="value">${waCampQtdPessoas.value || '—'}</span></div>
           <div class="wa-review-row"><span class="label">Descrição</span><span class="value">${waCampDescricao.value || '—'}</span></div>
           <div class="wa-review-row"><span class="label">Canais</span><div class="value wa-review-tags">${[...selectedChannels].map(c => `<span class="wa-pill-category">${c}</span>`).join('') || '—'}</div></div>
-        </div>
-        <div class="wa-review-section">
-          <h4>Gestão Financeira</h4>
-          <div class="wa-review-row"><span class="label">Budget total</span><span class="value">${formatCurrencyBRL(waCampBudgetTotal.value)}</span></div>
-          ${dist.map(([ch, v]) => `<div class="wa-review-row"><span class="label">${ch}</span><span class="value">${formatCurrencyBRL(v)}</span></div>`).join('')}
         </div>
         <div class="wa-review-section">
           <h4>Estrutura Técnica</h4>
@@ -4161,13 +4104,8 @@
           return false;
         }
       } else if(step === 3){
-        if(!waCampBudgetTotal.value || Number(waCampBudgetTotal.value) <= 0){
-          alert('Informe o budget total da campanha na Etapa 3.');
-          return false;
-        }
-      } else if(step === 4){
         if(selectedTeams.size === 0){
-          alert('Selecione ao menos um time envolvido na Etapa 4.');
+          alert('Selecione ao menos um time envolvido na Etapa 3.');
           return false;
         }
         if(!!waCampHoraInicio.value !== !!waCampHoraFim.value){
@@ -4188,7 +4126,7 @@
 
     window.waCampWizardNext = async function(){
       if(!waValidateCampStep(campStep)) return;
-      if(campStep < 5){ campStep++; updateCampWizardView(); }
+      if(campStep < 4){ campStep++; updateCampWizardView(); }
       else { await waFinalizeCampaign(); }
     };
 
@@ -4209,10 +4147,8 @@
           descricao: waCampDescricao.value.trim(),
           canais: [...selectedChannels]
         },
-        gestao_financeira: {
-          budget_total: Number(waCampBudgetTotal.value) || 0,
-          distribuicao_verba_por_canal: [...selectedChannels].reduce((acc, ch) => { acc[ch] = Number(distValues[ch]) || 0; return acc; }, {})
-        },
+        // Etapa de verba removida: preserva o que já estava gravado na campanha editada.
+        gestao_financeira: (editingCampaignId && (campaigns.find(c => c.id === editingCampaignId) || {}).gestao_financeira) || {},
         estrutura_tecnica: {
           times_envolvidos: [...selectedTeams],
           participantes: [...selectedParticipants.values()].map(p => ({ nome: p.nome, email: p.email, externo: p.externo })),
@@ -4307,7 +4243,7 @@
       const editing = campaigns.find(c => c.id === editingCampaignId);
 
       waCampaignModalTitle.textContent = editing ? 'Editar Campanha' : 'Criar Nova Campanha';
-      waCampaignModalSub.textContent = editing ? 'Atualize o planejamento da campanha' : 'Planejamento, público, verba e estrutura em 4 etapas';
+      waCampaignModalSub.textContent = editing ? 'Atualize o planejamento da campanha' : 'Planejamento, público e estrutura em 4 etapas';
 
       const p = editing ? editing.planejamento_e_objetivos : {};
       waCampNome.value = editing ? editing.nome_campanha : '';
@@ -4324,10 +4260,6 @@
       waCampDescricao.value = pm.descricao || '';
       selectedChannels = new Set(pm.canais || []);
       waCampCanaisGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', selectedChannels.has(b.dataset.channel)));
-
-      const gf = editing ? editing.gestao_financeira : {};
-      waCampBudgetTotal.value = gf.budget_total || '';
-      distValues = Object.assign({}, gf.distribuicao_verba_por_canal || {});
 
       const et = editing ? editing.estrutura_tecnica : {};
       selectedTeams = new Set(et.times_envolvidos || []);

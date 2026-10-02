@@ -37,7 +37,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 
 ## Campanhas › Participantes e agenda (Outlook / Google Calendar)
 
-Na **Etapa 4** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que cria o evento na agenda de uma **conta organizadora** com todos os participantes como convidados. O Outlook/Google envia o convite e o período fica **bloqueado (Ocupado)** na agenda de cada um.
+Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que cria o evento na agenda de uma **conta organizadora** com todos os participantes como convidados. O Outlook/Google envia o convite e o período fica **bloqueado (Ocupado)** na agenda de cada um.
 
 - Sem horário: evento de **dia inteiro** do início ao fim da vigência. Com horário: bloqueio **diário** naquele intervalo, do início ao fim da vigência.
 - Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento.

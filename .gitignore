@@ -1,5 +1,7 @@
 # --- Segredos e configuração local ---
 links_power.txt
+.json
+*.json
 .env
 .env.local
 .env.*.local
