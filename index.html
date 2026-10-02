@@ -3206,6 +3206,7 @@
   // Escapa texto vindo do banco antes de inseri-lo em innerHTML (evita XSS armazenado).
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ALL_SECTIONS = [
+    { key: 'home', label: 'Home' },
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'clipping', label: 'Clipping News' },
     { key: 'relatorios', label: 'Relatórios' },
@@ -3231,7 +3232,7 @@
     const allowed = new Set(currentUser.secoes || []);
     navItems.forEach(item => {
       const page = item.dataset.page;
-      item.style.display = (page === 'home' || allowed.has(page)) ? '' : 'none';
+      item.style.display = allowed.has(page) ? '' : 'none';
     });
     if(wrap){
       wrap.hidden = false;
@@ -3261,7 +3262,7 @@
   const headerActions = document.getElementById('headerActions');
 
   function goTo(pageId){
-    if(currentUser && pageId !== 'home' && !(currentUser.secoes || []).includes(pageId)){
+    if(currentUser && !(currentUser.secoes || []).includes(pageId)){
       alert('Você não tem permissão para acessar esta seção. Fale com um administrador.');
       return;
     }
@@ -3291,6 +3292,22 @@
   });
 
   window.goTo = goTo;
+
+  // Página de entrada após o login: a Home, se liberada; senão a primeira
+  // seção permitida na ordem do menu. Sem nenhuma seção, nada é exibido.
+  function goToInicial(){
+    const secoes = (currentUser && currentUser.secoes) || [];
+    if(secoes.includes('home')) return goTo('home');
+    const primeira = [...navItems].find(n => secoes.includes(n.dataset.page));
+    if(primeira) return goTo(primeira.dataset.page);
+    navItems.forEach(n => n.classList.remove('active'));
+    pages.forEach(p => p.classList.remove('active'));
+    headerTitle.textContent = 'Sem seções liberadas';
+    headerDesc.textContent = 'Seu usuário ainda não tem acesso a nenhuma seção. Fale com um administrador.';
+    headerDesc.style.display = 'block';
+    headerActions.innerHTML = '';
+  }
+  window.goToInicial = goToInicial;
 
   // ---------- Recolher / Expandir sidebar ----------
   const sidebar = document.getElementById('sidebar');
@@ -4414,7 +4431,7 @@
     // ---------------- Estado: Usuários & Permissões ----------------
     const FALLBACK_USERS = [
       { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', secoes_permitidas: ALL_SECTIONS.map(s => s.key), acesso_power_bi: true },
-      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', secoes_permitidas: ['campanhas', 'templates'], acesso_power_bi: false }
+      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', secoes_permitidas: ['home', 'campanhas', 'templates'], acesso_power_bi: false }
     ];
 
     let users = [];
@@ -4759,6 +4776,7 @@
       waIdentifyOverlay.hidden = true;
       waIdentifyPassword.value = '';
       window.applySectionPermissions();
+      window.goToInicial();
       window.__loadAllData();
     }
 
@@ -4774,7 +4792,6 @@
         return;
       }
       enterApp(result.user);
-      goTo('home');
     }
 
     waIdentifyBtn.addEventListener('click', handleIdentifySubmit);
