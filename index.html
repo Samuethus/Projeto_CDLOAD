@@ -9059,6 +9059,31 @@ ${clipPlayerPills(n)}
     }
     window.__renderHubHome = renderHubHome;
     renderHubHome();
+
+    // A permissão de Power BI é relida do banco ao abrir a Home e ao voltar
+    // para a aba: se um administrador mudar o campo, a sessão aberta já obedece
+    // (sem isso, valia o que estava no cadastro no momento do login).
+    async function atualizarPermissaoPowerBi(){
+      const cu = window.__getCurrentUser();
+      if(!cu || !supabaseReady) return;
+      const { data, error } = await supabaseClient.from('usuarios').select('*').eq('email', cu.email).maybeSingle();
+      if(error) return;
+      const pode = !!data && data.status === 'Ativo' && (
+        cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || data.acesso_power_bi === true);
+      if(pode !== !!cu.power_bi){
+        cu.power_bi = pode;
+        renderHubHome();
+      }
+    }
+    document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home') atualizarPermissaoPowerBi(); });
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') atualizarPermissaoPowerBi(); });
+    window.addEventListener('focus', atualizarPermissaoPowerBi);
+
+    // Trava extra: sem permissão, nenhum clique em card abre painel.
+    document.getElementById('waHubGrid').addEventListener('click', (e) => {
+      const card = e.target.closest('a.wa-hub-card');
+      if(card && !(window.__getCurrentUser() || {}).power_bi) e.preventDefault();
+    });
     // Dados só são buscados depois do login (as policies de RLS exigem sessão).
     function loadAllData(){
       renderTemplates();  // botões de editar/remover dependem do perfil logado
