@@ -1643,7 +1643,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.29 1.29L3 12l5.8 1.9a2 2 0 0 1 1.29 1.29L12 21l1.9-5.8a2 2 0 0 1 1.29-1.29L21 12l-5.8-1.9a2 2 0 0 1-1.29-1.29Z"></path></svg>
         <span>Configurações</span>
       </button>
-      <button class="nav-item" data-page="estoque" data-title="Estoque" data-desc="Cadastre produtos e controle entradas e saídas por código de barras.">
+      <button class="nav-item" data-page="estoque" data-title="Controle de Estoque" data-desc="Cadastre produtos e controle entradas e saídas por código de barras.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
         <span>Estoque</span>
       </button>
@@ -2628,8 +2628,10 @@
           </div>
         </div>
 
-        <!-- Leitura de código de barras: leitor USB/Bluetooth (teclado + Enter) ou câmera -->
-        <div class="wa-scan-bar">
+        <!-- Leitura de código de barras: leitor USB/Bluetooth (teclado + Enter) ou câmera.
+             Box oculto da tela; os elementos continuam no DOM porque o JS os usa
+             (o leitor USB segue funcionando pela captura global de teclas). -->
+        <div class="wa-scan-bar" hidden>
           <div class="wa-view-toggle" id="waScanModeToggle">
             <button type="button" class="wa-view-toggle-btn active" data-mode="consulta">Consultar</button>
             <button type="button" class="wa-view-toggle-btn" data-mode="entrada">Entrada</button>
@@ -2645,8 +2647,8 @@
               Usar câmera
             </button>
           </div>
-          <div class="wa-scan-feedback" id="waScanFeedback" hidden></div>
         </div>
+        <div class="wa-scan-feedback" id="waScanFeedback" style="margin:0 0 16px;" hidden></div>
 
         <div class="filter-bar wa-stock-filters">
           <div class="wa-clip-search">
