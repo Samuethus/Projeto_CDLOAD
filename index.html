@@ -2551,6 +2551,11 @@
                   <div class="wa-empty-hint" id="waUserAdminHint" hidden>Perfil Administrador tem acesso total e automático a todas as seções.</div>
                   <div class="wa-toggle-group" id="waUserSectionsGroup"></div>
                 </div>
+                <div class="wa-field">
+                  <label>Painéis Power BI exibidos na Home</label>
+                  <div class="wa-empty-hint" id="waUserPaineisHint">Só os painéis selecionados aparecem na Home deste usuário (requer a seção Home liberada).</div>
+                  <div class="wa-toggle-group" id="waUserPaineisGroup"></div>
+                </div>
               </div>
 
             </div>
@@ -4528,6 +4533,12 @@
     let userStep = 1;
     let editingUserId = null;
     let selectedUserSections = new Set();
+    let selectedUserPaineis = new Set();
+    const waUserPaineisGroup = document.getElementById('waUserPaineisGroup');
+    const waUserPaineisHint = document.getElementById('waUserPaineisHint');
+
+    // Painéis da Home (HUB_PAINEIS, mais abaixo) que podem ser liberados por usuário.
+    const paineisLiberaveis = () => HUB_PAINEIS.filter(p => !p.oculto);
 
     function renderSectionsChecklist(){
       const isAdmin = waUserCargo.value === 'Administrador';
@@ -4545,6 +4556,25 @@
           btn.classList.toggle('selected');
         });
         waUserSectionsGroup.appendChild(btn);
+      });
+
+      if(isAdmin) selectedUserPaineis = new Set(paineisLiberaveis().map(p => p.id));
+      waUserPaineisHint.textContent = isAdmin
+        ? 'Perfil Administrador vê todos os painéis.'
+        : 'Só os painéis selecionados aparecem na Home deste usuário (requer a seção Home liberada).';
+      waUserPaineisGroup.innerHTML = '';
+      paineisLiberaveis().forEach(p => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'wa-toggle-chip' + (selectedUserPaineis.has(p.id) ? ' selected' : '');
+        btn.textContent = p.t.replace(/^Painel\s+/, '');
+        btn.title = p.t;
+        btn.disabled = isAdmin;
+        btn.addEventListener('click', () => {
+          if(selectedUserPaineis.has(p.id)) selectedUserPaineis.delete(p.id); else selectedUserPaineis.add(p.id);
+          btn.classList.toggle('selected');
+        });
+        waUserPaineisGroup.appendChild(btn);
       });
     }
     waUserCargo.addEventListener('change', renderSectionsChecklist);
@@ -4591,6 +4621,8 @@
         cargo: waUserCargo.value,
         status: waUserStatus.value,
         acesso_power_bi: waUserPowerBi.value === 'sim',
+        // null = todos os painéis (Administrador)
+        paineis_permitidos: waUserCargo.value === 'Administrador' ? null : [...selectedUserPaineis],
         secoes_permitidas: waUserCargo.value === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : [...selectedUserSections]
       };
       return payload;
@@ -4600,7 +4632,8 @@
       const cu = window.__getCurrentUser();
       if(cu && cu.email === payload.email){
         const updated = { email: payload.email, nome: payload.nome, cargo: payload.cargo, status: payload.status, secoes: payload.secoes_permitidas,
-          power_bi: payload.cargo === 'Administrador' || payload.acesso_power_bi };
+          power_bi: payload.cargo === 'Administrador' || payload.acesso_power_bi,
+          paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos };
         window.__setCurrentUser(updated);
         window.applySectionPermissions();
         window.__renderHubHome();
@@ -4657,6 +4690,10 @@
       waUserPowerBi.value = editing && editing.acesso_power_bi ? 'sim' : 'nao';
 
       selectedUserSections = new Set(editing ? (editing.secoes_permitidas || []) : []);
+      // Cadastro antigo (coluna vazia) = todos os painéis; usuário novo começa sem nenhum.
+      selectedUserPaineis = new Set(editing
+        ? (Array.isArray(editing.paineis_permitidos) ? editing.paineis_permitidos : paineisLiberaveis().map(p => p.id))
+        : []);
 
       updateUserWizardView();
       renderSectionsChecklist();
@@ -4746,7 +4783,8 @@
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
       const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : (row.secoes_permitidas || []);
       const power_bi = isAdminEmail || row.cargo === 'Administrador' || row.acesso_power_bi === true;
-      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, power_bi } };
+      const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
+      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, power_bi, paineis } };
     }
 
     async function resolveIdentity(rawEmail, rawSenha){
@@ -8983,58 +9021,70 @@ ${clipPlayerPills(n)}
     // Fonte: links_power.txt. Painel sem "url" aparece desativado ("Link não cadastrado")
     // — é só preencher o link aqui. Sem "img", mostra a arte genérica.
     // "oculto": true tira o painel da galeria sem apagar o link (reexibir: remover a linha).
+    // "id" é a chave gravada em usuarios.paineis_permitidos: não altere o id de um painel existente.
     const HUB_PAINEIS = [
       {
+            "id": "hub-nucleo",
             "t": "Painel Hub Núcleo",
             "img": "assets/hub-nucleo.webp",
             "url": "https://app.powerbi.com/links/MdIxLThUng?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "pesquisas-de-mercado",
             "t": "Painel Pesquisas de Mercado",
             "img": "assets/pesquisas.webp",
             "url": "https://app.powerbi.com/links/JOzp7VnybQ?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "oficios-e-liminares",
             "t": "Painel Ofícios e Liminares",
             "img": "assets/oficios.webp",
             "url": "https://app.powerbi.com/links/UuF7D7MRLR?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "observatorio-obras",
             "t": "Painel Observatório Obras",
             "img": "assets/observatorio-obras.webp",
             "url": "https://app.powerbi.com/links/EwwaUu20S6?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "controle-de-estoque",
             "t": "Painel Controle de Estoque",
             "img": "assets/controle-estoque.webp",
             "url": "https://app.powerbi.com/links/LBsPBEa1e0?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "cronograma-de-obras",
             "t": "Painel Cronograma de Obras",
             "img": "assets/cronograma-obras.webp",
             "url": "https://app.powerbi.com/links/RYeeEXMukj?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "financeiro-gestao-a-vista",
             "t": "Painel Financeiro Gestão à Vista",
             "img": "assets/gestao-a-vista.webp",
             "url": "https://app.powerbi.com/links/au1tE8RVbT?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "certificado-digital",
             "t": "Painel Certificado Digital",
             "img": "assets/certificado-digital.webp",
             "url": "https://app.powerbi.com/links/WdTX7zzuCl?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "caged-empregos",
             "t": "Painel CAGED - Empregos",
             "img": "assets/caged.webp",
             "url": "https://app.powerbi.com/links/5zj1ahwWyk?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "radar-de-mercado",
             "t": "Painel Radar de Mercado",
             "img": "assets/radar.webp",
             "url": "https://app.powerbi.com/links/WtFyWB309y?ctid=65be56a8-dfe6-4b97-8d4b-adc179176472&pbi_source=linkShare"
       },
       {
+            "id": "espaco-cdl",
             "t": "Painel Espaço CDL",
             "img": "",
             "oculto": true,
@@ -9043,10 +9093,17 @@ ${clipPlayerPills(n)}
 ];
     // Sem permissão de Power BI o card mantém a animação de hover, mas não tem link: o clique não faz nada.
     function renderHubHome(){
-      const podeAbrir = !!(window.__getCurrentUser() || {}).power_bi;
+      const cu = window.__getCurrentUser() || {};
+      const podeAbrir = !!cu.power_bi;
+      const liberados = Array.isArray(cu.paineis) ? new Set(cu.paineis) : null;  // null = todos
       const icoExterno = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
       const icoPainel = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="8" y1="17" x2="8" y2="11"></line><line x1="12" y1="17" x2="12" y2="7"></line><line x1="16" y1="17" x2="16" y2="13"></line></svg>';
-      document.getElementById('waHubGrid').innerHTML = HUB_PAINEIS.filter(p => !p.oculto).map(p => {
+      const visiveis = HUB_PAINEIS.filter(p => !p.oculto && (!liberados || liberados.has(p.id)));
+      if(!visiveis.length){
+        document.getElementById('waHubGrid').innerHTML = '<div class="wa-empty-hint">Nenhum painel liberado para o seu usuário. Fale com um administrador.</div>';
+        return;
+      }
+      document.getElementById('waHubGrid').innerHTML = visiveis.map(p => {
         const ativo = /^https:\/\/app\.powerbi\.com\//.test(p.url || '');
         const arte = p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="wa-hub-card-fallback">${icoPainel}</div>`;
         const corpo = `<div class="wa-hub-card-art">${arte}</div><div class="wa-hub-card-name">${esc(p.t)}${ativo ? icoExterno : ''}</div>`;
@@ -9070,8 +9127,11 @@ ${clipPlayerPills(n)}
       if(error) return;
       const pode = !!data && data.status === 'Ativo' && (
         cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || data.acesso_power_bi === true);
-      if(pode !== !!cu.power_bi){
+      const paineis = !data || cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || !Array.isArray(data.paineis_permitidos)
+        ? null : data.paineis_permitidos;
+      if(pode !== !!cu.power_bi || JSON.stringify(paineis) !== JSON.stringify(cu.paineis ?? null)){
         cu.power_bi = pode;
+        cu.paineis = paineis;
         renderHubHome();
       }
     }

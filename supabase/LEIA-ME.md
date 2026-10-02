@@ -19,6 +19,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 7. Cole o conteúdo de [somente_admin_edita.sql](somente_admin_edita.sql) > **Run** (**só Administrador edita e exclui**: quem tem a seção liberada — mesmo todas — apenas lê e cria registros em Campanhas, Clipping, Estoque e Relatórios). A consulta final lista as policies de UPDATE/DELETE; todas devem usar `cdl_admin()`. Depois, republique a Edge Function (`npx supabase functions deploy sincronizar-agenda`), que passa a gravar a agenda por essa função.
 8. Cole o conteúdo de [schema_power_bi.sql](schema_power_bi.sql) > **Run** (campo **Power BI** em Usuários: quem está com "Não" vê os cards dos painéis na página inicial, mas o clique não abre nada; Administrador sempre tem acesso. Quem já estava cadastrado mantém o acesso; cadastros novos começam com "Não").
 9. Cole o conteúdo de [secao_home.sql](secao_home.sql) > **Run** (a **Home** vira uma seção liberada por usuário em **Usuários > Permissões de Acesso**; o script inclui "home" em todos os já cadastrados para ninguém perder o acesso — depois desmarque de quem não deve ver). Quem não tem a Home entra direto na primeira seção liberada.
+10. Cole o conteúdo de [schema_paineis_usuario.sql](schema_paineis_usuario.sql) > **Run** (em **Usuários > Etapa 2**, escolha quais **painéis Power BI** aparecem na Home de cada usuário; os não selecionados ficam ocultos. Quem já estava cadastrado continua vendo todos até ser editado; usuário novo começa sem nenhum; Administrador vê todos).
 
 ## Clipping News (Google Notícias)
 
