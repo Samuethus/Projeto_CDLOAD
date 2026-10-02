@@ -4502,7 +4502,8 @@
         email: row.email,
         cargo: row.cargo,
         status: row.status,
-        secoes_permitidas: row.secoes_permitidas || []
+        secoes_permitidas: row.secoes_permitidas || [],
+        paineis_permitidos: row.paineis_permitidos ?? null  // null = todos os painéis
       }));
       renderUsers();
     }
