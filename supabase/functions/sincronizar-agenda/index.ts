@@ -7,6 +7,7 @@
 //
 // Provedores (cada um só roda se os secrets dele estiverem definidos):
 //   Outlook (Microsoft 365, Graph):  MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_ORGANIZADOR_EMAIL
+//   Google Calendar (Gmail pessoal): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, [GOOGLE_CALENDAR_ID]
 //   Google Calendar (Workspace):     GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_ORGANIZADOR_EMAIL, [GOOGLE_CALENDAR_ID]
 // Passo a passo em supabase/LEIA-ME.md.
 //
@@ -227,8 +228,30 @@ const b64url = (dados: Uint8Array | string) => {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
+// Gmail pessoal: OAuth do próprio dono da agenda (client id/secret + refresh
+// token gerado uma vez no OAuth Playground). Tem prioridade sobre a conta de serviço.
+const googleOAuth = () => !!(env('GOOGLE_CLIENT_ID') && env('GOOGLE_CLIENT_SECRET') && env('GOOGLE_REFRESH_TOKEN'));
+
+async function tokenGoogleOAuth(): Promise<string> {
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: env('GOOGLE_CLIENT_ID'),
+      client_secret: env('GOOGLE_CLIENT_SECRET'),
+      refresh_token: env('GOOGLE_REFRESH_TOKEN'),
+    }),
+  });
+  if (!res.ok) await falha(res, 'Login no Google (refresh token)');
+  const j = await res.json();
+  googleToken = { valor: j.access_token, expira: Date.now() + Number(j.expires_in ?? 3600) * 1000 };
+  return googleToken.valor;
+}
+
 async function tokenGoogle(): Promise<string> {
   if (googleToken && googleToken.expira > Date.now() + 60_000) return googleToken.valor;
+  if (googleOAuth()) return tokenGoogleOAuth();
   let sa: { client_email: string; private_key: string };
   try {
     sa = JSON.parse(env('GOOGLE_SERVICE_ACCOUNT_JSON'));
@@ -293,7 +316,7 @@ const googleEventos = () =>
 
 const google: Provedor = {
   chave: 'google',
-  configurado: () => !!(env('GOOGLE_SERVICE_ACCOUNT_JSON') && env('GOOGLE_ORGANIZADOR_EMAIL')),
+  configurado: () => googleOAuth() || !!(env('GOOGLE_SERVICE_ACCOUNT_JSON') && env('GOOGLE_ORGANIZADOR_EMAIL')),
   async criar(ev) {
     const res = await fetch(`${googleEventos()}?sendUpdates=all`, {
       method: 'POST',

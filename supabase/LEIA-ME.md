@@ -55,6 +55,13 @@ A CDL usa Microsoft 365 (`@cdlcuiaba.onmicrosoft.com`), então o **Outlook** é 
 3. **Certificados e segredos > Novo segredo do cliente** (anote o valor).
 4. Escolha a caixa organizadora (ex.: `agenda@cdlcuiaba.onmicrosoft.com`). Recomendado: restringir o app só a essa caixa com uma *Application Access Policy* do Exchange (`New-ApplicationAccessPolicy -AppId <ID do app> -PolicyScopeGroupId agenda@... -AccessRight RestrictAccess`), senão o app pode escrever em qualquer agenda do tenant.
 
+**Google Calendar (Gmail pessoal, @gmail.com)** — OAuth com refresh token:
+1. Google Cloud Console > projeto > **APIs e serviços > Biblioteca** > ative a **Google Calendar API**.
+2. **Tela de consentimento OAuth**: tipo *Externo*, adicione o escopo `.../auth/calendar.events` e clique em **Publicar app** (status *Em produção*; em *Teste* o refresh token expira em 7 dias).
+3. **Credenciais > Criar credenciais > ID do cliente OAuth** > tipo **Aplicativo da Web** > em *URIs de redirecionamento autorizados* adicione `https://developers.google.com/oauthplayground` > anote **Client ID** e **Client secret**.
+4. Abra https://developers.google.com/oauthplayground > engrenagem > marque **Use your own OAuth credentials** > cole Client ID e secret. No passo 1, digite o escopo `https://www.googleapis.com/auth/calendar.events` > **Authorize APIs** > entre com o Gmail organizador (se aparecer "app não verificado": *Avançado > Acessar*). No passo 2, **Exchange authorization code for tokens** > copie o **Refresh token**.
+5. Secrets no Supabase: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` (opcional `GOOGLE_CALENDAR_ID`; padrão = agenda principal). `GOOGLE_SERVICE_ACCOUNT_JSON` não é usado nesse modo.
+
 **Google Calendar (Google Workspace)**:
 1. Google Cloud Console > crie um projeto > ative a **Google Calendar API** > **Contas de serviço > Criar** > gere uma chave **JSON**.
 2. Admin do Workspace > **Segurança > Controles de API > Delegação em todo o domínio** > adicione o *Client ID* da conta de serviço com o escopo `https://www.googleapis.com/auth/calendar.events`.
