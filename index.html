@@ -5949,6 +5949,21 @@ ${clipPlayerPills(n)}
       if(e.key.length === 1) scanBuffer += e.key;
     });
 
+    // ESC fecha o modal aberto do Estoque (o que estiver por cima), igual ao "×".
+    document.addEventListener('keydown', (e) => {
+      if(e.key !== 'Escape' || currentPage !== 'estoque') return;
+      const modais = [
+        ['waCamModal', waCloseCamModal],
+        ['waMovModal', waCloseMovModal],
+        ['waProductModal', waCloseProductModal],
+        ['waStockHubModal', waCloseStockHub]
+      ];
+      const aberto = modais.find(([id]) => document.getElementById(id).classList.contains('open'));
+      if(!aberto) return;
+      e.preventDefault();
+      aberto[1]();
+    });
+
     waScanModeToggle.querySelectorAll('.wa-view-toggle-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         scanMode = btn.dataset.mode;
