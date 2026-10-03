@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Publica somente o index.html, a pasta assets/ (imagens do Hub) e o
+      # Publica somente o index.html, a pasta assets/ (imagens do Hub), a landing
+      # page de apresentação (landing/) e o
       # config.js gerado a partir dos secrets. .env, scripts, SQL e docs NÃO
       # vão para o site.
       - name: Montar o site
@@ -35,6 +36,7 @@ jobs:
           mkdir _site
           cp index.html _site/index.html
           cp -r assets _site/assets
+          cp -r landing _site/landing
           python3 scripts/gerar_config.py _site
           touch _site/.nojekyll
 
