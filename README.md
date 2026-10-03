@@ -62,6 +62,6 @@ supabase/                SQL de segurança (RLS) e passo a passo
 SECURITY.md              riscos e limitações
 ```
 
-## Modelos de landind page para o porjeto
+## Modelos de landing page para o projeto
 https://dribbble.com/shots/27591382-Fintech-Landing-Page-Design
 https://dribbble.com/shots/27604108-Nodeword-AI-Agent-Platform-Landing-Page
