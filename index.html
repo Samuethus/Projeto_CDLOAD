@@ -8818,55 +8818,65 @@ ${clipPlayerPills(n)}
       .filter(([m]) => Number(m.slice(0, 4)) === ano && mesesNum.includes(Number(m.slice(5, 7)))).map(([, i]) => i));
     const sefSoma = (arr, meses) => { let s = 0; meses.forEach(i => { s += arr[i] || 0; }); return s; };
 
+    // A Sefaz publica o ICMS por município e o ICMS por CNAE, mas não o cruzamento. Quando um
+    // filtro de um lado é usado, o outro lado é ESTIMADO pela proporção, mês a mês:
+    //   Região/Município → quadros de CNAE × (ICMS do recorte ÷ ICMS do estado)
+    //   Busca de setor   → quadros de municípios × (ICMS do setor ÷ ICMS total da CNAE)
     function sefModelo(D, J){
       const C = D.cnae, reg = stkRegiaoEl.value, mi = stkMunicipioEl.value;
-      const q = stkNorm(stkBuscaInput.value.trim());
+      const busca = stkBuscaInput.value.trim();
+      // Busca pela raiz da palavra: "varejo" acha "varejista", "bebida" acha "bebidas".
+      const q = stkNorm(busca).split(/\s+/).filter(Boolean).map(p => p.length >= 5 ? p.replace(/(os|as|es|o|a|s)$/, '') : p).join(' ');
       const ant2 = sefMesesDe(D, J.ano - 2, J.mesesNum);
+      const nM = D.meses.length, todos = D.mun.nomes.map((n, i) => i);
       // Busca: segmentos cujo nome, setor ou macrossetor contém o texto.
       const segs = C.segs.nomes.map((n, s) => s).filter(s => {
         if(!q) return true;
         const st = C.segs.setor[s];
         return [C.segs.nomes[s], C.setores.nomes[st], C.macros[C.setores.macro[st]]].some(t => stkNorm(t).includes(q));
       });
-      const somaCnae = (serie, meses, filtro) => segs.filter(filtro || (() => true)).reduce((t, s) => t + sefSoma(C[serie][s], meses), 0);
-      // Municípios do recorte (Região/Município) e totais do estado.
-      const munSel = D.mun.nomes.map((n, i) => i).filter(i => mi !== '' ? i === Number(mi) : reg === '' || D.mun.reg[i] === Number(reg));
-      const somaMun = (lista, meses) => lista.reduce((t, i) => t + sefSoma(D.mun.v[i], meses), 0);
-      const todos = D.mun.nomes.map((n, i) => i);
+      const segSet = new Set(segs);
+      const munSel = todos.filter(i => mi !== '' ? i === Number(mi) : reg === '' || D.mun.reg[i] === Number(reg));
       const filtradoGeo = mi !== '' || reg !== '';
       const localGeo = mi !== '' ? D.mun.nomes[Number(mi)] : reg !== '' ? `Região ${D.regioes[Number(reg)]}` : 'Mato Grosso';
-      const busca = stkBuscaInput.value.trim();
-      // Com busca, KPIs de arrecadação e evolução vêm da CNAE (Mato Grosso inteiro).
-      const local = busca ? `Mato Grosso · “${busca}”` : localGeo;
-      const tot = busca ? somaCnae('real', J.atual) : somaMun(munSel, J.atual);
-      const totAnt = busca ? somaCnae('real', J.anterior) : somaMun(munSel, J.anterior);
-      const porMes = (ano) => { const v = Array(12).fill(0);
-        D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) !== ano) return;
-          v[Number(m.slice(5, 7)) - 1] = busca ? segs.reduce((t, s) => t + (C.real[s][i] || 0), 0) : munSel.reduce((t, k) => t + (D.mun.v[k][i] || 0), 0); });
-        return v; };
+      const local = localGeo + (busca ? ` · “${busca}”` : '');
+      // Séries mensais base.
+      const somaMes = (lista, f) => { const v = new Float64Array(nM); lista.forEach(k => { const a = f(k); for(let i = 0; i < nM; i++) v[i] += a[i] || 0; }); return v; };
+      const estado = somaMes(todos, k => D.mun.v[k]), geo = somaMes(munSel, k => D.mun.v[k]);
+      const cnaeTot = somaMes(C.real.map((a, s) => s), s => C.real[s]), cnaeSeg = somaMes(segs, s => C.real[s]);
+      const fGeo = Array.from(estado, (e, i) => e > 0 ? geo[i] / e : 0);                     // fatia do recorte
+      const fSet = Array.from(cnaeTot, (t, i) => busca ? (t > 0 ? cnaeSeg[i] / t : 0) : 1);  // fatia do setor
+      const pond = (arr, f, meses) => { let s = 0; meses.forEach(i => { s += (arr[i] || 0) * f[i]; }); return s; };
+      // Lado municípios (× fatia do setor) e lado CNAE (× fatia do recorte).
+      const mun = (arr, meses) => pond(arr, fSet, meses);
+      const cnae = (arr, meses) => pond(arr, fGeo, meses);
+      const cnaeSegs = (serie, meses, filtro) => segs.filter(filtro || (() => true)).reduce((t, s) => t + cnae(C[serie][s], meses), 0);
+      const porMes = ano => { const v = Array(12).fill(0);
+        D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) === ano) v[Number(m.slice(5, 7)) - 1] = geo[i] * fSet[i]; }); return v; };
       const macroDe = s => C.macros[C.setores.macro[C.segs.setor[s]]];
+      const ehCom = s => macroDe(s) === 'Comércio e Serviços';
       const mapaCnae = (chave, meses) => { const m = new Map();
-        segs.forEach(s => { const k = chave(s); m.set(k, (m.get(k) || 0) + sefSoma(C.real[s], meses)); }); return m; };
-      const segSet = new Set(segs);
+        segs.forEach(s => { const k = chave(s); m.set(k, (m.get(k) || 0) + cnae(C.real[s], meses)); }); return m; };
       // Grupos da rosca: pares [segmento, grupo, mensal] dos segmentos que passam na busca.
       const R = SEF_ROSCA[sefRoscaVisao], G = C.grupos;
       const grupos = new Map(G[R.nomes].map(n => [n, 0]));
-      G[R.chave].forEach(([s, g, v]) => { if(segSet.has(s)) grupos.set(G[R.nomes][g], grupos.get(G[R.nomes][g]) + sefSoma(v, J.atual)); });
+      G[R.chave].forEach(([s, g, v]) => { if(segSet.has(s)) grupos.set(G[R.nomes][g], grupos.get(G[R.nomes][g]) + cnae(v, J.atual)); });
       const subs = new Map();
-      C.subs.nomes.forEach((n, k) => { if(segSet.has(C.subs.seg[k])) subs.set(n, sefSoma(C.subs.v[k], J.atual)); });
-      const regioes = new Map(D.regioes.map((r, ri) => [ri, somaMun(todos.filter(i => D.mun.reg[i] === ri), J.atual)]));
+      C.subs.nomes.forEach((n, k) => { if(segSet.has(C.subs.seg[k])) subs.set(n, cnae(C.subs.v[k], J.atual)); });
+      const regioes = new Map(D.regioes.map((r, ri) => [ri, todos.filter(i => D.mun.reg[i] === ri).reduce((t, i) => t + mun(D.mun.v[i], J.atual), 0)]));
       const munEscopo = reg !== '' ? todos.filter(i => D.mun.reg[i] === Number(reg)) : todos;
       return { J, local, localGeo, busca, filtradoGeo, semSegmento: !segs.length,
-        tot, totAnt, mesesAtual: J.atual.size, mesesAnt: J.anterior.size,
-        real: somaCnae('real', J.atual), prev: somaCnae('prev', J.atual), realAnt: somaCnae('real', J.anterior), prevAnt: somaCnae('prev', J.anterior),
-        com: somaCnae('real', J.atual, s => macroDe(s) === 'Comércio e Serviços'), comAnt: somaCnae('real', J.anterior, s => macroDe(s) === 'Comércio e Serviços'),
-        corr: somaCnae('corr', J.atual), corrAnt: somaCnae('corr', J.anterior), corrAnt2: somaCnae('corr', ant2),
-        estado: somaMun(todos, J.atual), estadoAnt: somaMun(todos, J.anterior),
+        estimaCnae: filtradoGeo, estimaMun: !!busca,
+        tot: pond(geo, fSet, J.atual), totAnt: pond(geo, fSet, J.anterior), mesesAtual: J.atual.size, mesesAnt: J.anterior.size,
+        real: cnaeSegs('real', J.atual), prev: cnaeSegs('prev', J.atual), realAnt: cnaeSegs('real', J.anterior), prevAnt: cnaeSegs('prev', J.anterior),
+        com: cnaeSegs('real', J.atual, ehCom), comAnt: cnaeSegs('real', J.anterior, ehCom),
+        corr: cnaeSegs('corr', J.atual), corrAnt: cnaeSegs('corr', J.anterior), corrAnt2: cnaeSegs('corr', ant2),
+        estado: mun(estado, J.atual), estadoAnt: mun(estado, J.anterior),
         mensal: { [J.ano]: porMes(J.ano), [J.anoAnt]: porMes(J.anoAnt) },
         regioes, regSel: mi !== '' ? D.mun.reg[Number(mi)] : reg !== '' ? Number(reg) : -1,
         grupos, setores: mapaCnae(s => C.setores.nomes[C.segs.setor[s]], J.atual), subs,
-        munAtual: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.atual)])),
-        munAnt: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.anterior)])),
+        munAtual: new Map(munEscopo.map(i => [i, mun(D.mun.v[i], J.atual)])),
+        munAnt: new Map(munEscopo.map(i => [i, mun(D.mun.v[i], J.anterior)])),
         munSel: mi !== '' ? Number(mi) : -1, regEscopo: reg !== '' ? Number(reg) : -1 };
     }
 
@@ -8884,13 +8894,6 @@ ${clipPlayerPills(n)}
       stkPreencherFiltros();
       sefPreencherFiltros(D);
       const M = sefModelo(D, panJanela(D));
-      // Com busca, Região/Município só valem para os quadros de municípios.
-      const ignorar = !!M.busca && M.filtradoGeo;
-      [stkRegiaoEl, stkMunicipioEl].forEach(el => {
-        el.classList.toggle('stk-filtro-ignorado', ignorar);
-        el.title = ignorar ? 'Com busca ativa, vale só para "Arrecadação por região" e "Destaques" (a Sefaz não publica CNAE por município)'
-          : el === stkRegiaoEl ? 'Região fiscal de Mato Grosso' : 'Município de Mato Grosso';
-      });
       sefDesenhar(D, M);
     }
 
@@ -8898,8 +8901,11 @@ ${clipPlayerPills(n)}
       const J = M.J, anoAnt = J.anoAnt;
       const ultimo = D.meses[D.meses.length - 1], ultAno = Number(ultimo.slice(0, 4)), ultMes = Number(ultimo.slice(5, 7));
       const fonte = `Sefaz MT (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
-      const soEstado = 'Mato Grosso · a Sefaz não detalha CNAE por município';
-      const subCnae = M.busca ? `Setores com “${M.busca}”` : M.filtradoGeo ? soEstado : '';
+      // Estimativas (a Sefaz não cruza município × CNAE): o rótulo deixa isso explícito.
+      const est = M.estimaCnae ? ` · estimativa para ${M.localGeo}` : '';
+      const subCnae = M.busca ? `Setores com “${M.busca}”${est}` : M.estimaCnae ? `${M.localGeo} · estimativa pela participação no ICMS` : '';
+      const subMunEst = M.estimaMun ? ` · estimativa para “${M.busca}”` : '';
+      const dicaCnae = M.local + (M.estimaCnae ? ' · estimativa pela participação no ICMS do estado' : '');
       const vazioBusca = M.semSegmento ? `Nenhum setor ou segmento com “${M.busca}”.` : 'Sem arrecadação no período.';
 
       // ---- KPIs ----
@@ -8910,19 +8916,19 @@ ${clipPlayerPills(n)}
         `Arrecadação média por mês no período · ${M.local}`);
       const ating = M.prev > 0 ? M.real / M.prev : 0, atingAnt = M.prevAnt > 0 ? M.realAnt / M.prevAnt : 0;
       const kPrev = cdKpiCard('percent', 'amarelo', 'Realizado vs. previsto', M.prev > 0 ? stkPct(ating, 1) : '—', cdDelta(ating, atingAnt, true, !atingAnt || !ating),
-        `vs. ${anoAnt} (${atingAnt ? stkPct(atingAnt, 1) : '—'})`, `ICMS realizado ÷ previsto pela Sefaz · ${M.busca ? M.local : 'Mato Grosso'}`);
+        `vs. ${anoAnt} (${atingAnt ? stkPct(atingAnt, 1) : '—'})`, `ICMS realizado ÷ previsto pela Sefaz · ${dicaCnae}`);
       const kCom = cdKpiCard('carrinho', 'azul', 'Comércio e Serviços', sefFmt(M.com), cdDelta(M.com, M.comAnt), `vs. ${anoAnt} (${sefFmt(M.comAnt)})`,
-        `ICMS do grande setor Comércio e Serviços · ${M.busca ? M.local : 'Mato Grosso'}`);
+        `ICMS do grande setor Comércio e Serviços · ${dicaCnae}`);
       let k5;
-      if(M.filtradoGeo && !M.busca){
+      if(M.filtradoGeo){
         const part = M.estado ? M.tot / M.estado : 0, partAnt = M.estadoAnt ? M.totAnt / M.estadoAnt : 0;
         k5 = cdKpiCard('mapa', 'verde', 'Participação no estado', stkPct(part, 1), cdDelta(part, partAnt, true, !partAnt), `vs. ${anoAnt} (${partAnt ? stkPct(partAnt, 1) : '—'})`,
-          `Fatia de ${M.localGeo} no ICMS de Mato Grosso`);
+          `Fatia de ${M.localGeo} no ICMS de Mato Grosso${M.busca ? ` · “${M.busca}” (estimativa)` : ''}`);
       } else {
         // Realizado corrigido pela inflação (Sefaz): crescimento acima da inflação.
         const cr = M.corrAnt > 0 ? M.corr / M.corrAnt - 1 : 0, crAnt = M.corrAnt2 > 0 ? M.corrAnt / M.corrAnt2 - 1 : 0;
         k5 = cdKpiCard('trendUp', 'verde', 'Crescimento real', M.corrAnt > 0 ? (cr > 0 ? '+' : '') + stkPct(cr, 1) : '—', cdDelta(cr, crAnt, true, !M.corrAnt2 || !M.corrAnt),
-          `vs. ${anoAnt} (${M.corrAnt2 ? (crAnt > 0 ? '+' : '') + stkPct(crAnt, 1) : '—'})`, `Crescimento descontada a inflação (realizado corrigido pela Sefaz) · ${M.busca ? M.local : 'Mato Grosso'}`);
+          `vs. ${anoAnt} (${M.corrAnt2 ? (crAnt > 0 ? '+' : '') + stkPct(crAnt, 1) : '—'})`, `Crescimento descontada a inflação (realizado corrigido pela Sefaz) · ${dicaCnae}`);
       }
 
       // ---- Evolução mensal (R$ milhões) ----
@@ -8933,11 +8939,11 @@ ${clipPlayerPills(n)}
         { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: emMi(M.mensal[anoAnt]) }
       ] };
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const wVolume = cdCard('Evolução da arrecadação', `${M.local === 'Mato Grosso' ? 'ICMS por mês' : M.local}, em R$ milhões · ${fonte}`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+      const wVolume = cdCard('Evolução da arrecadação', `${M.local === 'Mato Grosso' ? 'ICMS por mês' : M.local + (M.estimaMun ? ' (estimativa)' : '')}, em R$ milhões · ${fonte}`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
 
       // ---- Arrecadação por região ----
-      const regs = [...M.regioes.entries()].sort((a, b) => b[1] - a[1]);
-      const wRegioes = cdCard('Arrecadação por região', M.regSel >= 0 ? `${D.regioes[M.regSel]} em destaque` : 'Regiões fiscais de Mato Grosso',
+      const regs = [...M.regioes.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+      const wRegioes = cdCard('Arrecadação por região', (M.regSel >= 0 ? `${D.regioes[M.regSel]} em destaque` : 'Regiões fiscais de Mato Grosso') + subMunEst,
         cdBarras(regs.map(([ri, v], i) => ({ nome: D.regioes[ri], valor: v, rotulo: sefFmt(v),
           cor: M.regSel >= 0 ? (ri === M.regSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', regs.length > 1 ? i / (regs.length - 1) : 0) })),
           'Arrecadação por região', 'Sem arrecadação no período.'));
@@ -8969,9 +8975,9 @@ ${clipPlayerPills(n)}
         : `<div class="stk-vazio">${esc(vazioBusca)}</div>`);
 
       // ---- Destaques: municípios que mais arrecadaram (estado ou região; município filtrado marcado) ----
-      let muns = [...M.munAtual.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      let muns = [...M.munAtual.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
       if(M.munSel >= 0 && !muns.some(([i]) => i === M.munSel) && M.munAtual.has(M.munSel)) muns.splice(4, 1, [M.munSel, M.munAtual.get(M.munSel)]);
-      const wMun = cdCard(M.regEscopo >= 0 ? `Destaques na região ${D.regioes[M.regEscopo]}` : 'Destaques em Mato Grosso', 'Municípios que mais arrecadaram ICMS', muns.length ? `<ul class="cd-dest">${muns.map(([i, v]) => {
+      const wMun = cdCard(M.regEscopo >= 0 ? `Destaques na região ${D.regioes[M.regEscopo]}` : 'Destaques em Mato Grosso', 'Municípios que mais arrecadaram ICMS' + subMunEst, muns.length ? `<ul class="cd-dest">${muns.map(([i, v]) => {
           const nome = D.mun.nomes[i], ant = M.munAnt.get(i) || 0, d = cdDelta(v, ant);
           const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
           return `<li${i === M.munSel ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)} · ${esc(sefFmt(v))} · ${esc(d.txt)} vs. ${anoAnt} (${esc(sefFmt(ant))})"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
@@ -8986,6 +8992,17 @@ ${clipPlayerPills(n)}
       stkDesenharRoscaCd(dadosMacro, R.titulo, 196);
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      // Mês filtrado: faixa de destaque no gráfico (o ano inteiro continua como contexto).
+      const mesSel = Number(stkMesEl.value), alvo = grafFluxo && grafFluxo.querySelector('.stk-alvo');
+      if(mesSel && mesSel <= nMeses && alvo && nMeses > 1){
+        const ml = Number(alvo.getAttribute('x')), iw = Number(alvo.getAttribute('width')), passo = iw / (nMeses - 1);
+        const xc = ml + (mesSel - 1) * passo, x0 = Math.max(ml, xc - passo / 2), x1 = Math.min(ml + iw, xc + passo / 2);
+        const faixa = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        Object.entries({ x: x0, y: alvo.getAttribute('y'), width: x1 - x0, height: alvo.getAttribute('height'), fill: CD_COR.azul, 'fill-opacity': .1, rx: 4 })
+          .forEach(([k, v]) => faixa.setAttribute(k, v));
+        const svg = grafFluxo.querySelector('svg');
+        svg.insertBefore(faixa, svg.querySelector('path'));
+      }
       cdAjustarListas();
       sefUltimo = M;
     }
