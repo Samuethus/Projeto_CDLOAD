@@ -1,7 +1,7 @@
-# Atualiza diariamente os dados do Panorama Econômico (ABVE e Novo CAGED).
-# Roda scripts/abve_extrair.py e scripts/caged_extrair.py e só faz commit (e novo deploy)
-# se alguma das fontes publicou algo novo.
-name: Atualizar dados (ABVE e CAGED)
+# Atualiza diariamente os dados do Panorama Econômico (ABVE e Novo CAGED) e do painel Sefaz MT (ICMS).
+# Roda scripts/abve_extrair.py, scripts/caged_extrair.py e scripts/sefaz_extrair.ps1 e só faz
+# commit (e novo deploy) se alguma das fontes publicou algo novo.
+name: Atualizar dados (ABVE, CAGED e Sefaz MT)
 
 on:
   schedule:
@@ -24,15 +24,21 @@ jobs:
         run: python scripts/abve_extrair.py
       - name: Extrair dados do Novo CAGED
         run: python scripts/caged_extrair.py
+      # Looker Studio público da Sefaz MT. Se a Sefaz refizer o relatório, este passo falha
+      # sem apagar os dados anteriores e sem impedir a atualização de ABVE e CAGED.
+      - name: Extrair dados da Sefaz MT (ICMS)
+        continue-on-error: true
+        shell: pwsh
+        run: ./scripts/sefaz_extrair.ps1
       - name: Commit e deploy se houve mudança
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -n "$(git status --porcelain assets/data/abve_frotas.js assets/data/caged_dados.js)" ]; then
+          if [ -n "$(git status --porcelain assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/sefaz_icms.js)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"
-            git add assets/data/abve_frotas.js assets/data/caged_dados.js
-            git commit -m "Dados ABVE/CAGED: atualização diária"
+            git add assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/sefaz_icms.js
+            git commit -m "Dados ABVE/CAGED/Sefaz: atualização diária"
             git push
             # Commits feitos pelo GITHUB_TOKEN não disparam o deploy sozinhos.
             gh workflow run deploy.yml

@@ -1717,6 +1717,7 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
+            <option value="sefaz">Painel · Sefaz MT (ICMS)</option>
           </select>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
@@ -1745,6 +1746,12 @@
           </select>
           <select class="filter-select" id="stkCidadeFiltro" title="Cidade (escolha um estado)" hidden disabled>
             <option value="">Cidade</option>
+          </select>
+          <select class="filter-select" id="stkRegiaoFiltro" title="Região fiscal de Mato Grosso" hidden>
+            <option value="">Região</option>
+          </select>
+          <select class="filter-select" id="stkMunicipioFiltro" title="Município de Mato Grosso" hidden>
+            <option value="">Município</option>
           </select>
           <select class="filter-select" id="stkSetorFiltro" title="Setor">
             <option value="">Setor</option>
@@ -7105,7 +7112,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainelEl.value];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -7291,20 +7298,30 @@ ${clipPlayerPills(n)}
     function stkAlternarFiltrosPorPainel(){
       const clipping = stkPainelEl.value === 'clipping';
       const panorama = stkPainelEl.value === 'panorama';
-      stkSetorEl.hidden = clipping || panorama;
+      const sefaz = stkPainelEl.value === 'sefaz';
+      stkSetorEl.hidden = clipping || panorama || sefaz;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
-      // Panorama: dados mensais da ABVE — só Mês/Ano (sem busca nem período em dias).
-      stkSegmented.hidden = clipping || panorama;
+      // Panorama e Sefaz: dados mensais — só Mês/Ano (sem período em dias).
+      stkSegmented.hidden = clipping || panorama || sefaz;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = !panorama;
       stkUfEl.hidden = !panorama;
       stkCidadeEl.hidden = !panorama;
-      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+      stkRegiaoEl.hidden = !sefaz;
+      stkMunicipioEl.hidden = !sefaz;
+      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
+      if(stkPainelEl.value === 'sefaz'){
+        // O primeiro ano extraído é só a base de comparação do seguinte.
+        const anosSef = [...new Set((window.SEFAZ_ICMS ? window.SEFAZ_ICMS.meses : []).map(m => m.slice(0, 4)))].sort().slice(1).reverse();
+        stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosSef.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        if(anosSef.includes(curAno)) stkAnoEl.value = curAno;
+        return;
+      }
       if(stkPainelEl.value === 'panorama'){
         const fontePan = stkIndicadorEl.value === 'caged' ? window.CAGED_DADOS : window.ABVE_FROTAS;
         const anosTodos = [...new Set((fontePan ? fontePan.meses : []).map(m => m.slice(0, 4)))].sort();
@@ -7792,6 +7809,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
+        : painel === 'sefaz' ? Promise.resolve()   // sefRender carrega os dados sob demanda
         : (stockProducts.length ? Promise.resolve() : loadStock());
       Promise.resolve(carregar).then(stkRender);
     }
@@ -7803,6 +7821,7 @@ ${clipPlayerPills(n)}
       stkAtualizarContagem();
       if(stkPainelEl.value === 'clipping') return stkRenderClipping();
       if(stkPainelEl.value === 'panorama') return stkRenderPanorama();
+      if(stkPainelEl.value === 'sefaz') return sefRender();
       return stkRenderEstoque();
     }
 
@@ -8747,6 +8766,209 @@ ${clipPlayerPills(n)}
       cagUltimo = M;
     }
 
+    // ===== Painel Sefaz MT (ICMS) — mesma estrutura do CAGED =====
+    // Dados extraídos diariamente do "Dashboard de Arrecadação" público da Sefaz MT (Looker Studio)
+    // por scripts/sefaz_extrair.ps1 (assets/data/sefaz_icms.js). Tudo é filtrado no navegador:
+    // Região/Município usam o ICMS por município; a busca filtra setores/segmentos (CNAE).
+    // A Sefaz não publica CNAE por município: os quadros de setor mostram sempre Mato Grosso.
+    const stkRegiaoEl = document.getElementById('stkRegiaoFiltro');
+    const stkMunicipioEl = document.getElementById('stkMunicipioFiltro');
+    const SEF_MACRO_COR = { 'Comércio e Serviços': CD_COR.azul, 'Indústria': CD_COR.azulClaro, 'Agropecuária': CD_COR.verde };
+    // R$ compacto: 18,1 bi · 976,8 mi · 109,6 mil.
+    const sefEscala = v => { const a = Math.abs(v);
+      return a >= 1e9 ? [v / 1e9, 'bi'] : a >= 1e6 ? [v / 1e6, 'mi'] : a >= 1e3 ? [v / 1e3, 'mil'] : [v, '']; };
+    const sefFmt = v => { const [n, u] = sefEscala(v); return `R$ ${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}${u ? ' ' + u : ''}`; };
+
+    let sefDadosPromessa = null;
+    function sefCarregar(){
+      if(window.SEFAZ_ICMS) return Promise.resolve();
+      if(!sefDadosPromessa) sefDadosPromessa = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/sefaz_icms.js';
+        sc.onload = ok;
+        sc.onerror = () => { sefDadosPromessa = null; falha(new Error('sefaz_icms.js')); };
+        document.head.appendChild(sc);
+      });
+      return sefDadosPromessa;
+    }
+    function sefPreencherFiltros(D){
+      if(stkRegiaoEl.options.length <= 1){
+        stkRegiaoEl.innerHTML = '<option value="">Região</option>' + D.regioes.map((r, i) => `<option value="${i}">${esc(r)}</option>`).join('');
+      }
+      // Município: só os da região escolhida; troca de região descarta um município de fora.
+      const reg = stkRegiaoEl.value, cur = stkMunicipioEl.value;
+      const lista = D.mun.nomes.map((n, i) => [n, i]).filter(([, i]) => reg === '' || D.mun.reg[i] === Number(reg));
+      stkMunicipioEl.innerHTML = '<option value="">Município</option>' + lista.map(([n, i]) => `<option value="${i}">${esc(n)}</option>`).join('');
+      stkMunicipioEl.value = lista.some(([, i]) => String(i) === cur) ? cur : '';
+    }
+    // Índices dos meses de um ano dentro da janela (mesmos meses do filtro).
+    const sefMesesDe = (D, ano, mesesNum) => new Set(D.meses.map((m, i) => [m, i])
+      .filter(([m]) => Number(m.slice(0, 4)) === ano && mesesNum.includes(Number(m.slice(5, 7)))).map(([, i]) => i));
+    const sefSoma = (arr, meses) => { let s = 0; meses.forEach(i => { s += arr[i] || 0; }); return s; };
+
+    function sefModelo(D, J){
+      const C = D.cnae, reg = stkRegiaoEl.value, mi = stkMunicipioEl.value;
+      const q = stkNorm(stkBuscaInput.value.trim());
+      const ant2 = sefMesesDe(D, J.ano - 2, J.mesesNum);
+      // Busca: segmentos cujo nome, setor ou macrossetor contém o texto.
+      const segs = C.segs.nomes.map((n, s) => s).filter(s => {
+        if(!q) return true;
+        const st = C.segs.setor[s];
+        return [C.segs.nomes[s], C.setores.nomes[st], C.macros[C.setores.macro[st]]].some(t => stkNorm(t).includes(q));
+      });
+      const somaCnae = (serie, meses, filtro) => segs.filter(filtro || (() => true)).reduce((t, s) => t + sefSoma(C[serie][s], meses), 0);
+      // Municípios do recorte (Região/Município) e totais do estado.
+      const munSel = D.mun.nomes.map((n, i) => i).filter(i => mi !== '' ? i === Number(mi) : reg === '' || D.mun.reg[i] === Number(reg));
+      const somaMun = (lista, meses) => lista.reduce((t, i) => t + sefSoma(D.mun.v[i], meses), 0);
+      const todos = D.mun.nomes.map((n, i) => i);
+      const filtradoGeo = mi !== '' || reg !== '';
+      const localGeo = mi !== '' ? D.mun.nomes[Number(mi)] : reg !== '' ? `Região ${D.regioes[Number(reg)]}` : 'Mato Grosso';
+      const busca = stkBuscaInput.value.trim();
+      // Com busca, KPIs de arrecadação e evolução vêm da CNAE (Mato Grosso inteiro).
+      const local = busca ? `Mato Grosso · “${busca}”` : localGeo;
+      const tot = busca ? somaCnae('real', J.atual) : somaMun(munSel, J.atual);
+      const totAnt = busca ? somaCnae('real', J.anterior) : somaMun(munSel, J.anterior);
+      const porMes = (ano) => { const v = Array(12).fill(0);
+        D.meses.forEach((m, i) => { if(Number(m.slice(0, 4)) !== ano) return;
+          v[Number(m.slice(5, 7)) - 1] = busca ? segs.reduce((t, s) => t + (C.real[s][i] || 0), 0) : munSel.reduce((t, k) => t + (D.mun.v[k][i] || 0), 0); });
+        return v; };
+      const macroDe = s => C.macros[C.setores.macro[C.segs.setor[s]]];
+      const mapaCnae = (chave, meses) => { const m = new Map();
+        segs.forEach(s => { const k = chave(s); m.set(k, (m.get(k) || 0) + sefSoma(C.real[s], meses)); }); return m; };
+      const segSet = new Set(segs);
+      const subs = new Map();
+      C.subs.nomes.forEach((n, k) => { if(segSet.has(C.subs.seg[k])) subs.set(n, sefSoma(C.subs.v[k], J.atual)); });
+      const regioes = new Map(D.regioes.map((r, ri) => [ri, somaMun(todos.filter(i => D.mun.reg[i] === ri), J.atual)]));
+      const munEscopo = reg !== '' ? todos.filter(i => D.mun.reg[i] === Number(reg)) : todos;
+      return { J, local, localGeo, busca, filtradoGeo, semSegmento: !segs.length,
+        tot, totAnt, mesesAtual: J.atual.size, mesesAnt: J.anterior.size,
+        real: somaCnae('real', J.atual), prev: somaCnae('prev', J.atual), realAnt: somaCnae('real', J.anterior), prevAnt: somaCnae('prev', J.anterior),
+        com: somaCnae('real', J.atual, s => macroDe(s) === 'Comércio e Serviços'), comAnt: somaCnae('real', J.anterior, s => macroDe(s) === 'Comércio e Serviços'),
+        corr: somaCnae('corr', J.atual), corrAnt: somaCnae('corr', J.anterior), corrAnt2: somaCnae('corr', ant2),
+        estado: somaMun(todos, J.atual), estadoAnt: somaMun(todos, J.anterior),
+        mensal: { [J.ano]: porMes(J.ano), [J.anoAnt]: porMes(J.anoAnt) },
+        regioes, regSel: mi !== '' ? D.mun.reg[Number(mi)] : reg !== '' ? Number(reg) : -1,
+        macros: mapaCnae(macroDe, J.atual), setores: mapaCnae(s => C.setores.nomes[C.segs.setor[s]], J.atual), subs,
+        munAtual: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.atual)])),
+        munAnt: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.anterior)])),
+        munSel: mi !== '' ? Number(mi) : -1, regEscopo: reg !== '' ? Number(reg) : -1 };
+    }
+
+    let sefUltimo = null;
+    function sefRender(){
+      if(!window.SEFAZ_ICMS){
+        stkGrid.classList.add('cd-carregando');
+        sefCarregar().then(() => { if(stkPainelEl.value === 'sefaz') sefRender(); }).catch(() => {
+          stkGrid.classList.remove('cd-fit', 'cd-carregando');
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados da Sefaz MT (assets/data/sefaz_icms.js).</div></div>`;
+        });
+        return;
+      }
+      const D = window.SEFAZ_ICMS;
+      stkPreencherFiltros();
+      sefPreencherFiltros(D);
+      const M = sefModelo(D, panJanela(D));
+      // Com busca, Região/Município só valem para os quadros de municípios.
+      const ignorar = !!M.busca && M.filtradoGeo;
+      [stkRegiaoEl, stkMunicipioEl].forEach(el => {
+        el.classList.toggle('stk-filtro-ignorado', ignorar);
+        el.title = ignorar ? 'Com busca ativa, vale só para "Arrecadação por região" e "Destaques" (a Sefaz não publica CNAE por município)'
+          : el === stkRegiaoEl ? 'Região fiscal de Mato Grosso' : 'Município de Mato Grosso';
+      });
+      sefDesenhar(D, M);
+    }
+
+    function sefDesenhar(D, M){
+      const J = M.J, anoAnt = J.anoAnt;
+      const ultimo = D.meses[D.meses.length - 1], ultAno = Number(ultimo.slice(0, 4)), ultMes = Number(ultimo.slice(5, 7));
+      const fonte = `Sefaz MT (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
+      const soEstado = 'Mato Grosso · a Sefaz não detalha CNAE por município';
+      const subCnae = M.busca ? `Setores com “${M.busca}”` : M.filtradoGeo ? soEstado : '';
+      const vazioBusca = M.semSegmento ? `Nenhum setor ou segmento com “${M.busca}”.` : 'Sem arrecadação no período.';
+
+      // ---- KPIs ----
+      const media = M.mesesAtual ? M.tot / M.mesesAtual : 0, mediaAnt = M.mesesAnt ? M.totAnt / M.mesesAnt : 0;
+      const kTot = cdKpiCard('banco', 'azul', 'ICMS arrecadado', sefFmt(M.tot), cdDelta(M.tot, M.totAnt), `vs. ${anoAnt} (${sefFmt(M.totAnt)})`,
+        `ICMS principal + Fundo da Pobreza · ${M.local} · ${J.rotulo}`);
+      const kMedia = cdKpiCard('barras', 'verde', 'Média mensal', sefFmt(media), cdDelta(media, mediaAnt), `vs. ${anoAnt} (${sefFmt(mediaAnt)})`,
+        `Arrecadação média por mês no período · ${M.local}`);
+      const ating = M.prev > 0 ? M.real / M.prev : 0, atingAnt = M.prevAnt > 0 ? M.realAnt / M.prevAnt : 0;
+      const kPrev = cdKpiCard('percent', 'amarelo', 'Realizado vs. previsto', M.prev > 0 ? stkPct(ating, 1) : '—', cdDelta(ating, atingAnt, true, !atingAnt || !ating),
+        `vs. ${anoAnt} (${atingAnt ? stkPct(atingAnt, 1) : '—'})`, `ICMS realizado ÷ previsto pela Sefaz · ${M.busca ? M.local : 'Mato Grosso'}`);
+      const kCom = cdKpiCard('carrinho', 'azul', 'Comércio e Serviços', sefFmt(M.com), cdDelta(M.com, M.comAnt), `vs. ${anoAnt} (${sefFmt(M.comAnt)})`,
+        `ICMS do grande setor Comércio e Serviços · ${M.busca ? M.local : 'Mato Grosso'}`);
+      let k5;
+      if(M.filtradoGeo && !M.busca){
+        const part = M.estado ? M.tot / M.estado : 0, partAnt = M.estadoAnt ? M.totAnt / M.estadoAnt : 0;
+        k5 = cdKpiCard('mapa', 'verde', 'Participação no estado', stkPct(part, 1), cdDelta(part, partAnt, true, !partAnt), `vs. ${anoAnt} (${partAnt ? stkPct(partAnt, 1) : '—'})`,
+          `Fatia de ${M.localGeo} no ICMS de Mato Grosso`);
+      } else {
+        // Realizado corrigido pela inflação (Sefaz): crescimento acima da inflação.
+        const cr = M.corrAnt > 0 ? M.corr / M.corrAnt - 1 : 0, crAnt = M.corrAnt2 > 0 ? M.corrAnt / M.corrAnt2 - 1 : 0;
+        k5 = cdKpiCard('trendUp', 'verde', 'Crescimento real', M.corrAnt > 0 ? (cr > 0 ? '+' : '') + stkPct(cr, 1) : '—', cdDelta(cr, crAnt, true, !M.corrAnt2 || !M.corrAnt),
+          `vs. ${anoAnt} (${M.corrAnt2 ? (crAnt > 0 ? '+' : '') + stkPct(crAnt, 1) : '—'})`, `Crescimento descontada a inflação (realizado corrigido pela Sefaz) · ${M.busca ? M.local : 'Mato Grosso'}`);
+      }
+
+      // ---- Evolução mensal (R$ milhões) ----
+      const nMeses = J.ano === ultAno ? ultMes : 12;
+      const emMi = arr => arr.slice(0, nMeses).map(v => Math.round(v / 1e5) / 10);
+      const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
+        { nome: String(J.ano), cor: CD_COR.azul, valores: emMi(M.mensal[J.ano]) },
+        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: emMi(M.mensal[anoAnt]) }
+      ] };
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const wVolume = cdCard('Evolução da arrecadação', `${M.local === 'Mato Grosso' ? 'ICMS por mês' : M.local}, em R$ milhões · ${fonte}`, '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+
+      // ---- Arrecadação por região ----
+      const regs = [...M.regioes.entries()].sort((a, b) => b[1] - a[1]);
+      const wRegioes = cdCard('Arrecadação por região', M.regSel >= 0 ? `${D.regioes[M.regSel]} em destaque` : 'Regiões fiscais de Mato Grosso',
+        cdBarras(regs.map(([ri, v], i) => ({ nome: D.regioes[ri], valor: v, rotulo: sefFmt(v),
+          cor: M.regSel >= 0 ? (ri === M.regSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', regs.length > 1 ? i / (regs.length - 1) : 0) })),
+          'Arrecadação por região', 'Sem arrecadação no período.'));
+
+      // ---- ICMS por grande setor (rosca) ----
+      const dadosMacro = D.cnae.macros.map(n => ({ nome: n, sigla: n, cor: SEF_MACRO_COR[n] || CD_COR.cinza, valor: M.macros.get(n) || 0 }));
+      const totMacro = dadosMacro.reduce((s, d) => s + d.valor, 0);
+      const [cn, cu] = sefEscala(totMacro);
+      const wMacro = cdCard('ICMS por grande setor', subCnae, `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${cn.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong><span>${cu ? `R$ ${cu}` : 'R$'}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosMacro.map(d => `<li title="${esc(d.nome)}: ${esc(sefFmt(d.valor))}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totMacro ? d.valor / totMacro : 0)}</strong></li>`).join('')}</ul>
+        </div>`);
+
+      // ---- Setores que mais arrecadam ----
+      const setores = [...M.setores.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const wSetores = cdCard('Setores que mais arrecadam', subCnae || 'ICMS por setor econômico (CNAE)',
+        cdBarras(setores.map(([k, v]) => ({ nome: k, valor: v, rotulo: sefFmt(v), cor: CD_COR.verde })), 'Setores que mais arrecadam', vazioBusca));
+
+      // ---- Atividades (subclasse CNAE) que mais arrecadam (ranking) ----
+      const subs = [...M.subs.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const wSubs = cdCard('Atividades que mais arrecadam', subCnae || 'ICMS por atividade (subclasse CNAE)', subs.length ? `<ol class="cd-rank">${subs.map(([nome, v], i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${esc(sefFmt(v))}</strong><span class="cd-rank-pct">${stkPct(M.real ? v / M.real : 0)}</span></li>`).join('')}</ol>`
+        : `<div class="stk-vazio">${esc(vazioBusca)}</div>`);
+
+      // ---- Destaques: municípios que mais arrecadaram (estado ou região; município filtrado marcado) ----
+      let muns = [...M.munAtual.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if(M.munSel >= 0 && !muns.some(([i]) => i === M.munSel) && M.munAtual.has(M.munSel)) muns.splice(4, 1, [M.munSel, M.munAtual.get(M.munSel)]);
+      const wMun = cdCard(M.regEscopo >= 0 ? `Destaques na região ${D.regioes[M.regEscopo]}` : 'Destaques em Mato Grosso', 'Municípios que mais arrecadaram ICMS', muns.length ? `<ul class="cd-dest">${muns.map(([i, v]) => {
+          const nome = D.mun.nomes[i], ant = M.munAnt.get(i) || 0, d = cdDelta(v, ant);
+          const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
+          return `<li${i === M.munSel ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)} · ${esc(sefFmt(v))} · ${esc(d.txt)} vs. ${anoAnt} (${esc(sefFmt(ant))})"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${esc(sefFmt(v))}</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${esc(sefFmt(ant))})</span></span></span></div></li>`;
+        }).join('')}</ul>` : '<div class="stk-vazio">Sem arrecadação no período.</div>');
+
+      stkGrid.classList.add('cd-fit');
+      stkGrid.classList.remove('cd-carregando');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kTot}${kMedia}${kPrev}${kCom}${k5}</div>`
+        + `<div class="cd-row cd-row-a">${wVolume}${wRegioes}${wMacro}</div>`
+        + `<div class="cd-row cd-row-b">${wSetores}${wSubs}${wMun}</div></div>`;
+      stkDesenharRoscaCd(dadosMacro, 'ICMS por grande setor', 196);
+      const grafFluxo = document.getElementById('stkFluxoGraf');
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      cdAjustarListas();
+      sefUltimo = M;
+    }
+    [stkRegiaoEl, stkMunicipioEl].forEach(el => el.addEventListener('change', stkRender));
+
     stkSegmented.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
@@ -8779,6 +9001,7 @@ ${clipPlayerPills(n)}
     stkPainelEl.addEventListener('change', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = 'abve'; panPreencherCidades();
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = '';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
@@ -8786,6 +9009,7 @@ ${clipPlayerPills(n)}
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = 'abve'; panPreencherCidades();
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = '';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
@@ -8818,7 +9042,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(stkPainelEl.value === 'panorama'){ stkBuscaLista.hidden = true; return; }
+      if(stkPainelEl.value === 'panorama' || stkPainelEl.value === 'sefaz'){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -8848,6 +9072,8 @@ ${clipPlayerPills(n)}
       if(stkPainelEl.value === 'clipping'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainelEl.value === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
+      // Sefaz: setor/segmento filtrado nos dados já carregados.
+      if(stkPainelEl.value === 'sefaz'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -8916,6 +9142,22 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
+      if(stkPainelEl.value === 'sefaz'){
+        if(!sefUltimo) return;
+        const { J, local, munAtual, munAnt } = sefUltimo, D = window.SEFAZ_ICMS;
+        const linhas = [['Município', 'Região', `ICMS · ${J.rotulo} (R$)`, `ICMS ${J.anoAnt} · mesmo período (R$)`, 'Variação']]
+          .concat([...munAtual.entries()].sort((a, b) => b[1] - a[1]).map(([i, v]) => {
+            const ant = munAnt.get(i) || 0;
+            return [D.mun.nomes[i], D.regioes[D.mun.reg[i]] || '', v, ant, ant > 0 ? stkPct((v - ant) / ant, 1) : ''];
+          }));
+        const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const url = URL.createObjectURL(new Blob(['﻿' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `sefaz_icms_${stkNorm(local).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       if(cagAtivo()){
         if(!cagUltimo) return;
         const { J, local, secao } = cagUltimo;
