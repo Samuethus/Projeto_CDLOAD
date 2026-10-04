@@ -8776,15 +8776,15 @@ ${clipPlayerPills(n)}
     // A Sefaz não publica CNAE por município: os quadros de setor mostram sempre Mato Grosso.
     const stkRegiaoEl = document.getElementById('stkRegiaoFiltro');
     const stkMunicipioEl = document.getElementById('stkMunicipioFiltro');
-    // Rosca: setores consolidados (mesmas cores do CAGED) ou associações com que a CDL interage.
+    // Rosca: setores consolidados ou associações com que a CDL interage.
     // Agrupamento feito no extrator, por subclasse CNAE (regras em scripts/sefaz_extrair.ps1).
+    // Fatias e legenda sempre do maior para o menor; a cor segue a posição (azul forte → claro).
     let sefRoscaVisao = 'setor'; // setor | assoc
     const SEF_ROSCA = {
-      setor: { titulo: 'ICMS por grande setor', chave: 'setor', nomes: 'setores',
-        cores: { 'Comércio': CD_COR.azul, 'Serviços': CD_COR.azulClaro, 'Indústria': CD_COR.cinza, 'Agropecuária': CD_COR.verde, 'Construção': '#64748B', 'Outros': '#E3AE1F' } },
-      assoc: { titulo: 'ICMS por associação', chave: 'associacao', nomes: 'assoc',
-        cores: { 'CDL Cuiabá': CD_COR.azul, 'Sindipetróleo': '#E3AE1F', 'Abrasel': CD_COR.verde, 'Fenabrave': '#64748B', 'Outros': '#CBD5E1' } }
+      setor: { titulo: 'ICMS por grande setor', chave: 'setor', nomes: 'setores' },
+      assoc: { titulo: 'ICMS por associação', chave: 'associacao', nomes: 'assoc' }
     };
+    const SEF_ROSCA_COR = ['#0B3C8C', '#9DBDEB'];
     // R$ compacto: 18,1 bi · 976,8 mi · 109,6 mil.
     const sefEscala = v => { const a = Math.abs(v);
       return a >= 1e9 ? [v / 1e9, 'bi'] : a >= 1e6 ? [v / 1e6, 'mi'] : a >= 1e3 ? [v / 1e3, 'mil'] : [v, '']; };
@@ -8943,7 +8943,8 @@ ${clipPlayerPills(n)}
 
       // ---- Rosca: ICMS por grande setor | por associação (botão como o da Evolução da cobertura) ----
       const R = SEF_ROSCA[sefRoscaVisao];
-      const dadosMacro = [...M.grupos.entries()].map(([n, v]) => ({ nome: n, sigla: n, cor: R.cores[n] || CD_COR.cinza, valor: v }));
+      const dadosMacro = [...M.grupos.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+        .map(([n, v], i, arr) => ({ nome: n, sigla: n, valor: v, cor: stkMisturarCor(SEF_ROSCA_COR[0], SEF_ROSCA_COR[1], arr.length > 1 ? i / (arr.length - 1) : 0) }));
       const totMacro = dadosMacro.reduce((s, d) => s + d.valor, 0);
       const [cn, cu] = sefEscala(totMacro);
       const switchRosca = `<div class="stk-segmented" id="sefRoscaVisao" role="tablist" aria-label="Visão do gráfico">
