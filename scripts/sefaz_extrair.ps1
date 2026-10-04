@@ -149,7 +149,47 @@ foreach ($k in $munChaves) {
   $mun.v.Add([long[]]$arr)
 }
 
+# ---------- Agrupamentos consolidados (rosca do painel) ----------
+# Pela subclasse CNAE (7 digitos). Setores pela divisao (2 digitos):
+#   01-03 Agropecuaria · 05-33 Industria · 41-43 Construcao · 45-47 Comercio · 49-99 Servicos
+#   Outros: 35-39 (energia eletrica, gas, agua, esgoto, residuos) e codigos sem divisao valida.
+$GRP_SETORES = @('Comércio', 'Serviços', 'Indústria', 'Agropecuária', 'Construção', 'Outros')
+function Setor6([string]$c) {
+  $d = [int]$c.Substring(0, 2)
+  if ($d -ge 1 -and $d -le 3) { return 3 }
+  if ($d -ge 5 -and $d -le 33) { return 2 }
+  if ($d -ge 41 -and $d -le 43) { return 4 }
+  if ($d -ge 45 -and $d -le 47) { return 0 }
+  if ($d -ge 49 -and $d -le 99) { return 1 }
+  5
+}
+# Associacoes com que a CDL Cuiaba interage. Inclui a industria que recolhe o ICMS por
+# substituicao tributaria das vendas no estado (refinarias/usinas, cervejarias, montadoras).
+# Prefixos de CNAE; vale o primeiro grupo que casar (ordem: Sindipetroleo, Abrasel, Fenabrave).
+$GRP_ASSOC = @('CDL Cuiabá', 'Sindipetróleo', 'Abrasel', 'Fenabrave', 'Outros')
+$ASSOC_PREFIXOS = @(
+  # Sindipetroleo: petroleo e gas, refino e biocombustiveis (inclui alcool), distribuidoras e TRR,
+  # GLP, postos, lubrificantes, lojas de conveniencia, troca de oleo/lavagem, gas canalizado.
+  @(1, @('06', '19', '4681', '4682', '4731', '4732', '4784', '4729602', '4520005', '3520')),
+  # Abrasel: restaurantes, bares, lanchonetes, ambulantes, delivery/catering; bebidas (industria,
+  # atacado e varejo); laticinios, sorvetes, cafe, panificacao, confeitaria e demais alimentos
+  # de consumo (grupos 105, 108, 109); padarias/docerias; distribuidores de alimentos.
+  # Fora: frigorificos, oleos, moagem, racoes e acucar (agroindustria, grupos 101-104, 106, 107).
+  @(2, @('561', '562', '11', '4635', '4723', '105', '108', '109', '4721102', '4721104', '4637', '4639')),
+  # Fenabrave: concessionarias e revendas de veiculos e motos (e seus representantes), maquinas
+  # e implementos agricolas, e as montadoras (automoveis, caminhoes/onibus, implementos, motos, tratores).
+  @(3, @('4511', '4512', '4541', '4542', '4661', '2910', '2920', '2930', '3091', '2831', '2832', '2833'))
+)
+function Assoc([string]$c) {
+  foreach ($g in $ASSOC_PREFIXOS) { foreach ($p in $g[1]) { if ($c.StartsWith($p)) { return $g[0] } } }
+  # CDL Cuiaba: o restante do comercio e dos servicos (varejo, atacado, autopecas, servicos, credito...)
+  $d = [int]$c.Substring(0, 2)
+  if (($d -ge 45 -and $d -le 47) -or ($d -ge 49 -and $d -le 99)) { return 0 }
+  4
+}
+
 # ---------- CNAE ----------
+$grpVal = @{}    # "s|iSeg|iGrupo" ou "a|iSeg|iGrupo" -> long[] mensal (realizado)
 $macros = New-Object System.Collections.ArrayList
 $setores = New-Object System.Collections.ArrayList; $setorMacro = New-Object System.Collections.ArrayList
 $segs = New-Object System.Collections.ArrayList; $segSetor = New-Object System.Collections.ArrayList
@@ -176,7 +216,13 @@ for ($ano = $ANO_INICIAL; $ano -le $anoAtual; $ano++) {
     if (-not $segVal.ContainsKey($ch)) { $segVal[$ch] = @(0.0, 0.0, 0.0) }
     $segVal[$ch][0] += $real; $segVal[$ch][1] += $prev; $segVal[$ch][2] += $corr
     $cod = "$($r[5])"
+    if ($cod) { $cod = $cod.PadLeft(7, '0') }   # a fonte omite o zero inicial (0115600 -> 115600)
     if ($cod -and $real -ne 0) {
+      foreach ($par in @(@('s', (Setor6 $cod)), @('a', (Assoc $cod)))) {
+        $gk = "$($par[0])|$iSeg|$($par[1])"
+        if (-not $grpVal.ContainsKey($gk)) { $grpVal[$gk] = New-Object double[] $meses.Count }
+        $grpVal[$gk][$im] += $real
+      }
       if (-not $subInfo.ContainsKey($cod)) {
         $desc = ("$($r[4])" -replace '^\s*\d+\s*-\s*', '').Trim()
         $subInfo[$cod] = @{ nome = $desc; seg = $iSeg; total = 0.0; v = @{} }
@@ -198,6 +244,14 @@ foreach ($cod in $top) {
   foreach ($m in $x.v.Keys) { $a[[int]$m] = [long][Math]::Round($x.v[$m]) }
   $subs.nomes.Add($x.nome); $subs.cod.Add("$cod"); $subs.seg.Add($x.seg); $subs.v.Add([long[]]$a)
 }
+# Pares (segmento, grupo) com arrecadação: [iSeg, iGrupo, [mensal]] — a busca filtra por segmento.
+$grupos = [ordered]@{ setores = $GRP_SETORES; assoc = $GRP_ASSOC; setor = (Nova-Lista); associacao = (Nova-Lista) }
+foreach ($gk in ($grpVal.Keys | Sort-Object)) {
+  $p = $gk -split '\|'
+  $par = Nova-Lista
+  $par.Add([int]$p[1]); $par.Add([int]$p[2]); $par.Add([long[]]($grpVal[$gk] | ForEach-Object { [long][Math]::Round($_) }))
+  if ($p[0] -eq 's') { $grupos.setor.Add($par) } else { $grupos.associacao.Add($par) }
+}
 
 $dados = [ordered]@{
   fonte = 'Sefaz MT · Dashboard de Arrecadação de Tributos e Contribuições (UPER)'
@@ -208,7 +262,7 @@ $dados = [ordered]@{
   cnae = [ordered]@{
     macros = @($macros); setores = [ordered]@{ nomes = @($setores); macro = @($setorMacro) }
     segs = [ordered]@{ nomes = @($segs); setor = @($segSetor) }
-    real = $real; prev = $prev; corr = $corr; subs = $subs
+    real = $real; prev = $prev; corr = $corr; subs = $subs; grupos = $grupos
   }
 }
 $json = $dados | ConvertTo-Json -Depth 12 -Compress

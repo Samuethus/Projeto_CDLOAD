@@ -1074,6 +1074,9 @@
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
   .stk-segmented-inativo{opacity:.45;pointer-events:none;}
+  /* Sefaz MT: Setor | Associação no card estreito da rosca — compacto para o título caber. */
+  #sefRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
+  .cd-card-head:has(#sefRoscaVisao) h3{white-space:normal;}
   /* Clipping: Mês/Ano/Player ficam ignorados enquanto há notícias selecionadas na busca. */
   .stk-filtro-ignorado{opacity:.45;}
   .stk-tema-aviso{display:flex;align-items:center;gap:10px;background:#EAF3FF;color:#0B3C6D;border:1px solid #CFE2FF;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
@@ -8773,7 +8776,15 @@ ${clipPlayerPills(n)}
     // A Sefaz não publica CNAE por município: os quadros de setor mostram sempre Mato Grosso.
     const stkRegiaoEl = document.getElementById('stkRegiaoFiltro');
     const stkMunicipioEl = document.getElementById('stkMunicipioFiltro');
-    const SEF_MACRO_COR = { 'Comércio e Serviços': CD_COR.azul, 'Indústria': CD_COR.azulClaro, 'Agropecuária': CD_COR.verde };
+    // Rosca: setores consolidados (mesmas cores do CAGED) ou associações com que a CDL interage.
+    // Agrupamento feito no extrator, por subclasse CNAE (regras em scripts/sefaz_extrair.ps1).
+    let sefRoscaVisao = 'setor'; // setor | assoc
+    const SEF_ROSCA = {
+      setor: { titulo: 'ICMS por grande setor', chave: 'setor', nomes: 'setores',
+        cores: { 'Comércio': CD_COR.azul, 'Serviços': CD_COR.azulClaro, 'Indústria': CD_COR.cinza, 'Agropecuária': CD_COR.verde, 'Construção': '#64748B', 'Outros': '#E3AE1F' } },
+      assoc: { titulo: 'ICMS por associação', chave: 'associacao', nomes: 'assoc',
+        cores: { 'CDL Cuiabá': CD_COR.azul, 'Sindipetróleo': '#E3AE1F', 'Abrasel': CD_COR.verde, 'Fenabrave': '#64748B', 'Outros': '#CBD5E1' } }
+    };
     // R$ compacto: 18,1 bi · 976,8 mi · 109,6 mil.
     const sefEscala = v => { const a = Math.abs(v);
       return a >= 1e9 ? [v / 1e9, 'bi'] : a >= 1e6 ? [v / 1e6, 'mi'] : a >= 1e3 ? [v / 1e3, 'mil'] : [v, '']; };
@@ -8836,6 +8847,10 @@ ${clipPlayerPills(n)}
       const mapaCnae = (chave, meses) => { const m = new Map();
         segs.forEach(s => { const k = chave(s); m.set(k, (m.get(k) || 0) + sefSoma(C.real[s], meses)); }); return m; };
       const segSet = new Set(segs);
+      // Grupos da rosca: pares [segmento, grupo, mensal] dos segmentos que passam na busca.
+      const R = SEF_ROSCA[sefRoscaVisao], G = C.grupos;
+      const grupos = new Map(G[R.nomes].map(n => [n, 0]));
+      G[R.chave].forEach(([s, g, v]) => { if(segSet.has(s)) grupos.set(G[R.nomes][g], grupos.get(G[R.nomes][g]) + sefSoma(v, J.atual)); });
       const subs = new Map();
       C.subs.nomes.forEach((n, k) => { if(segSet.has(C.subs.seg[k])) subs.set(n, sefSoma(C.subs.v[k], J.atual)); });
       const regioes = new Map(D.regioes.map((r, ri) => [ri, somaMun(todos.filter(i => D.mun.reg[i] === ri), J.atual)]));
@@ -8848,7 +8863,7 @@ ${clipPlayerPills(n)}
         estado: somaMun(todos, J.atual), estadoAnt: somaMun(todos, J.anterior),
         mensal: { [J.ano]: porMes(J.ano), [J.anoAnt]: porMes(J.anoAnt) },
         regioes, regSel: mi !== '' ? D.mun.reg[Number(mi)] : reg !== '' ? Number(reg) : -1,
-        macros: mapaCnae(macroDe, J.atual), setores: mapaCnae(s => C.setores.nomes[C.segs.setor[s]], J.atual), subs,
+        grupos, setores: mapaCnae(s => C.setores.nomes[C.segs.setor[s]], J.atual), subs,
         munAtual: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.atual)])),
         munAnt: new Map(munEscopo.map(i => [i, sefSoma(D.mun.v[i], J.anterior)])),
         munSel: mi !== '' ? Number(mi) : -1, regEscopo: reg !== '' ? Number(reg) : -1 };
@@ -8926,14 +8941,19 @@ ${clipPlayerPills(n)}
           cor: M.regSel >= 0 ? (ri === M.regSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', regs.length > 1 ? i / (regs.length - 1) : 0) })),
           'Arrecadação por região', 'Sem arrecadação no período.'));
 
-      // ---- ICMS por grande setor (rosca) ----
-      const dadosMacro = D.cnae.macros.map(n => ({ nome: n, sigla: n, cor: SEF_MACRO_COR[n] || CD_COR.cinza, valor: M.macros.get(n) || 0 }));
+      // ---- Rosca: ICMS por grande setor | por associação (botão como o da Evolução da cobertura) ----
+      const R = SEF_ROSCA[sefRoscaVisao];
+      const dadosMacro = [...M.grupos.entries()].map(([n, v]) => ({ nome: n, sigla: n, cor: R.cores[n] || CD_COR.cinza, valor: v }));
       const totMacro = dadosMacro.reduce((s, d) => s + d.valor, 0);
       const [cn, cu] = sefEscala(totMacro);
-      const wMacro = cdCard('ICMS por grande setor', subCnae, `<div class="cd-rosca-wrap">
+      const switchRosca = `<div class="stk-segmented" id="sefRoscaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['setor', 'Setor'], ['assoc', 'Associação']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${sefRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${sefRoscaVisao === k}">${rot}</button>`).join('')}
+        </div>`;
+      const subRosca = subCnae || (sefRoscaVisao === 'assoc' ? 'Atividades (CNAE) agrupadas por associação' : 'Setores consolidados pela CNAE');
+      const wMacro = cdCard(R.titulo, subRosca, `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${cn.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong><span>${cu ? `R$ ${cu}` : 'R$'}</span></div></div>
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosMacro.map(d => `<li title="${esc(d.nome)}: ${esc(sefFmt(d.valor))}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totMacro ? d.valor / totMacro : 0)}</strong></li>`).join('')}</ul>
-        </div>`);
+        </div>`, `<div class="cd-head-acoes">${switchRosca}</div>`);
 
       // ---- Setores que mais arrecadam ----
       const setores = [...M.setores.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -8961,13 +8981,19 @@ ${clipPlayerPills(n)}
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kTot}${kMedia}${kPrev}${kCom}${k5}</div>`
         + `<div class="cd-row cd-row-a">${wVolume}${wRegioes}${wMacro}</div>`
         + `<div class="cd-row cd-row-b">${wSetores}${wSubs}${wMun}</div></div>`;
-      stkDesenharRoscaCd(dadosMacro, 'ICMS por grande setor', 196);
+      stkDesenharRoscaCd(dadosMacro, R.titulo, 196);
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
       sefUltimo = M;
     }
     [stkRegiaoEl, stkMunicipioEl].forEach(el => el.addEventListener('change', stkRender));
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#sefRoscaVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === sefRoscaVisao) return;
+      sefRoscaVisao = btn.dataset.visao;
+      stkRender();
+    });
 
     stkSegmented.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
