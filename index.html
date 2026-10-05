@@ -1620,12 +1620,29 @@
     if(!fn) return v;
     return v.replace(RE_COR, function(t){ var c = ler(t); return c.some(isNaN) ? t : (fn(c) || t); });
   }
-  // Longhand vazio = abreviação com var(); repete a abreviação como está.
+  // Longhand vazio = abreviação com var(). Fundo: repete a abreviação. Borda e
+  // contorno: repete só a cor (a abreviação inteira religaria o estilo da borda
+  // e venceria regras como li:last-child{border-bottom:none}).
+  function tokens(v){
+    var out = [], prof = 0, ini = 0;
+    for(var i = 0; i <= v.length; i++){
+      var ch = v[i];
+      if(ch === '(') prof++; else if(ch === ')') prof--;
+      else if((ch === ' ' || ch === undefined) && !prof){ if(i > ini) out.push(v.slice(ini, i)); ini = i + 1; }
+    }
+    return out;
+  }
   function abreviacao(st, prop){
-    var cand = /^background/.test(prop) ? ['background']
-      : /^border-/.test(prop) ? [prop.replace(/-color$/, ''), 'border-color', 'border', prop.replace(/-(start|end)-color$/, '')]
+    if(/^background/.test(prop)){ var b = st.getPropertyValue('background'); return b ? ['background', b] : null; }
+    var cand = /^border-/.test(prop) ? [prop.replace(/-color$/, ''), 'border-color', 'border', prop.replace(/-(start|end)-color$/, '')]
       : /^outline/.test(prop) ? ['outline'] : [];
-    for(var i = 0; i < cand.length; i++){ var v = st.getPropertyValue(cand[i]); if(v) return [cand[i], v]; }
+    for(var i = 0; i < cand.length; i++){
+      var v = st.getPropertyValue(cand[i]);
+      if(!v) continue;
+      if(cand[i] === 'border-color') return [prop, v];
+      var t = tokens(v).filter(function(x){ return /var\(|^#|^rgb|^hsl/.test(x); }).pop();
+      return t ? [prop, t] : null;
+    }
     return null;
   }
   function seletores(sel){
@@ -1731,6 +1748,10 @@
   :root[data-theme="dark"] body, :root[data-theme="dark"] .main, :root[data-theme="dark"] .wa-identify-overlay{background:var(--dk-bg);}
   /* Campos sem fundo próprio (zero especificidade: qualquer regra do app vence). */
   :where(:root[data-theme="dark"]) :where(input, select, textarea){background-color:#0F1729;}
+  /* Switches (segmentados): trilho mais fundo e item ativo com fundo suave, não só negrito. */
+  :root[data-theme="dark"] .stk-segmented{background:#0F1729;box-shadow:inset 0 0 0 1px #243047;}
+  :root[data-theme="dark"] .stk-seg-btn.active{background:rgba(59,130,246,.18);color:#BFDBFE;box-shadow:inset 0 0 0 1px rgba(96,165,250,.35);}
+  :root[data-theme="dark"] .stk-seg-btn:not(.active):hover{background:rgba(148,163,184,.08);}
   :root[data-theme="dark"] .cd-kpi.amarelo{--cd-ac-bg:rgba(227,174,31,.18);}
   :root[data-theme="dark"] .wa-cal-event{
     background:color-mix(in srgb, var(--cal-pastel-text, #3B82F6) 28%, #131C2E);
@@ -1966,13 +1987,13 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
-            <option value="sefaz">Painel · Sefaz MT (ICMS)</option>
-            <option value="ipca15">Painel · IBGE: IPCA-15</option>
-            <option value="pmc">Painel · IBGE: PMC</option>
           </select>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
             <option value="caged">CAGED</option>
+            <option value="sefaz">Sefaz MT (ICMS)</option>
+            <option value="ipca15">IBGE: IPCA-15</option>
+            <option value="pmc">IBGE: PMC</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
@@ -7376,6 +7397,13 @@ ${clipPlayerPills(n)}
     // os dados já carregados pelo próprio módulo, sem fetch novo.
     // ==================================================================
     const stkPainelEl = document.getElementById('stkPainelFiltro');
+    // Painel efetivo: Sefaz MT, IPCA-15 e PMC ficam dentro do Panorama Econômico
+    // (filtro Indicador), mas continuam sendo painéis próprios no restante do código.
+    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc'];
+    const stkPainel = () => {
+      const ind = document.getElementById('stkIndicadorFiltro').value;
+      return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
+    };
     const stkSegmented = document.getElementById('stkPeriodo');
     const stkGrid = document.getElementById('stkGrid');
     const stkTip = document.getElementById('stkTooltip');
@@ -7396,7 +7424,7 @@ ${clipPlayerPills(n)}
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
     const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set() };
-    const stkSelAtual = () => stkSelecao[stkPainelEl.value];
+    const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
     const STK_SIT_CLS = { ok: 'ok', baixo: 'delay', zerado: 'danger', inativo: 'ongoing' };
@@ -7553,7 +7581,7 @@ ${clipPlayerPills(n)}
     // Tema: o texto digitado na busca do Clipping filtra o painel inteiro
     // (sem precisar marcar), mantendo a comparação Ano vs Ano. Ignora Player;
     // Mês/Ano seguem definindo a janela. A seleção manual tem prioridade.
-    const stkTemaClip = () => (stkPainelEl.value === 'clipping' && !stkClipSelecionado()) ? stkNorm(stkBuscaInput.value.trim()) : '';
+    const stkTemaClip = () => (stkPainel() === 'clipping' && !stkClipSelecionado()) ? stkNorm(stkBuscaInput.value.trim()) : '';
     const stkCasaTema = (n, q) => [n.titulo, n.resumo, n.portal || n.fonte].some(t => stkNorm(t).includes(q));
     const stkNewsJanela = (ini, fim) => {
       const tema = stkTemaClip();
@@ -7579,10 +7607,10 @@ ${clipPlayerPills(n)}
     // Mostra/esconde os filtros específicos de cada painel — a busca e o
     // período (segmentado/Mês/Ano) são os únicos que os dois sempre têm.
     function stkAlternarFiltrosPorPainel(){
-      const clipping = stkPainelEl.value === 'clipping';
-      const panorama = stkPainelEl.value === 'panorama';
-      const sefaz = stkPainelEl.value === 'sefaz';
-      const ibge = stkPainelEl.value === 'ipca15' || stkPainelEl.value === 'pmc';
+      const clipping = stkPainel() === 'clipping';
+      const panorama = stkPainel() === 'panorama';
+      const sefaz = stkPainel() === 'sefaz';
+      const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc';
       stkSetorEl.hidden = clipping || panorama || sefaz || ibge;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
@@ -7590,33 +7618,33 @@ ${clipPlayerPills(n)}
       stkSegmented.hidden = clipping || panorama || sefaz || ibge;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
-      document.getElementById('stkIndicadorFiltro').hidden = !panorama;
+      document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
       stkUfEl.hidden = !panorama;
       stkCidadeEl.hidden = !panorama;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
-        : stkPainelEl.value === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainelEl.value === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
-      if(stkPainelEl.value === 'ipca15' || stkPainelEl.value === 'pmc'){
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc'){
         // IPCA-15: o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
-        const D = ibgeDados(), base = stkPainelEl.value === 'pmc' ? 2 : 1;
+        const D = ibgeDados(), base = stkPainel() === 'pmc' ? 2 : 1;
         const anosI = [...new Set((D ? D.meses : []).map(m => m.slice(0, 4)))].sort().slice(base).reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosI.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
         if(anosI.includes(curAno)) stkAnoEl.value = curAno;
         return;
       }
-      if(stkPainelEl.value === 'sefaz'){
+      if(stkPainel() === 'sefaz'){
         // O primeiro ano extraído é só a base de comparação do seguinte.
         const anosSef = [...new Set((window.SEFAZ_ICMS ? window.SEFAZ_ICMS.meses : []).map(m => m.slice(0, 4)))].sort().slice(1).reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosSef.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
         if(anosSef.includes(curAno)) stkAnoEl.value = curAno;
         return;
       }
-      if(stkPainelEl.value === 'panorama'){
+      if(stkPainel() === 'panorama'){
         const fontePan = stkIndicadorEl.value === 'caged' ? window.CAGED_DADOS : window.ABVE_FROTAS;
         const anosTodos = [...new Set((fontePan ? fontePan.meses : []).map(m => m.slice(0, 4)))].sort();
         const anosPan = (stkIndicadorEl.value === 'caged' ? anosTodos.slice(1) : anosTodos).reverse();
@@ -7624,7 +7652,7 @@ ${clipPlayerPills(n)}
         if(anosPan.includes(curAno)) stkAnoEl.value = curAno;
         return;
       }
-      if(stkPainelEl.value === 'clipping'){
+      if(stkPainel() === 'clipping'){
         const curPlayer = stkPlayerEl.value;
         stkPlayerEl.innerHTML = '<option value="">Entidade</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
         if(stkPlayerPadrao){ stkPlayerPadrao = false; stkPlayerEl.value = 'CDL Cuiabá'; }
@@ -8099,7 +8127,7 @@ ${clipPlayerPills(n)}
     }
 
     function stkAbrir(){
-      const painel = stkPainelEl.value;
+      const painel = stkPainel();
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
@@ -8113,10 +8141,10 @@ ${clipPlayerPills(n)}
     function stkRender(){
       stkAlternarFiltrosPorPainel();
       stkAtualizarContagem();
-      if(stkPainelEl.value === 'clipping') return stkRenderClipping();
-      if(stkPainelEl.value === 'panorama') return stkRenderPanorama();
-      if(stkPainelEl.value === 'sefaz') return sefRender();
-      if(stkPainelEl.value === 'ipca15' || stkPainelEl.value === 'pmc') return ibgeRender();
+      if(stkPainel() === 'clipping') return stkRenderClipping();
+      if(stkPainel() === 'panorama') return stkRenderPanorama();
+      if(stkPainel() === 'sefaz') return sefRender();
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc') return ibgeRender();
       return stkRenderEstoque();
     }
 
@@ -8554,7 +8582,7 @@ ${clipPlayerPills(n)}
     const PAN_E = { b: 'BaseVendas_ABVE', t: 'Tcalendario' };
     // Eletrificados na definição da ABVE (a mesma do total do BI e da extração): sem MHEV 12V/48V.
     const PAN_F_TEC = panIn('b', 'Tipo_Tecnologia', ['BEV', 'PHEV', 'HEV', 'HEV FLEX', 'MHEV']);
-    const panBusca = () => stkPainelEl.value === 'panorama' ? stkBuscaInput.value.trim() : '';
+    const panBusca = () => stkPainel() === 'panorama' ? stkBuscaInput.value.trim() : '';
     // Busca: fabricante OU modelo contém o texto (sem diferenciar maiúsculas).
     const panFiltroBusca = q => ({ Condition: { Or: {
       Left: { Contains: { Left: panCol('b', 'Fabricante'), Right: panLit(q) } },
@@ -8863,7 +8891,7 @@ ${clipPlayerPills(n)}
       { nome: 'Construção', cor: '#64748B' }, { nome: 'Agropecuária', cor: CD_COR.verde }
     ];
     const stkIndicadorEl = document.getElementById('stkIndicadorFiltro');
-    const cagAtivo = () => stkPainelEl.value === 'panorama' && stkIndicadorEl.value === 'caged';
+    const cagAtivo = () => stkPainel() === 'panorama' && stkIndicadorEl.value === 'caged';
     const cagSinal = v => (v > 0 ? '+' : v < 0 ? '−' : '') + stkNum(Math.abs(v));
     // Diferença absoluta (saldo pode ser negativo: variação % não faz sentido).
     const cagDif = (a, b) => a === b ? { cls: 'neu', txt: '→ 0' } : { cls: a > b ? 'up' : 'down', txt: `${a > b ? '↑' : '↓'} ${stkNum(Math.abs(a - b))}` };
@@ -9182,7 +9210,7 @@ ${clipPlayerPills(n)}
     function sefRender(){
       if(!window.SEFAZ_ICMS){
         stkGrid.classList.add('cd-carregando');
-        sefCarregar().then(() => { if(stkPainelEl.value === 'sefaz') sefRender(); }).catch(() => {
+        sefCarregar().then(() => { if(stkPainel() === 'sefaz') sefRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
           stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados da Sefaz MT (assets/data/sefaz_icms.js).</div></div>`;
         });
@@ -9319,7 +9347,7 @@ ${clipPlayerPills(n)}
     // navegador: Local (área do IPCA-15 / estado da PMC), Mês/Ano e busca (grupo/item ou atividade).
     const stkIbgeLocalEl = document.getElementById('stkIbgeLocalFiltro');
     const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'] };
-    const ibgeDados = () => { const a = IBGE_ARQ[stkPainelEl.value]; return a ? window[a[1]] : null; };
+    const ibgeDados = () => { const a = IBGE_ARQ[stkPainel()]; return a ? window[a[1]] : null; };
     const ibgeProm = {};
     function ibgeCarregar(painel){
       const [src, nome] = IBGE_ARQ[painel];
@@ -9344,10 +9372,10 @@ ${clipPlayerPills(n)}
     let ibgeUltimo = null;
 
     function ibgePreencherLocal(D){
-      const pmc = stkPainelEl.value === 'pmc', rotulo = pmc ? 'Estado' : 'Região';
+      const pmc = stkPainel() === 'pmc', rotulo = pmc ? 'Estado' : 'Região';
       // Refaz a lista quando o painel muda (IPCA-15: áreas; PMC: estados).
-      if(stkIbgeLocalEl.dataset.painel !== stkPainelEl.value){
-        stkIbgeLocalEl.dataset.painel = stkPainelEl.value;
+      if(stkIbgeLocalEl.dataset.painel !== stkPainel()){
+        stkIbgeLocalEl.dataset.painel = stkPainel();
         stkIbgeLocalEl.innerHTML = `<option value="">${rotulo}</option>` + D.locais.nomes.map((n, i) => i ? `<option value="${i}">${esc(n)}</option>` : '').join('');
         stkIbgeLocalEl.title = pmc ? 'Estado (PMC)' : 'Região metropolitana pesquisada no IPCA-15';
       }
@@ -9360,10 +9388,10 @@ ${clipPlayerPills(n)}
     const ibgeIdxMes = (D, ano, mes) => D.meses.indexOf(`${ano}-${String(mes).padStart(2, '0')}`);
 
     function ibgeRender(){
-      const painel = stkPainelEl.value, D = ibgeDados();
+      const painel = stkPainel(), D = ibgeDados();
       if(!D){
         stkGrid.classList.add('cd-carregando');
-        ibgeCarregar(painel).then(() => { if(stkPainelEl.value === painel) ibgeRender(); }).catch(() => {
+        ibgeCarregar(painel).then(() => { if(stkPainel() === painel) ibgeRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
           stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados do IBGE (${esc(IBGE_ARQ[painel][0])}).</div></div>`;
         });
@@ -9634,7 +9662,11 @@ ${clipPlayerPills(n)}
       if(el.value) stkPeriodoClipEl.value = '';
       stkRender();
     }));
+    let stkIndicadorAnterior = stkIndicadorEl.value;
     stkIndicadorEl.addEventListener('change', () => {
+      const trocouPainel = STK_INDICADOR_PAINEL.includes(stkIndicadorAnterior) || STK_INDICADOR_PAINEL.includes(stkIndicadorEl.value);
+      stkIndicadorAnterior = stkIndicadorEl.value;
+      if(trocouPainel){ stkResetarPainel(stkIndicadorEl.value); return; }
       stkBuscaInput.value = ''; stkAnoEl.value = ''; stkCidadeEl.value = '';
       panPreencherCidades();
       stkRender();
@@ -9649,17 +9681,18 @@ ${clipPlayerPills(n)}
       if(stkPeriodoClipEl.value){ stkMesEl.value = ''; stkAnoEl.value = ''; }
       stkRender();
     });
-    stkPainelEl.addEventListener('change', () => {
+    function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
-      stkUfEl.value = ''; stkIndicadorEl.value = 'abve'; panPreencherCidades();
+      stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = '';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
-    });
+    }
+    stkPainelEl.addEventListener('change', () => stkResetarPainel('abve'));
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
-      stkUfEl.value = ''; stkIndicadorEl.value = 'abve'; panPreencherCidades();
+      stkUfEl.value = ''; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = '';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -9673,7 +9706,7 @@ ${clipPlayerPills(n)}
       const norm = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
       const q = norm(termo);
       const tem = t => norm(t).includes(q);
-      if(stkPainelEl.value === 'clipping'){
+      if(stkPainel() === 'clipping'){
         return clippingNews
           .filter(n => !termo || tem(n.titulo) || tem(n.resumo) || tem(n.portal || n.fonte))
           .sort((a, b) => b.data.localeCompare(a.data))
@@ -9693,14 +9726,14 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc'].includes(stkPainelEl.value)){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
       // Sem termo: lista só os já marcados, para revisar/desmarcar.
       let itens = stkCandidatosBusca(termo);
       itens = termo ? itens.sort((a, b) => sel.has(b.id) - sel.has(a.id)) : itens.filter(i => sel.has(i.id));
-      const clipping = stkPainelEl.value === 'clipping';
+      const clipping = stkPainel() === 'clipping';
       // Clipping lista todos os resultados; Estoque segue limitado a 30.
       if(!clipping) itens = itens.slice(0, 30);
       const naoMarcados = termo ? itens.filter(i => !sel.has(i.id)).length : 0;
@@ -9720,11 +9753,11 @@ ${clipPlayerPills(n)}
     stkBuscaInput.addEventListener('input', () => {
       stkMostrarBusca();
       // Clipping: o texto é um tema que filtra o painel (com leve atraso ao digitar).
-      if(stkPainelEl.value === 'clipping'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(stkPainel() === 'clipping'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
-      if(stkPainelEl.value === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
+      if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc'].includes(stkPainelEl.value)){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -9759,7 +9792,7 @@ ${clipPlayerPills(n)}
     });
     stkGrid.addEventListener('change', ev => {
       if(ev.target.id === 'stkFluxoFiltro'){
-        if(stkPainelEl.value === 'clipping') stkVolumeModoClip = ev.target.value; else stkFluxoModo = ev.target.value;
+        if(stkPainel() === 'clipping') stkVolumeModoClip = ev.target.value; else stkFluxoModo = ev.target.value;
         stkRender();
       }
     });
@@ -9799,8 +9832,8 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
-      if(stkPainelEl.value === 'ipca15' || stkPainelEl.value === 'pmc'){
-        if(!ibgeUltimo || ibgeUltimo.painel !== stkPainelEl.value) return;
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc'){
+        if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
         const url = URL.createObjectURL(new Blob(['﻿' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
@@ -9810,7 +9843,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainelEl.value === 'sefaz'){
+      if(stkPainel() === 'sefaz'){
         if(!sefUltimo) return;
         const { J, local, munAtual, munAnt } = sefUltimo, D = window.SEFAZ_ICMS;
         const linhas = [['Município', 'Região', `ICMS · ${J.rotulo} (R$)`, `ICMS ${J.anoAnt} · mesmo período (R$)`, 'Variação']]
@@ -9839,7 +9872,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainelEl.value === 'panorama'){
+      if(stkPainel() === 'panorama'){
         if(!panUltimo) return;
         const { J, local, fab, fabAnt, vendas } = panUltimo;
         const linhas = [['Fabricante', `Vendas · ${local} (${J.rotulo})`, 'Market share', `Vendas ${J.anoAnt} (mesmo período)`]]
@@ -9852,10 +9885,10 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      const range = stkPainelEl.value === 'clipping' ? stkRangeClipping() : stkRange(stkPeriodoAtual);
+      const range = stkPainel() === 'clipping' ? stkRangeClipping() : stkRange(stkPeriodoAtual);
       const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let rows, filename;
-      if(stkPainelEl.value === 'clipping'){
+      if(stkPainel() === 'clipping'){
         const noticias = stkNewsEntre(range.ini, range.fim);
         if(stkTabelaAba === 'produtos'){
           rows = [['Data', 'Título', 'Portal', 'Players', 'Categoria', 'Sentimento', 'Link']]
