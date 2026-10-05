@@ -45,7 +45,7 @@ Supabase Auth: senha com hash e sessão por token. O administrador cadastra a pe
 1. Crie o repositório e envie o código (`git init`, confira com `git status --ignored` que `.env` e `config.js` **não** aparecem, e faça o commit/push na branch `main`).
 2. No GitHub: **Settings > Secrets and variables > Actions** > crie `SUPABASE_URL`, `SUPABASE_ANON_KEY` (só a anon/publishable) e `ADMIN_EMAIL`.
 3. **Settings > Pages > Source: GitHub Actions**.
-4. Cada push em `main` roda [.github/workflows/deploy.yml](.github/workflows/deploy.yml), que publica só o `index.html`, as pastas `assets/` e `landing/`, os modelos do relatório em PDF (`report/panorama/branding/`) e o `config.js` gerado. Scripts, SQL e docs não vão para o site.
+4. Cada push em `main` roda [.github/workflows/deploy.yml](.github/workflows/deploy.yml), que publica só o `index.html`, as pastas `assets/` e `landing/`, os modelos dos relatórios em PDF (`report/*/branding/`) e o `config.js` gerado. Scripts, SQL e docs não vão para o site.
 5. Coloque o endereço do Pages em Supabase > Authentication > URL Configuration.
 
 A câmera ao vivo exige HTTPS, que o GitHub Pages já fornece.

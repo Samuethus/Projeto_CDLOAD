@@ -10,6 +10,12 @@ Formato (compacto, mensal, a partir de ANO_INICIAL):
   total: { adm, des, sal, est } por mês (Brasil)
   dims: { uf|setor|secao|ocup|mun: { nomes: [...], linhas: [[iMes, iNome, adm, des, sal(, est)], ...] } }
     uf: com estoque; ocup/mun: só os TOP_MAX com mais admissões no período.
+
+Também gera assets/data/caged_relatorio.js (window.CAGED_RELATORIO), usado pelo
+relatório em PDF "CAGED - Empregos Formais" (Relatórios > Gerar relatório):
+  meses: ['2023-01', ...]
+  regioes: { cuiaba|mt: { total: [[iMes, adm, des, sal], ...],
+                          sexo|faixa|escol|setor: { nomes: [...], linhas: [[iMes, iNome, adm, des, sal], ...] } } }
 """
 import datetime
 import json
@@ -22,11 +28,64 @@ import abve_pbi as p  # noqa: E402
 p.usar(p.CAGED)
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, 'assets', 'data', 'caged_dados.js')
+SAIDA_REL = os.path.join(RAIZ, 'assets', 'data', 'caged_relatorio.js')
 ANO_INICIAL = 2023   # 2023 é a base de comparação do primeiro ano exibido (2024)
 TOP_MAX = 100        # ocupações e municípios guardados para a visão Brasil
-E = {'m': 'Medidas', 'd': 'TabelaDeDatas', 'g': 'Geográfico', 'e': 'Econômico', 'o': 'Ocupacional'}
+E = {'m': 'Medidas', 'd': 'TabelaDeDatas', 'g': 'Geográfico', 'e': 'Econômico', 'o': 'Ocupacional',
+     's': 'Sexo', 'f': 'Faixa Etária', 'i': 'Grau de Instrução'}
 BASE = [('ano', p.col('d', 'Ano')), ('mes', p.col('d', 'Mês'))]
 MED = [('adm', p.medida('m', 'Admitidos')), ('des', p.medida('m', 'Desligados')), ('sal', p.medida('m', 'Saldo'))]
+
+
+# Relatório em PDF: Cuiabá (código IBGE 510340) e Mato Grosso, por perfil e setor.
+REGIOES = {'cuiaba': [p.filtro_in('g', 'Código Município', [510340])], 'mt': [p.filtro_in('g', 'UF Sigla', ['MT'])]}
+DIMS_REL = {'sexo': ('s', 'Sexo.1'), 'faixa': ('f', 'Faixa Etária'), 'escol': ('i', 'Grau de Instrução'), 'setor': ('e', 'Grande Grupamento')}
+ORDEM_ESCOL = ['Analfabeto', 'Até 5ª Incompleto', '5ª Completo Fundamental', '6ª a 9ª Fundamental', 'Fundamental Incompleto',
+               'Fundamental Completo', 'Médio Incompleto', 'Médio Completo', 'Superior Incompleto', 'Superior Completo',
+               'Pós-Graduação completa', 'Mestrado', 'Doutorado']
+
+
+def relatorio(F_ANOS, meses, im, chave):
+    def ordem(dim, n):
+        if dim == 'escol':
+            return (ORDEM_ESCOL.index(n) if n in ORDEM_ESCOL else 99, n)
+        if dim == 'faixa':
+            return (0 if n.startswith('Até') else 1, n)
+        return (0, n)
+    out = {}
+    for reg, onde in REGIOES.items():
+        tot = p.consultar(E, BASE + MED, [F_ANOS] + onde)
+        r = {'total': sorted([im[chave(x)], int(x['adm'] or 0), int(x['des'] or 0), int(x['sal'] or 0)]
+                             for x in tot if x['ano'] and x['mes'] and chave(x) in im)}
+        for nome, (src, prop) in DIMS_REL.items():
+            rs = [x for x in p.consultar(E, BASE + [('k', p.col(src, prop))] + MED, [F_ANOS] + onde)
+                  if x['ano'] and x['mes'] and x['k'] and chave(x) in im
+                  and str(x['k']).strip().lower() != 'não identificado']
+            nomes = sorted({str(x['k']).strip() for x in rs}, key=lambda n: ordem(nome, n))
+            ino = {n: i for i, n in enumerate(nomes)}
+            r[nome] = {'nomes': nomes, 'linhas': sorted([im[chave(x)], ino[str(x['k']).strip()], int(x['adm'] or 0),
+                                                       int(x['des'] or 0), int(x['sal'] or 0)] for x in rs)}
+        out[reg] = r
+    return {'fonte': 'Novo CAGED · Ministério do Trabalho e Emprego',
+            'extraido_em': datetime.datetime.now().isoformat(timespec='seconds'),
+            'meses': meses, 'regioes': out}
+
+
+def gravar_relatorio(dados):
+    corpo = lambda d: json.dumps({k: v for k, v in d.items() if k != 'extraido_em'}, ensure_ascii=False, separators=(',', ':'))
+    try:
+        with open(SAIDA_REL, encoding='utf-8') as f:
+            antigo = json.loads(f.read().split('window.CAGED_RELATORIO = ', 1)[1].rstrip().rstrip(';'))
+        if corpo(antigo) == corpo(dados):
+            print('Sem mudanças no relatório do CAGED — arquivo mantido.')
+            return
+    except (OSError, IndexError, ValueError):
+        pass
+    js = ('// Gerado por scripts/caged_extrair.py — não editar à mão.\n'
+          'window.CAGED_RELATORIO = ' + json.dumps(dados, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    with open(SAIDA_REL, 'w', encoding='utf-8') as f:
+        f.write(js)
+    print(f'{SAIDA_REL}: {len(js) // 1024} KB')
 
 
 def main():
@@ -84,6 +143,7 @@ def main():
     }
 
     os.makedirs(os.path.dirname(SAIDA), exist_ok=True)
+    gravar_relatorio(relatorio(F_ANOS, meses, im, chave))
     corpo = lambda d: json.dumps({k: v for k, v in d.items() if k != 'extraido_em'}, ensure_ascii=False, separators=(',', ':'))
     try:
         with open(SAIDA, encoding='utf-8') as f:

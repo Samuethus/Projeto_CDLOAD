@@ -2264,6 +2264,7 @@
                   <select id="relTipo">
                     <option value="">Selecione o relatório</option>
                     <option value="panorama">Panorama Econômico</option>
+                    <option value="caged">CAGED - Empregos Formais</option>
                   </select>
                 </div>
                 <div id="relOpcoes" hidden>
@@ -2279,6 +2280,7 @@
                     </div>
                   </div>
                   <div class="wa-empty-hint">As análises e comparações partem deste mês. Indicador que ainda não publicou o mês escolhido usa o último mês disponível.</div>
+                  <div id="relOpcoesPanorama">
                   <h3 class="wa-step-title" style="margin-top:22px;">3. Indicadores <span class="rel-contagem" id="relIndContagem">0 de 3</span></h3>
                   <div class="wa-empty-hint" style="margin-bottom:10px;">Marque os 3 indicadores do Panorama Econômico que entram no material.</div>
                   <div class="rel-ind-grid" id="relIndGrid"></div>
@@ -2306,6 +2308,7 @@
                     <div class="wa-empty-hint" style="margin-top:6px;">Texto: cada notícia com o título e, logo abaixo, o link. CSV: colunas <b>título</b> e <b>link</b> (e, se quiser, <b>resumo</b>). Notícias já cadastradas no Clipping trazem resumo, portal e data automaticamente.</div>
                     <ul class="rel-sel-previa" id="relSelPrevia" hidden></ul>
                   </div>
+                  </div><!-- /relOpcoesPanorama -->
                 </div>
               </div>
 
@@ -10427,7 +10430,7 @@ ${clipPlayerPills(n)}
     // e reunida com o jsPDF. Regras de layout: report/panorama/escopo/instruções.md.
     // Coordenadas em px da página-modelo (1414 x 2000); o canvas é desenhado em 2x.
     const REL_W = 1414, REL_H = 2000, REL_ESC = 2;
-    const REL_BRANDING = 'report/panorama/branding/';
+    const REL_BRANDING = pasta => `report/${pasta}/branding/`;
     const REL_BOM = '#74B230', REL_RUIM = '#DA0000';
     const REL_MES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const relRot = ym => `${PAN_MES_CURTO[Number(ym.slice(5, 7)) - 1]}/${ym.slice(0, 4)}`;
@@ -10499,14 +10502,15 @@ ${clipPlayerPills(n)}
       return { c, x, links: [] };
     }
     const relImgCache = {};
-    function relImg(nome){
-      if(!relImgCache[nome]) relImgCache[nome] = new Promise((ok, falha) => {
+    function relImg(nome, pasta){
+      const src = REL_BRANDING(pasta || 'panorama') + nome;
+      if(!relImgCache[src]) relImgCache[src] = new Promise((ok, falha) => {
         const im = new Image();
         im.onload = () => ok(im);
-        im.onerror = () => { delete relImgCache[nome]; falha(new Error('Modelo não encontrado: ' + REL_BRANDING + nome)); };
-        im.src = REL_BRANDING + nome;
+        im.onerror = () => { delete relImgCache[src]; falha(new Error('Modelo não encontrado: ' + src)); };
+        im.src = src;
       });
-      return relImgCache[nome];
+      return relImgCache[src];
     }
     function relLinhas(x, texto, largura, max){
       const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
@@ -10828,6 +10832,301 @@ ${clipPlayerPills(n)}
       return relJsPdfProm;
     }
 
+    // ===== Relatório "CAGED - Empregos Formais" =====
+    // Dados: assets/data/caged_relatorio.js (scripts/caged_extrair.py) — Cuiabá e MT por
+    // sexo, faixa etária, escolaridade e setor. Modelos: report/caged/branding (1 = capa,
+    // 2 = página de análise). Regras: report/caged/escopo/instruções.md.
+    let relCagProm = null;
+    function relCagCarregar(){
+      if(window.CAGED_RELATORIO) return Promise.resolve();
+      if(!relCagProm) relCagProm = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/caged_relatorio.js';
+        sc.onload = ok;
+        sc.onerror = () => { relCagProm = null; falha(new Error('Não foi possível carregar os dados do CAGED (caged_relatorio.js).')); };
+        document.head.appendChild(sc);
+      });
+      return relCagProm;
+    }
+    const RC_AZUL = '#0B3C8C', RC_AZUL2 = '#1D5FD3', RC_CLARO = '#9DBCE8', RC_VERM = '#DA0000', RC_VERDE = '#3E8E1F', RC_TXT = '#1F2937', RC_MUTED = '#64748B';
+    const rcInt = v => (v < 0 ? '-' : '') + relNum(Math.abs(Math.round(v)));
+    // % Variação = (atual - anterior) / anterior × 100 (fórmula do escopo)
+    const rcVar = (a, b, casas) => b ? (a - b) / b * 100 : null;
+    const rcPct = (x, casas) => x == null || !isFinite(x) ? '—' : `${x < 0 ? '-' : ''}${relNum(Math.abs(x), casas == null ? 1 : casas)}%`;
+    const rcCor = v => v == null ? RC_TXT : v < 0 ? RC_VERM : RC_TXT;
+    const rcCorVar = v => v == null ? RC_MUTED : v < 0 ? RC_VERM : RC_VERDE;
+    const RC_ROT = { Homem: 'Masculino', Mulher: 'Feminino' };
+    const rcNome = n => RC_ROT[n] || n;
+
+    // Valores [adm, des, sal] de um mês, no total ou por categoria de uma dimensão.
+    function rcTotal(reg, i){ const l = reg.total.find(x => x[0] === i); return l ? l.slice(1) : null; }
+    function rcDim(reg, dim, i){
+      const m = new Map(reg[dim].nomes.map(n => [n, [0, 0, 0]]));
+      reg[dim].linhas.forEach(l => { if(l[0] === i) m.set(reg[dim].nomes[l[1]], l.slice(2)); });
+      return m;
+    }
+
+    // ---------- primitivas de desenho ----------
+    // Apaga um texto gravado no modelo interpolando as cores logo acima e abaixo
+    // (funciona sobre foto clara ou fundo liso).
+    function relApagar(pg, a, b, w, h){
+      const E = REL_ESC, x0 = Math.round(a * E), y0 = Math.round(b * E), W = Math.round(w * E), H = Math.round(h * E);
+      const cima = pg.x.getImageData(x0, y0 - 8, W, 6).data, baixo = pg.x.getImageData(x0, y0 + H + 2, W, 6).data;
+      const img = pg.x.getImageData(x0, y0, W, H), d = img.data;
+      const media = (src, i) => { const s = [0, 0, 0]; for(let k = 0; k < 6; k++){ const o = (k * W + i) * 4; s[0] += src[o]; s[1] += src[o + 1]; s[2] += src[o + 2]; } return s.map(v => v / 6); };
+      for(let i = 0; i < W; i++){
+        const c = media(cima, i), f = media(baixo, i);
+        for(let j = 0; j < H; j++){
+          const t = H > 1 ? j / (H - 1) : 0, o = (j * W + i) * 4;
+          d[o] = c[0] + (f[0] - c[0]) * t; d[o + 1] = c[1] + (f[1] - c[1]) * t; d[o + 2] = c[2] + (f[2] - c[2]) * t; d[o + 3] = 255;
+        }
+      }
+      pg.x.putImageData(img, x0, y0);
+    }
+    function rcSecao(x, a, b, texto){
+      x.fillStyle = RC_AZUL2; x.fillRect(a, b, 6, 30);
+      x.fillStyle = RC_AZUL; x.font = '700 25px Inter'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+      x.fillText(texto, a + 18, b + 24);
+      return b + 50;
+    }
+    function rcKpi(x, a, b, w, h, rotulo, valor, sub, corValor){
+      x.save();
+      x.shadowColor = 'rgba(15,23,42,.12)'; x.shadowBlur = 10; x.shadowOffsetY = 3;
+      relRetArred(x, a, b, w, h, 14); x.fillStyle = '#fff'; x.fill();
+      x.restore();
+      x.strokeStyle = '#E2E8F0'; x.lineWidth = 1.5; relRetArred(x, a, b, w, h, 14); x.stroke();
+      x.fillStyle = RC_AZUL2; x.fillRect(a, b + 18, 5, h - 36);
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      x.fillStyle = RC_MUTED; x.font = '600 19px Inter'; x.fillText(rotulo, a + 24, b + 40);
+      x.fillStyle = corValor || RC_TXT; x.font = '800 46px Inter'; x.fillText(valor, a + 24, b + 98);
+      if(sub){ x.fillStyle = RC_MUTED; x.font = '500 17px Inter'; x.fillText(relCortar(x, sub, w - 40), a + 24, b + h - 22); }
+    }
+    // Tabela: cols [{t, w, al}] (w em fração da largura); linhas: [{cel: [{t, cor, bold}], total}]
+    function rcTabela(x, a, b, w, cols, linhas, alturaLinha){
+      const HC = 46, HL = alturaLinha || 44;
+      relRetArred(x, a, b, w, HC, 8); x.fillStyle = RC_AZUL; x.fill();
+      x.fillRect(a, b + HC - 8, w, 8);
+      let cx = a;
+      x.font = '700 19px Inter'; x.fillStyle = '#fff'; x.textBaseline = 'middle';
+      const xs = cols.map(c => { const r = [cx, c.w * w]; cx += c.w * w; return r; });
+      cols.forEach((c, k) => { x.textAlign = c.al === 'r' ? 'right' : 'left'; x.fillText(c.t, c.al === 'r' ? xs[k][0] + xs[k][1] - 14 : xs[k][0] + 14, b + HC / 2 + 1); });
+      let y = b + HC;
+      linhas.forEach((ln, i) => {
+        x.fillStyle = ln.total ? '#E3ECF9' : i % 2 ? '#F4F7FB' : '#fff';
+        x.fillRect(a, y, w, HL);
+        ln.cel.forEach((c, k) => {
+          x.textAlign = cols[k].al === 'r' ? 'right' : 'left';
+          x.font = `${ln.total || c.bold ? 700 : 500} 20px Inter`;
+          x.fillStyle = c.cor || RC_TXT;
+          x.fillText(relCortar(x, String(c.t), xs[k][1] - 24), cols[k].al === 'r' ? xs[k][0] + xs[k][1] - 14 : xs[k][0] + 14, y + HL / 2 + 1);
+        });
+        y += HL;
+      });
+      x.strokeStyle = '#D5DEEA'; x.lineWidth = 1; x.strokeRect(a + .5, b + HC + .5, w - 1, y - b - HC - 1);
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      return y;
+    }
+    // Barras horizontais com eixo no zero (negativos em vermelho, à esquerda do eixo).
+    // series: [{nome, cor, vals}] — 1 série = barras simples; 2 séries = comparação lado a lado.
+    function rcBarras(x, a, b, w, cats, series, opts){
+      opts = opts || {};
+      const LW = opts.rotulo || 250, esp = series.length > 1 ? 14 : 0;
+      let y = b;
+      if(series.length > 1){
+        x.font = '600 18px Inter'; x.textBaseline = 'middle'; let lx = a + LW;
+        series.forEach(s => { x.fillStyle = s.cor; x.fillRect(lx, y + 4, 18, 18); x.fillStyle = RC_TXT; x.fillText(s.nome, lx + 26, y + 14); lx += x.measureText(s.nome).width + 60; });
+        y += 38;
+      }
+      const todos = series.flatMap(s => s.vals), mn = Math.min(0, ...todos), mx = Math.max(0, ...todos);
+      const area = w - LW - 20, folga = 110;                       // espaço para o rótulo de valor
+      const escala = (mx - mn) || 1, util = area - folga * ((mn < 0 ? 1 : 0) + (mx > 0 ? 1 : 0));
+      const zero = a + LW + (mn < 0 ? folga : 0) + (-mn / escala) * util;
+      const px = v => (Math.abs(v) / escala) * util;
+      const espBarra = series.length > 1 ? 28 : 40, gap = series.length > 1 ? 6 : 0, linha = series.length * espBarra + gap * (series.length - 1) + (opts.passo || 24) + esp;
+      const y0 = y;
+      cats.forEach((c, i) => {
+        const yc = y + i * linha;
+        x.fillStyle = RC_TXT; x.font = '600 21px Inter'; x.textAlign = 'right'; x.textBaseline = 'middle';
+        x.fillText(relCortar(x, c, LW - 16), a + LW - 16, yc + (series.length * espBarra + gap * (series.length - 1)) / 2);
+        series.forEach((s, k) => {
+          const v = s.vals[i], by = yc + k * (espBarra + gap), bw = Math.max(v ? 2 : 0, px(v));
+          x.fillStyle = v < 0 ? (k === series.length - 1 ? RC_VERM : '#F2A5A5') : s.cor;
+          x.fillRect(v < 0 ? zero - bw : zero, by, bw, espBarra);
+          x.font = `${k === series.length - 1 ? 700 : 600} ${series.length > 1 ? 20 : 22}px Inter`;
+          x.fillStyle = v < 0 ? RC_VERM : RC_TXT;
+          x.textAlign = v < 0 ? 'right' : 'left';
+          x.fillText((opts.fmt || rcInt)(v), v < 0 ? zero - bw - 8 : zero + bw + 8, by + espBarra / 2 + 1);
+        });
+      });
+      const fim = y + cats.length * linha - (opts.passo || 24);
+      x.strokeStyle = '#94A3B8'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(zero, y0 - 6); x.lineTo(zero, fim + 6); x.stroke();
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      return fim;
+    }
+    // Colunas verticais (evolução mensal do saldo) com rótulo de valor e mês.
+    function rcColunas(x, a, b, w, h, pontos){
+      const n = pontos.length, passo = w / n, larg = Math.min(64, passo * .62);
+      const vals = pontos.map(p => p.v), mn = Math.min(0, ...vals), mx = Math.max(0, ...vals), esc = (mx - mn) || 1;
+      const topo = b + 34, base = b + h - 56 - (mn < 0 ? 30 : 0), alt = base - topo;   // folga para o rótulo das barras negativas
+      const zero = topo + (mx / esc) * alt;
+      x.strokeStyle = '#CBD5E1'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(a, zero); x.lineTo(a + w, zero); x.stroke();
+      pontos.forEach((p, i) => {
+        const cx = a + i * passo + (passo - larg) / 2, bh = Math.abs(p.v) / esc * alt;
+        x.fillStyle = p.v < 0 ? RC_VERM : i === n - 1 ? RC_AZUL : RC_CLARO;
+        x.fillRect(cx, p.v < 0 ? zero : zero - bh, larg, Math.max(2, bh));
+        x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+        x.font = `${i === n - 1 ? 800 : 700} 18px Inter`; x.fillStyle = p.v < 0 ? RC_VERM : RC_TXT;
+        x.fillText(rcInt(p.v), cx + larg / 2, p.v < 0 ? zero + bh + 22 : zero - bh - 8);
+        x.font = '600 17px Inter'; x.fillStyle = RC_MUTED;
+        x.fillText(p.rot, cx + larg / 2, b + h - 22);
+      });
+      x.textAlign = 'left';
+    }
+    function rcParagrafo(x, a, b, w, texto){
+      x.fillStyle = RC_TXT; x.font = '400 21px Inter'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+      const linhas = relLinhas(x, texto, w);
+      linhas.forEach((l, i) => x.fillText(l, a, b + i * 31));
+      return b + linhas.length * 31;
+    }
+
+    // ---------- páginas ----------
+    async function rcPagina(titulo){
+      const pg = relPagina();
+      pg.x.drawImage(await relImg('2.png', 'caged'), 0, 0, REL_W, REL_H);
+      pg.x.fillStyle = '#fff'; pg.x.fillRect(36, 172, 980, 80);           // "TÍTULO - SUBTÍTULO" do modelo
+      pg.x.fillStyle = '#0B2A5B'; pg.x.font = '700 32px Inter'; pg.x.textBaseline = 'alphabetic';
+      pg.x.fillText(titulo, 52, 228);
+      return pg;
+    }
+    async function rcCapa(ref){
+      const pg = relPagina(), x = pg.x;
+      x.drawImage(await relImg('1.png', 'caged'), 0, 0, REL_W, REL_H);
+      const mes = REL_MES_LONGO[Number(ref.slice(5, 7)) - 1], ano = ref.slice(0, 4);
+      // mês/ano do título (sobre a foto clara) e do "Período" (sobre o azul)
+      relApagar(pg, 88, 112, 1300, 156);
+      let tam = 168;
+      x.font = `700 ${tam}px Poppins`;
+      const titulo = `${mes.toUpperCase()}/${ano}`;
+      while(x.measureText(titulo).width > 1240 && tam > 90){ tam -= 4; x.font = `700 ${tam}px Poppins`; }
+      x.fillStyle = '#0B4F9C'; x.textBaseline = 'alphabetic';
+      x.fillText(titulo, 98, 250);
+      relApagar(pg, 116, 1731, 560, 42);
+      x.fillStyle = '#fff'; x.font = '400 27px Poppins';
+      x.fillText(`Período: ${mes[0].toUpperCase() + mes.slice(1)} de ${ano}`, 120, 1761);
+      return pg;
+    }
+
+    async function rcGerar(alvo, passo){
+      passo('Carregando os dados do CAGED…');
+      await relCagCarregar();
+      await Promise.all(['700 168px Poppins', '400 27px Poppins', '700 25px Inter', '800 46px Inter'].map(f => document.fonts.load(f)));
+      const D = window.CAGED_RELATORIO, R = D.regioes;
+      let i = D.meses.length - 1;
+      while(i >= 0 && (D.meses[i] > alvo || !rcTotal(R.cuiaba, i))) i--;
+      if(i < 0) throw new Error(`Sem dados do CAGED até ${relRot(alvo)}.`);
+      const ref = D.meses[i], iAnt = i - 1, iAA = D.meses.indexOf(`${Number(ref.slice(0, 4)) - 1}-${ref.slice(5, 7)}`);
+      const r = j => j >= 0 ? relRot(D.meses[j]) : '—';
+      const mesTxt = `${REL_MES_LONGO[Number(ref.slice(5, 7)) - 1]} de ${ref.slice(0, 4)}`;
+      const rotAtual = r(i), rotAA = r(iAA), rotAnt = r(iAnt);
+      passo('Montando a capa e a visão geral…');
+      const paginas = [await rcCapa(ref)];
+
+      // ---- Visão geral ----
+      {
+        const pg = await rcPagina('VISÃO GERAL – CUIABÁ E MATO GROSSO'), x = pg.x;
+        let y = 296;
+        const kpis = (reg, nome) => {
+          y = rcSecao(x, 52, y, `${nome} · ${mesTxt}`);
+          const t = rcTotal(reg, i), ta = iAA >= 0 ? rcTotal(reg, iAA) : null, w = (1310 - 3 * 20) / 4;
+          const v = ta ? rcVar(t[2], ta[2]) : null;
+          rcKpi(x, 52, y, w, 150, 'Admissões', rcInt(t[0]), ta ? `${rotAA}: ${rcInt(ta[0])}` : '');
+          rcKpi(x, 52 + (w + 20), y, w, 150, 'Desligamentos', rcInt(-t[1]), ta ? `${rotAA}: ${rcInt(-ta[1])}` : '', RC_VERM);
+          rcKpi(x, 52 + 2 * (w + 20), y, w, 150, 'Saldo', rcInt(t[2]), ta ? `${rotAA}: ${rcInt(ta[2])}` : '', rcCor(t[2]));
+          rcKpi(x, 52 + 3 * (w + 20), y, w, 150, `Saldo vs ${rotAA}`, rcPct(v), 'variação anual (YoY)', ta ? rcCorVar(t[2] - ta[2]) : RC_MUTED);
+          y += 150 + 34;
+        };
+        kpis(R.cuiaba, 'Cuiabá');
+        kpis(R.mt, 'Mato Grosso');
+        y = rcSecao(x, 52, y, `Comparativo regional – ${rotAA} × ${rotAtual}`);
+        const linhas = [];
+        [['Mato Grosso', R.mt], ['Cuiabá', R.cuiaba]].forEach(([nome, reg]) => {
+          const t = rcTotal(reg, i), ta = iAA >= 0 ? rcTotal(reg, iAA) : [0, 0, 0];
+          [['Admissão', 0, 1], ['Desligamento', 1, -1], ['Saldo', 2, 1]].forEach(([mov, k, s]) => {
+            const va = ta[k] * s, vb = t[k] * s, v = rcVar(vb, va);
+            linhas.push({ total: mov === 'Saldo', cel: [{ t: nome, bold: true }, { t: mov }, { t: rcInt(va), cor: rcCor(va) }, { t: rcInt(vb), cor: rcCor(vb) }, { t: rcPct(v), cor: rcCorVar(vb - va) }] });
+          });
+        });
+        y = rcTabela(x, 52, y, 1310, [{ t: 'Região', w: .22 }, { t: 'Movimento', w: .22 }, { t: rotAA, w: .19, al: 'r' }, { t: rotAtual, w: .19, al: 'r' }, { t: '% Variação', w: .18, al: 'r' }], linhas) + 34;
+        y = rcSecao(x, 52, y, 'Evolução do saldo em Cuiabá – últimos 13 meses');
+        const pts = [];
+        for(let j = Math.max(0, i - 12); j <= i; j++){ const t = rcTotal(R.cuiaba, j); if(t) pts.push({ v: t[2], rot: r(j).replace('/20', '/') }); }
+        rcColunas(x, 52, y, 1310, 300, pts);
+        y += 320;
+        const tc = rcTotal(R.cuiaba, i), tca = iAA >= 0 ? rcTotal(R.cuiaba, iAA) : null, tm = rcTotal(R.mt, i), tma = iAA >= 0 ? rcTotal(R.mt, iAA) : null;
+        const frase = (nome, t, ta) => `${nome} ${t[2] >= 0 ? 'gerou' : 'perdeu'} ${relNum(Math.abs(t[2]))} vaga${Math.abs(t[2]) === 1 ? '' : 's'} formais em ${mesTxt} (${rcInt(t[0])} admissões e ${rcInt(t[1])} desligamentos)` +
+          (ta ? `, ${t[2] >= ta[2] ? 'acima' : 'abaixo'} do saldo de ${rcInt(ta[2])} de ${rotAA} (${rcPct(rcVar(t[2], ta[2]))})` : '') + '.';
+        rcParagrafo(x, 52, y + 10, 1310, `${frase('Cuiabá', tc, tca)} ${frase('Mato Grosso', tm, tma)}`);
+        paginas.push(pg);
+      }
+
+      // ---- Perfil (gênero, faixa etária, escolaridade) e setores, por região ----
+      for(const [nome, reg] of [['CUIABÁ', R.cuiaba], ['MATO GROSSO', R.mt]]){
+        passo(`Montando as análises de ${nome === 'CUIABÁ' ? 'Cuiabá' : 'Mato Grosso'}…`);
+        {
+          const pg = await rcPagina(`${nome} – PERFIL DO EMPREGO`), x = pg.x;
+          let y = 296;
+          y = rcSecao(x, 52, y, `Saldo por gênero – ${rotAA} × ${rotAtual}`);
+          const sa = iAA >= 0 ? rcDim(reg, 'sexo', iAA) : new Map(), sb = rcDim(reg, 'sexo', i);
+          const nomesS = ['Mulher', 'Homem'].filter(n => sb.has(n) || sa.has(n));
+          const linhasS = nomesS.map(n => { const a = (sa.get(n) || [0, 0, 0])[2], b2 = (sb.get(n) || [0, 0, 0])[2]; return { cel: [{ t: rcNome(n), bold: true }, { t: rcInt(a), cor: rcCor(a) }, { t: rcInt(b2), cor: rcCor(b2) }, { t: rcPct(rcVar(b2, a)), cor: rcCorVar(b2 - a) }] }; });
+          const ta = iAA >= 0 ? rcTotal(reg, iAA) : [0, 0, 0], tb = rcTotal(reg, i);
+          linhasS.push({ total: true, cel: [{ t: 'Total' }, { t: rcInt(ta[2]) }, { t: rcInt(tb[2]) }, { t: rcPct(rcVar(tb[2], ta[2])), cor: rcCorVar(tb[2] - ta[2]) }] });
+          const yT = rcTabela(x, 52, y, 620, [{ t: 'Gênero', w: .34 }, { t: rotAA, w: .22, al: 'r' }, { t: rotAtual, w: .22, al: 'r' }, { t: 'Var.', w: .22, al: 'r' }], linhasS);
+          const yG = rcBarras(x, 700, y, 662, nomesS.map(rcNome), [
+            { nome: rotAA, cor: RC_CLARO, vals: nomesS.map(n => (sa.get(n) || [0, 0, 0])[2]) },
+            { nome: rotAtual, cor: RC_AZUL2, vals: nomesS.map(n => (sb.get(n) || [0, 0, 0])[2]) }], { rotulo: 150 });
+          y = Math.max(yT, yG) + 40;
+          const fx = rcDim(reg, 'faixa', i);
+          y = rcSecao(x, 52, y, `Saldo por faixa etária – ${rotAtual}`);
+          y = rcBarras(x, 52, y, 1310, [...fx.keys()], [{ nome: rotAtual, cor: RC_AZUL2, vals: [...fx.values()].map(v => v[2]) }], { rotulo: 230 }) + 44;
+          const es = rcDim(reg, 'escol', i);
+          y = rcSecao(x, 52, y, `Saldo por escolaridade – ${rotAtual}`);
+          rcBarras(x, 52, y, 1310, [...es.keys()], [{ nome: rotAtual, cor: RC_AZUL2, vals: [...es.values()].map(v => v[2]) }], { rotulo: 300 });
+          paginas.push(pg);
+        }
+        {
+          const pg = await rcPagina(`${nome} – SETORES ECONÔMICOS`), x = pg.x;
+          let y = 296;
+          const bloco = (titulo, iA, rotA, casas) => {
+            y = rcSecao(x, 52, y, titulo);
+            const sa = iA >= 0 ? rcDim(reg, 'setor', iA) : new Map(), sb = rcDim(reg, 'setor', i);
+            const nomes = reg.setor.nomes;
+            const linhas = nomes.map(n => { const a = (sa.get(n) || [0, 0, 0])[2], b2 = (sb.get(n) || [0, 0, 0])[2]; return { cel: [{ t: n === 'Serviços' ? 'Serviços' : n, bold: true }, { t: rcInt(a), cor: rcCor(a) }, { t: rcInt(b2), cor: rcCor(b2) }, { t: rcPct(rcVar(b2, a), casas), cor: rcCorVar(b2 - a) }] }; });
+            const ta = iA >= 0 ? rcTotal(reg, iA) : [0, 0, 0], tb = rcTotal(reg, i);
+            linhas.push({ total: true, cel: [{ t: 'Total' }, { t: rcInt(ta[2]) }, { t: rcInt(tb[2]) }, { t: rcPct(rcVar(tb[2], ta[2]), casas), cor: rcCorVar(tb[2] - ta[2]) }] });
+            const yT = rcTabela(x, 52, y + 38, 600, [{ t: 'Setor', w: .34 }, { t: rotA, w: .22, al: 'r' }, { t: rotAtual, w: .22, al: 'r' }, { t: 'Var.', w: .22, al: 'r' }], linhas, 62);
+            const yG = rcBarras(x, 680, y, 682, nomes, [
+              { nome: rotA, cor: RC_CLARO, vals: nomes.map(n => (sa.get(n) || [0, 0, 0])[2]) },
+              { nome: rotAtual, cor: RC_AZUL2, vals: nomes.map(n => (sb.get(n) || [0, 0, 0])[2]) }], { rotulo: 170, passo: 22 });
+            y = Math.max(yT, yG) + 46;
+          };
+          bloco(`Saldo por setor – comparação anual (${rotAA} × ${rotAtual})`, iAA, rotAA, 1);
+          bloco(`Saldo por setor – comparação mensal (${rotAnt} × ${rotAtual})`, iAnt, rotAnt, 2);
+          // destaque em texto: setor com maior e menor saldo no mês
+          const sb = [...rcDim(reg, 'setor', i).entries()].sort((p, q) => q[1][2] - p[1][2]);
+          if(sb.length) rcParagrafo(x, 52, y + 4, 1310, `Em ${mesTxt}, ${sb[0][0]} liderou a geração de vagas (${rcInt(sb[0][1][2])}), enquanto ${sb[sb.length - 1][0]} registrou o menor saldo (${rcInt(sb[sb.length - 1][1][2])}).`);
+          paginas.push(pg);
+        }
+      }
+      return {
+        paginas, arquivo: `CAGED_Empregos_Formais_${ref.slice(5, 7)}-${ref.slice(0, 4)}.pdf`,
+        titulo: `CAGED - Empregos Formais · ${relRot(ref)}`,
+        pronto: `CAGED - Empregos Formais de ${mesTxt} · ${paginas.length} páginas.`,
+        resumo: [`<li><strong>Dados de ${relRot(ref)}</strong>${ref < alvo ? ' <span>· último mês publicado pelo MTE</span>' : ''}</li>`,
+          `<li><strong>Cuiabá e Mato Grosso</strong> <span>· gênero, faixa etária, escolaridade e setores</span></li>`].join('')
+      };
+    }
+
     // ---------------- assistente ----------------
     const relModal = document.getElementById('relGerarModal');
     const relTipo = document.getElementById('relTipo'), relOpcoes = document.getElementById('relOpcoes');
@@ -10912,6 +11211,12 @@ ${clipPlayerPills(n)}
       relIndContagem.textContent = `${relSel.size} de 3`;
       relIndContagem.classList.toggle('ok', relSel.size === 3);
       const faltaNot = !relSelValidas;
+      const mesTxt = `${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value}`;
+      if(relTipo.value === 'caged'){
+        relGerarBtn.disabled = false;
+        relRodape.textContent = `CAGED - Empregos Formais · ${mesTxt}`;
+        return;
+      }
       const pronto = relTipo.value === 'panorama' && relSel.size === 3 && !faltaNot;
       relGerarBtn.disabled = !pronto;
       relRodape.textContent = !relTipo.value ? 'Selecione o relatório'
@@ -10919,13 +11224,17 @@ ${clipPlayerPills(n)}
         : faltaNot ? 'Inclua ao menos uma notícia da CDL Cuiabá'
         : `Panorama Econômico · ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value}`;
     }
+    // Panorama: mês + indicadores + notícias (com fade). CAGED: o conteúdo é fixo, só o mês de referência.
     relTipo.addEventListener('change', () => {
+      const panorama = relTipo.value === 'panorama';
       relOpcoes.hidden = !relTipo.value;
-      if(relTipo.value){ relOpcoes.classList.remove('rel-fade'); void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
+      document.getElementById('relOpcoesPanorama').hidden = !panorama;
+      relOpcoes.classList.remove('rel-fade');
+      if(panorama){ void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
       relAtualizar();
     });
     // Trocar o mês refaz a lista das 10/20 últimas (a lista "selecionadas" é do usuário e fica).
-    [relMes, relAno].forEach(el => el.addEventListener('change', () => { if(relNotModo() !== 'sel') relPreencherLista(); else relAtualizar(); }));
+    [relMes, relAno].forEach(el => el.addEventListener('change', () => { if(relTipo.value === 'panorama' && relNotModo() !== 'sel') relPreencherLista(); else relAtualizar(); }));
     relIndGrid.addEventListener('change', ev => {
       const cb = ev.target.closest('input[type="checkbox"]');
       if(!cb) return;
@@ -10954,24 +11263,36 @@ ${clipPlayerPills(n)}
     };
     window.relFecharGerar = function(){ relModal.classList.remove('open'); };
 
+    async function relGerarPanorama(alvo, passo){
+      const inds = REL_INDICADORES.filter(i => relSel.has(i.id));
+      passo('Carregando os indicadores…');
+      await Promise.all(inds.map(i => i.carregar()));
+      await Promise.all(['200 172px Poppins', '400 20px Inter', '700 27px Inter', '800 62px Inter'].map(f => document.fonts.load(f)));
+      const series = inds.map(i => relSerie(i, alvo));
+      const semDado = inds.filter((i, k) => !series[k]);
+      if(semDado.length) throw new Error(`Sem dados até ${relRot(alvo)} para: ${semDado.map(i => i.nome).join(', ')}.`);
+      passo('Montando a capa e o Panorama…');
+      const paginas = [await relDesenharCapa(alvo), await relDesenharPanorama(series)];
+      passo('Organizando as notícias…');
+      paginas.push(...await relDesenharNoticias(alvo, relSelItens));
+      return {
+        paginas, arquivo: 'Newsletter_CDL_Cuiaba.pdf', titulo: `Panorama Econômico · ${relRot(alvo)}`,
+        pronto: `Panorama Econômico de ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value} · ${paginas.length} página${paginas.length === 1 ? '' : 's'}.`,
+        resumo: series.map(S => `<li><strong>${esc(S.ind.nome)}</strong> <span>· dados de ${relRot(S.ref)}${S.atrasado ? ' (último mês publicado)' : ''}</span></li>`).join('')
+      };
+    }
+
     window.relGerar = async function(){
       const alvo = `${relAno.value}-${relMes.value}`;
-      const inds = REL_INDICADORES.filter(i => relSel.has(i.id));
       const passo = t => { document.getElementById('relGerandoTxt').textContent = t; };
       relEtapa('Gerando');
       relGerarBtn.disabled = true;
       relRodape.textContent = 'Gerando…';
       try {
-        passo('Carregando os indicadores e o gerador de PDF…');
-        await Promise.all([relCarregarJsPdf(), ...inds.map(i => i.carregar())]);
-        await Promise.all(['200 172px Poppins', '400 20px Inter', '700 27px Inter', '800 62px Inter'].map(f => document.fonts.load(f)));
-        const series = inds.map(i => relSerie(i, alvo));
-        const semDado = inds.filter((i, k) => !series[k]);
-        if(semDado.length) throw new Error(`Sem dados até ${relRot(alvo)} para: ${semDado.map(i => i.nome).join(', ')}.`);
-        passo('Montando a capa e o Panorama…');
-        const paginas = [await relDesenharCapa(alvo), await relDesenharPanorama(series)];
-        passo('Organizando as notícias…');
-        paginas.push(...await relDesenharNoticias(alvo, relSelItens));
+        passo('Carregando o gerador de PDF…');
+        await relCarregarJsPdf();
+        const res = relTipo.value === 'caged' ? await rcGerar(alvo, passo) : await relGerarPanorama(alvo, passo);
+        const paginas = res.paginas;
         passo('Gerando o PDF…');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
@@ -10981,16 +11302,17 @@ ${clipPlayerPills(n)}
           pdf.addImage(pg.c.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
           pg.links.forEach(l => pdf.link(l.x * k, l.y * k, l.w * k, l.h * k, { url: l.url }));
         });
-        pdf.setProperties({ title: `Panorama Econômico · ${relRot(alvo)}`, author: 'NIM · CDL Cuiabá' });
+        pdf.setProperties({ title: res.titulo, author: 'NIM · CDL Cuiabá' });
         relUrl = URL.createObjectURL(pdf.output('blob'));
         relBaixarBtn.href = relUrl;
-        document.getElementById('relProntoTxt').textContent = `Panorama Econômico de ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value} · ${paginas.length} página${paginas.length === 1 ? '' : 's'}.`;
-        document.getElementById('relProntoResumo').innerHTML = series.map(S => `<li><strong>${esc(S.ind.nome)}</strong> <span>· dados de ${relRot(S.ref)}${S.atrasado ? ' (último mês publicado)' : ''}</span></li>`).join('');
+        relBaixarBtn.download = res.arquivo;
+        document.getElementById('relProntoTxt').textContent = res.pronto;
+        document.getElementById('relProntoResumo').innerHTML = res.resumo;
         relEtapa('Pronto');
         relGerarBtn.hidden = true; relBaixarBtn.hidden = false;
         document.getElementById('relNovoBtn').hidden = false;
         document.getElementById('relCancelarBtn').hidden = true;
-        relRodape.textContent = 'Newsletter_CDL_Cuiaba.pdf';
+        relRodape.textContent = res.arquivo;
       } catch(e){
         console.error('Erro ao gerar relatório:', e);
         alert('Não foi possível gerar o relatório: ' + e.message);

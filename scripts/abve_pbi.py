@@ -7,6 +7,7 @@ do link de publicação; aqui fazemos o mesmo, com consultas agregadas próprias
 Uso: importado por scripts/abve_extrair.py (padrão: ABVE) e scripts/caged_extrair.py
 (chama usar(CAGED)). Só a biblioteca padrão do Python.
 """
+import gzip
 import json
 import urllib.request
 import uuid
@@ -36,8 +37,13 @@ def atualizar_ids():
     req = urllib.request.Request(f'{CLUSTER}/public/reports/{RESOURCE_KEY}/modelsAndExploration?preferReadOnlySession=true',
                                  headers={'X-PowerBI-ResourceKey': RESOURCE_KEY, 'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=120) as r:
-        j = json.load(r)
+        j = _json(r.read())
     MODEL_ID, DATASET_ID, REPORT_ID = j['models'][0]['id'], j['models'][0]['dbName'], j['exploration']['report']['objectId']
+
+
+def _json(b):
+    """Algumas redes (proxy/antivírus) entregam a resposta compactada mesmo sem pedir."""
+    return json.loads(gzip.decompress(b) if b[:2] == b'\x1f\x8b' else b)
 
 
 def col(src, prop):
@@ -99,7 +105,7 @@ def _consultar(entidades, selects, where=None, limite=30000):
                  'ActivityId': str(uuid.uuid4()), 'RequestId': str(uuid.uuid4()),
                  'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=120) as r:
-        resp = json.load(r)
+        resp = _json(r.read())
     return decodificar(resp, [n for n, _ in selects])
 
 

@@ -25,7 +25,7 @@ jobs:
 
       # Publica somente o index.html, a pasta assets/ (imagens do Hub), a landing
       # page de apresentação (landing/), os modelos do relatório em PDF
-      # (report/panorama/branding/) e o
+      # (report/*/branding/) e o
       # config.js gerado a partir dos secrets. .env, scripts, SQL e docs NÃO
       # vão para o site.
       - name: Montar o site
@@ -39,8 +39,7 @@ jobs:
           cp -r assets _site/assets
           cp -r landing _site/landing
           # Modelos do PDF gerado em Relatórios > Gerar relatório (só as imagens; o escopo fica fora).
-          mkdir -p _site/report/panorama
-          cp -r report/panorama/branding _site/report/panorama/branding
+          for d in report/*/branding; do mkdir -p "_site/$(dirname "$d")"; cp -r "$d" "_site/$d"; done
           python3 scripts/gerar_config.py _site
           touch _site/.nojekyll
 
