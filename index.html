@@ -2265,6 +2265,7 @@
                     <option value="">Selecione o relatório</option>
                     <option value="panorama">Panorama Econômico</option>
                     <option value="caged">CAGED - Empregos Formais</option>
+                    <option value="estoque">Controle de Estoque</option>
                   </select>
                 </div>
                 <div id="relOpcoes" hidden>
@@ -2280,6 +2281,14 @@
                     </div>
                   </div>
                   <div class="wa-empty-hint">As análises e comparações partem deste mês. Indicador que ainda não publicou o mês escolhido usa o último mês disponível.</div>
+                  <div id="relOpcoesEstoque" hidden>
+                    <h3 class="wa-step-title" style="margin-top:22px;">3. Setor</h3>
+                    <div class="wa-field">
+                      <label for="relSetor">Setor do relatório</label>
+                      <select id="relSetor"></select>
+                    </div>
+                    <div class="wa-empty-hint">O relatório cobre os 6 meses até o mês de referência. "Todas" gera o consolidado de todos os setores.</div>
+                  </div>
                   <div id="relOpcoesPanorama">
                   <h3 class="wa-step-title" style="margin-top:22px;">3. Indicadores <span class="rel-contagem" id="relIndContagem">0 de 3</span></h3>
                   <div class="wa-empty-hint" style="margin-bottom:10px;">Marque os 3 indicadores do Panorama Econômico que entram no material.</div>
@@ -10918,21 +10927,21 @@ ${clipPlayerPills(n)}
         y += 38;
       }
       const todos = series.flatMap(s => s.vals), mn = Math.min(0, ...todos), mx = Math.max(0, ...todos);
-      const area = w - LW - 20, folga = 110;                       // espaço para o rótulo de valor
+      const area = w - LW - 20, folga = opts.folga || 110;                       // espaço para o rótulo de valor
       const escala = (mx - mn) || 1, util = area - folga * ((mn < 0 ? 1 : 0) + (mx > 0 ? 1 : 0));
       const zero = a + LW + (mn < 0 ? folga : 0) + (-mn / escala) * util;
       const px = v => (Math.abs(v) / escala) * util;
-      const espBarra = series.length > 1 ? 28 : 40, gap = series.length > 1 ? 6 : 0, linha = series.length * espBarra + gap * (series.length - 1) + (opts.passo || 24) + esp;
+      const espBarra = opts.espessura || (series.length > 1 ? 28 : 40), gap = series.length > 1 ? 6 : 0, linha = series.length * espBarra + gap * (series.length - 1) + (opts.passo || 24) + esp;
       const y0 = y;
       cats.forEach((c, i) => {
         const yc = y + i * linha;
-        x.fillStyle = RC_TXT; x.font = '600 21px Inter'; x.textAlign = 'right'; x.textBaseline = 'middle';
+        x.fillStyle = RC_TXT; x.font = `600 ${opts.fonteRotulo || 21}px Inter`; x.textAlign = 'right'; x.textBaseline = 'middle';
         x.fillText(relCortar(x, c, LW - 16), a + LW - 16, yc + (series.length * espBarra + gap * (series.length - 1)) / 2);
         series.forEach((s, k) => {
           const v = s.vals[i], by = yc + k * (espBarra + gap), bw = Math.max(v ? 2 : 0, px(v));
           x.fillStyle = v < 0 ? (k === series.length - 1 ? RC_VERM : '#F2A5A5') : s.cor;
           x.fillRect(v < 0 ? zero - bw : zero, by, bw, espBarra);
-          x.font = `${k === series.length - 1 ? 700 : 600} ${series.length > 1 ? 20 : 22}px Inter`;
+          x.font = `${k === series.length - 1 ? 700 : 600} ${opts.fonteRotulo || (series.length > 1 ? 20 : 22)}px Inter`;
           x.fillStyle = v < 0 ? RC_VERM : RC_TXT;
           x.textAlign = v < 0 ? 'right' : 'left';
           x.fillText((opts.fmt || rcInt)(v), v < 0 ? zero - bw - 8 : zero + bw + 8, by + espBarra / 2 + 1);
@@ -11107,6 +11116,188 @@ ${clipPlayerPills(n)}
       };
     }
 
+    // ===== Relatório "Controle de Estoque" (página única) =====
+    // Dados do próprio módulo Estoque (produtos, saldos e movimentações). Período: os 6 meses
+    // até o mês de referência. Modelo: report/estoque/branding/1.png. Regras: report/estoque/escopo.
+    const reMoeda = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const reQtd = v => relNum(Math.round(Number(v) || 0));
+
+    // Movimentações completas do período (o módulo carrega só as 500 mais recentes).
+    async function reMovimentos(ini, fim){
+      if(!stockProducts.length) await loadStock();
+      if(!supabaseReady) return stockMovements.filter(m => { const d = String(m.created_at).slice(0, 7); return d >= ini && d <= fim; });
+      const [a, m] = fim.split('-').map(Number);
+      const ate = new Date(Date.UTC(a, m, 1)).toISOString();
+      const out = [];
+      for(let de = 0; ; de += 1000){
+        const { data, error } = await supabaseClient.from('movimentacoes_estoque').select('*')
+          .gte('created_at', `${ini}-01T00:00:00`).lt('created_at', ate).order('created_at', { ascending: true }).range(de, de + 999);
+        if(error) throw new Error('Erro ao ler as movimentações do estoque: ' + error.message);
+        out.push(...(data || []).map(x => Object.assign({}, x, { quantidade: Number(x.quantidade) || 0 })));
+        if(!data || data.length < 1000) break;
+      }
+      return out;
+    }
+
+    async function reGerar(alvo, setor, passo){
+      passo('Carregando o estoque…');
+      await Promise.all(['700 25px Inter', '800 46px Inter', '700 32px Inter'].map(f => document.fonts.load(f)));
+      const meses = [];
+      for(let k = 5; k >= 0; k--){ const d = new Date(Date.UTC(Number(alvo.slice(0, 4)), Number(alvo.slice(5, 7)) - 1 - k, 1)); meses.push(d.toISOString().slice(0, 7)); }
+      const movs = (await reMovimentos(meses[0], meses[5])).filter(m => setor === 'Todas' || m.setor === setor);
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const preco = id => { const p = byId.get(id); return p && p.preco_custo != null ? Number(p.preco_custo) : 0; };
+      const nomeProd = id => (byId.get(id) || {}).nome || 'Produto removido';
+      const entra = m => m.tipo !== 'saida';
+      const ent = movs.filter(entra), sai = movs.filter(m => m.tipo === 'saida');
+      const soma = (l, f) => l.reduce((t, m) => t + f(m), 0);
+      const totEnt = soma(ent, m => m.quantidade), totSai = soma(sai, m => m.quantidade);
+      // saldo atual (quantidade em estoque hoje)
+      let saldo = 0;
+      stockBalances.forEach(mp => mp.forEach((v, s) => { if(setor === 'Todas' || s === setor) saldo += Number(v) || 0; }));
+      const ativos = stockProducts.filter(p => p.ativo !== false);
+      // valor gasto (entradas × preço de custo) por mês e por setor
+      const gastoMes = meses.map(mm => soma(ent.filter(m => String(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
+      const gastoTot = gastoMes.reduce((a, b) => a + b, 0), gastoMed = gastoTot / 6;
+      const porSetor = new Map();
+      ent.forEach(m => porSetor.set(m.setor, (porSetor.get(m.setor) || 0) + m.quantidade * preco(m.produto_id)));
+      const agrupa = (lista, chave, val) => { const mp = new Map(); lista.forEach(m => { const k = chave(m); const v = mp.get(k) || { q: 0, v: 0, n: 0 }; v.q += m.quantidade; v.v += val(m); v.n++; mp.set(k, v); }); return mp; };
+      const entProd = [...agrupa(ent, m => m.produto_id, m => m.quantidade * preco(m.produto_id)).entries()];
+      const saiProd = [...agrupa(sai, m => m.produto_id, m => m.quantidade * preco(m.produto_id)).entries()];
+      const saiResp = [...agrupa(sai, m => userNameOf(m.usuario_email) || m.usuario_email || 'Não informado', () => 0).entries()].sort((a, b) => b[1].q - a[1].q);
+      // curva ABC pelo valor comprado
+      const abc = entProd.slice().sort((a, b) => b[1].v - a[1].v);
+      let acum = 0; const classe = new Map();
+      abc.forEach(([id, v]) => { const antes = gastoTot ? acum / gastoTot : 1; classe.set(id, antes < .8 ? 'A' : antes < .95 ? 'B' : 'C'); acum += v.v; });
+      const qtdClasse = c => [...classe.values()].filter(x => x === c).length;
+      // abaixo do mínimo (no setor escolhido ou no total)
+      const saldoProd = id => { const mp = stockBalances.get(id); if(!mp) return 0; let t = 0; mp.forEach((v, s) => { if(setor === 'Todas' || s === setor) t += Number(v) || 0; }); return t; };
+      const noSetor = setor === 'Todas' ? null : new Set(movs.map(m => m.produto_id));
+      const abaixo = ativos.filter(p => (!noSetor || noSetor.has(p.id)) && p.estoque_minimo > 0 && saldoProd(p.id) < p.estoque_minimo);
+
+      passo('Montando o relatório…');
+      const pg = relPagina(), x = pg.x;
+      x.drawImage(await relImg('1.png', 'estoque'), 0, 0, REL_W, REL_H);
+      x.fillStyle = '#fff'; x.fillRect(36, 172, 1000, 80);
+      x.fillStyle = '#0B2A5B'; x.font = '700 32px Inter'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+      x.fillText(`CONTROLE DE ESTOQUE – ${setor === 'Todas' ? 'CONSOLIDADO' : setor.toUpperCase()}`, 52, 228);
+      x.fillStyle = RC_MUTED; x.font = '600 19px Inter';
+      x.fillText(`Período: ${relRot(meses[0])} a ${relRot(meses[5])} · Setor: ${setor === 'Todas' ? 'todos os setores' : setor}`, 52, 312);
+
+      // ---- KPIs ----
+      let y = 334;
+      const w4 = (1310 - 3 * 18) / 4;
+      rcKpi(x, 52, y, w4, 150, 'Produtos cadastrados', reQtd(ativos.length), 'itens ativos no catálogo');
+      rcKpi(x, 52 + (w4 + 18), y, w4, 150, 'Total de entradas', reQtd(totEnt), 'unidades no período');
+      rcKpi(x, 52 + 2 * (w4 + 18), y, w4, 150, 'Total de saídas', reQtd(totSai), 'unidades no período', RC_VERM);
+      rcKpi(x, 52 + 3 * (w4 + 18), y, w4, 150, 'Saldo em estoque', reQtd(saldo), 'quantidade atual');
+      y += 150 + 28;
+
+      // ---- Valor gasto por mês (colunas: coluna / valor / variação) ----
+      const yLinha = y;
+      y = rcSecao(x, 52, y, 'Valor gasto na compra por mês');
+      {
+        const a = 52, w = 700, h = 270, n = 6, passoC = w / n, larg = 78;
+        const mx = Math.max(1, ...gastoMes), base = y + h - 52;
+        gastoMes.forEach((v, j) => {
+          const cx = a + j * passoC + (passoC - larg) / 2, meio = cx + larg / 2, bh = Math.max(3, v / mx * (h - 130));
+          x.fillStyle = j === 5 ? RC_AZUL : RC_CLARO; x.fillRect(cx, base - bh, larg, bh);
+          x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+          x.fillStyle = RC_TXT; x.font = '700 16px Inter';
+          x.fillText(reMoeda(v).replace(',00', ''), meio, base - bh - 10);
+          if(j > 0 && gastoMes[j - 1]){
+            const d = (v - gastoMes[j - 1]) / gastoMes[j - 1] * 100;
+            x.font = '800 17px Inter'; x.fillStyle = d > 0 ? RC_VERM : RC_VERDE;   // gastar mais = pior
+            x.fillText(`${d > 0 ? '+' : d < 0 ? '-' : ''}${relNum(Math.abs(d), 1)}%`, meio, base - bh - 34);
+          }
+          x.fillStyle = RC_MUTED; x.font = '600 18px Inter';
+          x.fillText(relRot(meses[j]), meio, base + 30);
+        });
+        x.fillStyle = '#CBD5E1'; x.fillRect(a, base, w, 2);
+        x.textAlign = 'left';
+        x.fillStyle = RC_TXT; x.font = '600 18px Inter';
+        x.fillText(`Total: ${reMoeda(gastoTot)}   ·   Média mensal: ${reMoeda(gastoMed)}`, a, y + h + 4);
+      }
+      // ---- Gasto por setor (todos) ou top produtos em valor (setor) ----
+      {
+        let yy = rcSecao(x, 790, yLinha, setor === 'Todas' ? 'Valor gasto por setor' : 'Produtos com maior valor comprado');
+        const itens = setor === 'Todas'
+          ? [...porSetor.entries()].filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 6)
+          : entProd.slice().sort((a, b) => b[1].v - a[1].v).slice(0, 6).map(([id, v]) => [nomeProd(id), v.v]);
+        if(itens.length){
+          rcBarras(x, 790, yy, 572, itens.map(i => i[0]), [{ nome: '', cor: RC_AZUL2, vals: itens.map(i => i[1]) }],
+            { rotulo: setor === 'Todas' ? 190 : 260, espessura: 26, passo: 14, fonteRotulo: 17, folga: 215, fmt: v => `${reMoeda(v).replace(',00', '')} · ${relNum(gastoTot ? v / gastoTot * 100 : 0)}%` });
+        } else { x.fillStyle = RC_MUTED; x.font = '500 18px Inter'; x.fillText('Sem compras no período.', 790, yy + 24); }
+      }
+      y = yLinha + 50 + 270 + 30;
+
+      // ---- Entradas e saídas: top produtos ----
+      const yTab = y;
+      y = rcSecao(x, 52, y, 'Entradas – produtos com maior valor');
+      const topEnt = entProd.slice().sort((a, b) => b[1].v - a[1].v).slice(0, 6);
+      const yE = rcTabela(x, 52, y, 640, [{ t: 'Produto', w: .56 }, { t: 'Qtd.', w: .16, al: 'r' }, { t: 'Valor', w: .28, al: 'r' }],
+        topEnt.length ? topEnt.map(([id, v]) => ({ cel: [{ t: nomeProd(id), bold: true }, { t: reQtd(v.q) }, { t: reMoeda(v.v) }] })) : [{ cel: [{ t: 'Sem entradas no período' }, { t: '' }, { t: '' }] }], 38);
+      let y2 = rcSecao(x, 722, yTab, 'Saídas – produtos mais retirados');
+      const topSai = saiProd.slice().sort((a, b) => b[1].q - a[1].q).slice(0, 6);
+      const yS = rcTabela(x, 722, y2, 640, [{ t: 'Produto', w: .56 }, { t: 'Qtd.', w: .2, al: 'r' }, { t: 'Retiradas', w: .24, al: 'r' }],
+        topSai.length ? topSai.map(([id, v]) => ({ cel: [{ t: nomeProd(id), bold: true }, { t: reQtd(v.q) }, { t: reQtd(v.n) }] })) : [{ cel: [{ t: 'Sem saídas no período' }, { t: '' }, { t: '' }] }], 38);
+      y = Math.max(yE, yS) + 30;
+
+      // ---- Responsáveis e curva ABC ----
+      const yR = y;
+      y = rcSecao(x, 52, y, 'Saídas por responsável');
+      const resp = saiResp.slice(0, 5);
+      const yRb = resp.length ? rcBarras(x, 52, y, 640, resp.map(r => r[0]), [{ nome: '', cor: RC_AZUL2, vals: resp.map(r => r[1].q) }],
+        { rotulo: 200, espessura: 24, passo: 12, fonteRotulo: 17, fmt: v => `${reQtd(v)} un.` }) : (x.fillStyle = RC_MUTED, x.font = '500 18px Inter', x.fillText('Sem saídas no período.', 52, y + 24), y + 40);
+      let y3 = rcSecao(x, 722, yR, 'Curva ABC – valor comprado');
+      const linhasAbc = [['A', '80% do valor'], ['B', 'próximos 15%'], ['C', 'últimos 5%']].map(([c, d]) => {
+        const ids = abc.filter(([id]) => classe.get(id) === c), val = ids.reduce((t, [, v]) => t + v.v, 0);
+        return { cel: [{ t: `Classe ${c}`, bold: true }, { t: d }, { t: reQtd(ids.length) }, { t: reMoeda(val) }] };
+      });
+      const yA = rcTabela(x, 722, y3, 640, [{ t: 'Classe', w: .22 }, { t: 'Faixa', w: .3 }, { t: 'Itens', w: .16, al: 'r' }, { t: 'Valor', w: .32, al: 'r' }], linhasAbc, 38);
+      y = Math.max(yRb, yA) + 30;
+
+      // ---- Destaques e recomendações ----
+      const notas = [];
+      const iPico = gastoMes.indexOf(Math.max(...gastoMes));
+      if(gastoTot){
+        const dp = iPico > 0 && gastoMes[iPico - 1] ? (gastoMes[iPico] - gastoMes[iPico - 1]) / gastoMes[iPico - 1] * 100 : null;
+        notas.push(`Pico de compras em ${relRot(meses[iPico])} (${reMoeda(gastoMes[iPico])}${dp != null ? `, ${dp >= 0 ? '+' : ''}${relNum(dp, 1)}% sobre o mês anterior` : ''}); gasto total de ${reMoeda(gastoTot)} no período e média de ${reMoeda(gastoMed)} por mês.`);
+      }
+      if(setor === 'Todas' && porSetor.size > 1){
+        const ord = [...porSetor.entries()].sort((a, b) => b[1] - a[1]);
+        notas.push(`${ord[0][0]} e ${ord[1][0]} concentram ${relNum((ord[0][1] + ord[1][1]) / (gastoTot || 1) * 100)}% do valor gasto.`);
+      }
+      if(abc.length) notas.push(`${qtdClasse('A')} de ${abc.length} produtos comprados (classe A) respondem por 80% do valor: ${abc.filter(([id]) => classe.get(id) === 'A').slice(0, 3).map(([id]) => nomeProd(id)).join(', ')}.`);
+      if(totEnt || totSai) notas.push(totEnt >= totSai ? `As entradas superaram as saídas em ${reQtd(totEnt - totSai)} unidades no período.` : `As saídas superaram as entradas em ${reQtd(totSai - totEnt)} unidades no período (consumo acima da reposição).`);
+      if(saiResp.length > 1){ const t = saiResp.reduce((s, r) => s + r[1].q, 0); notas.push(`${saiResp[0][0]} e ${saiResp[1][0]} responderam por ${relNum((saiResp[0][1].q + saiResp[1][1].q) / (t || 1) * 100)}% das unidades retiradas.`); }
+      notas.push(abaixo.length ? `${abaixo.length} produto${abaixo.length === 1 ? '' : 's'} abaixo do estoque mínimo: ${abaixo.slice(0, 3).map(p => p.nome).join(', ')}${abaixo.length > 3 ? '…' : ''} — repor com prioridade.` : 'Nenhum produto abaixo do estoque mínimo.');
+      if(gastoTot && gastoMes[iPico] > gastoMed * 1.4) notas.push(`Recomendação: distribuir as compras ao longo dos meses para evitar picos como o de ${relRot(meses[iPico])} e manter estoque mínimo dos itens de consumo diário.`);
+      y = rcSecao(x, 52, y, 'Destaques e recomendações');
+      x.save();
+      const hBox = Math.max(80, 1800 - y);
+      relRetArred(x, 52, y, 1310, hBox, 12); x.fillStyle = '#F4F7FB'; x.fill();
+      x.restore();
+      x.font = '400 18px Inter'; x.fillStyle = RC_TXT; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      let yn = y + 32;
+      for(const n of notas){
+        const ls = relLinhas(x, n, 1310 - 60);
+        if(yn + (ls.length - 1) * 25 > y + hBox - 12) break;
+        x.fillStyle = RC_AZUL2; x.beginPath(); x.arc(72, yn - 6, 4, 0, Math.PI * 2); x.fill();
+        x.fillStyle = RC_TXT;
+        ls.forEach((l, k) => x.fillText(l, 86, yn + k * 25));
+        yn += ls.length * 25 + 8;
+      }
+
+      const ref = meses[5];
+      return {
+        paginas: [pg], arquivo: `Controle_Estoque_${setor === 'Todas' ? 'Consolidado' : stkNorm(setor).replace(/[^a-z0-9]+/g, '_')}_${ref.slice(5, 7)}-${ref.slice(0, 4)}.pdf`,
+        titulo: `Controle de Estoque · ${setor === 'Todas' ? 'Consolidado' : setor} · ${relRot(meses[0])} a ${relRot(ref)}`,
+        pronto: `Controle de Estoque (${setor === 'Todas' ? 'todos os setores' : setor}) · ${relRot(meses[0])} a ${relRot(ref)} · 1 página.`,
+        resumo: `<li><strong>${reQtd(movs.length)} movimentações</strong> <span>· ${reQtd(totEnt)} un. de entrada e ${reQtd(totSai)} un. de saída</span></li><li><strong>Valor gasto</strong> <span>· ${reMoeda(gastoTot)}</span></li>`
+      };
+    }
+
     // ---------------- assistente ----------------
     const relModal = document.getElementById('relGerarModal');
     const relTipo = document.getElementById('relTipo'), relOpcoes = document.getElementById('relOpcoes');
@@ -11171,6 +11362,7 @@ ${clipPlayerPills(n)}
     });
 
     (function relMontar(){
+      document.getElementById('relSetor').innerHTML = ['Todas', ...STOCK_SETORES].map(st => `<option value="${esc(st)}">${esc(st)}</option>`).join('');
       const hoje = new Date(), anoAtual = hoje.getFullYear();
       relMes.innerHTML = REL_MES_LONGO.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m[0].toUpperCase() + m.slice(1)}</option>`).join('');
       relAno.innerHTML = Array.from({ length: anoAtual - 2022 }, (_, k) => anoAtual - k).map(a => `<option value="${a}">${a}</option>`).join('');
@@ -11197,6 +11389,12 @@ ${clipPlayerPills(n)}
         relRodape.textContent = `CAGED - Empregos Formais · ${mesTxt}`;
         return;
       }
+      if(relTipo.value === 'estoque'){
+        const st = document.getElementById('relSetor').value;
+        relGerarBtn.disabled = false;
+        relRodape.textContent = `Controle de Estoque · ${st === 'Todas' ? 'todos os setores' : st} · até ${mesTxt}`;
+        return;
+      }
       const pronto = relTipo.value === 'panorama' && relSel.size === 3 && !faltaNot;
       relGerarBtn.disabled = !pronto;
       relRodape.textContent = !relTipo.value ? 'Selecione o relatório'
@@ -11209,12 +11407,14 @@ ${clipPlayerPills(n)}
       const panorama = relTipo.value === 'panorama';
       relOpcoes.hidden = !relTipo.value;
       document.getElementById('relOpcoesPanorama').hidden = !panorama;
+      document.getElementById('relOpcoesEstoque').hidden = relTipo.value !== 'estoque';
       relOpcoes.classList.remove('rel-fade');
       if(panorama){ void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
       relAtualizar();
     });
     // Trocar o mês refaz a lista das 10/20 últimas (a lista "selecionadas" é do usuário e fica).
     [relMes, relAno].forEach(el => el.addEventListener('change', () => { if(relTipo.value === 'panorama' && relNotModo() !== 'sel') relPreencherLista(); else relAtualizar(); }));
+    document.getElementById('relSetor').addEventListener('change', relAtualizar);
     relIndGrid.addEventListener('change', ev => {
       const cb = ev.target.closest('input[type="checkbox"]');
       if(!cb) return;
@@ -11233,6 +11433,7 @@ ${clipPlayerPills(n)}
     window.relAbrirGerar = function(){
       const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
       relTipo.value = ''; relOpcoes.hidden = true; relSel = new Set();
+      document.getElementById('relSetor').value = 'Todas';
       document.querySelector('input[name="relNot"][value="10"]').checked = true;
       relSelBox.hidden = true; relSelTexto.value = ''; relSelItens = []; relSelCsv = false;
       relSelArquivoNome.textContent = 'Nenhum arquivo'; relSelPrevia.hidden = true; relSelContagem.textContent = '0 notícias reconhecidas';
@@ -11271,7 +11472,9 @@ ${clipPlayerPills(n)}
       try {
         passo('Carregando o gerador de PDF…');
         await relCarregarJsPdf();
-        const res = relTipo.value === 'caged' ? await rcGerar(alvo, passo) : await relGerarPanorama(alvo, passo);
+        const res = relTipo.value === 'caged' ? await rcGerar(alvo, passo)
+          : relTipo.value === 'estoque' ? await reGerar(alvo, document.getElementById('relSetor').value, passo)
+          : await relGerarPanorama(alvo, passo);
         const paginas = res.paginas;
         passo('Gerando o PDF…');
         const { jsPDF } = window.jspdf;
