@@ -10891,12 +10891,12 @@ ${clipPlayerPills(n)}
       if(sub){ x.fillStyle = RC_MUTED; x.font = '500 17px Inter'; x.fillText(relCortar(x, sub, w - 40), a + 24, b + h - 22); }
     }
     // Tabela: cols [{t, w, al}] (w em fração da largura); linhas: [{cel: [{t, cor, bold}], total}]
-    function rcTabela(x, a, b, w, cols, linhas, alturaLinha){
+    function rcTabela(x, a, b, w, cols, linhas, alturaLinha, fonte){
       const HC = 46, HL = alturaLinha || 44;
       relRetArred(x, a, b, w, HC, 8); x.fillStyle = RC_AZUL; x.fill();
       x.fillRect(a, b + HC - 8, w, 8);
       let cx = a;
-      x.font = '700 19px Inter'; x.fillStyle = '#fff'; x.textBaseline = 'middle';
+      x.font = `700 ${fonte ? fonte + 1 : 19}px Inter`; x.fillStyle = '#fff'; x.textBaseline = 'middle';
       const xs = cols.map(c => { const r = [cx, c.w * w]; cx += c.w * w; return r; });
       cols.forEach((c, k) => { x.textAlign = c.al === 'r' ? 'right' : 'left'; x.fillText(c.t, c.al === 'r' ? xs[k][0] + xs[k][1] - 14 : xs[k][0] + 14, b + HC / 2 + 1); });
       let y = b + HC;
@@ -10905,7 +10905,7 @@ ${clipPlayerPills(n)}
         x.fillRect(a, y, w, HL);
         ln.cel.forEach((c, k) => {
           x.textAlign = cols[k].al === 'r' ? 'right' : 'left';
-          x.font = `${ln.total || c.bold ? 700 : 500} 20px Inter`;
+          x.font = `${ln.total || c.bold ? 700 : 500} ${fonte || 20}px Inter`;
           x.fillStyle = c.cor || RC_TXT;
           x.fillText(relCortar(x, String(c.t), xs[k][1] - 24), cols[k].al === 'r' ? xs[k][0] + xs[k][1] - 14 : xs[k][0] + 14, y + HL / 2 + 1);
         });
@@ -11118,7 +11118,8 @@ ${clipPlayerPills(n)}
 
     // ===== Relatório "Controle de Estoque" (página única) =====
     // Dados do próprio módulo Estoque (produtos, saldos e movimentações). Período: os 6 meses
-    // até o mês de referência. Modelo: report/estoque/branding/1.png. Regras: report/estoque/escopo.
+    // até o mês de referência. Modelo: report/estoque/branding/1.png. Conteúdo: KPIs, valor gasto por mês
+    // (entradas), valor utilizado por setor (saídas) e as tabelas de entradas e saídas lado a lado.
     const reMoeda = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const reQtd = v => relNum(Math.round(Number(v) || 0));
 
@@ -11159,21 +11160,6 @@ ${clipPlayerPills(n)}
       // valor gasto (entradas × preço de custo) por mês e por setor
       const gastoMes = meses.map(mm => soma(ent.filter(m => String(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
       const gastoTot = gastoMes.reduce((a, b) => a + b, 0), gastoMed = gastoTot / 6;
-      const porSetor = new Map();
-      ent.forEach(m => porSetor.set(m.setor, (porSetor.get(m.setor) || 0) + m.quantidade * preco(m.produto_id)));
-      const agrupa = (lista, chave, val) => { const mp = new Map(); lista.forEach(m => { const k = chave(m); const v = mp.get(k) || { q: 0, v: 0, n: 0 }; v.q += m.quantidade; v.v += val(m); v.n++; mp.set(k, v); }); return mp; };
-      const entProd = [...agrupa(ent, m => m.produto_id, m => m.quantidade * preco(m.produto_id)).entries()];
-      const saiProd = [...agrupa(sai, m => m.produto_id, m => m.quantidade * preco(m.produto_id)).entries()];
-      const saiResp = [...agrupa(sai, m => userNameOf(m.usuario_email) || m.usuario_email || 'Não informado', () => 0).entries()].sort((a, b) => b[1].q - a[1].q);
-      // curva ABC pelo valor comprado
-      const abc = entProd.slice().sort((a, b) => b[1].v - a[1].v);
-      let acum = 0; const classe = new Map();
-      abc.forEach(([id, v]) => { const antes = gastoTot ? acum / gastoTot : 1; classe.set(id, antes < .8 ? 'A' : antes < .95 ? 'B' : 'C'); acum += v.v; });
-      const qtdClasse = c => [...classe.values()].filter(x => x === c).length;
-      // abaixo do mínimo (no setor escolhido ou no total)
-      const saldoProd = id => { const mp = stockBalances.get(id); if(!mp) return 0; let t = 0; mp.forEach((v, s) => { if(setor === 'Todas' || s === setor) t += Number(v) || 0; }); return t; };
-      const noSetor = setor === 'Todas' ? null : new Set(movs.map(m => m.produto_id));
-      const abaixo = ativos.filter(p => (!noSetor || noSetor.has(p.id)) && p.estoque_minimo > 0 && saldoProd(p.id) < p.estoque_minimo);
 
       passo('Montando o relatório…');
       const pg = relPagina(), x = pg.x;
@@ -11193,101 +11179,71 @@ ${clipPlayerPills(n)}
       rcKpi(x, 52 + 3 * (w4 + 18), y, w4, 150, 'Saldo em estoque', reQtd(saldo), 'quantidade atual');
       y += 150 + 28;
 
-      // ---- Valor gasto por mês (colunas: coluna / valor / variação) ----
-      const yLinha = y;
-      y = rcSecao(x, 52, y, 'Valor gasto na compra por mês');
-      {
-        const a = 52, w = 700, h = 270, n = 6, passoC = w / n, larg = 78;
-        const mx = Math.max(1, ...gastoMes), base = y + h - 52;
-        gastoMes.forEach((v, j) => {
-          const cx = a + j * passoC + (passoC - larg) / 2, meio = cx + larg / 2, bh = Math.max(3, v / mx * (h - 130));
-          x.fillStyle = j === 5 ? RC_AZUL : RC_CLARO; x.fillRect(cx, base - bh, larg, bh);
+      // Colunas na largura toda: coluna / valor / linha de apoio (variação ou participação)
+      const colunas = (titulo, rotulos, valores, apoio, destaque) => {
+        y = rcSecao(x, 52, y, titulo);
+        const a = 52, w = 1310, h = 300, n = rotulos.length, passoC = w / n, larg = Math.min(150, passoC * .62);
+        const mx = Math.max(1, ...valores), base = y + h - 46;
+        valores.forEach((v, j) => {
+          const cx = a + j * passoC + (passoC - larg) / 2, meio = cx + larg / 2, bh = Math.max(3, v / mx * (h - 140));
+          x.fillStyle = j === destaque ? RC_AZUL : RC_CLARO; x.fillRect(cx, base - bh, larg, bh);
           x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-          x.fillStyle = RC_TXT; x.font = '700 16px Inter';
-          x.fillText(reMoeda(v).replace(',00', ''), meio, base - bh - 10);
-          if(j > 0 && gastoMes[j - 1]){
-            const d = (v - gastoMes[j - 1]) / gastoMes[j - 1] * 100;
-            x.font = '800 17px Inter'; x.fillStyle = d > 0 ? RC_VERM : RC_VERDE;   // gastar mais = pior
-            x.fillText(`${d > 0 ? '+' : d < 0 ? '-' : ''}${relNum(Math.abs(d), 1)}%`, meio, base - bh - 34);
-          }
-          x.fillStyle = RC_MUTED; x.font = '600 18px Inter';
-          x.fillText(relRot(meses[j]), meio, base + 30);
+          x.fillStyle = RC_TXT; x.font = '700 21px Inter';
+          x.fillText(reMoeda(v), meio, base - bh - 12);
+          const ap = apoio(j);
+          if(ap){ x.font = '800 20px Inter'; x.fillStyle = ap.cor; x.fillText(ap.t, meio, base - bh - 42); }
+          x.fillStyle = RC_TXT; x.font = '600 20px Inter';
+          x.fillText(relCortar(x, rotulos[j], passoC - 10), meio, base + 30);
         });
         x.fillStyle = '#CBD5E1'; x.fillRect(a, base, w, 2);
         x.textAlign = 'left';
-        x.fillStyle = RC_TXT; x.font = '600 18px Inter';
-        x.fillText(`Total: ${reMoeda(gastoTot)}   ·   Média mensal: ${reMoeda(gastoMed)}`, a, y + h + 4);
-      }
-      // ---- Gasto por setor (todos) ou top produtos em valor (setor) ----
-      {
-        let yy = rcSecao(x, 790, yLinha, setor === 'Todas' ? 'Valor gasto por setor' : 'Produtos com maior valor comprado');
-        const itens = setor === 'Todas'
-          ? [...porSetor.entries()].filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 6)
-          : entProd.slice().sort((a, b) => b[1].v - a[1].v).slice(0, 6).map(([id, v]) => [nomeProd(id), v.v]);
-        if(itens.length){
-          rcBarras(x, 790, yy, 572, itens.map(i => i[0]), [{ nome: '', cor: RC_AZUL2, vals: itens.map(i => i[1]) }],
-            { rotulo: setor === 'Todas' ? 190 : 260, espessura: 26, passo: 14, fonteRotulo: 17, folga: 215, fmt: v => `${reMoeda(v).replace(',00', '')} · ${relNum(gastoTot ? v / gastoTot * 100 : 0)}%` });
-        } else { x.fillStyle = RC_MUTED; x.font = '500 18px Inter'; x.fillText('Sem compras no período.', 790, yy + 24); }
-      }
-      y = yLinha + 50 + 270 + 30;
+        y += h + 16;
+      };
 
-      // ---- Entradas e saídas: top produtos ----
-      const yTab = y;
-      y = rcSecao(x, 52, y, 'Entradas – produtos com maior valor');
-      const topEnt = entProd.slice().sort((a, b) => b[1].v - a[1].v).slice(0, 6);
-      const yE = rcTabela(x, 52, y, 640, [{ t: 'Produto', w: .56 }, { t: 'Qtd.', w: .16, al: 'r' }, { t: 'Valor', w: .28, al: 'r' }],
-        topEnt.length ? topEnt.map(([id, v]) => ({ cel: [{ t: nomeProd(id), bold: true }, { t: reQtd(v.q) }, { t: reMoeda(v.v) }] })) : [{ cel: [{ t: 'Sem entradas no período' }, { t: '' }, { t: '' }] }], 38);
-      let y2 = rcSecao(x, 722, yTab, 'Saídas – produtos mais retirados');
-      const topSai = saiProd.slice().sort((a, b) => b[1].q - a[1].q).slice(0, 6);
-      const yS = rcTabela(x, 722, y2, 640, [{ t: 'Produto', w: .56 }, { t: 'Qtd.', w: .2, al: 'r' }, { t: 'Retiradas', w: .24, al: 'r' }],
-        topSai.length ? topSai.map(([id, v]) => ({ cel: [{ t: nomeProd(id), bold: true }, { t: reQtd(v.q) }, { t: reQtd(v.n) }] })) : [{ cel: [{ t: 'Sem saídas no período' }, { t: '' }, { t: '' }] }], 38);
-      y = Math.max(yE, yS) + 30;
+      // ---- Valor gasto na compra por mês (entradas × preço de custo) ----
+      colunas(`Valor gasto na compra por mês · total ${reMoeda(gastoTot)} · média ${reMoeda(gastoMed)}/mês`, meses.map(relRot), gastoMes, j => {
+        if(!j || !gastoMes[j - 1]) return null;
+        const d = (gastoMes[j] - gastoMes[j - 1]) / gastoMes[j - 1] * 100;
+        return { t: `${d > 0 ? '+' : d < 0 ? '-' : ''}${relNum(Math.abs(d), 1)}%`, cor: d > 0 ? RC_VERM : RC_VERDE };   // gastar mais = pior
+      }, 5);
 
-      // ---- Responsáveis e curva ABC ----
-      const yR = y;
-      y = rcSecao(x, 52, y, 'Saídas por responsável');
-      const resp = saiResp.slice(0, 5);
-      const yRb = resp.length ? rcBarras(x, 52, y, 640, resp.map(r => r[0]), [{ nome: '', cor: RC_AZUL2, vals: resp.map(r => r[1].q) }],
-        { rotulo: 200, espessura: 24, passo: 12, fonteRotulo: 17, fmt: v => `${reQtd(v)} un.` }) : (x.fillStyle = RC_MUTED, x.font = '500 18px Inter', x.fillText('Sem saídas no período.', 52, y + 24), y + 40);
-      let y3 = rcSecao(x, 722, yR, 'Curva ABC – valor comprado');
-      const linhasAbc = [['A', '80% do valor'], ['B', 'próximos 15%'], ['C', 'últimos 5%']].map(([c, d]) => {
-        const ids = abc.filter(([id]) => classe.get(id) === c), val = ids.reduce((t, [, v]) => t + v.v, 0);
-        return { cel: [{ t: `Classe ${c}`, bold: true }, { t: d }, { t: reQtd(ids.length) }, { t: reMoeda(val) }] };
-      });
-      const yA = rcTabela(x, 722, y3, 640, [{ t: 'Classe', w: .22 }, { t: 'Faixa', w: .3 }, { t: 'Itens', w: .16, al: 'r' }, { t: 'Valor', w: .32, al: 'r' }], linhasAbc, 38);
-      y = Math.max(yRb, yA) + 30;
+      // ---- Valor utilizado por setor (saídas × preço de custo) ----
+      const usado = m => m.quantidade * preco(m.produto_id);
+      const usadoTot = soma(sai, usado);
+      if(setor === 'Todas'){
+        const setores = STOCK_SETORES.map(st => [st, soma(sai.filter(m => m.setor === st), usado)]);
+        const iMax = setores.reduce((im, s, j) => s[1] > setores[im][1] ? j : im, 0);
+        colunas(`Valor utilizado por setor · total ${reMoeda(usadoTot)}`, setores.map(s => s[0]), setores.map(s => s[1]),
+          j => usadoTot ? { t: `${relNum(setores[j][1] / usadoTot * 100)}% do total`, cor: RC_MUTED } : null, usadoTot ? iMax : -1);
+      } else {
+        const usadoMes = meses.map(mm => soma(sai.filter(m => String(m.created_at).slice(0, 7) === mm), usado));
+        colunas(`Valor utilizado por setor · ${setor} · total ${reMoeda(usadoTot)}`, meses.map(relRot), usadoMes, () => null, 5);
+      }
 
-      // ---- Destaques e recomendações ----
-      const notas = [];
-      const iPico = gastoMes.indexOf(Math.max(...gastoMes));
-      if(gastoTot){
-        const dp = iPico > 0 && gastoMes[iPico - 1] ? (gastoMes[iPico] - gastoMes[iPico - 1]) / gastoMes[iPico - 1] * 100 : null;
-        notas.push(`Pico de compras em ${relRot(meses[iPico])} (${reMoeda(gastoMes[iPico])}${dp != null ? `, ${dp >= 0 ? '+' : ''}${relNum(dp, 1)}% sobre o mês anterior` : ''}); gasto total de ${reMoeda(gastoTot)} no período e média de ${reMoeda(gastoMed)} por mês.`);
-      }
-      if(setor === 'Todas' && porSetor.size > 1){
-        const ord = [...porSetor.entries()].sort((a, b) => b[1] - a[1]);
-        notas.push(`${ord[0][0]} e ${ord[1][0]} concentram ${relNum((ord[0][1] + ord[1][1]) / (gastoTot || 1) * 100)}% do valor gasto.`);
-      }
-      if(abc.length) notas.push(`${qtdClasse('A')} de ${abc.length} produtos comprados (classe A) respondem por 80% do valor: ${abc.filter(([id]) => classe.get(id) === 'A').slice(0, 3).map(([id]) => nomeProd(id)).join(', ')}.`);
-      if(totEnt || totSai) notas.push(totEnt >= totSai ? `As entradas superaram as saídas em ${reQtd(totEnt - totSai)} unidades no período.` : `As saídas superaram as entradas em ${reQtd(totSai - totEnt)} unidades no período (consumo acima da reposição).`);
-      if(saiResp.length > 1){ const t = saiResp.reduce((s, r) => s + r[1].q, 0); notas.push(`${saiResp[0][0]} e ${saiResp[1][0]} responderam por ${relNum((saiResp[0][1].q + saiResp[1][1].q) / (t || 1) * 100)}% das unidades retiradas.`); }
-      notas.push(abaixo.length ? `${abaixo.length} produto${abaixo.length === 1 ? '' : 's'} abaixo do estoque mínimo: ${abaixo.slice(0, 3).map(p => p.nome).join(', ')}${abaixo.length > 3 ? '…' : ''} — repor com prioridade.` : 'Nenhum produto abaixo do estoque mínimo.');
-      if(gastoTot && gastoMes[iPico] > gastoMed * 1.4) notas.push(`Recomendação: distribuir as compras ao longo dos meses para evitar picos como o de ${relRot(meses[iPico])} e manter estoque mínimo dos itens de consumo diário.`);
-      y = rcSecao(x, 52, y, 'Destaques e recomendações');
-      x.save();
-      const hBox = Math.max(80, 1800 - y);
-      relRetArred(x, 52, y, 1310, hBox, 12); x.fillStyle = '#F4F7FB'; x.fill();
-      x.restore();
-      x.font = '400 18px Inter'; x.fillStyle = RC_TXT; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
-      let yn = y + 32;
-      for(const n of notas){
-        const ls = relLinhas(x, n, 1310 - 60);
-        if(yn + (ls.length - 1) * 25 > y + hBox - 12) break;
-        x.fillStyle = RC_AZUL2; x.beginPath(); x.arc(72, yn - 6, 4, 0, Math.PI * 2); x.fill();
-        x.fillStyle = RC_TXT;
-        ls.forEach((l, k) => x.fillText(l, 86, yn + k * 25));
-        yn += ls.length * 25 + 8;
-      }
+      // ---- Entradas e saídas lado a lado: NOME / QUANTIDADE / FUNCIONÁRIO / VALOR ----
+      const yTab = y + 8;
+      const tabela = (a, titulo, lista) => {
+        let yy = rcSecao(x, a, yTab, titulo);
+        const mp = new Map();
+        lista.forEach(m => {
+          // funcionário pelo primeiro nome (cadastro de usuários); sem cadastro, o e-mail
+          const func = (userNameOf(m.usuario_email) || '').trim().split(/\s+/)[0] || m.usuario_email || '—', k = `${m.produto_id}|${func}`;
+          const v = mp.get(k) || { id: m.produto_id, func, q: 0, v: 0 }; v.q += m.quantidade; v.v += usado(m); mp.set(k, v);
+        });
+        const itens = [...mp.values()].sort((p, q) => q.v - p.v || q.q - p.q);
+        const HL = 36, cabem = Math.max(2, Math.floor((1792 - yy - 46) / HL) - 1);
+        let linhas = itens.slice(0, itens.length > cabem ? cabem - 1 : cabem);
+        const resto = itens.slice(linhas.length);
+        const fmtL = it => ({ cel: [{ t: nomeProd(it.id), bold: true }, { t: reQtd(it.q) }, { t: it.func }, { t: reMoeda(it.v) }] });
+        const rows = linhas.map(fmtL);
+        if(resto.length) rows.push({ cel: [{ t: `Demais itens (${resto.length})`, cor: RC_MUTED }, { t: reQtd(resto.reduce((t, i) => t + i.q, 0)) }, { t: '' }, { t: reMoeda(resto.reduce((t, i) => t + i.v, 0)) }] });
+        if(!itens.length) rows.push({ cel: [{ t: 'Sem movimentações no período', cor: RC_MUTED }, { t: '' }, { t: '' }, { t: '' }] });
+        rows.push({ total: true, cel: [{ t: 'Total' }, { t: reQtd(itens.reduce((t, i) => t + i.q, 0)) }, { t: '' }, { t: reMoeda(itens.reduce((t, i) => t + i.v, 0)) }] });
+        rcTabela(x, a, yy, 645, [{ t: 'Nome', w: .46 }, { t: 'Qtd.', w: .1, al: 'r' }, { t: 'Funcionário', w: .24 }, { t: 'Valor', w: .2, al: 'r' }], rows, HL, 16);
+      };
+      tabela(52, 'Entradas', ent);
+      tabela(717, 'Saídas', sai);
+
 
       const ref = meses[5];
       return {
