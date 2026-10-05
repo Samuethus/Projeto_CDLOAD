@@ -345,6 +345,7 @@
     flex:0 0 auto;
   }
   .header-actions:empty{display:none;}
+  #zapVazio[hidden], #zapTemplates[hidden]{display:none;}
   .header-direita{display:flex; align-items:center; gap:16px; flex:0 0 auto;}
 
   /* Switch de tema (claro/escuro), sempre no canto superior direito do cabeçalho. */
@@ -2379,6 +2380,8 @@
       </section>
 
       <section class="page" id="page-templates">
+        <!-- Bloco de Templates: também é exibido em WhatsApp > Templates (mesmos dados e cadastro). -->
+        <div id="waTemplatesBloco">
 
         <div class="wa-topcard">
           <div class="wa-topcard-left">
@@ -2509,6 +2512,7 @@
           </div>
         </div>
 
+        </div><!-- /waTemplatesBloco -->
       </section>
 
       <!-- WHATSAPP — barra de filtros no padrão do Dashboard (painel CAGED).
@@ -2586,7 +2590,8 @@
             <span class="btn-label">Exportar</span>
           </button>
         </div>
-        <div class="empty-state">
+        <div id="zapTemplates" hidden></div>
+        <div class="empty-state" id="zapVazio">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></div>
           <div class="empty-title" id="zapVazioTitulo">Nenhuma instância conectada</div>
           <div class="empty-subtitle">Integração com a API do WhatsApp em desenvolvimento.</div>
@@ -3636,13 +3641,30 @@
     const ano = document.getElementById('zapAnoFiltro'), uf = document.getElementById('zapUfFiltro'), cidade = document.getElementById('zapCidadeFiltro');
     const atual = new Date().getFullYear();
     for(let a = atual; a >= atual - 2; a--) ano.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
+    // Templates: o bloco da seção Templates (cabeçalho, lista e assistente) é
+    // movido para cá enquanto esta visão está aberta, e volta ao abrir Templates.
+    const blocoTpl = document.getElementById('waTemplatesBloco');
+    const zapTpl = document.getElementById('zapTemplates'), zapVazio = document.getElementById('zapVazio');
+    let visao = 'instancias';
+    function mostrarVisao(){
+      const tpl = visao === 'templates';
+      if(tpl && blocoTpl.parentElement !== zapTpl) zapTpl.appendChild(blocoTpl);
+      zapTpl.hidden = !tpl;
+      zapVazio.hidden = tpl;
+    }
     seg.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
       seg.querySelectorAll('.stk-seg-btn').forEach(b => { const on = b === btn; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
-      const [ph, vazio] = visoes[btn.dataset.visao];
+      visao = btn.dataset.visao;
+      const [ph, vazio] = visoes[visao];
       busca.placeholder = ph;
       document.getElementById('zapVazioTitulo').textContent = vazio;
+      mostrarVisao();
+    });
+    document.addEventListener('cdload:pagechange', ev => {
+      if(ev.detail.page === 'templates') document.getElementById('page-templates').appendChild(blocoTpl);
+      else if(ev.detail.page === 'whatsapp') mostrarVisao();
     });
     uf.addEventListener('change', () => { cidade.disabled = !uf.value; cidade.value = ''; });
     document.getElementById('zapLimpar').addEventListener('click', () => {
