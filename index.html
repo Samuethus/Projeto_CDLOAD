@@ -1776,8 +1776,8 @@
             <option value="30d">Últimos 30 dias</option>
             <option value="60d">Últimos 60 dias</option>
           </select>
-          <select class="filter-select" id="stkPlayerFiltro" title="Player" hidden>
-            <option value="">Player</option>
+          <select class="filter-select" id="stkPlayerFiltro" title="Entidade" hidden>
+            <option value="">Entidade</option>
           </select>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
@@ -7128,6 +7128,7 @@ ${clipPlayerPills(n)}
     let stkFluxoModo = 'semanal';
     let stkVolumeModoClip = 'yoy'; // Volume de notícias (Clipping): yoy | semanal | mensal
     let stkCoberturaVisao = 'mensal'; // Evolução da cobertura (Clipping): mensal (linhas) | anual (barras)
+    let stkRankVisao = 'portais'; // Principais portais/entidades (Clipping): portais | entidades
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
@@ -7362,7 +7363,7 @@ ${clipPlayerPills(n)}
       }
       if(stkPainelEl.value === 'clipping'){
         const curPlayer = stkPlayerEl.value;
-        stkPlayerEl.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
+        stkPlayerEl.innerHTML = '<option value="">Entidade</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
         if(stkPlayerPadrao){ stkPlayerPadrao = false; stkPlayerEl.value = 'CDL Cuiabá'; }
         else if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) stkPlayerEl.value = curPlayer;
         const anosClip = [...new Set(clippingNews.map(n => String(n.data).slice(0, 4)))].sort().reverse();
@@ -8098,7 +8099,7 @@ ${clipPlayerPills(n)}
       const playerIgnorado = modoSel || !!tema;
       stkPlayerEl.classList.toggle('stk-filtro-ignorado', playerIgnorado);
       stkPlayerEl.title = modoSel ? 'Ignorado enquanto houver notícias selecionadas na busca'
-        : tema ? 'Ignorado enquanto houver um tema digitado na busca' : '';
+        : tema ? 'Ignorado enquanto houver um tema digitado na busca' : 'Entidade';
       [stkMesEl, stkAnoEl].forEach(el => { el.classList.remove('stk-filtro-ignorado'); el.title = ''; });
       // Seleção e tema funcionam igual: filtram as matérias e comparam o
       // período atual com o mesmo período do ano anterior.
@@ -8173,13 +8174,19 @@ ${clipPlayerPills(n)}
         cdBarras(linhasCat.map(([nome, v]) => ({ nome, valor: v, cor: CD_COR.azul, icone: CD_CAT_ICONE[nome] || 'jornal' })),
           'Notícias por categoria', 'Nenhuma notícia no período.'));
 
-      // ---- Principais veículos (ranking) ----
+      // ---- Principais portais / entidades (ranking, com switch) ----
+      const visaoEnt = stkRankVisao === 'entidades';
       const contVeic = new Map();
-      atual.forEach(n => { const v = n.portal || n.fonte || 'Outros'; contVeic.set(v, (contVeic.get(v) || 0) + 1); });
+      if(visaoEnt) CLIP_PLAYERS.forEach(p => { const v = menc(atual, p.nome); if(v) contVeic.set(p.nome, v); });
+      else atual.forEach(n => { const v = n.portal || n.fonte || 'Outros'; contVeic.set(v, (contVeic.get(v) || 0) + 1); });
       const veics = [...contVeic.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const wVeiculos = cdCard('Principais veículos', 'Mais citados no período', veics.length ? `<ol class="cd-rank">${veics.map(([nome, v], i) => `
-          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(atual.length ? v / atual.length : 0)}</span></li>`).join('')}</ol>`
-        : '<div class="stk-vazio">Nenhuma notícia no período.</div>');
+      const baseRank = visaoEnt ? totMenc(atual) : atual.length;
+      const switchRank = `<div class="cd-head-acoes"><div class="stk-segmented" id="stkRankVisao" role="tablist" aria-label="Visão do ranking">
+          ${[['portais', 'Portais'], ['entidades', 'Entidades']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${stkRankVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${stkRankVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wVeiculos = cdCard(visaoEnt ? 'Principais entidades' : 'Principais portais', visaoEnt ? 'Mais mencionadas no período' : 'Mais citados no período', veics.length ? `<ol class="cd-rank">${veics.map(([nome, v], i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(baseRank ? v / baseRank : 0)}</span></li>`).join('')}</ol>`
+        : '<div class="stk-vazio">Nenhuma notícia no período.</div>', switchRank);
 
       // ---- Destaques do período (notícias mais recentes) ----
       const CD_DEST = { Positivo: ['setaCima', 'verde'], Negativo: ['alerta', 'vermelho'], Neutro: ['megafone', 'azul'] };
@@ -9497,6 +9504,12 @@ ${clipPlayerPills(n)}
       const btn = ev.target.closest('#stkCoberturaVisao .stk-seg-btn');
       if(!btn || btn.dataset.visao === stkCoberturaVisao) return;
       stkCoberturaVisao = btn.dataset.visao;
+      stkRender();
+    });
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#stkRankVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === stkRankVisao) return;
+      stkRankVisao = btn.dataset.visao;
       stkRender();
     });
     stkGrid.addEventListener('click', ev => {
