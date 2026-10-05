@@ -694,7 +694,7 @@
   .wa-field{margin-bottom:14px;}
   .wa-field:last-child{margin-bottom:0;}
   .wa-field label{display:block;font-size:11.5px;font-weight:700;color:#374151;margin-bottom:5px;}
-  .wa-field input[type="text"], .wa-field input[type="number"], .wa-field input[type="date"], .wa-field input[type="time"], .wa-field select, .wa-field textarea,
+  .wa-field input[type="text"], .wa-field input[type="email"], .wa-field input[type="password"], .wa-field input[type="number"], .wa-field input[type="date"], .wa-field input[type="time"], .wa-field select, .wa-field textarea,
   .wa-subcard input[type="text"], .wa-subcard select, .wa-subcard textarea{
     width:100%;border:1px solid var(--wa-border);border-radius:10px;
     padding:9px 14px;font-family:inherit;font-size:13.5px;color:var(--wa-text);outline:none;background:#fff;
@@ -704,6 +704,8 @@
   .wa-subcard input:focus, .wa-subcard select:focus, .wa-subcard textarea:focus{
     border-color:var(--wa-primary);box-shadow:0 0 0 2px var(--wa-primary-soft);
   }
+  .wa-user-acesso{white-space:nowrap;font-size:12.5px;color:var(--wa-text);}
+  .wa-user-acesso-hora{font-size:11.5px;color:var(--wa-text-muted);margin-top:2px;}
   .wa-field-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .wa-field-row label{font-size:11.5px;font-weight:700;color:#374151;margin:0;}
   .wa-char-count{font-size:11px;color:#94a3b8;}
@@ -2747,7 +2749,9 @@
                   <th>Usuário</th>
                   <th>Perfil</th>
                   <th>Seções liberadas</th>
+                  <th>Setor</th>
                   <th>Status</th>
+                  <th>Último acesso</th>
                   <th class="wa-table-actions">Ações</th>
                 </tr>
               </thead>
@@ -2801,6 +2805,21 @@
                     <select id="waUserStatus">
                       <option value="Ativo">Ativo</option>
                       <option value="Inativo">Inativo</option>
+                    </select>
+                  </div>
+                  <div class="wa-field" style="flex:1;min-width:120px;">
+                    <label for="waUserSetor">Setor</label>
+                    <select id="waUserSetor">
+                      <option value="">Selecione</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Institucional">Institucional</option>
+                      <option value="Núcleo Inteligência">Núcleo Inteligência</option>
+                      <option value="Comercial">Comercial</option>
+                      <option value="Departamento Pessoal">Departamento Pessoal</option>
+                      <option value="Presidência">Presidência</option>
+                      <option value="Assessoria">Assessoria</option>
+                      <option value="RH">RH</option>
+                      <option value="Financeiro">Financeiro</option>
                     </select>
                   </div>
                 </div>
@@ -4662,8 +4681,8 @@
 
     // ---------------- Estado: Usuários & Permissões ----------------
     const FALLBACK_USERS = [
-      { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', secoes_permitidas: ALL_SECTIONS.map(s => s.key) },
-      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', secoes_permitidas: ['home', 'campanhas', 'templates'] }
+      { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', setor: 'Núcleo Inteligência', ultimo_acesso: null, secoes_permitidas: ALL_SECTIONS.map(s => s.key) },
+      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', setor: 'Marketing', ultimo_acesso: '2026-10-02T14:35:00-04:00', secoes_permitidas: ['home', 'campanhas', 'templates'] }
     ];
 
     let users = [];
@@ -4672,10 +4691,17 @@
     if(waUsersSupabaseBanner) waUsersSupabaseBanner.hidden = supabaseReady;
 
     const waUserTableBody = document.getElementById('waUserTableBody');
+    // Último acesso: data e hora (horário local) ou "Nunca acessou".
+    function waFormatarAcesso(iso){
+      const d = iso ? new Date(iso) : null;
+      if(!d || isNaN(d)) return '<span class="wa-empty-hint">Nunca acessou</span>';
+      const data = d.toLocaleDateString('pt-BR'), hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return `${data}<div class="wa-user-acesso-hora">${hora}</div>`;
+    }
     function renderUsers(){
       waUserTableBody.innerHTML = '';
       if(!users.length){
-        waUserTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="5">Nenhum usuário cadastrado.</td></tr>';
+        waUserTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="7">Nenhum usuário cadastrado.</td></tr>';
         return;
       }
       users.forEach(u => {
@@ -4697,7 +4723,9 @@
           </td>
           <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span></td>
           <td><div class="wa-channel-tags">${sectionsHtml}</div></td>
+          <td>${u.setor ? esc(u.setor) : '<span class="wa-empty-hint">—</span>'}</td>
           <td><span class="wa-badge ${u.status === 'Ativo' ? 'wa-status-ativo' : 'wa-status-inativo'}">${esc(u.status)}</span></td>
+          <td class="wa-user-acesso">${waFormatarAcesso(u.ultimo_acesso)}</td>
           <td class="wa-table-actions">
             ${window.__isAdmin() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenUserModal('${u.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
@@ -4737,6 +4765,8 @@
         email: row.email,
         cargo: row.cargo,
         status: row.status,
+        setor: row.setor || '',
+        ultimo_acesso: row.ultimo_acesso || null,
         secoes_permitidas: row.secoes_permitidas || [],
         paineis_permitidos: row.paineis_permitidos ?? null  // null = todos os painéis
       }));
@@ -4754,6 +4784,7 @@
     const waUserEmail = document.getElementById('waUserEmail');
     const waUserCargo = document.getElementById('waUserCargo');
     const waUserStatus = document.getElementById('waUserStatus');
+    const waUserSetor = document.getElementById('waUserSetor');
     const waUserSectionsGroup = document.getElementById('waUserSectionsGroup');
     const waUserAdminHint = document.getElementById('waUserAdminHint');
 
@@ -4847,6 +4878,7 @@
         email: waUserEmail.value.trim().toLowerCase(),
         cargo: waUserCargo.value,
         status: waUserStatus.value,
+        setor: waUserSetor.value || null,
         // null = todos os painéis (Administrador)
         paineis_permitidos: waUserCargo.value === 'Administrador' ? null : [...selectedUserPaineis],
         secoes_permitidas: waUserCargo.value === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : [...selectedUserSections]
@@ -4912,6 +4944,7 @@
       waUserCargo.value = editing ? editing.cargo : 'Usuário';
       waUserCargo.disabled = isFixedAdmin;
       waUserStatus.value = editing ? editing.status : 'Ativo';
+      waUserSetor.value = editing && [...waUserSetor.options].some(o => o.value === editing.setor) ? editing.setor : '';
 
       selectedUserSections = new Set(editing ? (editing.secoes_permitidas || []) : []);
       // Cadastro antigo (coluna vazia) = todos os painéis; usuário novo começa sem nenhum.
@@ -4995,6 +5028,17 @@
       return data;
     }
 
+    // Último acesso: grava o horário de entrada do próprio usuário pela função
+    // registrar_acesso() (supabase/schema_usuarios_setor_acesso.sql) — o RLS de
+    // `usuarios` só deixa o Administrador editar a tabela. Sem a função, só não registra.
+    function registrarAcesso(row){
+      const agora = new Date().toISOString();
+      if(!supabaseReady){ row.ultimo_acesso = agora; return; }
+      supabaseClient.rpc('registrar_acesso').then(({ error }) => {
+        if(error) console.warn('Último acesso não registrado:', error.message);
+      }, () => {});
+    }
+
     // Converte a linha de `usuarios` no usuário de sessão da interface.
     async function buildSessionUser(email){
       const row = await findUserByEmail(email);
@@ -5007,6 +5051,7 @@
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
       const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : (row.secoes_permitidas || []);
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
+      registrarAcesso(row);
       return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis } };
     }
 
