@@ -10462,7 +10462,7 @@ ${clipPlayerPills(n)}
       { id: 'pmc', nome: 'Vendas do varejo', local: 'Mato Grosso', fonte: 'IBGE · PMC', carregar: () => ibgeCarregar('pmc'), dados: () => window.IBGE_PMC,
         sobeBom: true, fmt: v => relNum(v, 1),
         serie: D => D.varejo.vol[D.locais.nomes.indexOf('Mato Grosso')].map(x => x == null ? null : x),
-        texto: (c) => `O índice de volume de vendas do varejo de Mato Grosso ficou em ${c.valorTxt} pontos em ${c.mesTxt} (base: média de 2022 = 100)${c.momTxt ? `, ${c.momTxt} sobre o mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}.` }
+        texto: (c) => `O volume de vendas do varejo de Mato Grosso ficou em ${c.valorTxt} pontos em ${c.mesTxt}${c.momTxt ? `, ${c.momTxt} sobre o mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}.` }
     ];
 
     // Série do relatório: mês de referência = último mês com dado até o escolhido;
@@ -10473,14 +10473,13 @@ ${clipPlayerPills(n)}
       while(i >= 0 && (D.meses[i] > alvo || v[i] == null)) i--;
       if(i < 0) return null;
       const ref = D.meses[i], ano = Number(ref.slice(0, 4));
-      const ini = Math.max(0, D.meses.indexOf(`${ano - 1}-01`));
-      const pontos = [];
-      for(let k = ini; k <= i; k++) if(v[k] != null) pontos.push({ mes: D.meses[k], v: v[k], k });
+      const todos = [];
+      for(let k = 0; k <= i; k++) if(v[k] != null) todos.push({ mes: D.meses[k], v: v[k], k });
       const delta = (a, b) => b == null ? null : ind.taxa ? a - b : (b === 0 ? null : (a - b) / Math.abs(b) * 100);
-      pontos.forEach((pt, j) => {
-        pt.det = Number(pt.mes.slice(0, 4)) === ano && j > 0 ? delta(pt.v, pontos[j - 1].v) : null;
-      });
-      const ult = pontos[pontos.length - 1], ant = pontos[pontos.length - 2];
+      // Gráfico: os 4 meses até o de referência; variação de cada um sobre o mês anterior (em %).
+      todos.forEach((pt, j) => { const b = j > 0 ? todos[j - 1].v : null; pt.det = b == null || b === 0 ? null : (pt.v - b) / Math.abs(b) * 100; });
+      const pontos = todos.slice(-4);
+      const ult = todos[todos.length - 1], ant = todos[todos.length - 2];
       const kAnoAnt = D.meses.indexOf(`${ano - 1}-${ref.slice(5, 7)}`);
       const yoyBase = kAnoAnt >= 0 ? v[kAnoAnt] : null;
       const mom = ant ? delta(ult.v, ant.v) : null, yoy = delta(ult.v, yoyBase);
@@ -10569,87 +10568,68 @@ ${clipPlayerPills(n)}
         x.fill();
         x.restore();
 
-        // coluna de texto
-        const tx = 72, tw = 540;
+        // coluna de texto (fontes +3px)
+        const tx = 72, tw = 560;
         x.textBaseline = 'alphabetic';
+        x.textAlign = 'left';
         x.fillStyle = '#fff';
-        x.font = '700 34px Inter';
-        x.fillText(relCortar(x, S.ind.nome, tw), tx, y0 + 62);
+        x.font = '700 37px Inter';
+        x.fillText(relCortar(x, S.ind.nome, tw), tx, y0 + 64);
         x.fillStyle = '#A9C8F5';
-        x.font = '500 21px Inter';
-        x.fillText(`${S.ind.local} · ${relRot(S.ref)}${S.atrasado ? ' (último disponível)' : ''}`, tx, y0 + 96);
+        x.font = '500 24px Inter';
+        x.fillText(relCortar(x, `${S.ind.local} · ${relRot(S.ref)}${S.atrasado ? ' (último disponível)' : ''}`, tw), tx, y0 + 100);
         const ult = S.pontos[S.pontos.length - 1];
         x.fillStyle = '#fff';
-        x.font = '800 62px Inter';
-        x.fillText(S.ind.fmt(ult.v), tx, y0 + 168);
+        x.font = '800 65px Inter';
+        x.fillText(S.ind.fmt(ult.v), tx, y0 + 172);
         if(S.mom != null){
           const bom = Math.round(S.mom * 10) === 0 ? null : (S.mom > 0) === S.ind.sobeBom;
-          x.font = '700 26px Inter';
+          x.font = '700 29px Inter';
           x.fillStyle = bom == null ? '#fff' : bom ? REL_BOM : REL_RUIM;
-          x.fillText(`${S.ind.taxa ? relPctDet(S.mom).replace('%', ' p.p.') : relPctDet(S.mom)} no mês`, tx, y0 + 206);
+          x.fillText(`${S.ind.taxa ? relPctDet(S.mom).replace('%', ' p.p.') : relPctDet(S.mom)} no mês`, tx, y0 + 212);
         }
-        // descritivo: 20px, branco
+        // descritivo: o maior tamanho (até 30px) que caiba em no máximo 4 linhas
         x.fillStyle = '#ffffff';
-        x.font = '400 20px Inter';
-        const linhas = relLinhas(x, S.texto, tw, 7);
-        linhas.forEach((l, k) => x.fillText(l, tx, y0 + 252 + k * 28));
+        let tam = 30, linhas;
+        for(; tam >= 18; tam--){ x.font = `400 ${tam}px Inter`; linhas = relLinhas(x, S.texto, tw); if(linhas.length <= 4 && 236 + tam + 3 * Math.round(tam * 1.32) <= altBloco - 48) break; }
+        if(linhas.length > 4) linhas = relLinhas(x, S.texto, tw, 4);
+        const lh = Math.round(tam * 1.32);
+        linhas.forEach((l, k) => x.fillText(l, tx, y0 + 236 + tam + k * lh));
         x.fillStyle = 'rgba(255,255,255,.6)';
-        x.font = '500 16px Inter';
-        x.fillText(`Fonte: ${S.ind.fonte}`, tx, y0 + altBloco - 22);
+        x.font = '500 19px Inter';
+        x.fillText(`Fonte: ${S.ind.fonte}`, tx, y0 + altBloco - 18);
 
-        // gráfico de colunas (eixo X = mês > ano)
-        const gx0 = 640 + 5, gx1 = REL_W - 40 - 5, n = S.pontos.length;
-        const larg = 28, passo = 32, total = n * passo - (passo - larg);
-        const inicio = gx0 + Math.max(0, (gx1 - gx0 - total) / 2);
-        const anoRow = y0 + altBloco - 5 - 6, mesTopo = anoRow - 34 - 52, base = mesTopo - 6;
+        // gráfico: 4 meses, tudo na horizontal — de baixo para cima: coluna, valor, variação
+        const gx0 = 660, gx1 = REL_W - 40 - 10, n = S.pontos.length;
+        const passo = (gx1 - gx0) / Math.max(n, 4), larg = Math.min(124, passo * .68);
+        const inicio = gx0 + ((gx1 - gx0) - passo * n) / 2;
+        const anoRow = y0 + altBloco - 16, mesRow = anoRow - 30, base = mesRow - 40;
         const vals = S.pontos.map(p => p.v), mn = Math.min(...vals), mx = Math.max(...vals);
-        const alt = v => mx === mn ? 65 : 50 + (v - mn) / (mx - mn) * 30;
-        S.pontos.forEach((pt, j) => {
-          const cx = inicio + j * passo, h = alt(pt.v), atual = Number(pt.mes.slice(0, 4)) === S.ano;
-          x.fillStyle = atual ? '#ffffff' : 'rgba(255,255,255,.45)';
-          x.fillRect(cx, base - h, larg, h);
-          // rótulos (27px, girados): detalhe colado na coluna e valor acima dele
-          x.save();
-          x.translate(cx + larg / 2, base - h - 8);
-          x.rotate(-Math.PI / 2);
-          x.textBaseline = 'middle';
-          x.textAlign = 'left';
-          let off = 0;
-          if(pt.det != null){
-            const r = Math.round(pt.det * 10) / 10;
-            x.font = '700 27px Inter';
-            x.fillStyle = r === 0 ? '#fff' : (r > 0) === S.ind.sobeBom ? REL_BOM : REL_RUIM;
-            const t = relPctDet(pt.det);
-            x.fillText(t, 0, 1);
-            off = x.measureText(t).width + 10;
-          }
-          x.font = '600 27px Inter';
-          x.fillStyle = '#fff';
-          x.fillText(S.ind.fmt(pt.v), off, 1);
-          x.restore();
-          // mês (27px, girado)
-          x.save();
-          x.translate(cx + larg / 2, mesTopo);
-          x.rotate(-Math.PI / 2);
-          x.textBaseline = 'middle';
-          x.textAlign = 'right';
-          x.font = '500 27px Inter';
-          x.fillStyle = atual ? '#fff' : 'rgba(255,255,255,.7)';
-          x.fillText(PAN_MES_CURTO[Number(pt.mes.slice(5, 7)) - 1], 0, 1);
-          x.restore();
-        });
-        // ano (27px), centralizado sob os meses de cada ano
-        const porAno = new Map();
-        S.pontos.forEach((pt, j) => { const a = pt.mes.slice(0, 4); if(!porAno.has(a)) porAno.set(a, [j, j]); porAno.get(a)[1] = j; });
+        const alt = v => mx === mn ? 135 : 90 + (v - mn) / (mx - mn) * 90;
         x.textAlign = 'center';
-        x.textBaseline = 'alphabetic';
-        x.font = '700 27px Inter';
-        porAno.forEach(([a, z], ano) => {
-          const meio = inicio + (a * passo + z * passo + larg) / 2;
-          x.fillStyle = Number(ano) === S.ano ? '#fff' : 'rgba(255,255,255,.7)';
-          x.fillText(ano, meio, anoRow);
-          x.fillRect(inicio + a * passo, anoRow - 30, z * passo + larg - a * passo, 2);
+        S.pontos.forEach((pt, j) => {
+          const cx = inicio + j * passo + (passo - larg) / 2, meio = cx + larg / 2, h = alt(pt.v), ref = j === n - 1;
+          x.fillStyle = ref ? '#ffffff' : 'rgba(255,255,255,.55)';
+          x.fillRect(cx, base - h, larg, h);
+          x.textBaseline = 'alphabetic';
+          x.font = '700 30px Inter';
+          x.fillStyle = '#fff';
+          x.fillText(S.ind.fmt(pt.v), meio, base - h - 14);
+          if(pt.det != null){
+            const r = Math.round(pt.det);
+            x.font = '800 30px Inter';
+            x.fillStyle = r === 0 ? '#fff' : (r > 0) === S.ind.sobeBom ? REL_BOM : REL_RUIM;
+            x.fillText(`${r > 0 ? '+' : r < 0 ? '-' : ''}${relNum(Math.abs(r))}%`, meio, base - h - 54);
+          }
+          // eixo X: mês > ano
+          x.font = '700 30px Inter';
+          x.fillStyle = ref ? '#fff' : 'rgba(255,255,255,.75)';
+          x.fillText(PAN_MES_CURTO[Number(pt.mes.slice(5, 7)) - 1], meio, mesRow);
+          x.font = '500 22px Inter';
+          x.fillText(pt.mes.slice(0, 4), meio, anoRow);
         });
+        x.fillStyle = 'rgba(255,255,255,.35)';
+        x.fillRect(inicio, base, passo * n, 2);
         x.textAlign = 'left';
       });
       return pg;
