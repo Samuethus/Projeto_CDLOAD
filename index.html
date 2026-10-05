@@ -344,6 +344,30 @@
     gap:10px;
     flex:0 0 auto;
   }
+  .header-actions:empty{display:none;}
+  .header-direita{display:flex; align-items:center; gap:16px; flex:0 0 auto;}
+
+  /* Switch de tema (claro/escuro), sempre no canto superior direito do cabeçalho. */
+  .tema-switch{
+    position:relative; flex:0 0 auto; display:inline-flex; align-items:center;
+    width:62px; height:32px; padding:0; border:1px solid var(--header-border); border-radius:999px;
+    background:#F1F5F9; cursor:pointer; transition:background .2s ease, border-color .2s ease;
+  }
+  .tema-switch:hover{border-color:#94A3B8;}
+  .tema-switch:focus-visible{outline:2px solid #2563EB; outline-offset:2px;}
+  .tema-switch-ic{position:absolute; top:50%; width:14px; height:14px; transform:translateY(-50%); stroke-width:2; color:#94A3B8; pointer-events:none;}
+  .tema-switch-ic.sol{left:9px;}
+  .tema-switch-ic.lua{right:9px;}
+  .tema-switch-bola{
+    position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.25); transition:transform .22s ease, background .2s ease;
+    display:flex; align-items:center; justify-content:center; color:#F59E0B;
+  }
+  .tema-switch-bola svg{width:14px; height:14px; stroke-width:2;}
+  .tema-switch-bola .lua{display:none;}
+  .tema-switch[aria-checked="true"] .tema-switch-bola{transform:translateX(30px);}
+  .tema-switch[aria-checked="true"] .tema-switch-bola .sol{display:none;}
+  .tema-switch[aria-checked="true"] .tema-switch-bola .lua{display:block;}
 
   .content{
     flex:1;
@@ -1509,6 +1533,218 @@
   .wa-report-page-placeholder svg{width:34px;height:34px;stroke-width:1.6;}
   .wa-report-card-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;}
 </style>
+<!-- ===== Modo escuro =====
+     O CSS acima é o tema claro (fonte da verdade). Ao carregar, este script lê
+     todas as regras de cor e gera a versão escura de cada uma, prefixada por
+     :root[data-theme="dark"] — assim qualquer CSS novo ganha o tema escuro sem
+     trabalho extra. Todas as declarações de cor são repetidas (convertidas ou
+     não), para manter entre elas a mesma prioridade do tema claro. Conversão:
+     fundos/bordas claros viram superfícies escuras (o branco vira o card; cinzas
+     mais escuros viram tons um pouco mais claros, preservando o relevo); tons
+     pastel viram a mesma cor bem escurecida; textos escuros clareiam; cores
+     vivas (botões, gráficos) e transparências leves ficam como estão.
+     Tokens e ajustes finos ficam no <style> logo abaixo. -->
+<script>
+(function(){
+  var CHAVE = 'cdload-tema', raiz = document.documentElement;
+  try { if(localStorage.getItem(CHAVE) === 'dark') raiz.setAttribute('data-theme', 'dark'); } catch(e){ /* sem storage: abre no claro */ }
+
+  var CARD = [19, 28, 46], RELEVO = [51, 65, 85]; // #131C2E · #334155
+  var PREF = ':root[data-theme="dark"]';
+  // A sidebar já é escura nos dois temas: suas regras são repetidas sem conversão.
+  var RE_FIXO = /(^|[\s,>+~(])\.(sidebar|nav-|brand|logo-box|collapse-|current-user|header-divider)/;
+  var RE_COR = /rgba?\([^)]*\)|#[0-9a-f]{3,8}\b|\b(?:white|black)\b/gi;
+  var PROPS = /^(color|background-color|background-image|border-(top|right|bottom|left|block-start|block-end|inline-start|inline-end)-color|outline-color|box-shadow|text-shadow|fill|stroke|stop-color|caret-color|text-decoration-color|column-rule-color|-webkit-text-fill-color)$/;
+
+  function ler(t){
+    t = t.toLowerCase();
+    if(t === 'white') return [255, 255, 255, 1];
+    if(t === 'black') return [0, 0, 0, 1];
+    if(t[0] === '#'){
+      var h = t.slice(1);
+      if(h.length < 6) h = h.split('').map(function(c){ return c + c; }).join('');
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), h.length >= 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1];
+    }
+    var p = t.replace(/^rgba?\(|\)$/g, '').split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  }
+  function hsl(c){
+    var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, s = 0, d = mx - mn;
+    if(d){
+      s = d / (1 - Math.abs(2 * l - 1));
+      h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h = (h * 60 + 360) % 360;
+    }
+    return [h, s, l];
+  }
+  function rgb(h, s, l){
+    var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+    var v = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60) % 6];
+    return [(v[0] + m) * 255, (v[1] + m) * 255, (v[2] + m) * 255];
+  }
+  function mix(a, b, t){ return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+  function fmt(c, a){ return 'rgba(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ',' + (+a.toFixed(3)) + ')'; }
+
+  // Fundo/borda claro -> superfície escura. Escuros, vivos e véus leves ficam.
+  function fundo(c){
+    if(c[3] < .5) return null;
+    var x = hsl(c);
+    if(x[2] <= .6) return null;
+    if(x[1] < .2) return fmt(mix(CARD, RELEVO, Math.min(1, (1 - x[2]) / .35)), c[3]);
+    return fmt(mix(CARD, rgb(x[0], Math.min(x[1], .7), .45), Math.min(.5, .18 + (1 - x[2]) * .8)), c[3]);
+  }
+  // Texto escuro -> claro (mantém o matiz das cores de status).
+  function texto(c){
+    var x = hsl(c);
+    if(x[2] >= .55) return null;
+    return fmt(rgb(x[0], x[1] < .2 ? x[1] : Math.min(x[1], .85), Math.max(.62, Math.min(.92, .95 - x[2] * .6))), c[3]);
+  }
+  // SVG: traços cinza-claros (grades) escurecem; escuros clareiam; branco fica.
+  function traco(c){
+    var x = hsl(c);
+    if(x[2] > .8 && x[2] < .995) return fundo(c);
+    return x[2] < .55 ? texto(c) : null;
+  }
+  // Fundo vivo e opaco (amarelo, verde...): o texto da mesma regra não muda.
+  function vivo(v){
+    var m = v && v.match(RE_COR); if(!m || m.length !== 1) return false;
+    var c = ler(m[0]), x = hsl(c);
+    return c[3] >= .9 && x[1] > .45 && x[2] >= .35 && x[2] <= .8;
+  }
+  function converter(prop, v, textoFixo, fixo){
+    if(fixo) return v;
+    var fn = /^(color|caret-color|text-decoration-color|-webkit-text-fill-color)$/.test(prop) ? (textoFixo ? null : texto)
+      : /^(fill|stroke|stop-color)$/.test(prop) ? traco
+      : prop === 'text-shadow' ? null : fundo;
+    if(/^(background|border|outline|box-shadow)/.test(prop)) v = v.replace(/var\(--branco\)/g, 'var(--dk-card)');
+    if(!fn) return v;
+    return v.replace(RE_COR, function(t){ var c = ler(t); return c.some(isNaN) ? t : (fn(c) || t); });
+  }
+  // Longhand vazio = abreviação com var(); repete a abreviação como está.
+  function abreviacao(st, prop){
+    var cand = /^background/.test(prop) ? ['background']
+      : /^border-/.test(prop) ? [prop.replace(/-color$/, ''), 'border-color', 'border', prop.replace(/-(start|end)-color$/, '')]
+      : /^outline/.test(prop) ? ['outline'] : [];
+    for(var i = 0; i < cand.length; i++){ var v = st.getPropertyValue(cand[i]); if(v) return [cand[i], v]; }
+    return null;
+  }
+  function seletores(sel){
+    var partes = [], prof = 0, ini = 0;
+    for(var i = 0; i < sel.length; i++){
+      var ch = sel[i];
+      if(ch === '(' || ch === '[') prof++;
+      else if(ch === ')' || ch === ']') prof--;
+      else if(ch === ',' && !prof){ partes.push(sel.slice(ini, i)); ini = i + 1; }
+    }
+    partes.push(sel.slice(ini));
+    return partes.map(function(p){
+      p = p.trim();
+      if(/^:root/.test(p)) return PREF + p.slice(5);
+      if(/^html\b/.test(p)) return 'html[data-theme="dark"]' + p.slice(4);
+      return PREF + ' ' + p;
+    }).join(',');
+  }
+  function regra(r){
+    if(r.cssRules && !r.style){ // @media, @container, @supports
+      var corpo = lista(r.cssRules);
+      return corpo ? r.cssText.slice(0, r.cssText.indexOf('{')) + '{' + corpo + '}' : '';
+    }
+    if(!r.style || !r.selectorText) return '';
+    var st = r.style, out = [], vistos = {};
+    var textoFixo = vivo(st.getPropertyValue('background-color')), fixo = RE_FIXO.test(r.selectorText);
+    for(var i = 0; i < st.length; i++){
+      var prop = st[i];
+      if(!PROPS.test(prop)) continue;
+      var v = st.getPropertyValue(prop), imp = st.getPropertyPriority(prop) ? ' !important' : '';
+      if(!v){
+        var ab = abreviacao(st, prop);
+        if(ab && !vistos[ab[0]]){ vistos[ab[0]] = 1; out.push(ab[0] + ':' + converter(ab[0], ab[1], textoFixo, fixo) + imp); }
+        continue;
+      }
+      out.push(prop + ':' + converter(prop, v, textoFixo, fixo) + imp);
+    }
+    return out.length ? seletores(r.selectorText) + '{' + out.join(';') + '}' : '';
+  }
+  function lista(rs){
+    var txt = '';
+    for(var i = 0; i < rs.length; i++) if(rs[i].type !== 7 /* keyframes */) txt += regra(rs[i]);
+    return txt;
+  }
+  var css = '';
+  for(var i = 0; i < document.styleSheets.length; i++){
+    try { css += lista(document.styleSheets[i].cssRules); } catch(e){ /* folha de outra origem (fontes) */ }
+  }
+  var el = document.createElement('style');
+  el.id = 'temaEscuroGerado';
+  el.textContent = css;
+  document.head.appendChild(el);
+})();
+</script>
+<style>
+  /* ===== Modo escuro — tokens e ajustes finos (depois do CSS gerado) ===== */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --dk-bg:#0B1220;
+    --dk-card:#131C2E;
+    --header-border:#243047;
+    --text-dark:#E2E8F0;
+    --text-muted:#94A3B8;
+    --bg-panel:#1A2436;
+    --bg-card:#172033;
+  }
+  :root[data-theme="dark"] :is(#page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard){
+    --wa-bg:#0B1220;
+    --wa-card:#131C2E;
+    --wa-border:#243047;
+    --wa-text:#E2E8F0;
+    --wa-text-muted:#94A3B8;
+    --wa-primary:#3B82F6;
+    --wa-primary-hover:#60A5FA;
+    --wa-primary-soft:rgba(59,130,246,.16);
+    --wa-primary-soft-2:rgba(59,130,246,.08);
+    --wa-approved-bg:rgba(34,197,94,.16);
+    --wa-approved-text:#86EFAC;
+    --wa-pending-bg:rgba(245,158,11,.16);
+    --wa-pending-text:#FCD34D;
+    --wa-rejected-bg:rgba(239,68,68,.16);
+    --wa-rejected-text:#FCA5A5;
+    --wa-slate-bg:#1E293B;
+    --wa-slate-text:#CBD5E1;
+  }
+  :root[data-theme="dark"] #page-dashboard{
+    --stk-primary-dark:#E2E8F0;
+    --stk-secondary-dark:#CBD5E1;
+    --stk-neutral-bg:#243047;
+    --stk-white:#131C2E;
+    --stk-success-bg:rgba(16,185,129,.16);
+    --stk-warning-bg:rgba(245,158,11,.16);
+    --stk-danger-bg:rgba(239,68,68,.16);
+    --stk-caption:#8B9BB0;
+    --cd-azul-bg:rgba(29,95,211,.24);
+    --cd-verde-bg:rgba(93,177,78,.18);
+    --cd-verm-bg:rgba(239,68,68,.16);
+    --cd-texto:#E2E8F0;
+    --cd-muted:#94A3B8;
+    --cd-borda:#243047;
+    --cd-trilho:#1E293B;
+  }
+  :root[data-theme="dark"] body, :root[data-theme="dark"] .main, :root[data-theme="dark"] .wa-identify-overlay{background:var(--dk-bg);}
+  /* Campos sem fundo próprio (zero especificidade: qualquer regra do app vence). */
+  :where(:root[data-theme="dark"]) :where(input, select, textarea){background-color:#0F1729;}
+  :root[data-theme="dark"] .cd-kpi.amarelo{--cd-ac-bg:rgba(227,174,31,.18);}
+  :root[data-theme="dark"] .wa-cal-event{
+    background:color-mix(in srgb, var(--cal-pastel-text, #3B82F6) 28%, #131C2E);
+    color:color-mix(in srgb, var(--cal-pastel-text, #3B82F6) 45%, #fff);
+  }
+  :root[data-theme="dark"] .wa-cal-event:hover{background:var(--cal-pastel-text, #3B82F6);color:#fff;}
+  /* Logo colorida do login fica branca; prévias de relatório continuam em papel branco. */
+  :root[data-theme="dark"] .login-card-logo img{filter:brightness(0) invert(1);}
+  :root[data-theme="dark"] .wa-report-page-content img{background:#fff;}
+  /* Anel branco dos pontos dos gráficos acompanha o fundo do card. */
+  :root[data-theme="dark"] .stk-svg [stroke="#fff"]{stroke:#131C2E;}
+  :root[data-theme="dark"] .stk-svg .stk-grade[style]{stroke:#475569 !important;}
+  :root[data-theme="dark"] .tema-switch-bola{color:#93C5FD;}
+</style>
 </head>
 <body>
 
@@ -1686,7 +1922,17 @@
         <div class="header-title" id="headerTitle">Bem-vindo ao CDLOAD</div>
         <div class="header-desc" id="headerDesc">Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.</div>
       </div>
-      <div class="header-actions" id="headerActions"></div>
+      <div class="header-direita">
+        <div class="header-actions" id="headerActions"></div>
+        <button type="button" class="tema-switch" id="temaSwitch" role="switch" aria-checked="false" aria-label="Modo escuro" title="Ativar modo escuro">
+          <svg class="tema-switch-ic sol" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+          <svg class="tema-switch-ic lua" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <span class="tema-switch-bola" aria-hidden="true">
+            <svg class="sol" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+            <svg class="lua" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </span>
+        </button>
+      </div>
     </header>
 
     <!-- Aviso de câmera bloqueada/indisponível — exibido na seção Estoque -->
@@ -3261,6 +3507,23 @@
   const headerTitle = document.getElementById('headerTitle');
   const headerDesc = document.getElementById('headerDesc');
   const headerActions = document.getElementById('headerActions');
+
+  // Switch claro/escuro: o tema já foi aplicado no <head> (sem piscar); aqui só
+  // alterna e guarda a escolha neste navegador.
+  const temaSwitch = document.getElementById('temaSwitch');
+  function temaSincronizarSwitch(){
+    const escuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    temaSwitch.setAttribute('aria-checked', String(escuro));
+    temaSwitch.title = escuro ? 'Ativar modo claro' : 'Ativar modo escuro';
+  }
+  temaSwitch.addEventListener('click', () => {
+    const escuro = document.documentElement.getAttribute('data-theme') !== 'dark';
+    if(escuro) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('cdload-tema', escuro ? 'dark' : 'light'); } catch(e){ /* sem storage: vale só nesta visita */ }
+    temaSincronizarSwitch();
+  });
+  temaSincronizarSwitch();
 
   function goTo(pageId){
     if(currentUser && !(currentUser.secoes || []).includes(pageId)){
