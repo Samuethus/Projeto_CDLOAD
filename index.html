@@ -4895,6 +4895,16 @@
     const waClipChannelFilter = document.getElementById('waClipChannelFilter');
     const waClipPortalFilter = document.getElementById('waClipPortalFilter');
     const waClipPlayerFilter = document.getElementById('waClipPlayerFilter');
+    // Ao abrir a seção, o filtro Player começa em "CDL Cuiabá" (as notícias da entidade);
+    // "Limpar" ou escolher outro player mostra os demais.
+    const CLIP_PLAYER_PADRAO = 'CDL Cuiabá';
+    let waClipPlayerPadrao = true;
+    function waClipAplicarPlayerPadrao(){
+      if(!waClipPlayerPadrao || ![...waClipPlayerFilter.options].some(o => o.value === CLIP_PLAYER_PADRAO)) return false;
+      waClipPlayerFilter.value = CLIP_PLAYER_PADRAO;
+      waClipPlayerPadrao = false;
+      return true;
+    }
     const waClipSentimentFilter = document.getElementById('waClipSentimentFilter');
     const waClipClearBtn = document.getElementById('waClipClearBtn');
     const waClipExportBtn = document.getElementById('waClipExportBtn');
@@ -5054,6 +5064,7 @@
       const curPlayer = waClipPlayerFilter.value;
       waClipPlayerFilter.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
       if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) waClipPlayerFilter.value = curPlayer;
+      waClipAplicarPlayerPadrao();
 
       // Portal: uma opção por chave; o rótulo é o nome mais usado daquele portal.
       const portais = new Map();
@@ -9637,6 +9648,9 @@ ${clipPlayerPills(n)}
       } else if(currentPage === 'dashboard'){
         stkAbrir();
       } else if(currentPage === 'clipping'){
+        // Toda entrada na seção volta ao padrão: só as notícias da CDL Cuiabá.
+        waClipPlayerPadrao = true;
+        if(waClipAplicarPlayerPadrao()) renderClippingNews();
         openClippingSection();
       } else if(waCamModal.classList.contains('open')){
         waCloseCamModal();
