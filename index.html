@@ -721,6 +721,25 @@
   .rel-ind-info{font-size:11.5px;color:var(--wa-text-muted);margin-top:2px;line-height:1.4;}
   .rel-contagem{font-size:11.5px;font-weight:600;color:var(--wa-text-muted);margin-left:6px;}
   .rel-contagem.ok{color:#16A34A;}
+  .rel-not-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  @media (max-width:640px){ .rel-not-grid{grid-template-columns:1fr;} }
+  .rel-not-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--wa-border);border-radius:12px;background:var(--wa-card);cursor:pointer;transition:border-color .15s, background .15s;}
+  .rel-not-card:hover{border-color:var(--wa-primary);}
+  .rel-not-card input{margin:2px 0 0;width:16px;height:16px;accent-color:var(--wa-primary);flex:0 0 auto;cursor:pointer;}
+  .rel-not-card:has(input:checked){border-color:var(--wa-primary);background:var(--wa-primary-soft);}
+  .rel-sel-box{margin-top:12px;}
+  .rel-sel-box textarea{min-height:150px;font-family:inherit;resize:vertical;}
+  .rel-sel-acoes{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;}
+  .rel-arquivo{display:inline-flex;align-items:center;gap:8px;}
+  .rel-arquivo input{display:none;}
+  .rel-arquivo-nome{font-size:11.5px;color:var(--wa-text-muted);}
+  .rel-sel-previa{margin:10px 0 0;padding:0;list-style:none;max-height:150px;overflow-y:auto;border:1px solid var(--wa-border);border-radius:10px;}
+  .rel-sel-previa li{display:flex;gap:8px;align-items:baseline;padding:7px 12px;font-size:12px;color:var(--wa-text);border-bottom:1px solid var(--wa-border);}
+  .rel-sel-previa li:last-child{border-bottom:none;}
+  .rel-sel-previa li b{flex:0 0 auto;color:var(--wa-text-muted);font-weight:600;}
+  .rel-sel-previa li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rel-sel-previa li em{flex:0 0 auto;font-style:normal;font-size:11px;color:var(--wa-text-muted);}
+  .rel-sel-previa li em.ok{color:#16A34A;}
   .rel-status{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 10px;}
   .rel-status-ic{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--wa-primary-soft);color:var(--wa-primary);}
   .rel-status-ic svg{width:26px;height:26px;stroke-width:2;}
@@ -2260,6 +2279,30 @@
                   <h3 class="wa-step-title" style="margin-top:22px;">3. Indicadores <span class="rel-contagem" id="relIndContagem">0 de 3</span></h3>
                   <div class="wa-empty-hint" style="margin-bottom:10px;">Marque os 3 indicadores do Panorama Econômico que entram no material.</div>
                   <div class="rel-ind-grid" id="relIndGrid"></div>
+
+                  <h3 class="wa-step-title" style="margin-top:22px;">4. Principais Notícias</h3>
+                  <div class="wa-empty-hint" style="margin-bottom:10px;">Notícias da CDL Cuiabá que entram no material.</div>
+                  <div class="rel-not-grid" id="relNotOpcoes">
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="10" checked><span><span class="rel-ind-nome">10 últimas</span><span class="rel-ind-info" style="display:block;">As 10 mais recentes até o mês de referência</span></span></label>
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="20"><span><span class="rel-ind-nome">20 últimas</span><span class="rel-ind-info" style="display:block;">As 20 mais recentes até o mês de referência</span></span></label>
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="sel"><span><span class="rel-ind-nome">Notícias selecionadas</span><span class="rel-ind-info" style="display:block;">Cole o texto ou anexe um arquivo .txt ou .csv</span></span></label>
+                  </div>
+                  <div class="rel-sel-box" id="relSelBox" hidden>
+                    <div class="wa-field">
+                      <label for="relSelTexto">Notícias (título e link)</label>
+                      <textarea id="relSelTexto" placeholder="Título da matéria&#10;Leia mais: https://www.cdlcuiaba.com.br/noticias/...&#10;&#10;Outra matéria&#10;Leia mais: https://..."></textarea>
+                    </div>
+                    <div class="rel-sel-acoes">
+                      <label class="rel-arquivo">
+                        <span class="wa-btn wa-btn-outline" style="padding:6px 12px;font-size:12px;">Anexar .txt ou .csv</span>
+                        <input type="file" id="relSelArquivo" accept=".txt,.csv,text/plain,text/csv">
+                        <span class="rel-arquivo-nome" id="relSelArquivoNome">Nenhum arquivo</span>
+                      </label>
+                      <span class="rel-contagem" id="relSelContagem">0 notícias reconhecidas</span>
+                    </div>
+                    <div class="wa-empty-hint" style="margin-top:6px;">Texto: cada notícia com o título e, logo abaixo, o link. CSV: colunas <b>título</b> e <b>link</b> (e, se quiser, <b>resumo</b>). Notícias já cadastradas no Clipping trazem resumo, portal e data automaticamente.</div>
+                    <ul class="rel-sel-previa" id="relSelPrevia" hidden></ul>
+                  </div>
                 </div>
               </div>
 
@@ -10606,11 +10649,20 @@ ${clipPlayerPills(n)}
     }
 
     // Notícias: agrupadas por entidade; cada entidade começa numa página nova.
-    async function relDesenharNoticias(alvo){
+    // Grupo da CDL Cuiabá: etapa 4 (10/20 últimas até o fim do mês ou as selecionadas);
+    // demais entidades: notícias do mês de referência.
+    async function relDesenharNoticias(alvo, cdl){
       if(!clippingNews.length) await loadClippingNews();
+      const CDL = 'CDL Cuiabá';
       const noticias = clippingNews.filter(n => (n.data || '').slice(0, 7) === alvo).sort((a, b) => b.data.localeCompare(a.data));
       const grupos = CLIP_PLAYERS.map(p => ({ nome: p.nome, itens: [] }));
-      noticias.forEach(n => { const g = grupos.find(gr => (n.players || []).includes(gr.nome)); if(g) g.itens.push(n); });
+      noticias.forEach(n => { const g = grupos.find(gr => (n.players || []).includes(gr.nome)); if(g && g.nome !== CDL) g.itens.push(n); });
+      const gCdl = grupos.find(g => g.nome === CDL);
+      if(gCdl){
+        gCdl.itens = cdl.modo === 'sel' ? relCasarClipping(cdl.itens)
+          : clippingNews.filter(n => (n.players || []).includes(CDL) && (n.data || '').slice(0, 7) <= alvo)
+              .sort((a, b) => b.data.localeCompare(a.data)).slice(0, Number(cdl.modo));
+      }
       const fundo = await relImg('3.png');
       const paginas = [];
       const novaPagina = titulo => {
@@ -10627,10 +10679,22 @@ ${clipPlayerPills(n)}
         return pg;
       };
       const CX = 52, CW = REL_W - 104, PAD = 22, TOPO = 300, LIMITE = 1800, GAP = 16;
+      // Card: só as partes que existem (título, subtítulo, resumo de até 5 linhas, link).
       const medir = (x, n) => {
-        x.font = '700 24px Inter'; const tit = relLinhas(x, n.titulo, CW - 2 * PAD, 3);
-        x.font = '400 18px Inter'; const res = relLinhas(x, n.resumo || '', CW - 2 * PAD, 5);
-        return { tit, res, h: PAD + tit.length * 31 + 6 + 24 + 10 + res.length * 26 + 10 + 24 + PAD - 4 };
+        const larg = CW - 2 * PAD, partes = [];
+        x.font = '700 24px Inter';
+        partes.push({ fonte: '700 24px Inter', cor: '#0B2A5B', lh: 31, linhas: relLinhas(x, n.titulo, larg, 3), antes: 0 });
+        const sub = [n.portal || n.fonte, n.data ? formatClipDateBR(n.data) : '', n.categoria].filter(Boolean).join(' · ');
+        x.font = '600 17px Inter';
+        if(sub) partes.push({ fonte: '600 17px Inter', cor: '#64748B', lh: 24, linhas: [relCortar(x, sub, larg)], antes: 4 });
+        x.font = '400 18px Inter';
+        const res = relLinhas(x, n.resumo || '', larg, 5);
+        if(res.length) partes.push({ fonte: '400 18px Inter', cor: '#1F2937', lh: 26, linhas: res, antes: 8 });
+        const href = clipHref(n);
+        x.font = '600 16px Inter';
+        if(href) partes.push({ fonte: '600 16px Inter', cor: '#1D5FD3', lh: 22, linhas: [relCortar(x, `Acesse: ${href}`, larg)], antes: 10, href });
+        const h = PAD * 2 - 6 + partes.reduce((t, pt) => t + pt.antes + pt.linhas.length * pt.lh, 0);
+        return { partes, h };
       };
       for(const g of grupos.filter(gr => gr.itens.length)){
         let pg = novaPagina(`Conteúdo: ${g.nome}`), y = TOPO;
@@ -10645,25 +10709,21 @@ ${clipPlayerPills(n)}
           x.fillStyle = '#fff'; x.fill();
           x.restore();
           x.lineWidth = 2; x.strokeStyle = '#fff'; relRetArred(x, CX, y, CW, m.h, 10); x.stroke();
-          let ty = y + PAD + 22;
-          x.fillStyle = '#0B2A5B'; x.font = '700 24px Inter';
-          m.tit.forEach(l => { x.fillText(l, CX + PAD, ty); ty += 31; });
-          ty += 6 - 31 + 24;
-          x.fillStyle = '#64748B'; x.font = '600 17px Inter';
-          const sub = [n.portal || n.fonte, formatClipDateBR(n.data), n.categoria].filter(Boolean).join(' · ');
-          x.fillText(relCortar(x, sub, CW - 2 * PAD), CX + PAD, ty);
-          ty += 10 + 26;
-          x.fillStyle = '#1F2937'; x.font = '400 18px Inter';
-          m.res.forEach(l => { x.fillText(l, CX + PAD, ty); ty += 26; });
-          ty += 10 - 26 + 24;
-          const href = clipHref(n);
-          if(href){
-            x.fillStyle = '#1D5FD3'; x.font = '600 16px Inter';
-            const t = relCortar(x, `Acesse: ${href}`, CW - 2 * PAD), w = x.measureText(t).width;
-            x.fillText(t, CX + PAD, ty);
-            x.fillRect(CX + PAD, ty + 3, w, 1.2);
-            pg.links.push({ x: CX + PAD, y: ty - 18, w, h: 24, url: href });
-          }
+          let ty = y + PAD - 6;
+          m.partes.forEach(pt => {
+            ty += pt.antes;
+            x.font = pt.fonte; x.fillStyle = pt.cor;
+            pt.linhas.forEach(l => {
+              const base = ty + pt.lh * 0.78;
+              x.fillText(l, CX + PAD, base);
+              if(pt.href){
+                const w = x.measureText(l).width;
+                x.fillRect(CX + PAD, base + 3, w, 1.2);
+                pg.links.push({ x: CX + PAD, y: ty, w, h: pt.lh, url: pt.href });
+              }
+              ty += pt.lh;
+            });
+          });
           y += m.h + GAP;
         }
       }
@@ -10673,6 +10733,72 @@ ${clipPlayerPills(n)}
         pg.x.fillText(`Nenhuma notícia registrada em ${relRot(alvo)}.`, 52, 340);
       }
       return paginas;
+    }
+
+    // ---- Etapa 4: notícias selecionadas (texto colado, .txt ou .csv) ----
+    const REL_URL = /https?:\/\/[^\s<>"']+/i;
+    const relChaveUrl = u => String(u || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[?#].*$/, '').replace(/\/+$/, '');
+    const relSemLeiaMais = t => t.replace(/\b(leia|leis|lei|saiba)\s+mais\b\s*:?\s*$/i, '').replace(/[\s:;,|"\-–—]+$/, '').replace(/^"+/, '').trim();
+    // Texto livre: o link fica na mesma linha do título ou logo abaixo dele ("Leia mais: ...").
+    function relLerTexto(t){
+      const out = [];
+      let anterior = '';
+      t.split(/\r?\n/).map(l => l.trim()).forEach(l => {
+        if(!l) return;
+        const m = l.match(REL_URL);
+        if(!m){ anterior = l; return; }
+        let titulo = relSemLeiaMais(l.slice(0, m.index));
+        if(!titulo) titulo = anterior;
+        out.push({ titulo, link: m[0].replace(/[.,;)\]]+$/, '') });
+        anterior = '';
+      });
+      return out;
+    }
+    function relLerCsv(t){
+      const primeira = t.split(/\r?\n/)[0] || '';
+      const sep = (primeira.match(/;/g) || []).length >= (primeira.match(/,/g) || []).length ? ';' : ',';
+      const linhas = [];
+      let campo = '', linha = [], aspas = false;
+      for(let i = 0; i < t.length; i++){
+        const c = t[i];
+        if(aspas){
+          if(c === '"' && t[i + 1] === '"'){ campo += '"'; i++; }
+          else if(c === '"') aspas = false;
+          else campo += c;
+        } else if(c === '"') aspas = true;
+        else if(c === sep){ linha.push(campo); campo = ''; }
+        else if(c === '\n' || c === '\r'){ if(c === '\r' && t[i + 1] === '\n') i++; linha.push(campo); linhas.push(linha); linha = []; campo = ''; }
+        else campo += c;
+      }
+      if(campo || linha.length){ linha.push(campo); linhas.push(linha); }
+      const util = linhas.map(l => l.map(x => x.trim())).filter(l => l.some(Boolean));
+      if(!util.length) return [];
+      const cab = util[0].map(h => stkNorm(h));
+      const col = nomes => cab.findIndex(h => nomes.some(n => h.includes(n)));
+      let iT = col(['titulo', 'title', 'materia', 'manchete']), iL = col(['link', 'url', 'endereco']), iR = col(['resumo', 'descricao', 'texto']), iS = col(['subtitulo']);
+      let corpo = util.slice(1);
+      if(iT < 0 && iL < 0){ corpo = util; iT = 0; iL = util[0].findIndex(x => REL_URL.test(x)); }
+      return corpo.map(l => {
+        const link = iL >= 0 ? ((l[iL] || '').match(REL_URL) || [''])[0] : ((l.join(' ').match(REL_URL)) || [''])[0];
+        return { titulo: l[iT] || '', link, resumo: iR >= 0 ? l[iR] || '' : '', subtitulo: iS >= 0 ? l[iS] || '' : '' };
+      }).filter(n => n.titulo || n.link);
+    }
+    const relLerSelecao = (t, csv) => (csv || /^\s*"?t[ií]tulo"?\s*[;,]/i.test(t) ? relLerCsv(t) : relLerTexto(t)).filter(n => n.titulo || n.link);
+    // Completa com o que já está no Clipping (mesmo link): resumo, portal, data e categoria.
+    function relCasarClipping(itens){
+      const mapa = new Map();
+      clippingNews.forEach(n => [n.link, n.linkOriginal].forEach(u => { if(u) mapa.set(relChaveUrl(u), n); }));
+      return itens.map(it => {
+        const n = it.link ? mapa.get(relChaveUrl(it.link)) : null;
+        return {
+          titulo: it.titulo || (n && n.titulo) || it.link,
+          resumo: it.resumo || (n && n.resumo) || '',
+          portal: it.subtitulo || (n && (n.portal || n.fonte)) || '',
+          data: n ? n.data : '', categoria: n ? n.categoria : '',
+          linkOriginal: it.link || (n && clipHref(n)) || '', link: it.link || '',
+          players: ['CDL Cuiabá'], casou: !!n
+        };
+      });
     }
 
     let relJsPdfProm = null;
@@ -10698,7 +10824,43 @@ ${clipPlayerPills(n)}
     const relGerarBtn = document.getElementById('relGerarBtn'), relBaixarBtn = document.getElementById('relBaixarBtn');
     const relRodape = document.getElementById('relRodape');
     const relEtapa = nome => ['Config', 'Gerando', 'Pronto'].forEach(e => { document.getElementById('relEtapa' + e).hidden = e !== nome; });
-    let relSel = new Set(), relUrl = null;
+    let relSel = new Set(), relUrl = null, relSelItens = [];
+    const relSelBox = document.getElementById('relSelBox'), relSelTexto = document.getElementById('relSelTexto');
+    const relSelArquivo = document.getElementById('relSelArquivo'), relSelArquivoNome = document.getElementById('relSelArquivoNome');
+    const relSelPrevia = document.getElementById('relSelPrevia'), relSelContagem = document.getElementById('relSelContagem');
+    const relNotModo = () => (document.querySelector('input[name="relNot"]:checked') || {}).value || '10';
+    let relSelCsv = false;
+    async function relAtualizarSelecao(){
+      if(relNotModo() === 'sel' && !clippingNews.length){ try { await loadClippingNews(); } catch(e){ /* sem Clipping: só não completa */ } }
+      relSelItens = relLerSelecao(relSelTexto.value, relSelCsv);
+      const casadas = relCasarClipping(relSelItens);
+      relSelContagem.textContent = `${relSelItens.length} notícia${relSelItens.length === 1 ? '' : 's'} reconhecida${relSelItens.length === 1 ? '' : 's'}`;
+      relSelContagem.classList.toggle('ok', relSelItens.length > 0);
+      relSelPrevia.hidden = !casadas.length;
+      relSelPrevia.innerHTML = casadas.map((n, i) => `<li><b>${i + 1}.</b><span title="${esc(n.titulo)}">${esc(n.titulo)}</span><em class="${n.casou ? 'ok' : ''}">${n.casou ? 'no Clipping' : n.linkOriginal ? 'só título e link' : 'sem link'}</em></li>`).join('');
+      relAtualizar();
+    }
+    document.getElementById('relNotOpcoes').addEventListener('change', () => {
+      const sel = relNotModo() === 'sel';
+      relSelBox.hidden = !sel;
+      if(sel){ relSelBox.classList.remove('rel-fade'); void relSelBox.offsetWidth; relSelBox.classList.add('rel-fade'); relAtualizarSelecao(); }
+      else relAtualizar();
+    });
+    let relSelTimer = null;
+    relSelTexto.addEventListener('input', () => { relSelCsv = false; relSelArquivoNome.textContent = 'Nenhum arquivo'; clearTimeout(relSelTimer); relSelTimer = setTimeout(relAtualizarSelecao, 250); });
+    relSelArquivo.addEventListener('change', async () => {
+      const f = relSelArquivo.files[0];
+      if(!f) return;
+      if(!/\.(txt|csv)$/i.test(f.name)){ alert('Use um arquivo .txt ou .csv.'); relSelArquivo.value = ''; return; }
+      const buf = await f.arrayBuffer();
+      let txt = new TextDecoder('utf-8').decode(buf);
+      if(txt.includes('\uFFFD')) txt = new TextDecoder('windows-1252').decode(buf);   // CSV salvo pelo Excel
+      relSelTexto.value = txt.replace(/^\uFEFF/, '');
+      relSelCsv = /\.csv$/i.test(f.name);
+      relSelArquivoNome.textContent = f.name;
+      relSelArquivo.value = '';
+      relAtualizarSelecao();
+    });
 
     (function relMontar(){
       const hoje = new Date(), anoAtual = hoje.getFullYear();
@@ -10720,9 +10882,13 @@ ${clipPlayerPills(n)}
       });
       relIndContagem.textContent = `${relSel.size} de 3`;
       relIndContagem.classList.toggle('ok', relSel.size === 3);
-      const pronto = relTipo.value === 'panorama' && relSel.size === 3;
+      const faltaNot = relNotModo() === 'sel' && !relSelItens.length;
+      const pronto = relTipo.value === 'panorama' && relSel.size === 3 && !faltaNot;
       relGerarBtn.disabled = !pronto;
-      relRodape.textContent = !relTipo.value ? 'Selecione o relatório' : pronto ? `Panorama Econômico · ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value}` : `Marque mais ${3 - relSel.size} indicador${3 - relSel.size === 1 ? '' : 'es'}`;
+      relRodape.textContent = !relTipo.value ? 'Selecione o relatório'
+        : relSel.size < 3 ? `Marque mais ${3 - relSel.size} indicador${3 - relSel.size === 1 ? '' : 'es'}`
+        : faltaNot ? 'Informe as notícias selecionadas'
+        : `Panorama Econômico · ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value}`;
     }
     relTipo.addEventListener('change', () => {
       relOpcoes.hidden = !relTipo.value;
@@ -10748,6 +10914,9 @@ ${clipPlayerPills(n)}
     window.relAbrirGerar = function(){
       const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
       relTipo.value = ''; relOpcoes.hidden = true; relSel = new Set();
+      document.querySelector('input[name="relNot"][value="10"]').checked = true;
+      relSelBox.hidden = true; relSelTexto.value = ''; relSelItens = []; relSelCsv = false;
+      relSelArquivoNome.textContent = 'Nenhum arquivo'; relSelPrevia.hidden = true; relSelContagem.textContent = '0 notícias reconhecidas';
       relMes.value = String(ant.getMonth() + 1).padStart(2, '0');
       relAno.value = String(ant.getFullYear());
       relReiniciar();
@@ -10772,7 +10941,7 @@ ${clipPlayerPills(n)}
         passo('Montando a capa e o Panorama…');
         const paginas = [await relDesenharCapa(alvo), await relDesenharPanorama(series)];
         passo('Organizando as notícias…');
-        paginas.push(...await relDesenharNoticias(alvo));
+        paginas.push(...await relDesenharNoticias(alvo, { modo: relNotModo(), itens: relSelItens }));
         passo('Gerando o PDF…');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
