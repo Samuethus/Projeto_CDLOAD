@@ -740,6 +740,9 @@
   .rel-sel-previa li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .rel-sel-previa li em{flex:0 0 auto;font-style:normal;font-size:11px;color:var(--wa-text-muted);}
   .rel-sel-previa li em.ok{color:#16A34A;}
+  .rel-sel-previa li em.fora{color:#DC2626;font-weight:600;}
+  .rel-sel-previa li button{flex:0 0 auto;border:none;background:none;color:var(--wa-text-muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;border-radius:4px;}
+  .rel-sel-previa li button:hover{color:#DC2626;background:var(--wa-slate-bg);}
   .rel-status{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 10px;}
   .rel-status-ic{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--wa-primary-soft);color:var(--wa-primary);}
   .rel-status-ic svg{width:26px;height:26px;stroke-width:2;}
@@ -2281,15 +2284,15 @@
                   <div class="rel-ind-grid" id="relIndGrid"></div>
 
                   <h3 class="wa-step-title" style="margin-top:22px;">4. Principais Notícias</h3>
-                  <div class="wa-empty-hint" style="margin-bottom:10px;">Notícias da CDL Cuiabá que entram no material.</div>
+                  <div class="wa-empty-hint" style="margin-bottom:10px;">Somente notícias da CDL Cuiabá. O PDF sai exatamente com a lista abaixo: remova, edite ou acrescente notícias à vontade.</div>
                   <div class="rel-not-grid" id="relNotOpcoes">
-                    <label class="rel-not-card"><input type="radio" name="relNot" value="10" checked><span><span class="rel-ind-nome">10 últimas</span><span class="rel-ind-info" style="display:block;">As 10 mais recentes até o mês de referência</span></span></label>
-                    <label class="rel-not-card"><input type="radio" name="relNot" value="20"><span><span class="rel-ind-nome">20 últimas</span><span class="rel-ind-info" style="display:block;">As 20 mais recentes até o mês de referência</span></span></label>
-                    <label class="rel-not-card"><input type="radio" name="relNot" value="sel"><span><span class="rel-ind-nome">Notícias selecionadas</span><span class="rel-ind-info" style="display:block;">Cole o texto ou anexe um arquivo .txt ou .csv</span></span></label>
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="10" checked><span><span class="rel-ind-nome">10 últimas</span><span class="rel-ind-info" style="display:block;">Preenche a lista com as 10 mais recentes até o mês de referência</span></span></label>
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="20"><span><span class="rel-ind-nome">20 últimas</span><span class="rel-ind-info" style="display:block;">Preenche a lista com as 20 mais recentes até o mês de referência</span></span></label>
+                    <label class="rel-not-card"><input type="radio" name="relNot" value="sel"><span><span class="rel-ind-nome">Notícias selecionadas</span><span class="rel-ind-info" style="display:block;">Lista em branco: cole o texto ou anexe um arquivo .txt ou .csv</span></span></label>
                   </div>
                   <div class="rel-sel-box" id="relSelBox" hidden>
                     <div class="wa-field">
-                      <label for="relSelTexto">Notícias (título e link)</label>
+                      <label for="relSelTexto">Notícias do relatório (título e link)</label>
                       <textarea id="relSelTexto" placeholder="Título da matéria&#10;Leia mais: https://www.cdlcuiaba.com.br/noticias/...&#10;&#10;Outra matéria&#10;Leia mais: https://..."></textarea>
                     </div>
                     <div class="rel-sel-acoes">
@@ -10649,20 +10652,11 @@ ${clipPlayerPills(n)}
     }
 
     // Notícias: agrupadas por entidade; cada entidade começa numa página nova.
-    // Grupo da CDL Cuiabá: etapa 4 (10/20 últimas até o fim do mês ou as selecionadas);
-    // demais entidades: notícias do mês de referência.
-    async function relDesenharNoticias(alvo, cdl){
+    // Notícias: SOMENTE da CDL Cuiabá — exatamente a lista da etapa 4 (gerada pelos
+    // botões 10/20 últimas ou informada pelo usuário). Nenhuma outra entidade entra.
+    async function relDesenharNoticias(alvo, itens){
       if(!clippingNews.length) await loadClippingNews();
-      const CDL = 'CDL Cuiabá';
-      const noticias = clippingNews.filter(n => (n.data || '').slice(0, 7) === alvo).sort((a, b) => b.data.localeCompare(a.data));
-      const grupos = CLIP_PLAYERS.map(p => ({ nome: p.nome, itens: [] }));
-      noticias.forEach(n => { const g = grupos.find(gr => (n.players || []).includes(gr.nome)); if(g && g.nome !== CDL) g.itens.push(n); });
-      const gCdl = grupos.find(g => g.nome === CDL);
-      if(gCdl){
-        gCdl.itens = cdl.modo === 'sel' ? relCasarClipping(cdl.itens)
-          : clippingNews.filter(n => (n.players || []).includes(CDL) && (n.data || '').slice(0, 7) <= alvo)
-              .sort((a, b) => b.data.localeCompare(a.data)).slice(0, Number(cdl.modo));
-      }
+      const grupos = [{ nome: REL_CDL, itens: relCasarClipping(itens).filter(n => !n.fora) }];
       const fundo = await relImg('3.png');
       const paginas = [];
       const novaPagina = titulo => {
@@ -10746,6 +10740,7 @@ ${clipPlayerPills(n)}
       t.split(/\r?\n/).map(l => l.trim()).forEach(l => {
         if(!l) return;
         const m = l.match(REL_URL);
+        if(!m && /^(leia|leis|lei|saiba)\s+mais\b/i.test(l)){ if(anterior) out.push({ titulo: anterior, link: '' }); anterior = ''; return; }
         if(!m){ anterior = l; return; }
         let titulo = relSemLeiaMais(l.slice(0, m.index));
         if(!titulo) titulo = anterior;
@@ -10787,19 +10782,36 @@ ${clipPlayerPills(n)}
     // Completa com o que já está no Clipping (mesmo link): resumo, portal, data e categoria.
     function relCasarClipping(itens){
       const mapa = new Map();
-      clippingNews.forEach(n => [n.link, n.linkOriginal].forEach(u => { if(u) mapa.set(relChaveUrl(u), n); }));
+      const porTitulo = new Map();
+      // Mesma matéria repetida: vale a mais recente até o mês de referência (depois, as demais).
+      const alvo = `${relAno.value}-${relMes.value}`;
+      const ordem = clippingNews.slice().sort((a, b) => ((b.data || '').slice(0, 7) <= alvo) - ((a.data || '').slice(0, 7) <= alvo) || (b.data || '').localeCompare(a.data || ''));
+      ordem.forEach(n => {
+        [n.link, n.linkOriginal].forEach(u => { if(u && !mapa.has(relChaveUrl(u))) mapa.set(relChaveUrl(u), n); });
+        if(n.titulo && !porTitulo.has(stkNorm(n.titulo))) porTitulo.set(stkNorm(n.titulo), n);
+      });
       return itens.map(it => {
-        const n = it.link ? mapa.get(relChaveUrl(it.link)) : null;
+        const n = (it.link && mapa.get(relChaveUrl(it.link))) || (it.titulo && porTitulo.get(stkNorm(it.titulo))) || null;
         return {
           titulo: it.titulo || (n && n.titulo) || it.link,
           resumo: it.resumo || (n && n.resumo) || '',
           portal: it.subtitulo || (n && (n.portal || n.fonte)) || '',
           data: n ? n.data : '', categoria: n ? n.categoria : '',
           linkOriginal: it.link || (n && clipHref(n)) || '', link: it.link || '',
-          players: ['CDL Cuiabá'], casou: !!n
+          players: ['CDL Cuiabá'], casou: !!n,
+          fora: !!n && !relSoCdl(n)   // no Clipping, marcada com outra entidade: não entra no PDF
         };
       });
     }
+
+    const REL_CDL = 'CDL Cuiabá';
+    const relSoCdl = n => { const pl = n.players || []; return pl.includes(REL_CDL) && pl.every(x => x === REL_CDL); };
+    // 10/20 últimas: notícias exclusivas da CDL Cuiabá até o fim do mês de referência, no formato da lista.
+    function relUltimasCdl(qtd, alvo){
+      return clippingNews.filter(n => relSoCdl(n) && (n.data || '').slice(0, 7) <= alvo)
+        .sort((a, b) => b.data.localeCompare(a.data)).slice(0, qtd);
+    }
+    const relListaTexto = itens => itens.map(n => `${n.titulo}\nLeia mais: ${n.link || ''}`.trimEnd()).join('\n\n');
 
     let relJsPdfProm = null;
     function relCarregarJsPdf(){
@@ -10829,22 +10841,39 @@ ${clipPlayerPills(n)}
     const relSelArquivo = document.getElementById('relSelArquivo'), relSelArquivoNome = document.getElementById('relSelArquivoNome');
     const relSelPrevia = document.getElementById('relSelPrevia'), relSelContagem = document.getElementById('relSelContagem');
     const relNotModo = () => (document.querySelector('input[name="relNot"]:checked') || {}).value || '10';
-    let relSelCsv = false;
+    let relSelCsv = false, relSelValidas = 0;
     async function relAtualizarSelecao(){
-      if(relNotModo() === 'sel' && !clippingNews.length){ try { await loadClippingNews(); } catch(e){ /* sem Clipping: só não completa */ } }
+      if(!clippingNews.length){ try { await loadClippingNews(); } catch(e){ /* sem Clipping: só não completa */ } }
       relSelItens = relLerSelecao(relSelTexto.value, relSelCsv);
       const casadas = relCasarClipping(relSelItens);
-      relSelContagem.textContent = `${relSelItens.length} notícia${relSelItens.length === 1 ? '' : 's'} reconhecida${relSelItens.length === 1 ? '' : 's'}`;
-      relSelContagem.classList.toggle('ok', relSelItens.length > 0);
+      relSelValidas = casadas.filter(n => !n.fora).length;
+      const foraQtd = casadas.length - relSelValidas;
+      relSelContagem.textContent = `${relSelValidas} notícia${relSelValidas === 1 ? '' : 's'} no relatório${foraQtd ? ` · ${foraQtd} de outra entidade (fora)` : ''}`;
+      relSelContagem.classList.toggle('ok', relSelValidas > 0);
       relSelPrevia.hidden = !casadas.length;
-      relSelPrevia.innerHTML = casadas.map((n, i) => `<li><b>${i + 1}.</b><span title="${esc(n.titulo)}">${esc(n.titulo)}</span><em class="${n.casou ? 'ok' : ''}">${n.casou ? 'no Clipping' : n.linkOriginal ? 'só título e link' : 'sem link'}</em></li>`).join('');
+      relSelPrevia.innerHTML = casadas.map((n, i) => `<li><b>${i + 1}.</b><span title="${esc(n.titulo)}">${esc(n.titulo)}</span><em class="${n.fora ? 'fora' : n.casou ? 'ok' : ''}">${n.fora ? 'outra entidade · não entra' : n.casou ? 'no Clipping' : n.linkOriginal ? 'só título e link' : 'sem link'}</em><button type="button" data-rem="${i}" title="Remover do relatório" aria-label="Remover do relatório">&times;</button></li>`).join('');
       relAtualizar();
     }
-    document.getElementById('relNotOpcoes').addEventListener('change', () => {
-      const sel = relNotModo() === 'sel';
-      relSelBox.hidden = !sel;
-      if(sel){ relSelBox.classList.remove('rel-fade'); void relSelBox.offsetWidth; relSelBox.classList.add('rel-fade'); relAtualizarSelecao(); }
-      else relAtualizar();
+    // 10/20 últimas preenchem a lista (editável); "selecionadas" começa em branco.
+    async function relPreencherLista(){
+      const modo = relNotModo();
+      if(!clippingNews.length){ try { await loadClippingNews(); } catch(e){ /* sem Clipping */ } }
+      relSelCsv = false;
+      relSelArquivoNome.textContent = 'Nenhum arquivo';
+      relSelTexto.value = modo === 'sel' ? '' : relListaTexto(relUltimasCdl(Number(modo), `${relAno.value}-${relMes.value}`));
+      relSelBox.hidden = false;
+      relSelBox.classList.remove('rel-fade'); void relSelBox.offsetWidth; relSelBox.classList.add('rel-fade');
+      await relAtualizarSelecao();
+    }
+    document.getElementById('relNotOpcoes').addEventListener('change', relPreencherLista);
+    relSelPrevia.addEventListener('click', ev => {
+      const b = ev.target.closest('button[data-rem]');
+      if(!b) return;
+      const itens = relLerSelecao(relSelTexto.value, relSelCsv);
+      itens.splice(Number(b.dataset.rem), 1);
+      relSelTexto.value = relListaTexto(itens);
+      relSelCsv = false;
+      relAtualizarSelecao();
     });
     let relSelTimer = null;
     relSelTexto.addEventListener('input', () => { relSelCsv = false; relSelArquivoNome.textContent = 'Nenhum arquivo'; clearTimeout(relSelTimer); relSelTimer = setTimeout(relAtualizarSelecao, 250); });
@@ -10882,20 +10911,21 @@ ${clipPlayerPills(n)}
       });
       relIndContagem.textContent = `${relSel.size} de 3`;
       relIndContagem.classList.toggle('ok', relSel.size === 3);
-      const faltaNot = relNotModo() === 'sel' && !relSelItens.length;
+      const faltaNot = !relSelValidas;
       const pronto = relTipo.value === 'panorama' && relSel.size === 3 && !faltaNot;
       relGerarBtn.disabled = !pronto;
       relRodape.textContent = !relTipo.value ? 'Selecione o relatório'
         : relSel.size < 3 ? `Marque mais ${3 - relSel.size} indicador${3 - relSel.size === 1 ? '' : 'es'}`
-        : faltaNot ? 'Informe as notícias selecionadas'
+        : faltaNot ? 'Inclua ao menos uma notícia da CDL Cuiabá'
         : `Panorama Econômico · ${REL_MES_LONGO[Number(relMes.value) - 1]} de ${relAno.value}`;
     }
     relTipo.addEventListener('change', () => {
       relOpcoes.hidden = !relTipo.value;
-      if(relTipo.value){ relOpcoes.classList.remove('rel-fade'); void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); }
+      if(relTipo.value){ relOpcoes.classList.remove('rel-fade'); void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
       relAtualizar();
     });
-    [relMes, relAno].forEach(el => el.addEventListener('change', relAtualizar));
+    // Trocar o mês refaz a lista das 10/20 últimas (a lista "selecionadas" é do usuário e fica).
+    [relMes, relAno].forEach(el => el.addEventListener('change', () => { if(relNotModo() !== 'sel') relPreencherLista(); else relAtualizar(); }));
     relIndGrid.addEventListener('change', ev => {
       const cb = ev.target.closest('input[type="checkbox"]');
       if(!cb) return;
@@ -10941,7 +10971,7 @@ ${clipPlayerPills(n)}
         passo('Montando a capa e o Panorama…');
         const paginas = [await relDesenharCapa(alvo), await relDesenharPanorama(series)];
         passo('Organizando as notícias…');
-        paginas.push(...await relDesenharNoticias(alvo, { modo: relNotModo(), itens: relSelItens }));
+        paginas.push(...await relDesenharNoticias(alvo, relSelItens));
         passo('Gerando o PDF…');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
