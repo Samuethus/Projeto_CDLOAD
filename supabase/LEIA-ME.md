@@ -20,6 +20,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 8. Cole o conteúdo de [secao_home.sql](secao_home.sql) > **Run** (a **Home** vira uma seção liberada por usuário em **Usuários > Permissões de Acesso**; o script inclui "home" em todos os já cadastrados para ninguém perder o acesso — depois desmarque de quem não deve ver). Quem não tem a Home entra direto na primeira seção liberada.
 9. Cole o conteúdo de [schema_paineis_usuario.sql](schema_paineis_usuario.sql) > **Run** (em **Usuários > Etapa 2**, escolha quais **painéis Power BI** aparecem na Home de cada usuário; os não selecionados ficam ocultos. Quem já estava cadastrado continua vendo todos até ser editado; usuário novo começa sem nenhum; Administrador vê todos. O script também apaga a coluna antiga `acesso_power_bi`, do campo "Power BI" que foi removido).
 10. Cole o conteúdo de [schema_usuarios_setor_acesso.sql](schema_usuarios_setor_acesso.sql) > **Run** (em **Usuários**, cria o campo **Setor** do cadastro e a coluna **Último acesso**, gravada a cada entrada na plataforma pela função `registrar_acesso()` — o usuário comum só consegue atualizar o próprio horário).
+11. Cole o conteúdo de [secao_whatsapp.sql](secao_whatsapp.sql) > **Run** (a seção **Disparo** passou a se chamar **WhatsApp**: troca a chave `disparo` por `whatsapp` nas seções liberadas de cada usuário — o app já aceita a chave antiga, então a ordem não importa).
 
 ## Clipping News (Google Notícias)
 

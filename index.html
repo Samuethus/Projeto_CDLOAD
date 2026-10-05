@@ -566,12 +566,12 @@
   }
 
   /* ===================================================================
-     MÓDULOS DASHBOARD, TEMPLATES, CAMPANHAS (DISPAROS), USUÁRIOS, CLIPPING NEWS,
+     MÓDULOS DASHBOARD, TEMPLATES, CAMPANHAS (WHATSAPP), USUÁRIOS, CLIPPING NEWS,
      ESTOQUE & RELATÓRIOS — tokens de cor compartilhados. Isolados nas
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard{
+  #page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -1069,7 +1069,7 @@
      entrada/sucesso = verde, saída = vermelho, em progresso = azul claro,
      alerta = laranja.
   =================================================================== */
-  #page-dashboard{
+  #page-dashboard, #page-whatsapp{
     --stk-primary-dark:#002B54;
     --stk-primary:#0056D2;
     --stk-primary-light:#0099FF;
@@ -1090,11 +1090,11 @@
   /* Mais itens que as demais páginas (painel + busca + período + mês/ano/setor
      ou player) — quebra em linha ao invés de rolagem horizontal, para nenhum
      filtro (em especial o seletor de Painel) ficar fora da área visível. */
-  #page-dashboard .filter-bar{margin-bottom:20px;}
-  #page-dashboard .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
-  #page-dashboard .wa-stock-filters .wa-clip-search,
-  #page-dashboard .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
-  #page-dashboard .wa-stock-filters .wa-clip-search{width:260px;min-width:260px;max-width:260px;flex:0 0 260px;}
+  :is(#page-dashboard, #page-whatsapp) .filter-bar{margin-bottom:20px;}
+  :is(#page-dashboard, #page-whatsapp) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
+  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search,
+  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
+  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search{width:260px;min-width:260px;max-width:260px;flex:0 0 260px;}
   #page-dashboard .wa-stock-filters #stkPainelFiltro{flex:0 0 auto;min-width:0;overflow:visible;}
   .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;flex:0 0 auto;}
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
@@ -1294,14 +1294,14 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    #page-dashboard .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
-    #page-dashboard .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
+    :is(#page-dashboard, #page-whatsapp) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
+    :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:130px;flex:1 1 130px;}
-    #page-dashboard .wa-stock-filters .wa-clip-search{width:160px;min-width:160px;max-width:160px;flex:0 0 160px;}
+    :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search{width:160px;min-width:160px;max-width:160px;flex:0 0 160px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
-    #page-dashboard .stk-segmented{padding:2px;}
-    #page-dashboard .stk-seg-btn{padding:6px 9px;}
+    :is(#page-dashboard, #page-whatsapp) .stk-segmented{padding:2px;}
+    :is(#page-dashboard, #page-whatsapp) .stk-seg-btn{padding:6px 9px;}
     #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;}
     /* A "tela" (KPIs + 2 linhas) tem sempre a altura da área visível em todos os painéis:
        cards na mesma posição e tamanho ao trocar de painel. Conteúdo extra (tabela do
@@ -1711,7 +1711,7 @@
     --bg-panel:#1A2436;
     --bg-card:#172033;
   }
-  :root[data-theme="dark"] :is(#page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard){
+  :root[data-theme="dark"] :is(#page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
     --wa-bg:#0B1220;
     --wa-card:#131C2E;
     --wa-border:#243047;
@@ -1730,7 +1730,7 @@
     --wa-slate-bg:#1E293B;
     --wa-slate-text:#CBD5E1;
   }
-  :root[data-theme="dark"] #page-dashboard{
+  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp){
     --stk-primary-dark:#E2E8F0;
     --stk-secondary-dark:#CBD5E1;
     --stk-neutral-bg:#243047;
@@ -1893,9 +1893,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
         <span>Templates</span>
       </button>
-      <button class="nav-item" data-page="disparo" data-title="Disparo" data-desc="Configure e acompanhe o envio de mensagens em massa.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-        <span>Disparo</span>
+      <button class="nav-item" data-page="whatsapp" data-title="WhatsApp" data-desc="Instâncias, templates e envios de mensagens pelo WhatsApp.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+        <span>WhatsApp</span>
       </button>
       <button class="nav-item" data-page="campanhas" data-title="Campanhas" data-desc="Planeje e monitore suas campanhas de comunicação.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
@@ -2511,11 +2511,85 @@
 
       </section>
 
-      <section class="page" id="page-disparo">
+      <!-- WHATSAPP — barra de filtros no padrão do Dashboard (painel CAGED).
+           Ainda sem dados: os filtros só guardam a escolha; o switch troca a visão. -->
+      <section class="page" id="page-whatsapp">
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="zapBusca" placeholder="Buscar instância..." autocomplete="off">
+          </div>
+          <div class="stk-segmented" id="zapVisao" role="tablist" aria-label="Visão">
+            <button type="button" class="stk-seg-btn active" data-visao="instancias" role="tab" aria-selected="true">Instâncias</button>
+            <button type="button" class="stk-seg-btn" data-visao="templates" role="tab" aria-selected="false">Templates</button>
+            <button type="button" class="stk-seg-btn" data-visao="disparos" role="tab" aria-selected="false">Disparos</button>
+          </div>
+          <select class="filter-select" id="zapMesFiltro" title="Mês">
+            <option value="">Mês</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+          <select class="filter-select" id="zapAnoFiltro" title="Ano">
+            <option value="">Ano</option>
+          </select>
+          <select class="filter-select" id="zapUfFiltro" title="Estado">
+            <option value="">Estado</option>
+            <option value="AC">AC</option>
+            <option value="AL">AL</option>
+            <option value="AM">AM</option>
+            <option value="AP">AP</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="DF">DF</option>
+            <option value="ES">ES</option>
+            <option value="GO">GO</option>
+            <option value="MA">MA</option>
+            <option value="MG">MG</option>
+            <option value="MS">MS</option>
+            <option value="MT">MT</option>
+            <option value="PA">PA</option>
+            <option value="PB">PB</option>
+            <option value="PE">PE</option>
+            <option value="PI">PI</option>
+            <option value="PR">PR</option>
+            <option value="RJ">RJ</option>
+            <option value="RN">RN</option>
+            <option value="RO">RO</option>
+            <option value="RR">RR</option>
+            <option value="RS">RS</option>
+            <option value="SC">SC</option>
+            <option value="SE">SE</option>
+            <option value="SP">SP</option>
+            <option value="TO">TO</option>
+          </select>
+          <select class="filter-select" id="zapCidadeFiltro" title="Cidade (escolha um estado)" disabled>
+            <option value="">Cidade</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="zapLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="zapExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
+          </button>
+        </div>
         <div class="empty-state">
-          <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
-          <div class="empty-title">Nenhum disparo configurado</div>
-          <div class="empty-subtitle">Integração com APIs de mensageria em desenvolvimento.</div>
+          <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></div>
+          <div class="empty-title" id="zapVazioTitulo">Nenhuma instância conectada</div>
+          <div class="empty-subtitle">Integração com a API do WhatsApp em desenvolvimento.</div>
         </div>
       </section>
 
@@ -3500,13 +3574,15 @@
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'instancias', label: 'Instâncias' },
     { key: 'templates', label: 'Templates' },
-    { key: 'disparo', label: 'Disparo' },
+    { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'campanhas', label: 'Campanhas' },
     { key: 'usuarios', label: 'Usuários' },
     { key: 'configuracoes', label: 'Configurações' },
     { key: 'estoque', label: 'Estoque' }
   ];
   let currentUser = null;
+  // A seção "Disparo" virou "WhatsApp": cadastros antigos ainda podem trazer a chave antiga.
+  const normalizarSecoes = lista => [...new Set((lista || []).map(k => k === 'disparo' ? 'whatsapp' : k))];
 
   function applySectionPermissions(){
     const wrap = document.getElementById('currentUserWrap');
@@ -3548,6 +3624,33 @@
   const headerTitle = document.getElementById('headerTitle');
   const headerDesc = document.getElementById('headerDesc');
   const headerActions = document.getElementById('headerActions');
+
+  // ---- WhatsApp: switch Instâncias / Templates / Disparos e filtros (ainda sem dados) ----
+  (function(){
+    const visoes = {
+      instancias: ['Buscar instância...', 'Nenhuma instância conectada'],
+      templates: ['Buscar template...', 'Nenhum template cadastrado'],
+      disparos: ['Buscar disparo...', 'Nenhum disparo realizado']
+    };
+    const seg = document.getElementById('zapVisao'), busca = document.getElementById('zapBusca');
+    const ano = document.getElementById('zapAnoFiltro'), uf = document.getElementById('zapUfFiltro'), cidade = document.getElementById('zapCidadeFiltro');
+    const atual = new Date().getFullYear();
+    for(let a = atual; a >= atual - 2; a--) ano.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
+    seg.addEventListener('click', ev => {
+      const btn = ev.target.closest('.stk-seg-btn');
+      if(!btn) return;
+      seg.querySelectorAll('.stk-seg-btn').forEach(b => { const on = b === btn; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
+      const [ph, vazio] = visoes[btn.dataset.visao];
+      busca.placeholder = ph;
+      document.getElementById('zapVazioTitulo').textContent = vazio;
+    });
+    uf.addEventListener('change', () => { cidade.disabled = !uf.value; cidade.value = ''; });
+    document.getElementById('zapLimpar').addEventListener('click', () => {
+      busca.value = '';
+      ['zapMesFiltro', 'zapAnoFiltro', 'zapUfFiltro', 'zapCidadeFiltro'].forEach(id => { document.getElementById(id).value = ''; });
+      cidade.disabled = true;
+    });
+  })();
 
   // Switch claro/escuro: o tema já foi aplicado no <head> (sem piscar); aqui só
   // alterna e guarda a escolha neste navegador.
@@ -3651,7 +3754,7 @@
   });
 
   // ===================================================================
-  // MÓDULOS TEMPLATES & CAMPANHAS (DISPAROS) — Meta WhatsApp API
+  // MÓDULOS TEMPLATES & CAMPANHAS (WHATSAPP) — Meta WhatsApp API
   // ===================================================================
   (function(){
 
@@ -4768,7 +4871,7 @@
         status: row.status,
         setor: row.setor || '',
         ultimo_acesso: row.ultimo_acesso || null,
-        secoes_permitidas: row.secoes_permitidas || [],
+        secoes_permitidas: normalizarSecoes(row.secoes_permitidas),
         paineis_permitidos: row.paineis_permitidos ?? null  // null = todos os painéis
       }));
       renderUsers();
@@ -5050,7 +5153,7 @@
         return { ok: false, message: 'Este usuário está inativo. Fale com um administrador.' };
       }
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
-      const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : (row.secoes_permitidas || []);
+      const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : normalizarSecoes(row.secoes_permitidas);
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
       registrarAcesso(row);
       return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis } };
