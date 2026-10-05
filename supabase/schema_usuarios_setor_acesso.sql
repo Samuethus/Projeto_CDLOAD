@@ -5,7 +5,8 @@
 --
 --   setor          texto escolhido no cadastro (Marketing, Institucional,
 --                  Núcleo Inteligência, Comercial, Departamento Pessoal,
---                  Presidência, Assessoria, RH, Financeiro). Segue o RLS de
+--                  Presidência, Assessoria, RH, Financeiro, Certificado
+--                  Digital). Segue o RLS de
 --                  `usuarios`: só Administrador altera.
 --   ultimo_acesso  data/hora da última entrada na plataforma (login ou sessão
 --                  restaurada ao abrir o app).
