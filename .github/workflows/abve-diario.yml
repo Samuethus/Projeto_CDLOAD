@@ -1,7 +1,7 @@
-# Atualiza diariamente os dados do Panorama Econômico (ABVE e Novo CAGED) e do painel Sefaz MT (ICMS).
-# Roda scripts/abve_extrair.py, scripts/caged_extrair.py e scripts/sefaz_extrair.ps1 e só faz
+# Atualiza diariamente os dados do Panorama Econômico (ABVE e Novo CAGED) e dos painéis Sefaz MT (ICMS) e IBGE (IPCA-15 e PMC).
+# Roda scripts/abve_extrair.py, scripts/caged_extrair.py, scripts/sefaz_extrair.ps1 e scripts/ibge_extrair.ps1 e só faz
 # commit (e novo deploy) se alguma das fontes publicou algo novo.
-name: Atualizar dados (ABVE, CAGED e Sefaz MT)
+name: Atualizar dados (ABVE, CAGED, Sefaz MT e IBGE)
 
 on:
   schedule:
@@ -30,15 +30,21 @@ jobs:
         continue-on-error: true
         shell: pwsh
         run: ./scripts/sefaz_extrair.ps1
+      # SIDRA/IBGE: IPCA-15 e PMC (mesmos números das publicações mensais). Falha sem bloquear os demais.
+      - name: Extrair dados do IBGE (IPCA-15 e PMC)
+        continue-on-error: true
+        shell: pwsh
+        run: ./scripts/ibge_extrair.ps1
       - name: Commit e deploy se houve mudança
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -n "$(git status --porcelain assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/sefaz_icms.js)" ]; then
+          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js"
+          if [ -n "$(git status --porcelain $ARQS)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"
-            git add assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/sefaz_icms.js
-            git commit -m "Dados ABVE/CAGED/Sefaz: atualização diária"
+            git add $ARQS
+            git commit -m "Dados ABVE/CAGED/Sefaz/IBGE: atualização diária"
             git push
             # Commits feitos pelo GITHUB_TOKEN não disparam o deploy sozinhos.
             gh workflow run deploy.yml
