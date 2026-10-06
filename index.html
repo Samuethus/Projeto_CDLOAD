@@ -384,6 +384,62 @@
   .app.menu-animando .wa-table-wrap,
   .app.menu-animando .db-tabela-wrap{overflow-x:hidden;}
 
+  /* ============ CELULAR (até 768px) ============
+     Computador não muda. No celular o menu abre sobre o conteúdo, com a altura
+     visível de verdade da tela (100dvh — o 100vh inclui a barra do navegador e
+     empurrava o "Recolher" para fora) e espaçamentos compactos, para tudo caber
+     sem rolar. Recolhido, o menu some e o conteúdo fica em tela cheia; um botão
+     flutuante fixo (três barras) no canto superior esquerdo abre o menu de novo. */
+  .menu-flutuante, .menu-fundo{display:none;}
+  @media (max-width:768px){
+    .app{height:100vh; height:100dvh;}
+    .sidebar{
+      position:fixed; top:0; left:0; bottom:0; z-index:75;
+      height:100vh; height:100dvh;
+      width:min(280px, 84vw); min-width:0;
+      transform:translateX(-100%); transition:transform .22s ease;
+      box-shadow:none;
+    }
+    .app.menu-mobile-aberto .sidebar{transform:none; box-shadow:4px 0 24px rgba(0,0,0,.25);}
+    .app.menu-mobile-aberto .menu-fundo{display:block; position:fixed; inset:0; z-index:74; background:rgba(15,23,42,.45);}
+
+    .brand{padding:14px 16px; gap:10px;}
+    .logo-box{width:38px; height:38px;}
+    .brand-title{font-size:17px;}
+    .nav-menu{margin-top:4px; min-height:0;}
+    .nav-item{padding:10px 16px; font-size:14px;}
+    .current-user-wrap{margin:6px 14px 10px; padding:8px;}
+    .sidebar-logo{margin:0 14px 10px;}
+    .collapse-wrap{padding:10px 14px calc(12px + env(safe-area-inset-bottom, 0px));}
+
+    .app:not(.menu-mobile-aberto) .menu-flutuante{
+      display:flex; align-items:center; justify-content:center;
+      position:fixed; z-index:70;
+      top:calc(env(safe-area-inset-top, 0px) + 12px); left:12px;
+      width:42px; height:42px; padding:0; border:none; border-radius:10px;
+      background:var(--sidebar-bg); color:#fff; cursor:pointer;
+      box-shadow:0 4px 14px rgba(2,43,83,.30);
+    }
+    .menu-flutuante svg{width:20px; height:20px; stroke-width:2.2;}
+
+    /* Conteúdo em tela cheia: o cabeçalho reserva o canto do botão flutuante. */
+    .header{padding:14px 16px 14px 66px; gap:12px; min-height:66px; align-items:center;}
+    .header-title{font-size:18px;}
+    .header-desc{font-size:12.5px;}
+    .content{padding:18px 16px 40px;}
+  }
+  /* Celulares baixos: itens do menu mais justos para continuar tudo na tela. */
+  @media (max-width:768px) and (max-height:680px){
+    .brand{padding:10px 16px;}
+    .logo-box{width:34px; height:34px;}
+    .nav-item{padding:8px 16px;}
+    .current-user-wrap{margin:4px 14px 8px; padding:6px 8px;}
+  }
+  @media (max-width:768px) and (max-height:580px){
+    .nav-item{padding:6px 16px;}
+    .sidebar-logo{display:none;}
+  }
+
   .page{display:none;}
   .page.active{display:block;}
 
@@ -2019,6 +2075,11 @@
       </button>
     </div>
   </aside>
+  <!-- Celular: fundo escuro atrás do menu aberto e botão flutuante para abrir o menu -->
+  <div class="menu-fundo" id="menuFundo"></div>
+  <button type="button" class="menu-flutuante" id="menuFlutuante" title="Abrir menu" aria-label="Abrir menu" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+  </button>
 
   <!-- MAIN -->
   <div class="main">
@@ -3950,7 +4011,28 @@
   sidebar.addEventListener('transitionend', ev => {
     if(ev.target === sidebar && ev.propertyName === 'width') encerrarAnimacaoMenu();
   });
+  // Celular: o menu abre sobre o conteúdo e o "Recolher" só o fecha (tela cheia);
+  // o botão flutuante reabre. No computador nada muda.
+  const telaCelular = window.matchMedia('(max-width:768px)');
+  const menuFlutuante = document.getElementById('menuFlutuante');
+  const setMenuMobile = aberto => {
+    if(appEl) appEl.classList.toggle('menu-mobile-aberto', aberto);
+    menuFlutuante.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+  };
+  menuFlutuante.addEventListener('click', () => setMenuMobile(true));
+  document.getElementById('menuFundo').addEventListener('click', () => setMenuMobile(false));
+  navItems.forEach(item => item.addEventListener('click', () => { if(telaCelular.matches) setMenuMobile(false); }));
+  // Ao entrar no modo celular, o menu volta ao estado aberto/fechado do celular
+  // (o "recolhido" do computador não se aplica aqui).
+  const ajustarModoTela = () => {
+    if(!telaCelular.matches){ setMenuMobile(false); return; }
+    if(collapsed) collapseBtn.click();
+    setMenuMobile(false);
+  };
+  telaCelular.addEventListener('change', ajustarModoTela);
+
   collapseBtn.addEventListener('click', () => {
+    if(telaCelular.matches && !collapsed){ setMenuMobile(false); return; }
     collapsed = !collapsed;
     if(appEl) appEl.classList.add('menu-animando');
     clearTimeout(fimAnimacao);
