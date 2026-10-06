@@ -38,6 +38,13 @@
 --      Para trocar, edite a função clipping_players() e rode de novo.
 --      A verificação só completa link direto e imagem (não filtra mais) e
 --      o Bing saiu da busca.
+--  11. Citação ativa: o player só fica na notícia se a matéria o cita no
+--      texto. Se o nome aparece APENAS no crédito/legenda da foto (ex.:
+--      "Foto: Divulgação CDL Cuiabá" numa matéria da Fecomércio), o player
+--      sai da notícia (e não volta nas coletas seguintes); sem nenhum
+--      player, a notícia fica 'fora_escopo' e some do app e do Dashboard.
+--      Novas matérias: na verificação. Já gravadas: clipping_revisar_citacoes(),
+--      15 a cada 5 min.
 -- =====================================================================
 
 do $$
@@ -111,6 +118,12 @@ create index if not exists clipping_news_link_chave_idx on public.clipping_news 
 -- Ator(es) a que a notícia se refere: 'CDL Cuiabá', 'Fecomércio MT' (ver clipping_players).
 alter table public.clipping_news add column if not exists players           text[] not null default '{}';
 create index if not exists clipping_news_players_idx on public.clipping_news using gin (players);
+-- Citação ativa (item 11): players tirados da notícia porque a matéria só
+-- os cita no crédito/legenda da foto — a coleta não os devolve.
+alter table public.clipping_news add column if not exists players_descartados text[] not null default '{}';
+-- null = ainda não conferida | 'ok' | 'ajustada' (tirou player) | 'erro' (tenta até 3 vezes) | 'nao_verificavel'
+alter table public.clipping_news add column if not exists citacao_status      text;
+alter table public.clipping_news add column if not exists citacao_tentativas  integer not null default 0;
 
 create index if not exists clipping_news_portal_idx on public.clipping_news (portal_dominio);
 create unique index if not exists clipping_news_google_id_key on public.clipping_news (google_id);
@@ -446,6 +459,110 @@ as $$
      where position(' ' || public.clipping_normalizar(k) || ' ' in ' ' || coalesce(texto_normalizado, '') || ' ') > 0)
 $$;
 
+-- Citação ativa (item 11) ------------------------------------------------
+-- Texto (normalizado) de toda a página. Com p_sem_creditos, sem os créditos
+-- e legendas de foto: <figcaption> e trechos "Foto: ...", "Imagem: ...", "Crédito: ...",
+-- "Divulgação/...", "Reprodução: ...", "Arte: ..." (até o fim do trecho de
+-- texto, ponto ou parêntese). No regex do Postgres, o primeiro quantificador
+-- define a gula do padrão: aqui ele é guloso, para pegar o crédito inteiro. Menus, links e rodapés NÃO saem: na dúvida, a
+-- citação conta (só tira o player quando ele aparece só no crédito).
+-- Cada tag vira quebra de linha, para o crédito não "comer" o texto seguinte.
+-- Obs.: nada de remover elemento por classe CSS com </\1>: no Postgres a
+-- referência para trás muda o motor do regex e o trecho removido engolia
+-- o corpo da matéria (testado em portais reais).
+create or replace function public.clipping_texto_pagina(html text, p_sem_creditos boolean default false)
+returns text
+language plpgsql immutable
+as $$
+declare
+  v   text := coalesce(html, '');
+  tag text;
+begin
+  v := coalesce(substring(v from '(?i)<body[^>]*?>(.*)$'), v);
+  v := regexp_replace(v, '<!--.*?-->', ' ', 'g');
+  foreach tag in array array['script','style','noscript','svg','template'] loop
+    v := regexp_replace(v, '<' || tag || '(\s[^>]*?)??>.*?</' || tag || '\s*?>', ' ', 'gi');
+  end loop;
+  if p_sem_creditos then
+    v := regexp_replace(v, '<figcaption(\s[^>]*?)??>.*?</figcaption\s*?>', E'\n', 'gi');
+  end if;
+  v := regexp_replace(v, '<[^>]*?>', E'\n', 'g');
+  v := public.clipping_decodificar_html(v);
+  if p_sem_creditos then
+    -- "Foto: ...", "Imagem - ...", "Crédito da foto | ..."
+    v := regexp_replace(v,
+      '\m(fotos?|imagens?|cr[eé]ditos?(\s+d[aeo]s?\s+(fotos?|imagens?))?)[ \t]*[:|/–—-][^\n.()\[\]]{0,100}',
+      E'\n', 'gi');
+    -- "Divulgação/...", "Reprodução: ...", "Arte | ..." (sem travessão: "a arte – segundo a CDL –" é texto)
+    v := regexp_replace(v,
+      '\m(divulga[cç][aã]o|reprodu[cç][aã]o|ilustra[cç][aã]o|arte)[ \t]*[:|/][^\n.()\[\]]{0,100}',
+      E'\n', 'gi');
+  end if;
+  return public.clipping_normalizar(v);
+end;
+$$;
+
+-- O texto (normalizado) cita algum termo do player?
+create or replace function public.clipping_player_citado(texto_normalizado text, p_player text)
+returns boolean
+language sql immutable
+as $$
+  select exists (
+    select 1 from public.clipping_players() p
+     where p.player = p_player
+       and position(' ' || public.clipping_normalizar(p.termo) || ' ' in ' ' || coalesce(texto_normalizado, '') || ' ') > 0)
+$$;
+
+-- a - b, sem repetição e em ordem.
+create or replace function public.clipping_array_menos(a text[], b text[])
+returns text[]
+language sql immutable
+as $$
+  select coalesce(array_agg(distinct x order by x), '{}')
+    from unnest(coalesce(a, '{}')) x
+   where not (x = any(coalesce(b, '{}')))
+$$;
+
+-- Aplica a regra à notícia, com o HTML da matéria já baixado: tira os
+-- players citados só no crédito/legenda da foto. Devolve os tirados.
+-- Só para notícias do Google (site oficial e manuais não passam por aqui).
+create or replace function public.clipping_aplicar_citacao(p_id uuid, p_html text)
+returns text[]
+language plpgsql
+as $$
+declare
+  r        record;
+  v_total  text;
+  v_ativo  text;
+  v_tirar  text[] := '{}';
+  v_resto  text[];
+  pl       text;
+begin
+  select id, origem, players into r from public.clipping_news where id = p_id;
+  if not found or r.origem <> 'google_news' then return '{}'; end if;
+
+  v_total := public.clipping_texto_pagina(p_html, false);
+  v_ativo := public.clipping_texto_pagina(p_html, true);
+  foreach pl in array r.players loop
+    if public.clipping_player_citado(v_total, pl) and not public.clipping_player_citado(v_ativo, pl) then
+      v_tirar := v_tirar || pl;
+    end if;
+  end loop;
+  v_resto := public.clipping_array_menos(r.players, v_tirar);
+
+  update public.clipping_news
+     set players             = v_resto,
+         players_descartados = (select coalesce(array_agg(distinct x order by x), '{}')
+                                  from unnest(players_descartados || v_tirar) x),
+         verificacao         = case when cardinality(v_tirar) > 0 and cardinality(v_resto) = 0
+                                    then 'fora_escopo' else verificacao end,
+         verificada_em       = case when cardinality(v_tirar) > 0 then now() else verificada_em end,
+         citacao_status      = case when cardinality(v_tirar) > 0 then 'ajustada' else 'ok' end
+   where id = p_id;
+  return v_tirar;
+end;
+$$;
+
 -- ---------------------------------------------------------------------
 -- 3d. Utilitários de coleta: bloqueio, links, codificação
 -- ---------------------------------------------------------------------
@@ -700,11 +817,23 @@ begin
            public.clipping_classificar_sentimento(v_titulo),
            'google_news', v_link, btrim(it.guid), consulta, v_ts, v_dominio, array[v_player])
         -- Já existente: soma o ator (a mesma notícia pode citar os dois) e
-        -- completa o portal; não mexe no que foi editado no app.
+        -- completa o portal; não mexe no que foi editado no app. Player tirado
+        -- pela citação ativa (só no crédito da foto) não volta; player novo
+        -- faz a matéria ser conferida de novo (e reaparecer, se estava fora
+        -- do escopo só por isso).
         on conflict (google_id) do update
-          set players = array(select distinct unnest(clipping_news.players || excluded.players) order by 1),
-              portal_dominio = coalesce(clipping_news.portal_dominio, excluded.portal_dominio)
-          where not (clipping_news.players @> excluded.players)
+          set players = public.clipping_array_menos(clipping_news.players || excluded.players,
+                                                    clipping_news.players_descartados),
+              portal_dominio = coalesce(clipping_news.portal_dominio, excluded.portal_dominio),
+              citacao_status = case when cardinality(public.clipping_array_menos(excluded.players,
+                                          clipping_news.players || clipping_news.players_descartados)) > 0
+                                    then null else clipping_news.citacao_status end,
+              verificacao = case when clipping_news.verificacao = 'fora_escopo'
+                                      and clipping_news.citacao_status = 'ajustada'
+                                      and cardinality(public.clipping_array_menos(excluded.players,
+                                          clipping_news.players || clipping_news.players_descartados)) > 0
+                                 then 'confirmada' else clipping_news.verificacao end
+          where not ((clipping_news.players || clipping_news.players_descartados) @> excluded.players)
              or (clipping_news.portal_dominio is null and excluded.portal_dominio is not null)
         returning (xmax = 0) into v_nova;
 
@@ -854,6 +983,11 @@ begin
              verificada_em     = now(),
              imagem_tentativas = imagem_tentativas + 1
        where id = r.id;
+      -- Citação ativa (item 11). Falhou? Fica pendente para clipping_revisar_citacoes().
+      begin
+        perform public.clipping_aplicar_citacao(r.id, v_html);
+      exception when others then null;
+      end;
       v_conf := v_conf + 1;
     exception when others then
       -- O bloco foi desfeito, mas v_url (variável) sobrevive: guarda o link
@@ -871,6 +1005,65 @@ begin
 
   return jsonb_build_object('ok', true, 'processadas', v_conf,
                             'duplicadas_ou_bloqueadas', v_dup, 'falhas', v_falhas);
+end;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 4b2. Citação ativa nas notícias já confirmadas (item 11)
+--
+-- Reabre a matéria (link direto já conhecido) e aplica
+-- clipping_aplicar_citacao(). Pega as que ainda não foram conferidas (as
+-- gravadas antes da regra, ou com player novo). Lotes pelo pg_cron.
+-- ---------------------------------------------------------------------
+create or replace function public.clipping_revisar_citacoes(p_limite integer default 15)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  r          record;
+  resp       extensions.http_response;
+  v_tirados  text[];
+  v_ok       integer := 0;
+  v_ajust    integer := 0;
+  v_falhas   integer := 0;
+  v_ua       extensions.http_header := extensions.http_header('User-Agent',
+               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36');
+begin
+  if not pg_try_advisory_xact_lock(hashtext('cdload_clipping_citacao')) then
+    return jsonb_build_object('ok', true, 'ignorada', true, 'motivo', 'revisão em andamento');
+  end if;
+  perform extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', '15000');
+
+  for r in
+    select id, link_original, citacao_tentativas
+      from public.clipping_news
+     where origem = 'google_news' and not oculta
+       and verificacao = 'confirmada' and link_original is not null
+       and (citacao_status is null or (citacao_status = 'erro' and citacao_tentativas < 3))
+     order by publicado_em desc nulls last
+     limit greatest(coalesce(p_limite, 15), 1)
+  loop
+    begin
+      resp := extensions.http(('GET', r.link_original, array[v_ua], null, null)::extensions.http_request);
+      if resp.status <> 200 then raise exception 'matéria HTTP %', resp.status; end if;
+      v_tirados := public.clipping_aplicar_citacao(r.id, public.clipping_decodificar_resposta(resp.content));
+      if cardinality(v_tirados) > 0 then v_ajust := v_ajust + 1; else v_ok := v_ok + 1; end if;
+    exception when others then
+      update public.clipping_news
+         set citacao_tentativas = citacao_tentativas + 1,
+             citacao_status     = case when r.citacao_tentativas + 1 >= 3 then 'nao_verificavel' else 'erro' end
+       where id = r.id;
+      v_falhas := v_falhas + 1;
+    end;
+  end loop;
+
+  return jsonb_build_object('ok', true, 'citam_no_texto', v_ok, 'players_tirados', v_ajust, 'falhas', v_falhas,
+                            'pendentes', (select count(*) from public.clipping_news
+                                           where origem = 'google_news' and not oculta
+                                             and verificacao = 'confirmada' and link_original is not null
+                                             and (citacao_status is null or (citacao_status = 'erro' and citacao_tentativas < 3))));
 end;
 $$;
 
@@ -1087,6 +1280,8 @@ update public.clipping_portais set url = null where public.clipping_dominio_bloq
 -- Permissões das funções
 -- ---------------------------------------------------------------------
 -- Só o pg_cron / SQL Editor verificam matérias, leem o site da CDL e ligam portais (nada disso é exposto ao app).
+revoke all on function public.clipping_revisar_citacoes(integer), public.clipping_aplicar_citacao(uuid, text)
+  from public, anon, authenticated;
 revoke all on function public.clipping_verificar_materias(integer), public.clipping_vincular_portais(),
                        public.clipping_registrar_portal(text, text), public.clipping_coletar_site_cdl(boolean)
   from public, anon, authenticated;
@@ -1099,19 +1294,23 @@ revoke all on function public.clipping_classificar_canal(text),
                public.clipping_texto_materia(text), public.clipping_cita_palavra_chave(text),
                public.clipping_dominio_bloqueado(text), public.clipping_link_chave(text), public.clipping_urldecode(text),
                public.clipping_decodificar_resposta(text), public.clipping_data_rss(text),
-               public.clipping_players()
+               public.clipping_players(), public.clipping_texto_pagina(text, boolean),
+               public.clipping_player_citado(text, text), public.clipping_array_menos(text[], text[])
   from public, anon;
 
 -- ---------------------------------------------------------------------
 -- 5. Agendamento e primeira carga
 --   coleta normal a cada 30 min · varredura completa todo dia às 05h (Cuiabá)
 --   verificação a cada 5 min (15 matérias) · site oficial a cada 30 min
+--   citação ativa nas já gravadas a cada 5 min (15 matérias)
 -- ---------------------------------------------------------------------
 select cron.unschedule(jobid) from cron.job where jobname = 'cdload-clipping-imagens';  -- job de versão anterior
 select cron.schedule('cdload-clipping-google-news', '*/30 * * * *', $$select public.clipping_coletar(false)$$);
 select cron.schedule('cdload-clipping-completa', '0 9 * * *', $$select public.clipping_coletar(true)$$);
 select cron.schedule('cdload-clipping-verificacao', '*/5 * * * *', $$select public.clipping_verificar_materias(15)$$);
 select cron.schedule('cdload-clipping-site-cdl', '15,45 * * * *', $$select public.clipping_coletar_site_cdl(false)$$);
+-- Citação ativa nas já gravadas: 15 matérias a cada 5 min (minutos 2, 7, 12...).
+select cron.schedule('cdload-clipping-citacao', '2-59/5 * * * *', $$select public.clipping_revisar_citacoes(15)$$);
 
 -- Liga as notícias já gravadas aos portais (nome padronizado).
 select public.clipping_vincular_portais();
