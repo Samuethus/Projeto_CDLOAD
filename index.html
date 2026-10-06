@@ -5222,6 +5222,10 @@
       const { error } = await query;
       if(error){
         console.error('Erro ao salvar usuário no Supabase:', error);
+        if(error.code === '23505'){
+          alert('Já existe um usuário cadastrado com o e-mail ' + payload.email + '. Edite o cadastro existente em vez de criar outro.');
+          return;
+        }
         alert('Erro ao salvar usuário no Supabase: ' + error.message);
         return;
       }
