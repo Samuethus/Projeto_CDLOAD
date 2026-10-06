@@ -2148,7 +2148,14 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
-            <option value="viabilidades">Painel · Viabilidades</option>
+            <option value="viabilidades">Painel • Viabilidade</option>
+          </select>
+          <select class="filter-select" id="stkLeadsFiltro" title="Simulador: quantidade de leads (planos) captados pelo projeto" hidden>
+            <option value="1" selected>Simulador · 01 Lead</option>
+            <option value="2">Simulador · 02 Leads</option>
+            <option value="3">Simulador · 03 Leads</option>
+            <option value="4">Simulador · 04 Leads</option>
+            <option value="5">Simulador · 05 Leads</option>
           </select>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
@@ -7874,6 +7881,8 @@ ${clipPlayerPills(n)}
     const stkSetorEl = document.getElementById('stkSetorFiltro');
     const stkPlayerEl = document.getElementById('stkPlayerFiltro');
     const stkPeriodoClipEl = document.getElementById('stkPeriodoClipFiltro');
+    // Viabilidade: leads (planos de consultoria) captados — simula a captação; padrão 1.
+    const stkLeadsEl = document.getElementById('stkLeadsFiltro');
     let stkPeriodoAtual = 'semana';
     let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
@@ -8076,10 +8085,11 @@ ${clipPlayerPills(n)}
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
-      // Viabilidades: valores anuais fixos da planilha — só a busca (ferramenta ou módulo).
+      // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo) e Simulador de leads.
       stkSegmented.hidden = clipping || panorama || sefaz || ibge || viab;
       stkMesEl.hidden = viab;
       stkAnoEl.hidden = viab;
+      stkLeadsEl.hidden = !viab;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -9560,12 +9570,13 @@ ${clipPlayerPills(n)}
       cagUltimo = M;
     }
 
-    // ===== Painel Viabilidades — mesma estrutura do CAGED =====
+    // ===== Painel Viabilidade — mesma estrutura do CAGED =====
     // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x
     // captação via planos). Dados da planilha de viabilidade: assets/data/viabilidades.js.
     // A busca filtra ferramentas e módulos, cada lado por si: o lado em que o termo não
     // aparece fica completo ("Clipping" filtra só os módulos; o custo segue o total).
-    // A captação dos planos é sempre o total.
+    // A captação dos planos usa a quantidade de leads do filtro Simulador (01 a 05, padrão 01):
+    // cada lead é um plano contratado (preço do plano × leads × 12 meses).
     let viabDadosPromessa = null, viabUltimo = null, viabRenderSeq = 0;
     function viabCarregar(){
       if(window.VIAB_DADOS) return Promise.resolve();
@@ -9591,7 +9602,8 @@ ${clipPlayerPills(n)}
       const ferr = (ferrFilt ? ferrAchou : D.ferramentas).map(f => ({ ...f, anual: (f.preco || 0) * (f.frequencia || 0) }));
       const mods = (modFilt ? modsAchou : D.cdload)
         .map(m => ({ ...m, horasMes: m.pro.frequencia * m.pro.horas * (viabDiario(m.pro.periodicidade) ? D.diasUteisMes : 1) }));
-      const planos = D.planos.map(pl => ({ ...pl, mensal: pl.preco * pl.quantidade * (viabDiario(pl.periodicidade) ? D.diasUteisMes : stkNorm(pl.periodicidade).startsWith('anu') ? 1 / 12 : 1) }));
+      const leads = Math.max(1, Number(stkLeadsEl.value) || 1);
+      const planos = D.planos.map(pl => ({ ...pl, quantidade: leads, mensal: pl.preco * leads * (viabDiario(pl.periodicidade) ? D.diasUteisMes : stkNorm(pl.periodicidade).startsWith('anu') ? 1 / 12 : 1) }));
       const custo = ferr.reduce((s, f) => s + f.anual, 0);
       const captMes = planos.reduce((s, pl) => s + pl.mensal, 0), capt = captMes * 12;
       const horasMes = mods.reduce((s, m) => s + m.horasMes, 0);
@@ -9621,7 +9633,7 @@ ${clipPlayerPills(n)}
       const kCusto = cdKpiCard('caixa', 'azul', 'Custo anual das ferramentas', viabMoeda(M.custo), neu(`${viabMoeda(M.custo / 12)}/mês`),
         `${M.ferr.length} ferramenta${M.ferr.length === 1 ? '' : 's'} · ${pagas} paga${pagas === 1 ? '' : 's'}`, 'Soma de preço × frequência de cada ferramenta (coluna VALOR da planilha)');
       const kCapt = cdKpiCard('arrowDownLeft', 'verde', 'Captação anual via planos', viabMoeda(M.capt), { cls: M.capt > 0 ? 'up' : 'neu', txt: `${viabMoeda(M.captMes)}/mês` },
-        `${M.qtdPlanos} plano${M.qtdPlanos === 1 ? '' : 's'} · ${esc(M.planos.map(p => p.plano).join(', '))}`, 'Planos de consultoria (prestação de serviço às CDLs) × 12 meses');
+        `${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} (Simulador) · ${esc(M.planos.map(p => p.plano).join(', '))}`, 'Leads captados (filtro Simulador) × plano de consultoria (prestação de serviço às CDLs) × 12 meses');
       const kSaldo = cdKpiCard(saldo >= 0 ? 'trendUp' : 'trendDown', saldo >= 0 ? 'verde' : 'vermelho', 'Resultado anual', viabMoeda(saldo),
         { cls: cobertura >= 1 ? 'up' : 'down', txt: `${stkPct(cobertura, 1)} coberto` }, 'captação ÷ custo', 'Captação via planos menos o custo anual das ferramentas');
       const kHoras = cdKpiCard('raio', 'verde', 'Horas salvas por mês', viabHoras(M.horasMes), { cls: M.horasMes > 0 ? 'up' : 'neu', txt: `≈ ${stkNum(Math.round(horasAno))} h/ano` },
@@ -9654,13 +9666,13 @@ ${clipPlayerPills(n)}
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosMod.map(d => `<li title="${esc(d.nome)}: ${esc(viabHoras(d.valor))} por mês"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(M.horasMes ? d.valor / M.horasMes : 0)}</strong></li>`).join('')}</ul>
         </div>` : '<div class="stk-vazio">Nenhum módulo encontrado.</div>');
 
-      // ---- Cenários: quantos planos cobrem o custo ----
+      // ---- Cenários: quantos leads (planos) cobrem o custo; o simulado fica marcado ----
       const pp = M.precoPlano * 12, minimo = pp > 0 ? Math.max(1, Math.ceil(M.custo / pp)) : 0;
       const cenarios = pp > 0 ? [...new Set([M.qtdPlanos, minimo - 1, minimo, minimo + 1].filter(n => n >= 1))].sort((a, b) => a - b).slice(0, 4) : [];
-      const wPlanos = cdCard('Custo × Captação via planos', pp > 0 ? `Planos de ${viabMoeda(M.precoPlano)}/mês necessários para cobrir ${viabMoeda(M.custo)}/ano` : 'Sem plano com preço informado',
+      const wPlanos = cdCard('Custo × Captação via planos', pp > 0 ? `Leads de ${viabMoeda(M.precoPlano)}/mês necessários para cobrir ${viabMoeda(M.custo)}/ano` : 'Sem plano com preço informado',
         cenarios.length ? `<ol class="cd-rank">${cenarios.map(n => {
           const cap = n * pp, cob = M.custo > 0 ? cap / M.custo : 0, dif = cap - M.custo;
-          const rot = `${n} plano${n === 1 ? '' : 's'}${n === M.qtdPlanos ? ' (atual)' : n === minimo ? ' (equilíbrio)' : ''}`;
+          const rot = `${n} lead${n === 1 ? '' : 's'}${n === M.qtdPlanos ? ' (simulado)' : n === minimo ? ' (equilíbrio)' : ''}`;
           return `<li title="${esc(rot)}: captação ${esc(viabMoeda(cap))}/ano · ${dif >= 0 ? 'sobra' : 'faltam'} ${esc(viabMoeda(Math.abs(dif)))}">
             <span class="cd-rank-pos">${n}</span><span class="cd-rank-nome">${esc(rot)} <span class="cd-rank-sub">· ${esc(viabMoeda(cap))}/ano</span></span>
             <strong style="color:${cob >= 1 ? 'var(--cd-verde)' : 'var(--cd-verm)'}">${esc(viabMoeda(dif))}</strong><span class="cd-rank-pct">${stkPct(cob)}</span></li>`; }).join('')}</ol>`
@@ -9674,12 +9686,14 @@ ${clipPlayerPills(n)}
       if(topMod) dest.push({ ic: 'raio', tom: 'azul', tit: `Maior ganho: ${topMod.modulo} · ${viabHoras(topMod.horasMes)}/mês`,
         meta: `${stkNum(topMod.pro.frequencia)}× ${viabDiario(topMod.pro.periodicidade) ? 'por dia' : 'por mês'} × ${viabHoras(topMod.pro.horas)} · ${topMod.pro.objetivo}` });
       if(M.custo > 0) dest.push({ ic: cobertura >= 1 ? 'setaCima' : 'alerta', tom: cobertura >= 1 ? 'verde' : 'vermelho', tit: `Captação cobre ${stkPct(cobertura)} do custo`,
-        meta: saldo >= 0 ? `Sobra de ${viabMoeda(saldo)}/ano` : `Faltam ${viabMoeda(-saldo)}/ano (${viabMoeda(-saldo / 12)}/mês)${minimo ? ` · equilíbrio com ${minimo} planos` : ''}` });
+        meta: saldo >= 0 ? `Sobra de ${viabMoeda(saldo)}/ano` : `Faltam ${viabMoeda(-saldo)}/ano (${viabMoeda(-saldo / 12)}/mês)${minimo ? ` · equilíbrio com ${minimo} lead${minimo === 1 ? '' : 's'}` : ''}` });
       const topFerr = ferrOrd[0];
       if(topFerr && topFerr.anual > 0) dest.push({ ic: 'caixa', tom: 'azul', tit: `Maior custo: ${topFerr.ferramenta} · ${viabMoeda(topFerr.anual)}/ano`,
         meta: `${stkPct(M.custo ? topFerr.anual / M.custo : 0)} do custo das ferramentas · ${topFerr.objetivo || topFerr.descricao}` });
       M.mods.filter(m => stkNorm(m.contra.prioridade) !== 'baixa').forEach(m => dest.push({ ic: 'escudo', tom: 'amarelo',
         tit: `Ponto de atenção: ${m.modulo} · ${m.contra.objetivo}`, meta: `Contra de prioridade ${m.contra.prioridade.toLowerCase()}` }));
+      if(pp > 0) dest.splice(Math.min(3, dest.length), 0, { ic: 'pessoas', tom: 'azul', tit: `Simulador: ${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} · ${viabMoeda(M.capt)}/ano`,
+        meta: M.qtdPlanos >= minimo ? 'Captação cobre todo o custo das ferramentas' : `Faltam ${minimo - M.qtdPlanos} lead${minimo - M.qtdPlanos === 1 ? '' : 's'} para o equilíbrio (${minimo})` });
       const wDest = cdCard('Destaques', M.nada ? `Nada encontrado para ${M.local} · mostrando tudo` : M.busca ? M.local : 'Leitura rápida da viabilidade', dest.length ? `<ul class="cd-dest">${dest.map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
           <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
           <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`
@@ -9710,7 +9724,7 @@ ${clipPlayerPills(n)}
         .concat(M.ferr.map(f => ['Ferramenta', f.ferramenta, f.descricao, f.objetivo, f.prioridade, f.plano, f.periodicidade, f.frequencia, f.preco == null ? '' : f.preco, f.anual, '']))
         .concat(M.mods.map(m => ['CDLoad · Pró', m.modulo, '', m.pro.objetivo, m.pro.prioridade, 'Projeto', m.pro.periodicidade, m.pro.frequencia, '', '', Math.round(m.horasMes * 10) / 10]))
         .concat(M.mods.map(m => ['CDLoad · Contra', m.modulo, '', m.contra.objetivo, m.contra.prioridade, 'Projeto', '', '', '', '', '']))
-        .concat(M.planos.map(pl => ['Plano (captação)', pl.nome, '', pl.objetivo, pl.prioridade, pl.plano, pl.periodicidade, pl.quantidade, pl.preco, Math.round(pl.mensal * 12), ''])) };
+        .concat(M.planos.map(pl => ['Plano (captação · Simulador: ' + pl.quantidade + ' lead' + (pl.quantidade === 1 ? '' : 's') + ')', pl.nome, '', pl.objetivo, pl.prioridade, pl.plano, pl.periodicidade, pl.quantidade, pl.preco, Math.round(pl.mensal * 12), ''])) };
     }
 
     // ===== Painel Sefaz MT (ICMS) — mesma estrutura do CAGED =====
@@ -10302,16 +10316,17 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = '';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     }
     stkPainelEl.addEventListener('change', () => stkResetarPainel('abve'));
+    stkLeadsEl.addEventListener('change', stkRender);
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = '';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
