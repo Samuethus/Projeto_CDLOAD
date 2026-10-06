@@ -1380,6 +1380,17 @@
   .cd-rosca-legenda strong{font-weight:600;font-variant-numeric:tabular-nums;}
 
   /* Ranking de veículos */
+  /* Viabilidades: esquema Prós × Contras por módulo (uma linha por módulo, mesma linguagem do ranking). */
+  .vb-pc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;height:100%;}
+  .vb-pc li{flex:1 1 0;display:grid;grid-template-columns:minmax(70px,.5fr) minmax(0,1.35fr) minmax(0,.85fr);align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--cd-trilho);font-size:12.5px;color:var(--cd-texto);}
+  .vb-pc li:last-child{border-bottom:none;}
+  .vb-pc li.vb-pc-cab{flex:0 0 auto;padding:0 0 6px;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--cd-muted);}
+  .vb-pc-mod{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .vb-pc-item{display:flex;align-items:center;gap:7px;min-width:0;}
+  .vb-pc-item i{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .vb-pc-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .vb-pc-txt small{color:var(--cd-muted);font-size:11.5px;}
+  .vb-pc-item.vazio .vb-pc-txt{color:var(--cd-muted);}
   .cd-rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
   .cd-rank li{flex:1 1 0;}
   .cd-rank li{display:grid;grid-template-columns:26px minmax(0,1fr) auto 44px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--cd-trilho);font-size:13px;color:var(--cd-texto);}
@@ -2137,6 +2148,7 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
+            <option value="viabilidades">Painel · Viabilidades</option>
           </select>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
@@ -7871,7 +7883,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), viabilidades: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -8059,11 +8071,15 @@ ${clipPlayerPills(n)}
       const panorama = stkPainel() === 'panorama';
       const sefaz = stkPainel() === 'sefaz';
       const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc';
-      stkSetorEl.hidden = clipping || panorama || sefaz || ibge;
+      const viab = stkPainel() === 'viabilidades';
+      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
-      stkSegmented.hidden = clipping || panorama || sefaz || ibge;
+      // Viabilidades: valores anuais fixos da planilha — só a busca (ferramenta ou módulo).
+      stkSegmented.hidden = clipping || panorama || sefaz || ibge || viab;
+      stkMesEl.hidden = viab;
+      stkAnoEl.hidden = viab;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -8071,7 +8087,7 @@ ${clipPlayerPills(n)}
       stkCidadeEl.hidden = !panorama;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
-      stkBuscaInput.placeholder = clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
+      stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
         : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
@@ -8579,7 +8595,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
         : (stockProducts.length ? Promise.resolve() : loadStock());
       Promise.resolve(carregar).then(stkRender);
     }
@@ -8593,6 +8609,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'panorama') return stkRenderPanorama();
       if(stkPainel() === 'sefaz') return sefRender();
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc') return ibgeRender();
+      if(stkPainel() === 'viabilidades') return viabRender();
       return stkRenderEstoque();
     }
 
@@ -9543,6 +9560,159 @@ ${clipPlayerPills(n)}
       cagUltimo = M;
     }
 
+    // ===== Painel Viabilidades — mesma estrutura do CAGED =====
+    // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x
+    // captação via planos). Dados da planilha de viabilidade: assets/data/viabilidades.js.
+    // A busca filtra ferramentas e módulos, cada lado por si: o lado em que o termo não
+    // aparece fica completo ("Clipping" filtra só os módulos; o custo segue o total).
+    // A captação dos planos é sempre o total.
+    let viabDadosPromessa = null, viabUltimo = null, viabRenderSeq = 0;
+    function viabCarregar(){
+      if(window.VIAB_DADOS) return Promise.resolve();
+      if(!viabDadosPromessa) viabDadosPromessa = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/viabilidades.js';
+        sc.onload = ok;
+        sc.onerror = () => { viabDadosPromessa = null; falha(new Error('viabilidades.js')); };
+        document.head.appendChild(sc);
+      });
+      return viabDadosPromessa;
+    }
+    // R$ inteiro (R$ 3.060) ou com centavos (R$ 1,72).
+    const viabMoeda = (v, casas) => (v < 0 ? '−' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: casas || 0, maximumFractionDigits: casas || 0 });
+    const viabHoras = v => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
+    const viabDiario = per => stkNorm(per).startsWith('diar');
+    function viabModelo(D){
+      const busca = stkBuscaInput.value.trim(), q = stkNorm(busca);
+      const tem = (...txt) => !q || txt.some(x => stkNorm(x).includes(q));
+      const ferrAchou = D.ferramentas.filter(f => tem(f.ferramenta, f.descricao, f.objetivo, f.plano));
+      const modsAchou = D.cdload.filter(m => tem(m.modulo, m.pro.objetivo, m.contra.objetivo));
+      const ferrFilt = !!q && ferrAchou.length > 0, modFilt = !!q && modsAchou.length > 0;
+      const ferr = (ferrFilt ? ferrAchou : D.ferramentas).map(f => ({ ...f, anual: (f.preco || 0) * (f.frequencia || 0) }));
+      const mods = (modFilt ? modsAchou : D.cdload)
+        .map(m => ({ ...m, horasMes: m.pro.frequencia * m.pro.horas * (viabDiario(m.pro.periodicidade) ? D.diasUteisMes : 1) }));
+      const planos = D.planos.map(pl => ({ ...pl, mensal: pl.preco * pl.quantidade * (viabDiario(pl.periodicidade) ? D.diasUteisMes : stkNorm(pl.periodicidade).startsWith('anu') ? 1 / 12 : 1) }));
+      const custo = ferr.reduce((s, f) => s + f.anual, 0);
+      const captMes = planos.reduce((s, pl) => s + pl.mensal, 0), capt = captMes * 12;
+      const horasMes = mods.reduce((s, m) => s + m.horasMes, 0);
+      const precoPlano = planos.length ? planos[0].preco : 0, qtdPlanos = planos.reduce((s, pl) => s + pl.quantidade, 0);
+      return { D, busca, ferr, mods, ferrFilt, modFilt, nada: !!q && !ferrFilt && !modFilt, planos, custo, capt, captMes, horasMes, precoPlano, qtdPlanos,
+        local: busca ? `“${busca}”` : 'CDLoad · Núcleo de Inteligência' };
+    }
+    function viabRender(){
+      const seq = ++viabRenderSeq;
+      if(!window.VIAB_DADOS){
+        stkGrid.classList.add('cd-carregando');
+        viabCarregar().then(() => { if(seq === viabRenderSeq) viabRender(); }).catch(() => {
+          stkGrid.classList.remove('cd-fit', 'cd-carregando');
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados de viabilidade (assets/data/viabilidades.js).</div></div>`;
+        });
+        return;
+      }
+      viabDesenhar(viabModelo(window.VIAB_DADOS));
+    }
+    function viabDesenhar(M){
+      const D = M.D, neu = txt => ({ cls: 'neu', txt });
+      const saldo = M.capt - M.custo, cobertura = M.custo > 0 ? M.capt / M.custo : 0;
+      const horasAno = M.horasMes * 12, custoHora = horasAno > 0 ? M.custo / horasAno : 0;
+      const pagas = M.ferr.filter(f => f.anual > 0).length;
+
+      // ---- KPIs ----
+      const kCusto = cdKpiCard('caixa', 'azul', 'Custo anual das ferramentas', viabMoeda(M.custo), neu(`${viabMoeda(M.custo / 12)}/mês`),
+        `${M.ferr.length} ferramenta${M.ferr.length === 1 ? '' : 's'} · ${pagas} paga${pagas === 1 ? '' : 's'}`, 'Soma de preço × frequência de cada ferramenta (coluna VALOR da planilha)');
+      const kCapt = cdKpiCard('arrowDownLeft', 'verde', 'Captação anual via planos', viabMoeda(M.capt), { cls: M.capt > 0 ? 'up' : 'neu', txt: `${viabMoeda(M.captMes)}/mês` },
+        `${M.qtdPlanos} plano${M.qtdPlanos === 1 ? '' : 's'} · ${esc(M.planos.map(p => p.plano).join(', '))}`, 'Planos de consultoria (prestação de serviço às CDLs) × 12 meses');
+      const kSaldo = cdKpiCard(saldo >= 0 ? 'trendUp' : 'trendDown', saldo >= 0 ? 'verde' : 'vermelho', 'Resultado anual', viabMoeda(saldo),
+        { cls: cobertura >= 1 ? 'up' : 'down', txt: `${stkPct(cobertura, 1)} coberto` }, 'captação ÷ custo', 'Captação via planos menos o custo anual das ferramentas');
+      const kHoras = cdKpiCard('raio', 'verde', 'Horas salvas por mês', viabHoras(M.horasMes), { cls: M.horasMes > 0 ? 'up' : 'neu', txt: `≈ ${stkNum(Math.round(horasAno))} h/ano` },
+        `${D.diasUteisMes} dias úteis/mês`, 'Frequência × horas economizadas por ocorrência (rotinas diárias × dias úteis do mês)');
+      const kHora = cdKpiCard('percent', 'amarelo', 'Custo por hora salva', viabMoeda(custoHora, 2), neu('custo ÷ horas/ano'),
+        `${viabMoeda(M.custo)} ÷ ${stkNum(Math.round(horasAno))} h`, 'Quanto custa, em ferramentas, cada hora devolvida à equipe');
+
+      // ---- Custo x Captação acumulados no ano (rateio mensal) ----
+      const V = { categorias: PAN_MES_CURTO.slice(), series: [
+        { nome: 'Custo acumulado', cor: CD_COR.vermelho, valores: PAN_MES_CURTO.map((_, i) => Math.round(M.custo / 12 * (i + 1))) },
+        { nome: 'Captação acumulada', cor: CD_COR.verde, valores: PAN_MES_CURTO.map((_, i) => Math.round(M.captMes * (i + 1))) }
+      ] };
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const wFluxo = cdCard('Custo × Captação no ano', `Valores acumulados em R$ · custo das ferramentas rateado por mês${M.ferrFilt ? ' · ' + M.local : ''}`,
+        '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+
+      // ---- Custo anual por ferramenta ----
+      const ferrOrd = M.ferr.slice().sort((a, b) => b.anual - a.anual);
+      const wFerr = cdCard('Custo anual por ferramenta', M.ferrFilt ? M.local : 'Preço × frequência de cada plano',
+        cdBarras(ferrOrd.map((f, i) => ({ nome: f.ferramenta, valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
+          dica: f.preco == null ? 'Sem custo informado' : `${viabMoeda(f.anual)} · ${f.plano} (${f.periodicidade.toLowerCase()})`,
+          cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ferrOrd.length > 1 ? i / (ferrOrd.length - 1) : 0) })), 'Custo anual por ferramenta', 'Nenhuma ferramenta encontrada.'));
+
+      // ---- Horas salvas por módulo (rosca) ----
+      const coresMod = [CD_COR.azul, CD_COR.verde, CD_COR.azulClaro, '#E3AE1F', CD_COR.cinza, '#64748B'];
+      const dadosMod = M.mods.slice().sort((a, b) => b.horasMes - a.horasMes)
+        .map((m, i) => ({ nome: m.modulo, sigla: m.modulo, cor: coresMod[i % coresMod.length], valor: Math.round(m.horasMes * 10) / 10 }));
+      const wHoras = cdCard('Horas salvas por módulo', M.modFilt ? M.local : 'Horas por mês devolvidas à equipe', dadosMod.length ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(Math.round(M.horasMes))}</strong><span>h/mês</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosMod.map(d => `<li title="${esc(d.nome)}: ${esc(viabHoras(d.valor))} por mês"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(M.horasMes ? d.valor / M.horasMes : 0)}</strong></li>`).join('')}</ul>
+        </div>` : '<div class="stk-vazio">Nenhum módulo encontrado.</div>');
+
+      // ---- Cenários: quantos planos cobrem o custo ----
+      const pp = M.precoPlano * 12, minimo = pp > 0 ? Math.max(1, Math.ceil(M.custo / pp)) : 0;
+      const cenarios = pp > 0 ? [...new Set([M.qtdPlanos, minimo - 1, minimo, minimo + 1].filter(n => n >= 1))].sort((a, b) => a - b).slice(0, 4) : [];
+      const wPlanos = cdCard('Custo × Captação via planos', pp > 0 ? `Planos de ${viabMoeda(M.precoPlano)}/mês necessários para cobrir ${viabMoeda(M.custo)}/ano` : 'Sem plano com preço informado',
+        cenarios.length ? `<ol class="cd-rank">${cenarios.map(n => {
+          const cap = n * pp, cob = M.custo > 0 ? cap / M.custo : 0, dif = cap - M.custo;
+          const rot = `${n} plano${n === 1 ? '' : 's'}${n === M.qtdPlanos ? ' (atual)' : n === minimo ? ' (equilíbrio)' : ''}`;
+          return `<li title="${esc(rot)}: captação ${esc(viabMoeda(cap))}/ano · ${dif >= 0 ? 'sobra' : 'faltam'} ${esc(viabMoeda(Math.abs(dif)))}">
+            <span class="cd-rank-pos">${n}</span><span class="cd-rank-nome">${esc(rot)} <span class="cd-rank-sub">· ${esc(viabMoeda(cap))}/ano</span></span>
+            <strong style="color:${cob >= 1 ? 'var(--cd-verde)' : 'var(--cd-verm)'}">${esc(viabMoeda(dif))}</strong><span class="cd-rank-pct">${stkPct(cob)}</span></li>`; }).join('')}</ol>`
+        : '<div class="stk-vazio">Sem plano com preço informado.</div>');
+
+      // ---- Destaques ----
+      const dest = [];
+      if(M.mods.length) dest.push({ ic: 'setaCima', tom: 'verde', tit: `${viabHoras(M.horasMes)}/mês devolvidas à equipe`,
+        meta: `≈ ${stkNum(Math.round(M.horasMes / 168 * 10) / 10)} colaborador em tempo integral (168 h/mês)` });
+      const topMod = M.mods.slice().sort((a, b) => b.horasMes - a.horasMes)[0];
+      if(topMod) dest.push({ ic: 'raio', tom: 'azul', tit: `Maior ganho: ${topMod.modulo} · ${viabHoras(topMod.horasMes)}/mês`,
+        meta: `${stkNum(topMod.pro.frequencia)}× ${viabDiario(topMod.pro.periodicidade) ? 'por dia' : 'por mês'} × ${viabHoras(topMod.pro.horas)} · ${topMod.pro.objetivo}` });
+      if(M.custo > 0) dest.push({ ic: cobertura >= 1 ? 'setaCima' : 'alerta', tom: cobertura >= 1 ? 'verde' : 'vermelho', tit: `Captação cobre ${stkPct(cobertura)} do custo`,
+        meta: saldo >= 0 ? `Sobra de ${viabMoeda(saldo)}/ano` : `Faltam ${viabMoeda(-saldo)}/ano (${viabMoeda(-saldo / 12)}/mês)${minimo ? ` · equilíbrio com ${minimo} planos` : ''}` });
+      const topFerr = ferrOrd[0];
+      if(topFerr && topFerr.anual > 0) dest.push({ ic: 'caixa', tom: 'azul', tit: `Maior custo: ${topFerr.ferramenta} · ${viabMoeda(topFerr.anual)}/ano`,
+        meta: `${stkPct(M.custo ? topFerr.anual / M.custo : 0)} do custo das ferramentas · ${topFerr.objetivo || topFerr.descricao}` });
+      M.mods.filter(m => stkNorm(m.contra.prioridade) !== 'baixa').forEach(m => dest.push({ ic: 'escudo', tom: 'amarelo',
+        tit: `Ponto de atenção: ${m.modulo} · ${m.contra.objetivo}`, meta: `Contra de prioridade ${m.contra.prioridade.toLowerCase()}` }));
+      const wDest = cdCard('Destaques', M.nada ? `Nada encontrado para ${M.local} · mostrando tudo` : M.busca ? M.local : 'Leitura rápida da viabilidade', dest.length ? `<ul class="cd-dest">${dest.map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
+          <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
+          <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`
+        : '<div class="stk-vazio">Nada encontrado para a busca.</div>');
+
+      // ---- Prós × Contras por módulo ----
+      const corPri = pri => ({ alta: CD_COR.verde, media: '#E3AE1F', baixa: CD_COR.cinza })[stkNorm(pri)] || CD_COR.cinza;
+      const nenhum = txt => stkNorm(txt) === 'nenhum';
+      const wPc = cdCard('Prós × Contras', M.modFilt ? `${M.local} · cor = prioridade` : 'Ganho e risco de cada módulo do CDLoad · cor = prioridade', M.mods.length ? `<ul class="vb-pc">
+          <li class="vb-pc-cab"><span>Módulo</span><span>Pró</span><span>Contra</span></li>
+          ${M.mods.map(m => `<li>
+            <span class="vb-pc-mod">${esc(m.modulo)}</span>
+            <span class="vb-pc-item" title="Pró: ${esc(m.pro.objetivo)} · prioridade ${esc(m.pro.prioridade)} · ${esc(viabHoras(m.horasMes))}/mês"><i style="background:${corPri(m.pro.prioridade)}"></i><span class="vb-pc-txt">${esc(m.pro.objetivo)} <small>· ${esc(viabHoras(m.horasMes))}/mês</small></span></span>
+            <span class="vb-pc-item${nenhum(m.contra.objetivo) ? ' vazio' : ''}" title="Contra: ${esc(m.contra.objetivo)} · prioridade ${esc(m.contra.prioridade)}"><i style="background:${nenhum(m.contra.objetivo) ? 'var(--cd-trilho)' : corPri(m.contra.prioridade)}"></i><span class="vb-pc-txt">${esc(m.contra.objetivo)}</span></span>
+          </li>`).join('')}</ul>` : '<div class="stk-vazio">Nenhum módulo encontrado.</div>');
+
+      stkGrid.classList.add('cd-fit');
+      stkGrid.classList.remove('cd-carregando');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kCusto}${kCapt}${kSaldo}${kHoras}${kHora}</div>`
+        + `<div class="cd-row cd-row-a">${wFluxo}${wFerr}${wHoras}</div>`
+        + `<div class="cd-row cd-row-b">${wPlanos}${wDest}${wPc}</div></div>`;
+      if(dadosMod.length) stkDesenharRoscaCd(dadosMod, 'Horas salvas por módulo (h/mês)', 196);
+      const grafFluxo = document.getElementById('stkFluxoGraf');
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
+      cdAjustarListas();
+
+      viabUltimo = { linhas: [['Tipo', 'Item', 'Descrição', 'Objetivo', 'Prioridade', 'Plano', 'Periodicidade', 'Frequência', 'Preço (R$)', 'Valor anual (R$)', 'Horas salvas/mês']]
+        .concat(M.ferr.map(f => ['Ferramenta', f.ferramenta, f.descricao, f.objetivo, f.prioridade, f.plano, f.periodicidade, f.frequencia, f.preco == null ? '' : f.preco, f.anual, '']))
+        .concat(M.mods.map(m => ['CDLoad · Pró', m.modulo, '', m.pro.objetivo, m.pro.prioridade, 'Projeto', m.pro.periodicidade, m.pro.frequencia, '', '', Math.round(m.horasMes * 10) / 10]))
+        .concat(M.mods.map(m => ['CDLoad · Contra', m.modulo, '', m.contra.objetivo, m.contra.prioridade, 'Projeto', '', '', '', '', '']))
+        .concat(M.planos.map(pl => ['Plano (captação)', pl.nome, '', pl.objetivo, pl.prioridade, pl.plano, pl.periodicidade, pl.quantidade, pl.preco, Math.round(pl.mensal * 12), ''])) };
+    }
+
     // ===== Painel Sefaz MT (ICMS) — mesma estrutura do CAGED =====
     // Dados extraídos diariamente do "Dashboard de Arrecadação" público da Sefaz MT (Looker Studio)
     // por scripts/sefaz_extrair.ps1 (assets/data/sefaz_icms.js). Tudo é filtrado no navegador:
@@ -10174,7 +10344,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -10205,7 +10375,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -10280,6 +10450,16 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
+      if(stkPainel() === 'viabilidades'){
+        if(!viabUltimo) return;
+        const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const url = URL.createObjectURL(new Blob(['\ufeff' + viabUltimo.linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'viabilidades_cdload.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc'){
         if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
