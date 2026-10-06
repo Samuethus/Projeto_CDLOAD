@@ -2152,14 +2152,23 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
-            <option value="viabilidades">Painel • Viabilidade</option>
+            <option value="viabilidades">Painel · Viabilidade</option>
           </select>
-          <select class="filter-select" id="stkLeadsFiltro" title="Simulador: quantidade de leads (planos) captados pelo projeto" hidden>
-            <option value="1" selected>Simulador · 01 Lead</option>
-            <option value="2">Simulador · 02 Leads</option>
-            <option value="3">Simulador · 03 Leads</option>
-            <option value="4">Simulador · 04 Leads</option>
-            <option value="5">Simulador · 05 Leads</option>
+          <select class="filter-select" id="stkLeadsFiltro" title="Simulação Leads: quantidade de leads (planos) captados pelo projeto" hidden>
+            <option value="1" selected>Simulação Leads · 01 Lead</option>
+            <option value="2">Simulação Leads · 02 Leads</option>
+            <option value="3">Simulação Leads · 03 Leads</option>
+            <option value="4">Simulação Leads · 04 Leads</option>
+            <option value="5">Simulação Leads · 05 Leads</option>
+          </select>
+          <select class="filter-select" id="stkLicencasFiltro" title="Simulação Power BI: quantidade de licenças (R$ 109,20/licença/mês)" hidden>
+            <option value="1" selected>Simulação Power BI · 01 Licença</option>
+            <option value="2">Simulação Power BI · 02 Licenças</option>
+            <option value="3">Simulação Power BI · 03 Licenças</option>
+            <option value="4">Simulação Power BI · 04 Licenças</option>
+            <option value="5">Simulação Power BI · 05 Licenças</option>
+            <option value="6">Simulação Power BI · 06 Licenças</option>
+            <option value="7">Simulação Power BI · 07 Licenças</option>
           </select>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
@@ -7887,6 +7896,8 @@ ${clipPlayerPills(n)}
     const stkPeriodoClipEl = document.getElementById('stkPeriodoClipFiltro');
     // Viabilidade: leads (planos de consultoria) captados — simula a captação; padrão 1.
     const stkLeadsEl = document.getElementById('stkLeadsFiltro');
+    // Viabilidade: licenças de Power BI — multiplicam o custo da ferramenta; padrão 1.
+    const stkLicencasEl = document.getElementById('stkLicencasFiltro');
     let stkPeriodoAtual = 'semana';
     let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
@@ -8089,11 +8100,12 @@ ${clipPlayerPills(n)}
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
-      // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo) e Simulador de leads.
+      // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
       stkSegmented.hidden = clipping || panorama || sefaz || ibge || viab;
       stkMesEl.hidden = viab;
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
+      stkLicencasEl.hidden = !viab;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -9579,8 +9591,9 @@ ${clipPlayerPills(n)}
     // captação via planos). Dados da planilha de viabilidade: assets/data/viabilidades.js.
     // A busca filtra ferramentas e módulos, cada lado por si: o lado em que o termo não
     // aparece fica completo ("Clipping" filtra só os módulos; o custo segue o total).
-    // A captação dos planos usa a quantidade de leads do filtro Simulador (01 a 05, padrão 01):
-    // cada lead é um plano contratado (preço do plano × leads × 12 meses).
+    // Simulações (combinam entre si em todas as análises):
+    //   Leads (01 a 05, padrão 01): cada lead é um plano contratado (preço × leads × 12 meses);
+    //   Power BI (01 a 07 licenças, padrão 01): ferramentas com porLicenca custam preço × frequência × licenças.
     let viabDadosPromessa = null, viabUltimo = null, viabRenderSeq = 0;
     function viabCarregar(){
       if(window.VIAB_DADOS) return Promise.resolve();
@@ -9594,7 +9607,9 @@ ${clipPlayerPills(n)}
       return viabDadosPromessa;
     }
     // R$ inteiro (R$ 3.060) ou com centavos (R$ 1,72).
-    const viabMoeda = (v, casas) => (v < 0 ? '−' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: casas || 0, maximumFractionDigits: casas || 0 });
+    // Sem casas informadas: centavos só quando houver (R$ 1.310,40; R$ 3.060).
+    const viabMoeda = (v, casas) => { const a = Math.round(Math.abs(v) * 100) / 100, c = casas != null ? casas : (Math.round(a * 100) % 100 ? 2 : 0);
+      return (v < 0 && a > 0 ? '−' : '') + 'R$ ' + a.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); };
     const viabHoras = v => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
     const viabDiario = per => stkNorm(per).startsWith('diar');
     function viabModelo(D){
@@ -9603,7 +9618,9 @@ ${clipPlayerPills(n)}
       const ferrAchou = D.ferramentas.filter(f => tem(f.ferramenta, f.descricao, f.objetivo, f.plano));
       const modsAchou = D.cdload.filter(m => tem(m.modulo, m.pro.objetivo, m.contra.objetivo));
       const ferrFilt = !!q && ferrAchou.length > 0, modFilt = !!q && modsAchou.length > 0;
-      const ferr = (ferrFilt ? ferrAchou : D.ferramentas).map(f => ({ ...f, anual: (f.preco || 0) * (f.frequencia || 0) }));
+      const licencas = Math.max(1, Number(stkLicencasEl.value) || 1);
+      const ferr = (ferrFilt ? ferrAchou : D.ferramentas).map(f => ({ ...f, licencas: f.porLicenca ? licencas : null,
+        anual: (f.preco || 0) * (f.frequencia || 0) * (f.porLicenca ? licencas : 1) }));
       const mods = (modFilt ? modsAchou : D.cdload)
         .map(m => ({ ...m, horasMes: m.pro.frequencia * m.pro.horas * (viabDiario(m.pro.periodicidade) ? D.diasUteisMes : 1) }));
       const leads = Math.max(1, Number(stkLeadsEl.value) || 1);
@@ -9612,7 +9629,7 @@ ${clipPlayerPills(n)}
       const captMes = planos.reduce((s, pl) => s + pl.mensal, 0), capt = captMes * 12;
       const horasMes = mods.reduce((s, m) => s + m.horasMes, 0);
       const precoPlano = planos.length ? planos[0].preco : 0, qtdPlanos = planos.reduce((s, pl) => s + pl.quantidade, 0);
-      return { D, busca, ferr, mods, ferrFilt, modFilt, nada: !!q && !ferrFilt && !modFilt, planos, custo, capt, captMes, horasMes, precoPlano, qtdPlanos,
+      return { D, busca, licencas, ferr, mods, ferrFilt, modFilt, nada: !!q && !ferrFilt && !modFilt, planos, custo, capt, captMes, horasMes, precoPlano, qtdPlanos,
         local: busca ? `“${busca}”` : 'CDLoad · Núcleo de Inteligência' };
     }
     function viabRender(){
@@ -9635,9 +9652,10 @@ ${clipPlayerPills(n)}
 
       // ---- KPIs ----
       const kCusto = cdKpiCard('caixa', 'azul', 'Custo anual das ferramentas', viabMoeda(M.custo), neu(`${viabMoeda(M.custo / 12)}/mês`),
-        `${M.ferr.length} ferramenta${M.ferr.length === 1 ? '' : 's'} · ${pagas} paga${pagas === 1 ? '' : 's'}`, 'Soma de preço × frequência de cada ferramenta (coluna VALOR da planilha)');
+        M.ferr.some(f => f.porLicenca) ? `${M.licencas} licença${M.licencas === 1 ? '' : 's'} Power BI · ${M.ferr.length} ferramentas` : `${M.ferr.length} ferramenta${M.ferr.length === 1 ? '' : 's'} · ${pagas} paga${pagas === 1 ? '' : 's'}`,
+        'Soma de preço × frequência de cada ferramenta (coluna VALOR da planilha); Power BI × licenças (filtro Simulação Power BI)');
       const kCapt = cdKpiCard('arrowDownLeft', 'verde', 'Captação anual via planos', viabMoeda(M.capt), { cls: M.capt > 0 ? 'up' : 'neu', txt: `${viabMoeda(M.captMes)}/mês` },
-        `${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} (Simulador) · ${esc(M.planos.map(p => p.plano).join(', '))}`, 'Leads captados (filtro Simulador) × plano de consultoria (prestação de serviço às CDLs) × 12 meses');
+        `${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} · ${esc(M.planos.map(p => p.plano).join(', '))}`, 'Leads captados (filtro Simulação Leads) × plano de consultoria (prestação de serviço às CDLs) × 12 meses');
       const kSaldo = cdKpiCard(saldo >= 0 ? 'trendUp' : 'trendDown', saldo >= 0 ? 'verde' : 'vermelho', 'Resultado anual', viabMoeda(saldo),
         { cls: cobertura >= 1 ? 'up' : 'down', txt: `${stkPct(cobertura, 1)} coberto` }, 'captação ÷ custo', 'Captação via planos menos o custo anual das ferramentas');
       const kHoras = cdKpiCard('raio', 'verde', 'Horas salvas por mês', viabHoras(M.horasMes), { cls: M.horasMes > 0 ? 'up' : 'neu', txt: `≈ ${stkNum(Math.round(horasAno))} h/ano` },
@@ -9657,8 +9675,9 @@ ${clipPlayerPills(n)}
       // ---- Custo anual por ferramenta ----
       const ferrOrd = M.ferr.slice().sort((a, b) => b.anual - a.anual);
       const wFerr = cdCard('Custo anual por ferramenta', M.ferrFilt ? M.local : 'Preço × frequência de cada plano',
-        cdBarras(ferrOrd.map((f, i) => ({ nome: f.ferramenta, logo: (window.VIAB_LOGOS || {})[f.logo] || '', valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
-          dica: f.preco == null ? 'Sem custo informado' : `${viabMoeda(f.anual)} · ${f.plano} (${f.periodicidade.toLowerCase()})`,
+        cdBarras(ferrOrd.map((f, i) => ({ nome: f.porLicenca ? `${f.ferramenta} (${f.licencas}×)` : f.ferramenta, logo: (window.VIAB_LOGOS || {})[f.logo] || '', valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
+          dica: f.preco == null ? 'Sem custo informado' : f.porLicenca ? `${viabMoeda(f.anual)} · ${f.licencas} licença${f.licencas === 1 ? '' : 's'} × ${viabMoeda(f.preco)}/mês`
+            : `${viabMoeda(f.anual)} · ${f.plano} (${f.periodicidade.toLowerCase()})`,
           cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ferrOrd.length > 1 ? i / (ferrOrd.length - 1) : 0) })), 'Custo anual por ferramenta', 'Nenhuma ferramenta encontrada.'));
 
       // ---- Horas salvas por módulo (rosca) ----
@@ -9696,8 +9715,10 @@ ${clipPlayerPills(n)}
         meta: `${stkPct(M.custo ? topFerr.anual / M.custo : 0)} do custo das ferramentas · ${topFerr.objetivo || topFerr.descricao}` });
       M.mods.filter(m => stkNorm(m.contra.prioridade) !== 'baixa').forEach(m => dest.push({ ic: 'escudo', tom: 'amarelo',
         tit: `Ponto de atenção: ${m.modulo} · ${m.contra.objetivo}`, meta: `Contra de prioridade ${m.contra.prioridade.toLowerCase()}` }));
-      if(pp > 0) dest.splice(Math.min(3, dest.length), 0, { ic: 'pessoas', tom: 'azul', tit: `Simulador: ${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} · ${viabMoeda(M.capt)}/ano`,
-        meta: M.qtdPlanos >= minimo ? 'Captação cobre todo o custo das ferramentas' : `Faltam ${minimo - M.qtdPlanos} lead${minimo - M.qtdPlanos === 1 ? '' : 's'} para o equilíbrio (${minimo})` });
+      if(pp > 0) dest.splice(Math.min(3, dest.length), 0, { ic: 'pessoas', tom: 'azul',
+        tit: `Simulação: ${M.qtdPlanos} lead${M.qtdPlanos === 1 ? '' : 's'} × ${M.licencas} licença${M.licencas === 1 ? '' : 's'} Power BI`,
+        meta: M.qtdPlanos >= minimo ? `Captação de ${viabMoeda(M.capt)}/ano cobre todo o custo (${viabMoeda(M.custo)})`
+          : `Faltam ${minimo - M.qtdPlanos} lead${minimo - M.qtdPlanos === 1 ? '' : 's'} para o equilíbrio (${minimo}) com ${M.licencas} licença${M.licencas === 1 ? '' : 's'}` });
       const wDest = cdCard('Destaques', M.nada ? `Nada encontrado para ${M.local} · mostrando tudo` : M.busca ? M.local : 'Leitura rápida da viabilidade', dest.length ? `<ul class="cd-dest">${dest.map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
           <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
           <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`
@@ -9724,11 +9745,11 @@ ${clipPlayerPills(n)}
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
 
-      viabUltimo = { linhas: [['Tipo', 'Item', 'Descrição', 'Objetivo', 'Prioridade', 'Plano', 'Periodicidade', 'Frequência', 'Preço (R$)', 'Valor anual (R$)', 'Horas salvas/mês']]
-        .concat(M.ferr.map(f => ['Ferramenta', f.ferramenta, f.descricao, f.objetivo, f.prioridade, f.plano, f.periodicidade, f.frequencia, f.preco == null ? '' : f.preco, f.anual, '']))
-        .concat(M.mods.map(m => ['CDLoad · Pró', m.modulo, '', m.pro.objetivo, m.pro.prioridade, 'Projeto', m.pro.periodicidade, m.pro.frequencia, '', '', Math.round(m.horasMes * 10) / 10]))
-        .concat(M.mods.map(m => ['CDLoad · Contra', m.modulo, '', m.contra.objetivo, m.contra.prioridade, 'Projeto', '', '', '', '', '']))
-        .concat(M.planos.map(pl => ['Plano (captação · Simulador: ' + pl.quantidade + ' lead' + (pl.quantidade === 1 ? '' : 's') + ')', pl.nome, '', pl.objetivo, pl.prioridade, pl.plano, pl.periodicidade, pl.quantidade, pl.preco, Math.round(pl.mensal * 12), ''])) };
+      viabUltimo = { linhas: [['Tipo', 'Item', 'Descrição', 'Objetivo', 'Prioridade', 'Plano', 'Periodicidade', 'Frequência', 'Quantidade (simulação)', 'Preço (R$)', 'Valor anual (R$)', 'Horas salvas/mês']]
+        .concat(M.ferr.map(f => ['Ferramenta', f.ferramenta, f.descricao, f.objetivo, f.prioridade, f.plano, f.periodicidade, f.frequencia, f.porLicenca ? f.licencas + ' licença(s)' : '', f.preco == null ? '' : f.preco, Math.round(f.anual * 100) / 100, '']))
+        .concat(M.mods.map(m => ['CDLoad · Pró', m.modulo, '', m.pro.objetivo, m.pro.prioridade, 'Projeto', m.pro.periodicidade, m.pro.frequencia, '', '', '', Math.round(m.horasMes * 10) / 10]))
+        .concat(M.mods.map(m => ['CDLoad · Contra', m.modulo, '', m.contra.objetivo, m.contra.prioridade, 'Projeto', '', '', '', '', '', '']))
+        .concat(M.planos.map(pl => ['Plano (captação)', pl.nome, '', pl.objetivo, pl.prioridade, pl.plano, pl.periodicidade, '', pl.quantidade + ' lead(s)', pl.preco, Math.round(pl.mensal * 12 * 100) / 100, ''])) };
     }
 
     // ===== Painel Sefaz MT (ICMS) — mesma estrutura do CAGED =====
@@ -10320,17 +10341,18 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     }
     stkPainelEl.addEventListener('change', () => stkResetarPainel('abve'));
     stkLeadsEl.addEventListener('change', stkRender);
+    stkLicencasEl.addEventListener('change', stkRender);
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();

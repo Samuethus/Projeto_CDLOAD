@@ -3,6 +3,7 @@
 //
 // ferramentas: custo anual = preco × frequencia (mesma conta da coluna VALOR da planilha).
 //              preco null = sem custo informado (entra no painel com R$ 0).
+//              porLicenca: true = multiplica também pelas licenças do filtro "Simulação Power BI" (01 a 07).
 // cdload:      prós e contras de cada módulo. Horas salvas por mês =
 //              frequencia × horas × (diasUteisMes, se a periodicidade for diária; 1, se mensal).
 // planos:      captação anual = preco × quantidade × 12 (mensal) ou × 1 (anual).
@@ -13,7 +14,7 @@ window.VIAB_DADOS = {
   atualizado: '2026-10-06',
   diasUteisMes: 22,
   ferramentas: [
-    { ferramenta: 'Power BI',      logo: 'powerbi',                       descricao: 'Ferramenta de manipulação e análise de dados', objetivo: '',                              prioridade: 'Alta',  plano: '',                periodicidade: '',       frequencia: 0,  preco: null },
+    { ferramenta: 'Power BI',      logo: 'powerbi',                       descricao: 'Ferramenta de manipulação e análise de dados', objetivo: 'Painéis de dados',             prioridade: 'Alta',  plano: 'Licença por usuário', periodicidade: 'Mensal', frequencia: 12, preco: 109.20, porLicenca: true },
     { ferramenta: 'Survey Monkey', logo: 'surveymonkey',                  descricao: 'Criação e gestão de formulários',              objetivo: 'Captura de dados do mercado',  prioridade: 'Alta',  plano: 'Plano individual', periodicidade: 'Anual',  frequencia: 12, preco: 100 },
     { ferramenta: 'GisMaps',       logo: 'gismaps',                       descricao: 'Criação de mapas',                             objetivo: 'Criação rápida de mapas',      prioridade: 'Alta',  plano: 'Plano individual', periodicidade: 'Anual',  frequencia: 1,  preco: 120 },
     { ferramenta: 'Canva',         logo: 'canva',                         descricao: 'Construção de materiais visuais',              objetivo: 'Layout relatórios / dashboards', prioridade: 'Média', plano: 'Canva Pro',       periodicidade: 'Mensal', frequencia: 12, preco: 35 },
