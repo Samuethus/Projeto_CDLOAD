@@ -1087,7 +1087,15 @@
   /* ---- Barra de filtros em linha única (padrão wa-stock-filters) ---- */
   #page-clipping .wa-stock-filters .wa-sort-group,
   #page-clipping .wa-stock-filters .wa-sort-pills{flex:0 0 auto;flex-wrap:nowrap;}
+  /* Busca 120% maior que antes (96 → 211px; 72 → 158px até 1800px; 62 → 136px até 1320px).
+     A barra quebra em linha quando não cabe — nenhum filtro fica escondido na rolagem. */
+  #page-clipping .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
+  #page-clipping .wa-stock-filters .wa-clip-search{flex:0 0 211px;width:211px;min-width:0;max-width:100%;}
+  #page-clipping .wa-stock-filters .filter-select{min-width:100px;}
+  #page-clipping .wa-stock-filters #waClipPlayerFilter{min-width:120px;}
+  #page-clipping .wa-stock-filters #waClipCategoryFilter{min-width:104px;}
   @media (max-width:1800px){
+    #page-clipping .wa-stock-filters .wa-clip-search{flex-basis:158px;width:158px;}
     #page-clipping .wa-stock-filters .btn-label{display:none;}
     #page-clipping .wa-stock-filters .btn{padding:10px 12px;}
     #page-clipping .wa-stock-filters{gap:8px;}
@@ -1095,14 +1103,19 @@
     #page-clipping .wa-stock-filters .wa-sort-pills{gap:6px;}
     #page-clipping .wa-stock-filters .wa-sort-pill{padding:7px 9px;}
     #page-clipping .wa-stock-filters .btn{padding:10px 14px;}
-    #page-clipping .wa-stock-filters .wa-clip-search,
-    #page-clipping .wa-stock-filters .filter-select{min-width:72px;}
+  }
+  @media (max-width:1500px){
+    #page-clipping .wa-stock-filters{gap:6px;}
+    #page-clipping .wa-stock-filters .filter-divider{display:none;}
+    #page-clipping .wa-stock-filters .filter-select{min-width:96px;}
+    #page-clipping .wa-stock-filters .wa-sort-pills{gap:4px;}
+    #page-clipping .wa-stock-filters .wa-sort-pill{padding:7px 8px;}
   }
   @media (max-width:1320px){
     #page-clipping .wa-stock-filters .filter-divider{display:none;}
     #page-clipping .wa-stock-filters .btn{padding:10px 12px;}
-    #page-clipping .wa-stock-filters .wa-clip-search,
-    #page-clipping .wa-stock-filters .filter-select{min-width:62px;}
+    #page-clipping .wa-stock-filters .wa-clip-search{flex-basis:136px;width:136px;}
+    #page-clipping .wa-stock-filters .filter-select{min-width:92px;}
   }
   .wa-clip-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
   .wa-clip-pill{
@@ -2458,17 +2471,8 @@
           <select class="filter-select" id="waClipCategoryFilter">
             <option value="">Categoria</option>
           </select>
-          <select class="filter-select" id="waClipChannelFilter">
-            <option value="">Plataforma</option>
-          </select>
           <select class="filter-select" id="waClipPortalFilter">
             <option value="">Portal</option>
-          </select>
-          <select class="filter-select" id="waClipSentimentFilter">
-            <option value="">Sentimento</option>
-            <option value="Positivo">Positivo</option>
-            <option value="Neutro">Neutro</option>
-            <option value="Negativo">Negativo</option>
           </select>
           <div class="filter-divider"></div>
           <div class="wa-sort-group">
@@ -5538,7 +5542,6 @@
     const waClipMonthFilter = document.getElementById('waClipMonthFilter');
     const waClipYearFilter = document.getElementById('waClipYearFilter');
     const waClipCategoryFilter = document.getElementById('waClipCategoryFilter');
-    const waClipChannelFilter = document.getElementById('waClipChannelFilter');
     const waClipPortalFilter = document.getElementById('waClipPortalFilter');
     const waClipPlayerFilter = document.getElementById('waClipPlayerFilter');
     // Ao abrir a seção, o filtro Player começa em "CDL Cuiabá" (as notícias da entidade);
@@ -5551,7 +5554,6 @@
       waClipPlayerPadrao = false;
       return true;
     }
-    const waClipSentimentFilter = document.getElementById('waClipSentimentFilter');
     const waClipClearBtn = document.getElementById('waClipClearBtn');
     const waClipExportBtn = document.getElementById('waClipExportBtn');
     const waClipSortPills = document.getElementById('waClipSortPills');
@@ -5703,10 +5705,6 @@
       waClipCategoryFilter.innerHTML = '<option value="">Categoria</option>' + categorias.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if(categorias.includes(curCat)) waClipCategoryFilter.value = curCat;
 
-      const curCanal = waClipChannelFilter.value;
-      waClipChannelFilter.innerHTML = '<option value="">Plataforma</option>' + canais.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      if(canais.includes(curCanal)) waClipChannelFilter.value = curCanal;
-
       const curPlayer = waClipPlayerFilter.value;
       waClipPlayerFilter.innerHTML = '<option value="">Player</option>' + CLIP_PLAYERS.map(p => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join('');
       if(CLIP_PLAYERS.some(p => p.nome === curPlayer)) waClipPlayerFilter.value = curPlayer;
@@ -5738,20 +5736,16 @@
       const month = waClipMonthFilter.value;
       const year = waClipYearFilter.value;
       const categoria = waClipCategoryFilter.value;
-      const canal = waClipChannelFilter.value;
       const portal = waClipPortalFilter.value;
       const player = waClipPlayerFilter.value;
-      const sentimento = waClipSentimentFilter.value;
 
       let list = clippingNews.filter(n => {
         if(term && !(n.titulo.toLowerCase().includes(term) || n.resumo.toLowerCase().includes(term) || n.fonte.toLowerCase().includes(term))) return false;
         if(month && n.data.slice(5, 7) !== month) return false;
         if(year && n.data.slice(0, 4) !== year) return false;
         if(categoria && n.categoria !== categoria) return false;
-        if(canal && n.canal !== canal) return false;
         if(portal && clipPortalKey(n) !== portal) return false;
         if(player && !(n.players || []).includes(player)) return false;
-        if(sentimento && n.sentimento !== sentimento) return false;
         return true;
       });
 
@@ -6018,10 +6012,8 @@ ${clipPlayerPills(n)}
     waClipMonthFilter.addEventListener('change', renderClippingNews);
     waClipYearFilter.addEventListener('change', renderClippingNews);
     waClipCategoryFilter.addEventListener('change', renderClippingNews);
-    waClipChannelFilter.addEventListener('change', renderClippingNews);
     waClipPortalFilter.addEventListener('change', renderClippingNews);
     waClipPlayerFilter.addEventListener('change', renderClippingNews);
-    waClipSentimentFilter.addEventListener('change', renderClippingNews);
 
     waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -6037,10 +6029,8 @@ ${clipPlayerPills(n)}
       waClipMonthFilter.value = '';
       waClipYearFilter.value = '';
       waClipCategoryFilter.value = '';
-      waClipChannelFilter.value = '';
       waClipPortalFilter.value = '';
       waClipPlayerFilter.value = '';
-      waClipSentimentFilter.value = '';
       clipSort = 'recente';
       waClipSortPills.querySelectorAll('.wa-sort-pill').forEach(b => b.classList.toggle('active', b.dataset.sort === 'recente'));
       renderClippingNews();
