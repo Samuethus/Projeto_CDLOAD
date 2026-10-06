@@ -421,15 +421,15 @@
       position:fixed; z-index:70;
       /* Centralizado na vertical com o cabeçalho (altura medida no JS, que muda
          quando a descrição quebra em mais linhas); 66px é a altura mínima. */
-      top:calc(var(--header-centro, 33px) - 21px); left:12px;
-      width:42px; height:42px; padding:0; border:none; border-radius:50%;
+      top:calc(var(--header-centro, 33px) - 17px); left:12px;
+      width:34px; height:34px; padding:0; border:none; border-radius:50%;
       background:var(--sidebar-bg); color:#fff; cursor:pointer;
       box-shadow:0 4px 14px rgba(2,43,83,.30);
     }
-    .menu-flutuante svg{width:20px; height:20px; stroke-width:2.2;}
+    .menu-flutuante svg{width:16px; height:16px; stroke-width:2.2;}
 
     /* Conteúdo em tela cheia: o cabeçalho reserva o canto do botão flutuante. */
-    .header{padding:14px 16px 14px 66px; gap:12px; min-height:66px; align-items:center;}
+    .header{padding:14px 16px 14px 58px; gap:12px; min-height:66px; align-items:center;}
     .header-title{font-size:18px;}
     .header-desc{font-size:12.5px;}
     .content{padding:18px 16px 40px;}
@@ -2012,7 +2012,7 @@
     <div class="header-divider"></div>
 
     <nav class="nav-menu" id="navMenu">
-      <button class="nav-item active" data-page="home" data-title="Bem-vindo ao CDLOAD" data-desc="Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.">
+      <button class="nav-item active" data-page="home" data-title="Bem-vindo ao CDLOAD" data-desc="Acesse os painéis Power BI do Núcleo de Inteligência.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 10L12 3L21 10" /> <path d="M5 10V20H10V16A2 2 0 0 1 14 16V20H19V10" /> </svg>
         <span>Home</span>
       </button>
@@ -2091,7 +2091,7 @@
     <header class="header">
       <div>
         <div class="header-title" id="headerTitle">Bem-vindo ao CDLOAD</div>
-        <div class="header-desc" id="headerDesc">Acesse os painéis do Power BI do Núcleo de Inteligência. Cada painel abre em uma nova janela.</div>
+        <div class="header-desc" id="headerDesc">Acesse os painéis Power BI do Núcleo de Inteligência.</div>
       </div>
       <div class="header-direita">
         <div class="header-actions" id="headerActions"></div>
