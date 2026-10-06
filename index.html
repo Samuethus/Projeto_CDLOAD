@@ -419,8 +419,10 @@
     .app:not(.menu-mobile-aberto) .menu-flutuante{
       display:flex; align-items:center; justify-content:center;
       position:fixed; z-index:70;
-      top:calc(env(safe-area-inset-top, 0px) + 12px); left:12px;
-      width:42px; height:42px; padding:0; border:none; border-radius:10px;
+      /* Centralizado na vertical com o cabeçalho (altura medida no JS, que muda
+         quando a descrição quebra em mais linhas); 66px é a altura mínima. */
+      top:calc(var(--header-centro, 33px) - 21px); left:12px;
+      width:42px; height:42px; padding:0; border:none; border-radius:50%;
       background:var(--sidebar-bg); color:#fff; cursor:pointer;
       box-shadow:0 4px 14px rgba(2,43,83,.30);
     }
@@ -4023,6 +4025,15 @@
     menuFlutuante.setAttribute('aria-expanded', aberto ? 'true' : 'false');
   };
   menuFlutuante.addEventListener('click', () => setMenuMobile(true));
+  // Centro vertical do cabeçalho, para o botão flutuante ficar alinhado a ele.
+  const headerEl = document.querySelector('.header');
+  const medirCentroHeader = () => {
+    const r = headerEl.getBoundingClientRect();
+    document.documentElement.style.setProperty('--header-centro', (r.top + r.height / 2) + 'px');
+  };
+  if(window.ResizeObserver) new ResizeObserver(medirCentroHeader).observe(headerEl);
+  window.addEventListener('resize', medirCentroHeader);
+  medirCentroHeader();
   document.getElementById('menuFundo').addEventListener('click', () => setMenuMobile(false));
   navItems.forEach(item => item.addEventListener('click', () => { if(telaCelular.matches) setMenuMobile(false); }));
   // Ao entrar no modo celular, o menu volta ao estado aberto/fechado do celular
