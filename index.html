@@ -1363,6 +1363,10 @@
   .cd-barra-rot{display:flex;align-items:center;gap:9px;min-width:0;}
   .cd-barra-rot > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cd-barra-rot svg{width:16px;height:16px;stroke-width:2;flex:0 0 auto;color:var(--cd-texto);}
+  /* Logo da marca ao lado do nome (Viabilidade › Custo anual por ferramenta): coluna do rótulo um pouco mais larga. */
+  .cd-barra-logo{width:18px;height:18px;flex:0 0 auto;display:flex;}
+  .cd-barra-rot .cd-barra-logo svg{width:18px;height:18px;}
+  .cd-barra:has(.cd-barra-logo){grid-template-columns:minmax(0,138px) 1fr minmax(34px,auto);}
   .cd-barra-trilho{height:12px;background:var(--cd-trilho);border-radius:9999px;overflow:hidden;}
   .cd-barra-trilho i{display:block;height:100%;border-radius:9999px;}
   .cd-barra-val{text-align:right;font-size:12.5px;color:var(--cd-texto);font-variant-numeric:tabular-nums;}
@@ -8845,7 +8849,7 @@ ${clipPlayerPills(n)}
       if(!itens.length) return `<div class="stk-vazio">${esc(vazio)}</div>`;
       const max = Math.max(1, ...itens.map(i => i.valor));
       return `<div class="cd-barras">${itens.map(i => `<div class="cd-barra" tabindex="0" data-stk-dica="${esc(titulo)}|${esc(i.nome)}|${esc(i.dica || i.rotulo || stkNum(i.valor))}|${i.cor}">
-          <span class="cd-barra-rot">${i.icone ? stkIcone(i.icone) : ''}<span>${esc(i.nome)}</span></span>
+          <span class="cd-barra-rot">${i.logo ? `<span class="cd-barra-logo" aria-hidden="true">${i.logo}</span>` : i.icone ? stkIcone(i.icone) : ''}<span>${esc(i.nome)}</span></span>
           <span class="cd-barra-trilho"><i style="width:${Math.max(0, i.valor / max * 100).toFixed(1)}%;background:${i.cor}"></i></span>
           <span class="cd-barra-val">${esc(i.rotulo || stkNum(i.valor))}</span></div>`).join('')}</div>`;
     }
@@ -9653,7 +9657,7 @@ ${clipPlayerPills(n)}
       // ---- Custo anual por ferramenta ----
       const ferrOrd = M.ferr.slice().sort((a, b) => b.anual - a.anual);
       const wFerr = cdCard('Custo anual por ferramenta', M.ferrFilt ? M.local : 'Preço × frequência de cada plano',
-        cdBarras(ferrOrd.map((f, i) => ({ nome: f.ferramenta, valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
+        cdBarras(ferrOrd.map((f, i) => ({ nome: f.ferramenta, logo: (window.VIAB_LOGOS || {})[f.logo] || '', valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
           dica: f.preco == null ? 'Sem custo informado' : `${viabMoeda(f.anual)} · ${f.plano} (${f.periodicidade.toLowerCase()})`,
           cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ferrOrd.length > 1 ? i / (ferrOrd.length - 1) : 0) })), 'Custo anual por ferramenta', 'Nenhuma ferramenta encontrada.'));
 
