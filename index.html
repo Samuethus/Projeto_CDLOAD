@@ -1148,6 +1148,14 @@
   :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
   :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search{width:260px;min-width:260px;max-width:260px;flex:0 0 260px;}
   #page-dashboard .wa-stock-filters #stkPainelFiltro{flex:0 0 auto;min-width:0;overflow:visible;}
+  /* Dashboard: busca 80% maior (260 → 468px); encolhe só quando fica sozinha na linha
+     (telas estreitas), sem ultrapassar a barra. Limpar/Exportar viram só ícone (como no
+     Clipping) para os demais filtros continuarem cabendo. */
+  #page-dashboard .wa-stock-filters .wa-clip-search{width:468px;min-width:min(260px,100%);max-width:100%;flex:0 1 468px;}
+  @media (max-width:1800px){
+    #page-dashboard .wa-stock-filters .btn-label{display:none;}
+    #page-dashboard .wa-stock-filters .btn{padding:10px 12px;}
+  }
   .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;flex:0 0 auto;}
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
@@ -1348,8 +1356,11 @@
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
     :is(#page-dashboard, #page-whatsapp) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
     :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
-    #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:130px;flex:1 1 130px;}
-    :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search{width:160px;min-width:160px;max-width:160px;flex:0 0 160px;}
+    #page-dashboard .wa-stock-filters .filter-select{min-width:80px;flex:1 1 80px;}
+    #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:120px;flex:1 1 120px;}
+    #page-whatsapp .wa-stock-filters .wa-clip-search{width:160px;min-width:160px;max-width:160px;flex:0 0 160px;}
+    /* Dashboard: busca 80% maior (160 → 288px); selects um pouco mais estreitos compensam. */
+    #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:288px;max-width:288px;flex:0 0 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
     :is(#page-dashboard, #page-whatsapp) .stk-segmented{padding:2px;}
