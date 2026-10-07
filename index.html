@@ -1410,7 +1410,7 @@
   @media (max-width:760px){ .sm-painel{grid-template-columns:1fr;} }
   /* Todos os cards com o mesmo tamanho (o do gráfico de barras com 10 linhas). Barras sempre na coluna 1;
      roscas nas colunas 2 e 3 (alternadas pelo JS). */
-  .sm-painel .cd-card{height:440px;min-height:0;}
+  .sm-painel .cd-card{height:330px;min-height:0;}
   .sm-painel > .sm-col-barra{grid-column:1;}
   .sm-painel > .sm-c2{grid-column:2;}
   .sm-painel > .sm-c3{grid-column:3;}
@@ -1420,17 +1420,20 @@
   .sm-painel .cd-card-body{justify-content:flex-start;gap:12px;}
   .sm-painel .cd-card-body > *{flex:0 0 auto;}
   .sm-painel .cd-rank li{flex:0 0 auto;}
-  .sm-painel .cd-rosca-wrap{flex:1 1 auto;flex-direction:column;justify-content:center;align-items:center;gap:16px;}
+  .sm-painel .cd-rosca-wrap{flex:1 1 auto;flex-direction:column;justify-content:center;align-items:center;gap:12px;min-height:0;}
+  .sm-painel .cd-rosca-centro strong{font-size:17px;}
+  .sm-painel .cd-rosca-centro span{max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .sm-painel .cd-card-head h3{font-size:14.5px;}
-  .sm-painel .cd-barras{justify-content:flex-start;gap:8px;}
-  .sm-painel .cd-barra{flex:0 0 auto;min-height:22px;max-height:22px;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) 58px;}
+  .sm-painel .cd-barras{justify-content:flex-start;gap:12px;}
+  .sm-painel .cd-barra{flex:0 0 auto;min-height:24px;max-height:24px;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) 58px;}
   .sm-painel .cd-barra-val small{color:var(--cd-muted);margin-left:4px;}
   .sm-media{font-size:24px;font-weight:700;color:var(--cd-texto);line-height:1;letter-spacing:-.01em;white-space:nowrap;}
   .sm-media span{font-size:12px;font-weight:500;color:var(--cd-muted);margin-left:5px;}
   .sm-rosca-svg{display:block;}
-  .sm-painel .cd-rosca-legenda{flex:0 0 auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 16px;max-width:100%;margin:0;}
-  .sm-painel .cd-rosca-legenda li{max-width:100%;}
-  .sm-painel .cd-rosca-legenda span{flex:0 1 auto;}
+  /* Legenda embaixo e centralizada, em 2 colunas (até 6 opções = 3 linhas); textos longos com reticências. */
+  .sm-painel .cd-rosca-legenda{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,max-content));justify-content:center;gap:5px 18px;max-width:100%;margin:0;}
+  .sm-painel .cd-rosca-legenda li{min-width:0;font-size:12.5px;}
+  .sm-painel .cd-rosca-legenda span{flex:0 1 auto;min-width:0;max-width:170px;}
   .sm-painel .cd-rosca-legenda strong{margin-left:2px;}
   /* Matriz: uma barra 100% empilhada por linha + legenda das opções */
   .sm-matriz{display:flex;flex-direction:column;gap:12px;}
@@ -4285,14 +4288,20 @@
         <div class="cd-card-head"><div class="cd-card-tits"><h3 title="${esc(titulo)}">${esc(titulo)}</h3><div class="cd-sub">${sub}</div></div>${acoes ? `<div class="cd-head-acoes">${acoes}</div>` : ''}</div>
         <div class="cd-card-body">${corpo}</div></div>`;
     const subResp = q => `${num(q.a)} resposta${q.a === 1 ? '' : 's'}${q.k ? ` · ${num(q.k)} pulada${q.k === 1 ? '' : 's'}` : ''}`;
-    // Barras horizontais: no máximo 10 linhas — as 9 maiores + "Outros" (soma do restante, incluindo a opção "Outro").
-    function topDez(itens){
-      if(itens.length <= 10) return itens;
+    // Barras horizontais: no máximo 6 linhas — as 5 maiores + "Outros" (soma do restante, incluindo a opção "Outro").
+    function topSeis(itens){
+      if(itens.length <= 6) return itens;
       const ehOutro = n => /^outr[oa]s?(?![a-zà-ú])/i.test(n.trim());
-      const top = [...itens].filter(c => !ehOutro(c[0])).sort((a, b) => b[1] - a[1]).slice(0, 9);
+      const top = [...itens].filter(c => !ehOutro(c[0])).sort((a, b) => b[1] - a[1]).slice(0, 5);
       return top.concat([['Outros', itens.filter(c => !top.includes(c)).reduce((t, c) => t + c[1], 0)]]);
     }
-    const barras = (itens, total, cor) => `<div class="cd-barras">${itens.map(([nome, v], i) => `
+    // multipla = true: o "Outros" soma marcações (uma pessoa marca várias opções), então mostra a contagem, não %.
+    const barras = (itens, total, cor, multipla) => `<div class="cd-barras">${itens.map(([nome, v], i) => multipla && nome === 'Outros' && i === itens.length - 1 ? `
+        <div class="cd-barra" title="Outros: ${num(v)} marcações nas demais opções (múltipla escolha)">
+          <div class="cd-barra-rot"><span>Outros</span></div>
+          <div class="cd-barra-trilho"><i style="width:${(v / Math.max(...itens.map(x => x[1]), 1) * 100).toFixed(1)}%;background:${CORES[i % CORES.length]}"></i></div>
+          <div class="cd-barra-val">${num(v)}<small>marc.</small></div>
+        </div>` : `
         <div class="cd-barra" title="${esc(nome)}: ${num(v)} (${pct(v, total)})">
           <div class="cd-barra-rot"><span>${esc(nome)}</span></div>
           <div class="cd-barra-trilho"><i style="width:${total ? (v / Math.max(...itens.map(x => x[1]), 1) * 100).toFixed(1) : 0}%;background:${cor || CORES[i % CORES.length]}"></i></div>
@@ -4307,7 +4316,7 @@
       }).join('');
       const maior = itens.reduce((m, x) => x[1] > m[1] ? x : m, itens[0]);
       return `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><svg class="sm-rosca-svg" viewBox="0 0 42 42" width="150" height="150"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#EEF2F7" stroke-width="6"></circle>${fatias}</svg>
+          <div class="cd-rosca"><svg class="sm-rosca-svg" viewBox="0 0 42 42" width="112" height="112"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#EEF2F7" stroke-width="6"></circle>${fatias}</svg>
             <div class="cd-rosca-centro"><strong>${pct(maior[1], total)}</strong><span>${esc(maior[0].length > 14 ? maior[0].slice(0, 13) + '…' : maior[0])}</span></div></div>
           <ul class="cd-rosca-legenda">${itens.map(([nome, v], i) => `<li title="${esc(nome)}: ${num(v)} (${pct(v, total)})"><i style="background:${CORES[i % CORES.length]}"></i><span>${esc(nome)}</span><strong>${pct(v, total)}</strong></li>`).join('')}</ul>
         </div>`;
@@ -4335,13 +4344,16 @@
       if(!q.a) return card(q.t, subResp(q), '<div class="stk-vazio">Ninguém respondeu esta pergunta.</div>', pos);
       if(q.f === 'r'){
         const media = itens.reduce((s, c) => s + Number(c[0]) * c[1], 0) / total;
-        return card(q.t, subResp(q) + ` · nota de ${itens[0][0]} a ${itens[itens.length - 1][0]}`, barras(itens.map(c => ['Nota ' + c[0], c[1]]), total, CORES[0]), pos,
+        // Escala com mais de 6 notas (ex.: 1 a 10): agrupa de 2 em 2 para caber no padrão de 6 linhas sem perder a ordem.
+        const linhasNota = itens.length <= 6 ? itens.map(c => ['Nota ' + c[0], c[1]])
+          : itens.reduce((g, c, i) => (i % 2 ? (g[g.length - 1][0] += '–' + c[0], g[g.length - 1][1] += c[1]) : g.push(['Notas ' + c[0], c[1]]), g), []);
+        return card(q.t, subResp(q) + ` · nota de ${itens[0][0]} a ${itens[itens.length - 1][0]}`, barras(linhasNota, total, CORES[0]), pos,
           `<div class="sm-media" title="Nota média">${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}<span>média</span></div>`);
       }
       if(!ehBarra) return card(q.t, subResp(q), rosca(itens, total), pos);
       // Múltipla escolha: % sobre quem respondeu (a soma passa de 100%), da mais para a menos escolhida.
-      const lista = topDez(q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens);
-      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : '') + (lista.length < itens.length ? ' · top 9 + Outros' : ''), barras(lista, total), pos);
+      const lista = topSeis(q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens);
+      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : '') + (lista.length < itens.length ? ' · top 5 + Outros' : ''), barras(lista, total, null, q.f === 'm'), pos);
     }
     function cardAbertas(abertas){
       if(!abertas.length) return '';
