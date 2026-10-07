@@ -1454,10 +1454,12 @@
     #page-dashboard.active{padding-top:18px;}
     :is(#page-dashboard, #page-whatsapp) .stk-segmented{padding:2px;}
     :is(#page-dashboard, #page-whatsapp) .stk-seg-btn{padding:6px 9px;}
-    #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;}
+    #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+    /* Barra de rolagem invisível (a rolagem pela roda do mouse/toque continua). */
+    #stkGrid.cd-fit::-webkit-scrollbar{display:none;}
     /* A "tela" (KPIs + 2 linhas) tem sempre a altura da área visível em todos os painéis:
        cards na mesma posição e tamanho ao trocar de painel. Conteúdo extra (tabela do
-       Estoque) fica abaixo e rola dentro da grade; a reserva da barra (gutter) é igual. */
+       Estoque) fica abaixo e rola dentro da grade, sem barra de rolagem visível. */
     #stkGrid.cd-fit > .cd-tela{flex:0 0 100%;min-height:0;display:flex;flex-direction:column;}
     #stkGrid.cd-fit > .cd-extra{flex:0 0 auto;margin:14px 0 0;}
     #stkGrid.cd-fit .stk-tema-aviso{flex:0 0 auto;margin-bottom:12px;}
@@ -1558,7 +1560,8 @@
   .stk-badge.ongoing{background:var(--stk-neutral-bg);color:var(--stk-primary-light);}
 
   /* ---- Tabela "Produtos" / "Movimentações" (switch replicado do Estoque) ---- */
-  .stk-table-wrap{overflow:auto;max-height:360px;}
+  .stk-table-wrap{overflow:auto;max-height:360px;scrollbar-width:none;}
+  .stk-table-wrap::-webkit-scrollbar{display:none;}   /* tabela inferior: rola sem mostrar a barra */
   .stk-table{width:100%;border-collapse:collapse;font-size:14px;}
   .stk-table th{text-transform:uppercase;font-size:11px;font-weight:600;color:var(--stk-secondary-dark);text-align:left;padding:10px 16px;border-bottom:1px solid var(--stk-neutral-bg);white-space:nowrap;position:sticky;top:0;background:var(--stk-white);}
   .stk-table td{padding:12px 16px;border-bottom:1px solid var(--stk-neutral-bg);color:var(--stk-secondary-dark);white-space:nowrap;}
@@ -6227,6 +6230,15 @@ ${clipPlayerPills(n)}
     const stockEhConsumo = m => m.tipo === 'saida' && !m.transferencia;
     const stockEhCompra = m => m.tipo !== 'saida' && !m.transferencia;
     const stockConsumoDe = m => m.setor_consumo || STOCK_CONSUMO_SEM;
+    // Dia LOCAL (AAAA-MM-DD) de um lançamento. O Supabase devolve created_at em
+    // UTC ("2026-10-07T01:30:00+00:00"): cortar o texto jogaria o que foi
+    // lançado depois das 20h em Cuiabá (UTC−4) para o dia seguinte — e fora de
+    // qualquer janela que termina hoje. Toda comparação por dia/mês/ano usa isto.
+    const stockDia = iso => {
+      const d = new Date(iso);
+      if(isNaN(d)) return String(iso || '').slice(0, 10);
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    };
 
     const FALLBACK_PRODUCTS = [
       { id: 'p1', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, descricao: '', ativo: true },
@@ -6517,7 +6529,7 @@ ${clipPlayerPills(n)}
       const colabs = new Map(stockUsers.filter(u => u.email).map(u => [u.email.toLowerCase(), u.nome || u.email]));
       setorMovs.forEach(m => { if(m.usuario_email && !colabs.has(m.usuario_email.toLowerCase())) colabs.set(m.usuario_email.toLowerCase(), m.usuario_email); });
       fillSelect(waStockUserFilter, 'Colaborador', [...colabs].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).map(([value, label]) => ({ value, label })));
-      const anos = [...new Set(setorMovs.map(m => String(m.created_at).slice(0, 4)))].sort().reverse();
+      const anos = [...new Set(setorMovs.map(m => stockDia(m.created_at).slice(0, 4)))].sort().reverse();
       fillSelect(waStockYearFilter, 'Ano', anos.map(a => ({ value: a, label: a })));
     }
 
@@ -6580,8 +6592,8 @@ ${clipPlayerPills(n)}
         if(consumo && !(stockEhConsumo(m) && stockConsumoDe(m) === consumo)) return false;
         if(produto && m.produto_id !== produto) return false;
         if(colab && (m.usuario_email || '').toLowerCase() !== colab) return false;
-        if(ano && String(m.created_at).slice(0, 4) !== ano) return false;
-        if(mes && String(m.created_at).slice(5, 7) !== mes) return false;
+        if(ano && stockDia(m.created_at).slice(0, 4) !== ano) return false;
+        if(mes && stockDia(m.created_at).slice(5, 7) !== mes) return false;
         if(term){
           const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', m.nota_fiscal_nome || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
@@ -8414,7 +8426,7 @@ ${clipPlayerPills(n)}
       return stockEhCompra(m) || (stockEhConsumo(m) && stockConsumoDe(m) === f.nome);
     };
     const stkMovsEntre = (ini, fim) => stockMovements.filter(m => {
-      const d = String(m.created_at).slice(0, 10);
+      const d = stockDia(m.created_at);
       if(d < ini || d > fim || !stkProdOk(m.produto_id)) return false;
       return stkMovOkSetor(m);
     });
@@ -8522,7 +8534,7 @@ ${clipPlayerPills(n)}
         + `<optgroup label="Estoque central">${STOCK_SETORES.map(s => `<option value="c:${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`
         + `<optgroup label="Setor de consumo">${consumos.map(s => `<option value="s:${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`;
       if([...stkSetorEl.options].some(o => o.value === curSetor)) stkSetorEl.value = curSetor;
-      const anos = [...new Set(stockMovements.map(m => String(m.created_at).slice(0, 4)))].sort().reverse();
+      const anos = [...new Set(stockMovements.map(m => stockDia(m.created_at).slice(0, 4)))].sort().reverse();
       stkAnoEl.innerHTML = '<option value="">Ano</option>' + anos.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
       if(anos.includes(curAno)) stkAnoEl.value = curAno;
     }
@@ -8730,7 +8742,7 @@ ${clipPlayerPills(n)}
       // Entradas = compras; Saídas = consumo (transferência entre centrais não entra).
       stockMovements.forEach(m => {
         if(m.transferencia || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
-        const d = String(m.created_at).slice(0, 10);
+        const d = stockDia(m.created_at);
         if(d < janelaIni) return;
         const chave = semanal ? d : d.slice(0, 7);
         const i = idx.get(chave);
@@ -8755,7 +8767,7 @@ ${clipPlayerPills(n)}
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       stockMovements.forEach(m => {
         if(!stockEhCompra(m) || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
-        const i = idx.get(String(m.created_at).slice(0, 7));
+        const i = idx.get(stockDia(m.created_at).slice(0, 7));
         if(i === undefined) return;
         const p = byId.get(m.produto_id);
         const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
@@ -8776,7 +8788,7 @@ ${clipPlayerPills(n)}
       const porSetor = new Map();
       stockMovements.forEach(m => {
         if(!stockEhConsumo(m) || !stkMovOkSetor(m, true) || !stkProdOk(m.produto_id)) return;
-        const d = String(m.created_at).slice(0, 10);
+        const d = stockDia(m.created_at);
         if(janela && (d < janela.ini || d > janela.fim)) return;
         const p = byId.get(m.produto_id);
         const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
@@ -9003,7 +9015,7 @@ ${clipPlayerPills(n)}
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
         : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
-        : (stockProducts.length ? Promise.resolve() : loadStock());
+        : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
 
@@ -9053,7 +9065,7 @@ ${clipPlayerPills(n)}
       // é o total e só o consumo daquele setor estaria na lista — usa o total).
       const filtroSetor = stkFiltroSetor();
       const movsSaldo = filtroSetor && !filtroSetor.central
-        ? stockMovements.filter(m => { const d = String(m.created_at).slice(0, 10); return d >= range.ini && d <= range.fim && stkProdOk(m.produto_id); })
+        ? stockMovements.filter(m => { const d = stockDia(m.created_at); return d >= range.ini && d <= range.fim && stkProdOk(m.produto_id); })
         : movsPeriodo;
       const netPeriodo = movsSaldo.reduce((s, m) => s + (m.tipo === 'saida' ? -1 : 1) * (Number(m.quantidade) || 0), 0);
       const totalStockInicio = totalStockAtual - netPeriodo;
@@ -11998,13 +12010,14 @@ ${quadro}
     // Movimentações completas do período (o módulo carrega só as 500 mais recentes).
     async function reMovimentos(ini, fim){
       if(!stockProducts.length) await loadStock();
-      if(!supabaseReady) return stockMovements.filter(m => { const d = String(m.created_at).slice(0, 7); return d >= ini && d <= fim; });
-      const [a, m] = fim.split('-').map(Number);
-      const ate = new Date(Date.UTC(a, m, 1)).toISOString();
+      if(!supabaseReady) return stockMovements.filter(m => { const d = stockDia(m.created_at).slice(0, 7); return d >= ini && d <= fim; });
+      // Limites no horário LOCAL (meia-noite de Cuiabá), convertidos para UTC.
+      const [ai, mi] = ini.split('-').map(Number), [a, m] = fim.split('-').map(Number);
+      const de0 = new Date(ai, mi - 1, 1).toISOString(), ate = new Date(a, m, 1).toISOString();
       const out = [];
       for(let de = 0; ; de += 1000){
         const { data, error } = await supabaseClient.from('movimentacoes_estoque').select('*')
-          .gte('created_at', `${ini}-01T00:00:00`).lt('created_at', ate).order('created_at', { ascending: true }).range(de, de + 999);
+          .gte('created_at', de0).lt('created_at', ate).order('created_at', { ascending: true }).range(de, de + 999);
         if(error) throw new Error('Erro ao ler as movimentações do estoque: ' + error.message);
         out.push(...(data || []).map(x => Object.assign({}, x, { quantidade: Number(x.quantidade) || 0 })));
         if(!data || data.length < 1000) break;
@@ -12032,7 +12045,7 @@ ${quadro}
       stockBalances.forEach(mp => mp.forEach(v => { saldo += Number(v) || 0; }));
       const ativos = stockProducts.filter(p => p.ativo !== false);
       // valor gasto (entradas × preço de custo) por mês
-      const gastoMes = meses.map(mm => soma(ent.filter(m => String(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
+      const gastoMes = meses.map(mm => soma(ent.filter(m => stockDia(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
       const gastoTot = gastoMes.reduce((a, b) => a + b, 0), gastoMed = gastoTot / 6;
       const usado = m => m.quantidade * preco(m.produto_id);
       const usadoTot = soma(sai, usado), usadoTodos = soma(consumoTodos, usado);
@@ -12109,7 +12122,7 @@ ${quadro}
         ranking(`Valor consumido por setor · total ${reMoeda(usadoTot)}`, [...porSetor.entries()], usadoTot);
       } else {
         // ---- Valor consumido por mês pelo setor ----
-        const usadoMes = meses.map(mm => soma(sai.filter(m => String(m.created_at).slice(0, 7) === mm), usado));
+        const usadoMes = meses.map(mm => soma(sai.filter(m => stockDia(m.created_at).slice(0, 7) === mm), usado));
         colunas(`Valor consumido por mês · ${setor} · total ${reMoeda(usadoTot)}`, meses.map(relRot), usadoMes, varMes(usadoMes), 5);
         // ---- Produtos mais consumidos pelo setor (valor) ----
         const porProd = new Map();
