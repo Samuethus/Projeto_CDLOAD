@@ -4371,8 +4371,13 @@
       if(!f.response_count) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Este formulário ainda não recebeu respostas.</div></div>'; return; }
       if(!R) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Resumo deste formulário não disponível no retrato atual.</div></div>'; return; }
       const fechadas = R.perguntas.filter(q => q.f !== 'o'), abertas = R.perguntas.filter(q => q.f === 'o');
-      let k = 0;   // roscas alternam entre as colunas 2 e 3
-      P.innerHTML = fechadas.map(cardPergunta).join('').replace(/sm-col-rosca/g, () => (k++ % 2 ? 'sm-c3' : 'sm-c2')) + cardAbertas(abertas);
+      const cards = fechadas.map(cardPergunta).join('');
+      // Com gráfico de barras: barras na coluna 1 e roscas alternando entre as colunas 2 e 3.
+      // Sem nenhum gráfico de barras: as roscas seguem lado a lado, em sequência, ocupando as 3 colunas.
+      let k = 0;
+      P.innerHTML = (cards.includes('sm-col-barra')
+        ? cards.replace(/sm-col-rosca/g, () => (k++ % 2 ? 'sm-c3' : 'sm-c2'))
+        : cards.replace(/ sm-col-rosca/g, '')) + cardAbertas(abertas);
     }
     function renderIndividual(f, R){
       const perguntas = R ? R.perguntas : [];
