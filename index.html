@@ -6422,7 +6422,8 @@ ${clipPlayerPills(n)}
       if(!p.ativo) return 'inativo';
       const s = saldoOf(p.id, STOCK_SETOR_TODOS);
       if(s <= 0) return 'zerado';
-      if(p.estoque_minimo > 0 && s <= p.estoque_minimo) return 'baixo';
+      // Mínimo atingido (saldo = mínimo) já atende a gestão: só é "baixo" quando fica abaixo dele.
+      if(p.estoque_minimo > 0 && s < p.estoque_minimo) return 'baixo';
       return 'ok';
     }
     // Catálogo único: a lista de produtos não é mais filtrada por setor —
@@ -9114,7 +9115,7 @@ ${clipPlayerPills(n)}
       // Sem comparação temporal: situação atual frente à meta de 80% dos produtos com estoque adequado.
       const eficOk = eficiencia >= 0.8;
       const kEfic = cdKpiCard('percent', eficOk ? 'verde' : 'vermelho', 'Eficiência', stkPct(eficiencia),
-        { cls: eficOk ? 'up' : 'down', txt: `${qOk}/${ativos.length}` }, 'ok · meta 80%', 'Eficiência do armazém: produtos ativos com saldo acima do mínimo (meta: 80%)');
+        { cls: eficOk ? 'up' : 'down', txt: `${qOk}/${ativos.length}` }, 'ok · meta 80%', 'Eficiência do armazém: produtos ativos com saldo no mínimo ou acima dele (meta: 80%)');
       const kCadastrados = cdKpiCard('caixa', 'azul', 'Produtos ativos', stkNum(ativos.length),
         { cls: qAbaixo ? 'down' : 'up', txt: stkNum(qAbaixo) }, `abaixo do mínimo`, 'Produtos cadastrados e ativos no catálogo');
 
