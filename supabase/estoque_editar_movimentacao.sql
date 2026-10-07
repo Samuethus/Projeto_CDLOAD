@@ -11,8 +11,15 @@
 --     estoque central afetado, trava tipo/produto da origem e, nas
 --     transferências, só deixa mudar quantidade e observação;
 --   • cada ajuste grava quem e quando (editado_por / editado_em).
+--
+-- Depende das colunas do modelo "estoques centrais + setor de consumo"
+-- (setor_consumo, transferencia). Elas são criadas aqui também, caso
+-- migracao_estoque_centrais.sql ainda não tenha sido rodado — mas rode-o
+-- também, para ativar as regras e devolver às centrais o saldo antigo.
 -- =====================================================================
 
+alter table public.movimentacoes_estoque add column if not exists setor_consumo text;
+alter table public.movimentacoes_estoque add column if not exists transferencia boolean not null default false;
 alter table public.movimentacoes_estoque add column if not exists editado_em timestamptz;
 alter table public.movimentacoes_estoque add column if not exists editado_por text;
 
@@ -63,6 +70,10 @@ create trigger trg_movimentacoes_estoque_valida_ajuste
 drop policy if exists mov_update on public.movimentacoes_estoque;
 create policy mov_update on public.movimentacoes_estoque for update to authenticated
   using (public.cdl_admin()) with check (public.cdl_admin());
+
+-- A API (PostgREST) passa a enxergar as colunas novas na hora — sem isso
+-- aparece "Could not find the '...' column ... in the schema cache".
+notify pgrst, 'reload schema';
 
 -- Conferência: deve listar mov_update e mov_delete com cdl_admin().
 select policyname, cmd, qual from pg_policies

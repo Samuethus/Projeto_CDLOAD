@@ -296,4 +296,7 @@ alter table public.cadastro_de_produtos  enable row level security;
 alter table public.movimentacoes_estoque enable row level security;
 revoke all on public.cadastro_de_produtos, public.movimentacoes_estoque, public.vw_estoque_saldo from anon, authenticated;
 
+-- A API (PostgREST) passa a enxergar colunas novas na hora.
+notify pgrst, 'reload schema';
+
 -- Próximo passo obrigatório: supabase/seguranca_rls.sql

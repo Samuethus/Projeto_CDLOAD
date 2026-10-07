@@ -99,6 +99,9 @@ create index if not exists movimentacoes_estoque_consumo_idx
 
 commit;
 
+-- A API (PostgREST) passa a enxergar setor_consumo/transferencia na hora.
+notify pgrst, 'reload schema';
+
 -- Conferência: nenhum produto deve ter saldo fora das centrais.
 select p.nome, v.setor, v.saldo
   from public.vw_estoque_saldo v
