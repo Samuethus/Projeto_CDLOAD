@@ -296,6 +296,7 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [x] Clique no formulário abre o **dashboard do formulário** (cards do Dashboard › CAGED, sem os KPIs do topo): um card por pergunta (rosca para escolha única, barras para múltipla escolha, média + barras para notas, barras empilhadas para matriz) e a lista de perguntas abertas (só contagem).
 - [x] Switch **Painel / Resposta individual**. A tabela de respostas individuais já tem a estrutura (uma coluna por pergunta, colunas de dado pessoal marcadas e mascaradas), mas fica **vazia no retrato**: as respostas individuais têm nome, CPF, telefone e IP e não podem ir para o arquivo público. Elas entram com a sincronização ao vivo (preencher `SM_RESUMOS[id].respostas`).
 - [x] Resumos agregados dos 38 formulários com respostas em `assets/data/surveymonkey_resumos.js` (lidos com `get_response_summary` em 07/10/2026; somas conferidas).
+- [x] Atualizar o retrato: reler a lista (`search_surveys`) e o resumo (`get_response_summary`) só dos formulários que mudaram, gerar de novo `assets/data/surveymonkey_resumos.js` e **mudar `SM_RETRATO.versao`** no `index.html` (sem isso o navegador pode mostrar o resumo antigo por até 10 min, por causa do cache).
 - [ ] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout.
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.

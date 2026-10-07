@@ -4132,6 +4132,9 @@
   // O MCP não informa o nome das pastas: os nomes abaixo são provisórios, deduzidos dos formulários.
   const SM_RETRATO = {
     lido_em: '2026-10-07',
+    // Versão dos dados: mudar a cada atualização do retrato. Vai na URL do surveymonkey_resumos.js para o
+    // navegador não reaproveitar a cópia antiga do cache (o GitHub Pages manda guardar por até 10 min).
+    versao: '2026-10-07T15:28',
     pastas: {
       '2329856': 'Intenção de Consumo',
       '2329857': 'Inscrições',
@@ -4284,7 +4287,7 @@
       if(window.SM_RESUMOS) return Promise.resolve();
       return resumosProm || (resumosProm = new Promise((ok, falha) => {
         const sc = document.createElement('script');
-        sc.src = 'assets/data/surveymonkey_resumos.js';
+        sc.src = 'assets/data/surveymonkey_resumos.js?v=' + encodeURIComponent(SM_RETRATO.versao);
         sc.onload = ok;
         sc.onerror = () => { resumosProm = null; falha(new Error('surveymonkey_resumos.js')); };
         document.head.appendChild(sc);
