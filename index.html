@@ -1349,10 +1349,16 @@
   .cd-card-body > *{flex:1 1 auto;}
   .cd-card-body > .stk-vazio{flex:0 0 auto;}
   .cd-head-acoes{display:flex;align-items:center;gap:12px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}
-  /* Fluxo de estoque (Estoque): com as duas listas (Valor/Produtos e Semanal/Mensal) o título não encolhe;
-     legenda e listas quebram de linha à direita quando falta espaço. */
-  .cd-card-head:has(#stkFluxoMedida) .cd-card-tits{flex:0 0 auto;}
-  .cd-card-head:has(#stkFluxoMedida) .cd-head-acoes{flex:1 1 0;min-width:0;gap:8px 10px;}
+  /* Fluxo de estoque (Estoque): Valor (R$), Período e legenda sempre numa única linha, compactos.
+     O título nunca é cortado: se não couber tudo, a linha de controles desce inteira para baixo do título. */
+  .cd-card-head:has(#stkFluxoMedida){flex-wrap:wrap;row-gap:8px;}
+  .cd-card-head:has(#stkFluxoMedida) .cd-card-tits{flex:1 0 auto;max-width:100%;}
+  .cd-card-head:has(#stkFluxoMedida) .cd-sub{width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} /* largura vem só do título */
+  .cd-card-head:has(#stkFluxoMedida) .cd-head-acoes{flex-wrap:nowrap;gap:8px;}
+  .cd-card-head:has(#stkFluxoMedida) .stk-chart-filtro{appearance:none;-webkit-appearance:none;padding:4px 18px 4px 7px;font-size:11.5px;
+    background:var(--stk-white) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="%23777" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 6px center;background-size:10px;}
+  .cd-card-head:has(#stkFluxoMedida) .cd-legenda{gap:8px;font-size:11.5px;white-space:nowrap;padding-top:0;}
+  .cd-card-head:has(#stkFluxoMedida) .cd-legenda span{gap:5px;}
   .cd-rank-un{font-weight:400;color:var(--cd-muted);font-size:12px;}
   .cd-dest-ic.amarelo{background:#FEF3C7;color:#D97706;}
   .cd-dest .stk-badge{flex:0 0 auto;}
@@ -1380,6 +1386,7 @@
   .cd-rosca{position:relative;flex:0 0 auto;margin:0 auto;}
   .cd-rosca-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
   .cd-rosca-centro strong{font-size:20px;font-weight:700;color:var(--cd-texto);line-height:1.1;}
+  .cd-rosca-centro.moeda strong{font-size:14.5px;letter-spacing:-.2px;} /* valor em R$ cabe no miolo da rosca */
   .cd-rosca-centro span{font-size:10.5px;color:var(--cd-muted);}
   .cd-rosca-legenda{list-style:none;margin:0 auto;padding:0;display:flex;flex-direction:column;gap:12px;flex:0 0 130px;}
   .cd-rosca-legenda li{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--cd-texto);}
@@ -8351,6 +8358,10 @@ ${clipPlayerPills(n)}
       const mix = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
       return `#${mix(ra, rb)}${mix(ga, gb)}${mix(ba, bb)}`;
     };
+    // Barras de valor por setor: Entradas em tons de verde, Saídas em tons de vermelho
+    // (as mesmas cores dos KPIs); maior valor = tom mais forte.
+    const stkCorEntrada = (i, n) => stkMisturarCor('#5DB14E', '#CBE8C4', n > 1 ? i / (n - 1) : 0);
+    const stkCorSaida = (i, n, nome) => nome === STOCK_CONSUMO_SEM ? '#A5B1C2' : stkMisturarCor('#EF4444', '#FBC9C9', n > 1 ? i / (n - 1) : 0);
     // Cor pela posição no ranking (maior consumo = mais escuro); "Não informado"/"Demais" em cinza.
     const stkSetorCor = (i, n, nome) => {
       if(nome === STOCK_CONSUMO_SEM || nome === 'Demais') return '#A5B1C2';
@@ -8773,26 +8784,25 @@ ${clipPlayerPills(n)}
 
     // Valor gasto com compras (entradas) por mês, últimos 6 meses:
     // soma de preço de custo × quantidade de cada entrada/origem no mês.
-    function stkDadosValorCompras(){
-      const hoje = stkHojeIso();
-      const categorias = [], chaves = [];
-      for(let i = 5; i >= 0; i--){
-        const d = new Date(hoje + 'T12:00:00'); d.setMonth(d.getMonth() - i);
-        chaves.push(d.toISOString().slice(0, 7));
-        categorias.push(d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''));
-      }
-      const valores = chaves.map(() => 0);
-      const idx = new Map(chaves.map((k, i) => [k, i]));
+    // Valor (R$) das compras por setor de entrada (central que recebeu: Escritório/Almoxarifado).
+    // Mesma janela do consumo por setor: Mês/Ano quando escolhidos; sem eles, todo o histórico.
+    // Respeita o filtro de central e a seleção de produtos.
+    function stkDadosComprasPorSetor(){
+      const janela = (stkMesEl.value || stkAnoEl.value) ? stkRange() : null;
       const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const porSetor = new Map();
       stockMovements.forEach(m => {
         if(!stockEhCompra(m) || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
-        const i = idx.get(stockDia(m.created_at).slice(0, 7));
-        if(i === undefined) return;
+        const d = stockDia(m.created_at);
+        if(janela && (d < janela.ini || d > janela.fim)) return;
         const p = byId.get(m.produto_id);
         const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
-        valores[i] += preco * (Number(m.quantidade) || 0);
+        const k = m.setor || 'Não informado', q = Number(m.quantidade) || 0;
+        const v = porSetor.get(k) || { nome: k, valor: 0, compras: 0 };
+        v.valor += preco * q; v.compras++;
+        porSetor.set(k, v);
       });
-      return { categorias, valores };
+      return { rotulo: janela ? janela.rotulo : 'todo o histórico', porValor: [...porSetor.values()].sort((a, b) => b.valor - a.valor) };
     }
 
     // Consumo por setor de consumo (quantidade e custo = preço × quantidade
@@ -9112,39 +9122,40 @@ ${clipPlayerPills(n)}
         { nome: 'Entradas', cor: CD_COR.azul, valores: F.entradas },
         { nome: 'Saídas', cor: CD_COR.azulClaro, valores: F.saidas }
       ];
-      const acoesFluxo = `<div class="cd-head-acoes"><div class="cd-legenda">${seriesFluxo.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>
+      const acoesFluxo = `<div class="cd-head-acoes">
           <select class="stk-chart-filtro" id="stkFluxoMedida" title="Tipo de valor do gráfico">
             <option value="valor" ${fluxoValor ? 'selected' : ''}>Valor (R$)</option>
             <option value="produtos" ${fluxoValor ? '' : 'selected'}>Produtos</option>
           </select>
-          <select class="stk-chart-filtro" id="stkFluxoFiltro">
+          <select class="stk-chart-filtro" id="stkFluxoFiltro" title="Período do gráfico">
             <option value="semanal" ${stkFluxoModo === 'semanal' ? 'selected' : ''}>Semanal</option>
             <option value="mensal" ${stkFluxoModo === 'mensal' ? 'selected' : ''}>Mensal</option>
-          </select></div>`;
+          </select>
+          <div class="cd-legenda">${seriesFluxo.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div></div>`;
       const wFluxo = cdCard('Fluxo de estoque', `${stkFluxoModo === 'mensal' ? 'Últimos 6 meses' : 'Últimos 7 dias'} · ${fluxoValor ? 'valor em R$ (preço de custo)' : 'unidades'}`, '<div id="stkFluxoGraf"></div>', acoesFluxo);
 
-      // ---- Valor gasto com compras (barras por mês) ----
-      const C = stkDadosValorCompras();
-      const totalCompras = C.valores.reduce((s, v) => s + v, 0);
-      const wCompras = cdCard('Valor gasto com compras', `Últimos 6 meses · total ${stkMoedaCompacta(totalCompras)}`,
-        cdBarras(C.categorias.map((mes, i) => ({ nome: mes.charAt(0).toUpperCase() + mes.slice(1), valor: C.valores[i], rotulo: stkMoedaCompacta(C.valores[i]), dica: stkMoeda(C.valores[i]), cor: CD_COR.azul })),
-          'Valor gasto com compras', 'Nenhuma compra registrada.'));
+      // ---- Valor (R$) por setor - Entradas (compras consolidadas por setor de entrada) ----
+      const CE = stkDadosComprasPorSetor();
+      const totalCompras = CE.porValor.reduce((s, x) => s + x.valor, 0);
+      const wCompras = cdCard('Valor (R$) por setor - Entradas', `${CE.rotulo.charAt(0).toUpperCase() + CE.rotulo.slice(1)} · total ${stkMoedaCompacta(totalCompras)}`,
+        cdBarras(CE.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor),
+          dica: `${stkMoeda(s.valor)} · ${stkPct(totalCompras ? s.valor / totalCompras : 0, 1)} · ${stkNum(s.compras)} compra${s.compras === 1 ? '' : 's'}`, cor: stkCorEntrada(i, CE.porValor.length) })),
+          'Valor (R$) por setor - Entradas', 'Nenhuma compra registrada.'));
 
-      // ---- Consumo por setor (rosca: quantidade retirada por setor de consumo; top 5 + Demais) ----
+      // ---- Consumo por setor (rosca: valor R$ das saídas por setor de consumo; top 5 + Demais) ----
       const CS = stkDadosConsumoPorSetor();
-      const totalConsumo = CS.porQtd.reduce((s, x) => s + x.qtd, 0);
-      const topConsumo = CS.porQtd.length > 6 ? CS.porQtd.slice(0, 5).concat([{ nome: 'Demais', qtd: CS.porQtd.slice(5).reduce((s, x) => s + x.qtd, 0) }]) : CS.porQtd;
-      const setores = topConsumo.map((s, i) => ({ nome: s.nome, qtd: s.qtd, cor: stkSetorCor(i, topConsumo.length, s.nome) }));
-      const wDistribuicao = cdCard('Consumo por setor', `Unidades retiradas · ${CS.rotulo}`, setores.length ? `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(totalConsumo)}</strong><span>unidade${totalConsumo === 1 ? '' : 's'}</span></div></div>
-          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(stkQtd(s.qtd))} un."><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalConsumo ? s.qtd / totalConsumo : 0)}</strong></li>`).join('')}</ul>
+      const totalValorConsumo = CS.porValor.reduce((s, x) => s + x.valor, 0);
+      const topConsumo = CS.porValor.length > 6 ? CS.porValor.slice(0, 5).concat([{ nome: 'Demais', valor: CS.porValor.slice(5).reduce((s, x) => s + x.valor, 0) }]) : CS.porValor;
+      const setores = topConsumo.map((s, i) => ({ nome: s.nome, valor: s.valor, cor: stkSetorCor(i, topConsumo.length, s.nome) }));
+      const wDistribuicao = cdCard('Consumo por setor', `Valor (R$) das saídas · ${CS.rotulo}`, setores.length ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro moeda"><strong>${esc(stkMoedaCompacta(totalValorConsumo))}</strong><span>em saídas</span></div></div>
+          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(stkMoeda(s.valor))}"><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0)}</strong></li>`).join('')}</ul>
         </div>` : '<div class="stk-vazio">Nenhum consumo registrado.</div>');
 
-      // ---- Valor consumido por setor (custo das saídas por setor de consumo) ----
-      const totalValorConsumo = CS.porValor.reduce((s, x) => s + x.valor, 0);
-      const wValorSaida = cdCard('Valor consumido por setor', `${CS.rotulo.charAt(0).toUpperCase() + CS.rotulo.slice(1)} · total ${stkMoedaCompacta(totalValorConsumo)}`,
-        cdBarras(CS.porValor.map(s => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), dica: `${stkMoeda(s.valor)} · ${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0, 1)} · ${stkNum(s.retiradas)} retirada${s.retiradas === 1 ? '' : 's'}`, cor: s.nome === STOCK_CONSUMO_SEM ? CD_COR.cinza : CD_COR.azul })),
-          'Valor consumido por setor', 'Nenhum consumo registrado.'));
+      // ---- Valor (R$) por setor - Saídas (custo das saídas por setor de consumo) ----
+      const wValorSaida = cdCard('Valor (R$) por setor - Saídas', `${CS.rotulo.charAt(0).toUpperCase() + CS.rotulo.slice(1)} · total ${stkMoedaCompacta(totalValorConsumo)}`,
+        cdBarras(CS.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), dica: `${stkMoeda(s.valor)} · ${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0, 1)} · ${stkNum(s.retiradas)} retirada${s.retiradas === 1 ? '' : 's'}`, cor: stkCorSaida(i, CS.porValor.length, s.nome) })),
+          'Valor (R$) por setor - Saídas', 'Nenhum consumo registrado.'));
 
       // ---- Maiores saídas do período (ranking de produtos consumidos) ----
       const prodById = new Map(stockProducts.map(p => [p.id, p]));
@@ -9216,7 +9227,7 @@ ${clipPlayerPills(n)}
         + `<div class="cd-row cd-row-a">${wFluxo}${wTopSaidas}${wDistribuicao}</div>`
         + `<div class="cd-row cd-row-b">${wCompras}${wValorSaida}${wAlertas}</div></div>`
         + `<div class="stk-grid cd-extra">${wTabela}</div>`;
-      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: stkQtd(s.qtd) + ' un.' })), 'Consumo por setor');
+      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.valor, rotuloValor: stkMoeda(s.valor) })), 'Consumo por setor (R$)');
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200), fluxoValor ? stkMoeda : null);
       cdAjustarListas();
