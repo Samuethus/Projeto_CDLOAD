@@ -49,6 +49,17 @@ alter table public.movimentacoes_estoque add column if not exists transferencia 
 alter table public.movimentacoes_estoque drop constraint if exists movimentacoes_estoque_setor_valido;
 alter table public.movimentacoes_estoque drop constraint if exists movimentacoes_estoque_consumo_valido;
 
+-- O gatilho de ajuste (estoque_editar_movimentacao.sql) barra marcar uma
+-- linha como transferência — é exatamente o que o passo 2 faz. Fica
+-- desligado só durante esta migração e é religado no passo 4.
+do $$
+begin
+  if exists (select 1 from pg_trigger where tgname = 'trg_movimentacoes_estoque_valida_ajuste'
+              and tgrelid = 'public.movimentacoes_estoque'::regclass) then
+    alter table public.movimentacoes_estoque disable trigger trg_movimentacoes_estoque_valida_ajuste;
+  end if;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- 2. Transferências antigas (o app gravava "... Transferência X → Y").
 -- ---------------------------------------------------------------------
@@ -96,6 +107,14 @@ alter table public.movimentacoes_estoque
 
 create index if not exists movimentacoes_estoque_consumo_idx
   on public.movimentacoes_estoque (setor_consumo, created_at desc) where tipo = 'saida';
+
+do $$
+begin
+  if exists (select 1 from pg_trigger where tgname = 'trg_movimentacoes_estoque_valida_ajuste'
+              and tgrelid = 'public.movimentacoes_estoque'::regclass) then
+    alter table public.movimentacoes_estoque enable trigger trg_movimentacoes_estoque_valida_ajuste;
+  end if;
+end $$;
 
 commit;
 
