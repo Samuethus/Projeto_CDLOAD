@@ -4573,7 +4573,18 @@
       `;
     }
 
+    lembrarSecao(pageId);
     document.dispatchEvent(new CustomEvent('cdload:pagechange', { detail: { page: pageId } }));
+  }
+
+  // Última seção aberta, por usuário, para reabrir a mesma ao recarregar a página (em vez da Home).
+  const chaveSecao = () => 'cdload-secao:' + ((currentUser && currentUser.email) || '').toLowerCase();
+  function lembrarSecao(pageId){
+    if(!currentUser) return;
+    try { localStorage.setItem(chaveSecao(), pageId); } catch(e){ /* sem storage: volta para a Home ao recarregar */ }
+  }
+  function secaoLembrada(){
+    try { return localStorage.getItem(chaveSecao()); } catch(e){ return null; }
   }
 
   navItems.forEach(item => {
@@ -4582,10 +4593,13 @@
 
   window.goTo = goTo;
 
-  // Página de entrada após o login: a Home, se liberada; senão a primeira
-  // seção permitida na ordem do menu. Sem nenhuma seção, nada é exibido.
+  // Página de entrada após o login: a última seção aberta por este usuário (se ainda existir e
+  // estiver liberada); senão a Home, se liberada; senão a primeira seção permitida na ordem do menu.
+  // Sem nenhuma seção, nada é exibido.
   function goToInicial(){
     const secoes = (currentUser && currentUser.secoes) || [];
+    const ultima = secaoLembrada();
+    if(ultima && secoes.includes(ultima) && document.querySelector('.nav-item[data-page="' + ultima + '"]')) return goTo(ultima);
     if(secoes.includes('home')) return goTo('home');
     const primeira = [...navItems].find(n => secoes.includes(n.dataset.page));
     if(primeira) return goTo(primeira.dataset.page);
