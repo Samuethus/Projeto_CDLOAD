@@ -26,8 +26,11 @@
 --      checagem de palavra-chave. Portal: "Site Oficial".
 --   8. Busca ampliada no Google: janelas de 1/7/30 dias a cada 30 min +
 --      varredura diária mês a mês do ano.
---   9. Domínios bloqueados (clipping_dominio_bloqueado): pnbonline.com.br
---      nunca é gravado nem acessado.
+--   9. Domínios bloqueados (segurança): cadastro único na tabela
+--      `clipping_dominios_bloqueados` (domínio, motivo, data). Nada desses
+--      sites é gravado, acessado ou exibido. Hoje: pnbonline.com.br e
+--      jknoticias.com. Para bloquear outro, rode
+--      supabase/clipping_bloquear_dominios.sql com o novo domínio.
 --
 --  10. Escopo atual (substitui a regra de citação no texto): TODAS as
 --      notícias do Google Notícias sobre dois atores, para comparação no
@@ -567,13 +570,33 @@ $$;
 -- 3d. Utilitários de coleta: bloqueio, links, codificação
 -- ---------------------------------------------------------------------
 
--- Domínios que NUNCA são gravados nem acessados (segurança: alerta de antivírus).
+-- Domínios que NUNCA são gravados, acessados nem exibidos (segurança).
+-- Cadastro único: cada bloqueio manual fica registrado aqui com o motivo.
+-- Vale também para subdomínios (www., m., ...). Só as funções de coleta
+-- leem a tabela (RLS sem policies; nada exposto à API).
+create table if not exists public.clipping_dominios_bloqueados (
+  dominio       text primary key check (dominio = lower(btrim(dominio)) and dominio !~ '^(https?://|www\.)'),
+  motivo        text not null,
+  bloqueado_em  date not null default current_date
+);
+alter table public.clipping_dominios_bloqueados enable row level security;
+revoke all on public.clipping_dominios_bloqueados from anon, authenticated;
+
+insert into public.clipping_dominios_bloqueados (dominio, motivo, bloqueado_em) values
+  ('pnbonline.com.br', 'Segurança: alerta do antivírus ao acessar o portal', date '2026-09-01'),
+  ('jknoticias.com',   'Segurança: bloqueio manual solicitado pela equipe',  date '2026-10-07')
+on conflict (dominio) do nothing;
+
 create or replace function public.clipping_dominio_bloqueado(url_ou_dominio text)
 returns boolean
-language sql immutable
+language sql stable security definer
+set search_path = public
 as $$
-  select coalesce(public.clipping_dominio(url_ou_dominio), lower(btrim(url_ou_dominio)))
-         ~ '(^|\.)(pnbonline\.com\.br)$'
+  select exists (
+    select 1 from public.clipping_dominios_bloqueados b
+     where coalesce(public.clipping_dominio(url_ou_dominio), lower(btrim(url_ou_dominio))) = b.dominio
+        or coalesce(public.clipping_dominio(url_ou_dominio), lower(btrim(url_ou_dominio))) like '%.' || b.dominio
+  )
 $$;
 
 -- Chave do endereço: sem http(s), www, parâmetros, âncora e barra final.
@@ -1267,7 +1290,8 @@ update public.clipping_news set fonte = 'Site Oficial'
 update public.clipping_news set link_chave = public.clipping_link_chave(link_original)
  where link_chave is null and link_original is not null;
 
--- PNB Online: tudo o que já foi gravado sai do app e perde os links.
+-- Domínios bloqueados (clipping_dominios_bloqueados): tudo o que já foi
+-- gravado deles sai do app e perde os links.
 update public.clipping_news
    set verificacao = 'bloqueada', verificada_em = now(), link = null, link_original = null, imagem_url = null
  where (public.clipping_dominio_bloqueado(portal_dominio)

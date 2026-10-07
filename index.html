@@ -5775,12 +5775,18 @@
       return (n.players || []).map(p => `<span class="wa-clip-pill wa-clip-pill-player" title="${esc(p)}"><i style="background:${clipPlayerCor(p)}"></i>${esc(CLIP_PLAYER_ROTULO_CURTO[p] || p)}</span>`).join('');
     }
 
-    // Portais bloqueados (alerta de segurança do antivírus): nunca exibidos
-    // nem linkados. O banco já os descarta; aqui é uma segunda barreira.
-    const CLIP_DOMINIOS_BLOQUEADOS = ['pnbonline.com.br'];
+    // Sites bloqueados (medida de segurança): nunca exibidos nem linkados.
+    // O banco já os descarta (cadastro único em clipping_dominios_bloqueados —
+    // supabase/clipping_bloquear_dominios.sql); aqui é uma segunda barreira.
+    // Mantenha esta lista igual à do banco:
+    //   pnbonline.com.br · 01/09/2026 · alerta do antivírus ao acessar o portal
+    //   jknoticias.com   · 07/10/2026 · bloqueio manual solicitado pela equipe
+    const CLIP_DOMINIOS_BLOQUEADOS = ['pnbonline.com.br', 'jknoticias.com'];
+    // Aceita URL completa ou só o domínio (ex.: portal_dominio "www.site.com").
     function clipLinkBloqueado(url){
-      const m = /^https?:\/\/([^/:?#]+)/i.exec(url || '');
-      const host = m ? m[1].toLowerCase() : '';
+      const s = String(url || '').trim().toLowerCase();
+      const m = /^https?:\/\/([^/:?#]+)/.exec(s);
+      const host = m ? m[1] : (/^[a-z0-9.-]+\.[a-z]{2,}$/.test(s) ? s : '');
       return !!host && CLIP_DOMINIOS_BLOQUEADOS.some(d => host === d || host.endsWith('.' + d));
     }
 
@@ -5981,7 +5987,7 @@ ${clipPlayerPills(n)}
       }
       const { data, error } = await supabaseClient
         .from('clipping_news')
-        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,players,portal:clipping_portais(nome,url)')
+        .select('id,titulo,resumo,fonte,data_publicacao,categoria,canal,sentimento,origem,link,publicado_em,link_original,imagem_url,players,portal_dominio,portal:clipping_portais(nome,url)')
         .eq('oculta', false)
         // Tudo o que foi coletado aparece, menos as repetidas (duplicada),
         // os domínios bloqueados e o que saiu do escopo (Bing).
@@ -5998,7 +6004,7 @@ ${clipPlayerPills(n)}
         return;
       }
 
-      clippingNews = clipSemDataFutura((data || []).filter(row => !clipLinkBloqueado(row.link) && !clipLinkBloqueado(row.link_original) && !clipLinkBloqueado(row.portal && row.portal.url)).map(row => ({
+      clippingNews = clipSemDataFutura((data || []).filter(row => ![row.link, row.link_original, row.portal && row.portal.url, row.portal_dominio, row.fonte].some(clipLinkBloqueado)).map(row => ({
         id: row.id,
         titulo: row.titulo,
         resumo: row.resumo,
