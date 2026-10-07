@@ -1389,8 +1389,10 @@
   .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   /* Tabelas sem quebra de linha em nenhuma célula: rolam na horizontal quando não cabem. */
   .sm-tabela th, .sm-tabela td{white-space:nowrap;}
-  .sm-tabela th{position:sticky;top:0;z-index:1;}
-  #smLista .wa-table-wrap{max-height:calc(100vh - 330px);min-height:240px;overflow:auto;}
+  .sm-tabela-ind th{position:sticky;top:0;z-index:1;}
+  /* Lista de formulários integrada à página: sem rolagem própria (só a da seção); o título longo vira reticências. */
+  #smLista .wa-table-wrap{overflow:visible;}
+  #smLista .sm-tabela td.wa-td-name{width:45%;max-width:0;overflow:hidden;text-overflow:ellipsis;}
   .sm-tabela tbody tr.sm-linha{cursor:pointer;}
   .sm-tabela tbody tr.sm-linha:focus-visible{outline:2px solid var(--wa-primary);outline-offset:-2px;}
   .sm-tabela .wa-td-num{font-weight:600;}
@@ -1406,21 +1408,30 @@
   .sm-ind-vazio{padding:36px 20px;text-align:center;color:#94a3b8;font-size:13px;}
   @media (max-width:1200px){ .sm-painel{grid-template-columns:repeat(2,minmax(0,1fr));} }
   @media (max-width:760px){ .sm-painel{grid-template-columns:1fr;} }
-  .sm-painel > .sm-span{grid-column:1 / -1;}
-  .sm-painel .cd-card{min-height:260px;}
+  /* Todos os cards com o mesmo tamanho (o do gráfico de barras com 10 linhas). Barras sempre na coluna 1;
+     roscas nas colunas 2 e 3 (alternadas pelo JS). */
+  .sm-painel .cd-card{height:440px;min-height:0;}
+  .sm-painel > .sm-col-barra{grid-column:1;}
+  .sm-painel > .sm-c2{grid-column:2;}
+  .sm-painel > .sm-c3{grid-column:3;}
+  @media (max-width:1200px){ .sm-painel > .sm-c3{grid-column:2;} }
+  @media (max-width:760px){ .sm-painel > .cd-card{grid-column:auto;height:auto;min-height:260px;} }
+  .sm-painel > .sm-span{grid-column:1 / -1;height:auto;min-height:160px;}
   .sm-painel .cd-card-body{justify-content:flex-start;gap:12px;}
   .sm-painel .cd-card-body > *{flex:0 0 auto;}
   .sm-painel .cd-rank li{flex:0 0 auto;}
-  .sm-painel .cd-rosca-wrap{flex:1 1 auto;}
+  .sm-painel .cd-rosca-wrap{flex:1 1 auto;flex-direction:column;justify-content:center;align-items:center;gap:16px;}
   .sm-painel .cd-card-head h3{font-size:14.5px;}
-  .sm-painel .cd-barras{justify-content:flex-start;gap:9px;}
-  .sm-painel .cd-barra{flex:0 0 auto;min-height:24px;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) 58px;}
+  .sm-painel .cd-barras{justify-content:flex-start;gap:8px;}
+  .sm-painel .cd-barra{flex:0 0 auto;min-height:22px;max-height:22px;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) 58px;}
   .sm-painel .cd-barra-val small{color:var(--cd-muted);margin-left:4px;}
-  .sm-media{font-size:30px;font-weight:700;color:var(--cd-texto);line-height:1.1;letter-spacing:-.01em;}
-  .sm-media span{font-size:13px;font-weight:500;color:var(--cd-muted);margin-left:6px;}
+  .sm-media{font-size:24px;font-weight:700;color:var(--cd-texto);line-height:1;letter-spacing:-.01em;white-space:nowrap;}
+  .sm-media span{font-size:12px;font-weight:500;color:var(--cd-muted);margin-left:5px;}
   .sm-rosca-svg{display:block;}
-  .sm-painel .cd-rosca-legenda{flex:1 1 auto;max-width:60%;gap:9px;}
-  .sm-painel .cd-rosca-legenda strong{margin-left:6px;}
+  .sm-painel .cd-rosca-legenda{flex:0 0 auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 16px;max-width:100%;margin:0;}
+  .sm-painel .cd-rosca-legenda li{max-width:100%;}
+  .sm-painel .cd-rosca-legenda span{flex:0 1 auto;}
+  .sm-painel .cd-rosca-legenda strong{margin-left:2px;}
   /* Matriz: uma barra 100% empilhada por linha + legenda das opções */
   .sm-matriz{display:flex;flex-direction:column;gap:12px;}
   .sm-matriz-linha{display:grid;grid-template-columns:minmax(0,180px) 1fr 52px;align-items:center;gap:12px;font-size:13px;color:var(--cd-texto);}
@@ -1428,7 +1439,7 @@
   .sm-matriz-linha > b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;}
   .sm-pilha{display:flex;height:14px;border-radius:9999px;overflow:hidden;background:var(--cd-trilho);}
   .sm-pilha i{display:block;height:100%;}
-  .sm-matriz .cd-legenda{flex-wrap:wrap;row-gap:6px;margin-top:4px;}
+  .sm-matriz .cd-legenda{flex-wrap:wrap;justify-content:center;row-gap:6px;margin-top:4px;}
   .sm-cad-ic{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border-radius:6px;padding:2px 7px;margin-left:8px;}
   .sm-cad-ic svg{width:11px;height:11px;stroke-width:2.4;}
   .sm-aviso{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--wa-text-muted);min-width:0;}
@@ -4239,7 +4250,7 @@
       el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas`;
       el('smTabela').innerHTML = linhas.length ? linhas.map(f => `
           <tr class="sm-linha" data-id="${f.id}" tabindex="0" title="Abrir o dashboard do formulário">
-            <td class="wa-td-name">${esc(f.title)}</td>
+            <td class="wa-td-name" title="${esc(f.title)}">${esc(f.title)}</td>
             <td>${esc(pastaNome(f.folder_id))}</td>
             <td><span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span></td>
             <td class="wa-td-num">${num(f.response_count)}</td>
@@ -4270,10 +4281,17 @@
       }));
     }
 
-    const card = (titulo, sub, corpo, extra) => `<div class="cd-card${extra ? ' ' + extra : ''}">
-        <div class="cd-card-head"><div class="cd-card-tits"><h3 title="${esc(titulo)}">${esc(titulo)}</h3><div class="cd-sub">${sub}</div></div></div>
+    const card = (titulo, sub, corpo, extra, acoes) => `<div class="cd-card${extra ? ' ' + extra : ''}">
+        <div class="cd-card-head"><div class="cd-card-tits"><h3 title="${esc(titulo)}">${esc(titulo)}</h3><div class="cd-sub">${sub}</div></div>${acoes ? `<div class="cd-head-acoes">${acoes}</div>` : ''}</div>
         <div class="cd-card-body">${corpo}</div></div>`;
     const subResp = q => `${num(q.a)} resposta${q.a === 1 ? '' : 's'}${q.k ? ` · ${num(q.k)} pulada${q.k === 1 ? '' : 's'}` : ''}`;
+    // Barras horizontais: no máximo 10 linhas — as 9 maiores + "Outros" (soma do restante, incluindo a opção "Outro").
+    function topDez(itens){
+      if(itens.length <= 10) return itens;
+      const ehOutro = n => /^outr[oa]s?(?![a-zà-ú])/i.test(n.trim());
+      const top = [...itens].filter(c => !ehOutro(c[0])).sort((a, b) => b[1] - a[1]).slice(0, 9);
+      return top.concat([['Outros', itens.filter(c => !top.includes(c)).reduce((t, c) => t + c[1], 0)]]);
+    }
     const barras = (itens, total, cor) => `<div class="cd-barras">${itens.map(([nome, v], i) => `
         <div class="cd-barra" title="${esc(nome)}: ${num(v)} (${pct(v, total)})">
           <div class="cd-barra-rot"><span>${esc(nome)}</span></div>
@@ -4308,19 +4326,22 @@
               <b>${media != null ? media.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : pct(top[1], t)}</b></div>`;
           }).join('')}
           <div class="cd-legenda">${opcoes.map((o, i) => `<span><i style="background:${CORES[i % CORES.length]}"></i>${esc(o)}</span>`).join('')}</div></div>`;
-        return card(q.t, subResp(q) + (notas ? ' · nota média por item' : ' · % da opção mais escolhida'), corpo, 'sm-span');
+        return card(q.t, subResp(q) + (notas ? ' · nota média por item' : ' · % da opção mais escolhida'), corpo, 'sm-col-barra');
       }
       const itens = q.c, total = q.f === 'm' ? q.a : itens.reduce((s, c) => s + c[1], 0);
-      if(!q.a) return card(q.t, subResp(q), '<div class="stk-vazio">Ninguém respondeu esta pergunta.</div>');
+      // Barras (coluna 1): múltipla escolha, nota e escolha única com mais de 6 opções. Rosca (colunas 2 e 3): o resto.
+      const ehBarra = q.f === 'm' || q.f === 'r' || itens.length > 6;
+      const pos = ehBarra ? 'sm-col-barra' : 'sm-col-rosca';
+      if(!q.a) return card(q.t, subResp(q), '<div class="stk-vazio">Ninguém respondeu esta pergunta.</div>', pos);
       if(q.f === 'r'){
         const media = itens.reduce((s, c) => s + Number(c[0]) * c[1], 0) / total;
-        return card(q.t, subResp(q), `<div class="sm-media">${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}<span>nota média (de ${itens[itens.length - 1][0]})</span></div>`
-          + barras(itens.map(c => ['Nota ' + c[0], c[1]]), total, CORES[0]));
+        return card(q.t, subResp(q) + ` · nota de ${itens[0][0]} a ${itens[itens.length - 1][0]}`, barras(itens.map(c => ['Nota ' + c[0], c[1]]), total, CORES[0]), pos,
+          `<div class="sm-media" title="Nota média">${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}<span>média</span></div>`);
       }
-      if(q.f === 's' && itens.length <= 6) return card(q.t, subResp(q), rosca(itens, total));
+      if(!ehBarra) return card(q.t, subResp(q), rosca(itens, total), pos);
       // Múltipla escolha: % sobre quem respondeu (a soma passa de 100%), da mais para a menos escolhida.
-      const lista = q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens;
-      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : ''), barras(lista, total));
+      const lista = topDez(q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens);
+      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : '') + (lista.length < itens.length ? ' · top 9 + Outros' : ''), barras(lista, total), pos);
     }
     function cardAbertas(abertas){
       if(!abertas.length) return '';
@@ -4334,7 +4355,8 @@
       if(!f.response_count) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Este formulário ainda não recebeu respostas.</div></div>'; return; }
       if(!R) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Resumo deste formulário não disponível no retrato atual.</div></div>'; return; }
       const fechadas = R.perguntas.filter(q => q.f !== 'o'), abertas = R.perguntas.filter(q => q.f === 'o');
-      P.innerHTML = fechadas.map(cardPergunta).join('') + cardAbertas(abertas);
+      let k = 0;   // roscas alternam entre as colunas 2 e 3
+      P.innerHTML = fechadas.map(cardPergunta).join('').replace(/sm-col-rosca/g, () => (k++ % 2 ? 'sm-c3' : 'sm-c2')) + cardAbertas(abertas);
     }
     function renderIndividual(f, R){
       const perguntas = R ? R.perguntas : [];
