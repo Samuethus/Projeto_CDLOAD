@@ -1349,6 +1349,10 @@
   .cd-card-body > *{flex:1 1 auto;}
   .cd-card-body > .stk-vazio{flex:0 0 auto;}
   .cd-head-acoes{display:flex;align-items:center;gap:12px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}
+  /* Fluxo de estoque (Estoque): com as duas listas (Valor/Produtos e Semanal/Mensal) o título não encolhe;
+     legenda e listas quebram de linha à direita quando falta espaço. */
+  .cd-card-head:has(#stkFluxoMedida) .cd-card-tits{flex:0 0 auto;}
+  .cd-card-head:has(#stkFluxoMedida) .cd-head-acoes{flex:1 1 0;min-width:0;gap:8px 10px;}
   .cd-rank-un{font-weight:400;color:var(--cd-muted);font-size:12px;}
   .cd-dest-ic.amarelo{background:#FEF3C7;color:#D97706;}
   .cd-dest .stk-badge{flex:0 0 auto;}
@@ -2226,11 +2230,12 @@
           <select class="filter-select" id="stkSetorFiltro" title="Setor">
             <option value="">Setor</option>
           </select>
-          <div class="stk-segmented" id="stkPeriodo" role="tablist" aria-label="Período">
-            <button type="button" class="stk-seg-btn" data-periodo="hoje" role="tab" aria-selected="false">Hoje</button>
-            <button type="button" class="stk-seg-btn active" data-periodo="semana" role="tab" aria-selected="true">Esta semana</button>
-            <button type="button" class="stk-seg-btn" data-periodo="mes" role="tab" aria-selected="false">Este mês</button>
-          </div>
+          <select class="filter-select" id="stkPeriodoEstFiltro" title="Período (substitui Mês/Ano; sem seleção: ano atual até hoje)">
+            <option value="" selected>Período</option>
+            <option value="hoje">Hoje</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mês</option>
+          </select>
           <select class="filter-select" id="stkPeriodoClipFiltro" title="Período (substitui Mês/Ano)" hidden>
             <option value="">Período</option>
             <option value="hoje">Hoje</option>
@@ -8251,7 +8256,8 @@ ${clipPlayerPills(n)}
       const ind = document.getElementById('stkIndicadorFiltro').value;
       return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
     };
-    const stkSegmented = document.getElementById('stkPeriodo');
+    // Estoque: Período (Hoje/Esta semana/Este mês) em lista suspensa; vazio = ano atual até hoje.
+    const stkPeriodoEstEl = document.getElementById('stkPeriodoEstFiltro');
     const stkGrid = document.getElementById('stkGrid');
     const stkTip = document.getElementById('stkTooltip');
     const stkBuscaInput = document.getElementById('stkBusca');
@@ -8265,9 +8271,10 @@ ${clipPlayerPills(n)}
     const stkLeadsEl = document.getElementById('stkLeadsFiltro');
     // Viabilidade: licenças de Power BI — multiplicam o custo da ferramenta; padrão 1.
     const stkLicencasEl = document.getElementById('stkLicencasFiltro');
-    let stkPeriodoAtual = 'semana';
+    let stkPeriodoAtual = '';
     let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
+    let stkFluxoMedida = 'valor'; // Fluxo de estoque (Estoque): valor (R$ = quantidade × preço de custo) | produtos (unidades)
     let stkVolumeModoClip = 'yoy'; // Volume de notícias (Clipping): yoy | semanal | mensal
     let stkCoberturaVisao = 'mensal'; // Evolução da cobertura (Clipping): mensal (linhas) | anual (barras)
     let stkRankVisao = 'portais'; // Principais portais/entidades (Clipping): portais | entidades
@@ -8364,6 +8371,7 @@ ${clipPlayerPills(n)}
         return { ini: `${anoUsar}-01-01`, fim: `${anoUsar}-12-31`, rotulo: `ano de ${anoUsar}` };
       }
       const fim = stkHojeIso();
+      if(!modo) return { ini: fim.slice(0, 4) + '-01-01', fim, rotulo: `${fim.slice(0, 4)} até hoje` };
       if(modo === 'hoje') return { ini: fim, fim, rotulo: 'hoje' };
       if(modo === 'mes') return { ini: fim.slice(0, 7) + '-01', fim, rotulo: 'este mês' };
       return { ini: stkSomaDias(fim, -6), fim, rotulo: 'esta semana' };
@@ -8482,7 +8490,7 @@ ${clipPlayerPills(n)}
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
-      stkSegmented.hidden = clipping || panorama || sefaz || ibge || viab;
+      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab;
       stkMesEl.hidden = viab;
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
@@ -8596,7 +8604,8 @@ ${clipPlayerPills(n)}
 
     // Gráfico "Fluxo de estoque": linhas suaves com área semitransparente,
     // uma para Entradas e uma para Saídas (ambas preenchidas).
-    function stkDesenharLinhasFluxo(el, categorias, series, altura){
+    // fmt (opcional): formata o valor da dica ao passar o mouse (ex.: stkMoeda para R$).
+    function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const maxSerie = Math.max(1, ...series.flatMap(s => s.valores.map(Math.abs))), temNeg = series.some(s => s.valores.some(v => v < 0));
       const m = { t: 10, r: 10, b: 26, l: Math.max(36, stkNum(Math.ceil(maxSerie / stkPasso(maxSerie)) * stkPasso(maxSerie)).length * 6.6 + 12 + (temNeg ? 7 : 0)) };
@@ -8647,7 +8656,7 @@ ${clipPlayerPills(n)}
         pontos.forEach(p => { const s = series[p.dataset.k]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', y(s.valores[atual])); p.setAttribute('visibility', 'visible'); });
         const r = alvo.getBoundingClientRect();
         const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
-        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: stkNum(s.valores[atual]), rotulo: s.nome })));
+        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })));
       };
       const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); stkEsconderDica(); };
       alvo.addEventListener('pointermove', ev => {
@@ -8724,7 +8733,10 @@ ${clipPlayerPills(n)}
       </svg>`;
     }
 
-    function stkDadosFluxo(modo){
+    // medida: 'valor' (quantidade × preço de custo do produto, em R$) | 'produtos' (unidades).
+    function stkDadosFluxo(modo, medida){
+      const precoDe = new Map(stockProducts.map(p => [p.id, p.preco_custo != null ? Number(p.preco_custo) || 0 : 0]));
+      const peso = m => medida === 'valor' ? (precoDe.get(m.produto_id) || 0) : 1;
       const semanal = modo !== 'mensal';
       const hoje = stkHojeIso();
       const categorias = [], chaves = [];
@@ -8753,7 +8765,8 @@ ${clipPlayerPills(n)}
         const chave = semanal ? d : d.slice(0, 7);
         const i = idx.get(chave);
         if(i === undefined) return;
-        if(m.tipo === 'saida') saidas[i] += m.quantidade; else entradas[i] += m.quantidade;
+        const v = (Number(m.quantidade) || 0) * peso(m);
+        if(m.tipo === 'saida') saidas[i] += v; else entradas[i] += v;
       });
       return { categorias, entradas, saidas };
     }
@@ -9044,13 +9057,9 @@ ${clipPlayerPills(n)}
         return;
       }
       stkPreencherFiltros();
-      const substituido = !!(stkMesEl.value || stkAnoEl.value);
-      stkSegmented.classList.toggle('stk-segmented-inativo', substituido);
-      stkSegmented.querySelectorAll('.stk-seg-btn').forEach(b => {
-        const ativo = !substituido && b.dataset.periodo === stkPeriodoAtual;
-        b.classList.toggle('active', ativo);
-        b.setAttribute('aria-selected', ativo ? 'true' : 'false');
-      });
+      // Mês/Ano substituem o Período (a lista volta para "Período").
+      if(stkMesEl.value || stkAnoEl.value) stkPeriodoAtual = '';
+      stkPeriodoEstEl.value = stkPeriodoAtual;
       const range = stkRange(stkPeriodoAtual);
       const rangeAnt = stkRangeAnterior(range);
       const setorAtivo = stkSaldoSetor();
@@ -9080,7 +9089,7 @@ ${clipPlayerPills(n)}
       const eficiencia = ativos.length ? qOk / ativos.length : 0;
       const qAbaixo = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p))).length;
       // Comparação com a janela anterior de mesmo tamanho (Hoje/Semana/Mês ou Mês/Ano).
-      const vsAnt = (stkMesEl.value || stkAnoEl.value) ? 'vs. per. ant.' : ({ hoje: 'vs. ontem', mes: 'vs. mês ant.' }[stkPeriodoAtual] || 'vs. sem. ant.');
+      const vsAnt = (stkMesEl.value || stkAnoEl.value || !stkPeriodoAtual) ? 'vs. per. ant.' : ({ hoje: 'vs. ontem', mes: 'vs. mês ant.' }[stkPeriodoAtual] || 'vs. sem. ant.');
       const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
       const kTotal = cdKpiCard('layers', 'azul', 'Total em estoque', stkNum(totalStockAtual), cdDelta(totalStockAtual, totalStockInicio),
         `vs. início (${unid(totalStockInicio, 'unidade', 'unidades')})`, `Saldo atual dos produtos ativos comparado ao início do período · ${porCentral}`);
@@ -9097,17 +9106,22 @@ ${clipPlayerPills(n)}
         { cls: qAbaixo ? 'down' : 'up', txt: stkNum(qAbaixo) }, `abaixo do mínimo`, 'Produtos cadastrados e ativos no catálogo');
 
       // ---- Fluxo de estoque (linhas: Entradas escuro, Saídas claro) + seletor Semanal/Mensal ----
-      const F = stkDadosFluxo(stkFluxoModo);
+      const F = stkDadosFluxo(stkFluxoModo, stkFluxoMedida);
+      const fluxoValor = stkFluxoMedida === 'valor';
       const seriesFluxo = [
         { nome: 'Entradas', cor: CD_COR.azul, valores: F.entradas },
         { nome: 'Saídas', cor: CD_COR.azulClaro, valores: F.saidas }
       ];
       const acoesFluxo = `<div class="cd-head-acoes"><div class="cd-legenda">${seriesFluxo.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>
+          <select class="stk-chart-filtro" id="stkFluxoMedida" title="Tipo de valor do gráfico">
+            <option value="valor" ${fluxoValor ? 'selected' : ''}>Valor (R$)</option>
+            <option value="produtos" ${fluxoValor ? '' : 'selected'}>Produtos</option>
+          </select>
           <select class="stk-chart-filtro" id="stkFluxoFiltro">
             <option value="semanal" ${stkFluxoModo === 'semanal' ? 'selected' : ''}>Semanal</option>
             <option value="mensal" ${stkFluxoModo === 'mensal' ? 'selected' : ''}>Mensal</option>
           </select></div>`;
-      const wFluxo = cdCard('Fluxo de estoque', stkFluxoModo === 'mensal' ? 'Últimos 6 meses' : 'Últimos 7 dias', '<div id="stkFluxoGraf"></div>', acoesFluxo);
+      const wFluxo = cdCard('Fluxo de estoque', `${stkFluxoModo === 'mensal' ? 'Últimos 6 meses' : 'Últimos 7 dias'} · ${fluxoValor ? 'valor em R$ (preço de custo)' : 'unidades'}`, '<div id="stkFluxoGraf"></div>', acoesFluxo);
 
       // ---- Valor gasto com compras (barras por mês) ----
       const C = stkDadosValorCompras();
@@ -9198,13 +9212,13 @@ ${clipPlayerPills(n)}
         </div>`;
 
       stkGrid.classList.add('cd-fit');
-      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kTotal}${kOut}${kIn}${kEfic}${kCadastrados}</div>`
-        + `<div class="cd-row cd-row-a">${wFluxo}${wCompras}${wDistribuicao}</div>`
-        + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div></div>`
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kTotal}${kOut}${kIn}${kCadastrados}${kEfic}</div>`
+        + `<div class="cd-row cd-row-a">${wFluxo}${wTopSaidas}${wDistribuicao}</div>`
+        + `<div class="cd-row cd-row-b">${wCompras}${wValorSaida}${wAlertas}</div></div>`
         + `<div class="stk-grid cd-extra">${wTabela}</div>`;
       stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: stkQtd(s.qtd) + ' un.' })), 'Consumo por setor');
       const grafFluxo = document.getElementById('stkFluxoGraf');
-      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200));
+      if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200), fluxoValor ? stkMoeda : null);
       cdAjustarListas();
     }
 
@@ -10715,12 +10729,10 @@ ${clipPlayerPills(n)}
     }
     stkIbgeLocalEl.addEventListener('change', stkRender);
 
-    stkSegmented.addEventListener('click', ev => {
-      const btn = ev.target.closest('.stk-seg-btn');
-      if(!btn) return;
-      stkPeriodoAtual = btn.dataset.periodo;
+    stkPeriodoEstEl.addEventListener('change', () => {
+      stkPeriodoAtual = stkPeriodoEstEl.value;
       // Um período fixo (Hoje/Semana/Mês) substitui o filtro de Mês/Ano avulso.
-      stkMesEl.value = ''; stkAnoEl.value = '';
+      if(stkPeriodoAtual){ stkMesEl.value = ''; stkAnoEl.value = ''; }
       stkRender();
     });
     [stkSetorEl, stkPlayerEl].forEach(el => el.addEventListener('change', stkRender));
@@ -10753,7 +10765,7 @@ ${clipPlayerPills(n)}
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
-      stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
+      stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
     }
     stkPainelEl.addEventListener('change', () => stkResetarPainel('abve'));
@@ -10764,7 +10776,7 @@ ${clipPlayerPills(n)}
       stkUfEl.value = ''; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
-      stkPeriodoAtual = 'semana'; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
+      stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
     });
     // Busca com seleção múltipla: cada resultado tem um checkbox; o que for
@@ -10864,6 +10876,7 @@ ${clipPlayerPills(n)}
         if(stkPainel() === 'clipping') stkVolumeModoClip = ev.target.value; else stkFluxoModo = ev.target.value;
         stkRender();
       }
+      if(ev.target.id === 'stkFluxoMedida'){ stkFluxoMedida = ev.target.value; stkRender(); }
     });
     stkGrid.addEventListener('click', ev => {
       const btn = ev.target.closest('#stkCoberturaVisao .stk-seg-btn');
