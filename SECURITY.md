@@ -9,9 +9,9 @@ App **100% front-end**: tudo o que está no HTML/JS chega ao navegador de qualqu
 | Chave anon fora do código | Feito: `.env` / secrets do GitHub → `config.js` (fora do Git) |
 | Senha de admin/bootstrap removida do código e do `config.js` | Feito |
 | Login com Supabase Auth (hash + token) | Feito no código |
-| Policies de RLS por seção/perfil, sem acesso `anon` | Pronto em `supabase/seguranca_rls.sql`, **precisa ser executado por você** |
+| Policies de RLS por seção/perfil, sem acesso `anon` | Pronto em `supabase/schema_seguranca_rls.sql`, **precisa ser executado por você** |
 | Remover produto/movimentação do Estoque | Restrito a Administrador (policy + botão só aparece para admin) |
-| Editar e excluir dados em qualquer seção | Só Administrador (policies em `supabase/somente_admin_edita.sql` + botões só aparecem para admin). Demais perfis, mesmo com todas as seções, só leem e criam |
+| Editar e excluir dados em qualquer seção | Só Administrador (policies em `supabase/schema_somente_admin_edita.sql` + botões só aparecem para admin). Demais perfis, mesmo com todas as seções, só leem e criam |
 | Coluna `usuarios.senha` | Removida pelo mesmo SQL |
 | Escape de HTML nos dados exibidos (XSS) | Feito (inclusive nos templates, que ainda são só locais) |
 | Bibliotecas de CDN fixadas com SRI, CSP no `<meta>` | Feito |
@@ -20,7 +20,7 @@ App **100% front-end**: tudo o que está no HTML/JS chega ao navegador de qualqu
 
 ## Obrigatório antes de publicar
 
-1. Executar, nesta ordem, `supabase/schema_estoque.sql`, `supabase/schema_relatorios.sql` e depois o passo a passo de [supabase/LEIA-ME.md](supabase/LEIA-ME.md) (Auth com confirmação de e-mail + `seguranca_rls.sql`). Rodar só os schemas deixa Estoque e Relatórios sem nenhum acesso, nem do `anon` — proposital, até o RLS ser aplicado.
+1. Executar, nesta ordem, `supabase/schema_estoque.sql`, `supabase/schema_relatorios.sql` e depois o passo a passo de [supabase/LEIA-ME.md](supabase/LEIA-ME.md) (Auth com confirmação de e-mail + `schema_seguranca_rls.sql`). Rodar só os schemas deixa Estoque e Relatórios sem nenhum acesso, nem do `anon` — proposital, até o RLS ser aplicado.
 2. **Trocar as senhas antigas** (as de `usuarios.senha` e `cdload2026`), pois foram expostas.
 3. Cadastrar os secrets no GitHub (só a chave anon/publishable).
 4. Em Authentication > Providers > Email, considere desativar "Allow new users to sign up" (ou usar apenas **Invite user**) — o cadastro aberto não dá acesso a dados, mas permite criar contas descartáveis e disparar e-mails de confirmação para terceiros.

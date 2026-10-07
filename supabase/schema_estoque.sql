@@ -7,7 +7,7 @@
 -- IMPORTANTE — este script NÃO abre acesso a nenhuma tabela: ele só cria
 -- a estrutura e habilita RLS sem nenhuma policy (ou seja, ninguém lê ou
 -- grava nada ainda, nem o dono). O acesso real (login + seção liberada)
--- é concedido por `supabase/seguranca_rls.sql`, que deve ser executado
+-- é concedido por `supabase/schema_seguranca_rls.sql`, que deve ser executado
 -- LOGO DEPOIS deste. Rodar só este arquivo deixa o Estoque inutilizável
 -- (e é proposital: nunca deixamos o `anon` com acesso, nem por um instante).
 --
@@ -30,7 +30,7 @@
 --                            entradas − saídas daquela central
 --
 -- Banco que já usava o modelo antigo (entradas/saídas em RH, Institucional,
--- Espaço): rode supabase/migracao_estoque_centrais.sql uma vez.
+-- Espaço): rode supabase/schema_migracao_estoque_centrais.sql uma vez.
 -- =====================================================================
 
 create extension if not exists pgcrypto;
@@ -123,7 +123,7 @@ begin
 end $$;
 
 -- 2b. Bucket das notas fiscais: privado, só PDF, até 10 MB. As policies
---     de storage.objects ficam em seguranca_rls.sql.
+--     de storage.objects ficam em schema_seguranca_rls.sql.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('notas_fiscais', 'notas_fiscais', false, 10485760, array['application/pdf'])
 on conflict (id) do update
@@ -314,7 +314,7 @@ from public.movimentacoes_estoque m
 group by m.produto_id, m.setor;
 
 -- ---------------------------------------------------------------------
--- 6. RLS ligado, SEM policies — bloqueia geral até seguranca_rls.sql
+-- 6. RLS ligado, SEM policies — bloqueia geral até schema_seguranca_rls.sql
 --    conceder acesso a `authenticated` conforme seção/perfil.
 -- ---------------------------------------------------------------------
 alter table public.cadastro_de_produtos  enable row level security;
@@ -324,4 +324,4 @@ revoke all on public.cadastro_de_produtos, public.movimentacoes_estoque, public.
 -- A API (PostgREST) passa a enxergar colunas novas na hora.
 notify pgrst, 'reload schema';
 
--- Próximo passo obrigatório: supabase/seguranca_rls.sql
+-- Próximo passo obrigatório: supabase/schema_seguranca_rls.sql

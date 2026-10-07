@@ -1,7 +1,7 @@
 -- =====================================================================
 -- CDLoad · Clipping News — coleta automática no Google Notícias
 --
--- Execute em Supabase > SQL Editor DEPOIS de `seguranca_rls.sql` (usa a
+-- Execute em Supabase > SQL Editor DEPOIS de `schema_seguranca_rls.sql` (usa a
 -- função `cdl_secao`). É idempotente: pode ser rodado de novo sem
 -- apagar dados.
 --
@@ -30,7 +30,7 @@
 --      `clipping_dominios_bloqueados` (domínio, motivo, data). Nada desses
 --      sites é gravado, acessado ou exibido. Hoje: pnbonline.com.br e
 --      jknoticias.com. Para bloquear outro, rode
---      supabase/clipping_bloquear_dominios.sql com o novo domínio.
+--      supabase/schema_clipping_bloquear_dominios.sql com o novo domínio.
 --
 --  10. Escopo atual (substitui a regra de citação no texto): TODAS as
 --      notícias do Google Notícias sobre dois atores, para comparação no
@@ -53,7 +53,7 @@
 do $$
 begin
   if to_regprocedure('public.cdl_secao(text)') is null then
-    raise exception 'Rode supabase/seguranca_rls.sql antes deste arquivo (falta a função cdl_secao).';
+    raise exception 'Rode supabase/schema_seguranca_rls.sql antes deste arquivo (falta a função cdl_secao).';
   end if;
 end $$;
 
@@ -146,7 +146,7 @@ create table if not exists public.clipping_coletas (
 create index if not exists clipping_coletas_iniciado_idx on public.clipping_coletas (iniciado_em desc);
 
 -- ---------------------------------------------------------------------
--- 2. Privilégios + RLS (mesmas regras de seguranca_rls.sql)
+-- 2. Privilégios + RLS (mesmas regras de schema_seguranca_rls.sql)
 -- ---------------------------------------------------------------------
 alter table public.clipping_news enable row level security;
 alter table public.clipping_coletas enable row level security;

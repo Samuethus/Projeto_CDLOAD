@@ -3,7 +3,7 @@
 --
 -- Rode uma vez em Supabase > SQL Editor, num banco que já tem o Estoque.
 -- É idempotente. (Banco novo não precisa: schema_estoque.sql e
--- seguranca_rls.sql já trazem tudo isto.)
+-- schema_seguranca_rls.sql já trazem tudo isto.)
 --
 --   movimentacoes_estoque.nota_fiscal_*  → nome, caminho no Storage e
 --                                          tamanho do PDF (só em entrada
@@ -46,7 +46,7 @@ on conflict (id) do update
   set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 -- ---------------------------------------------------------------------
--- 3. Policies do Storage (mesmas de seguranca_rls.sql)
+-- 3. Policies do Storage (mesmas de schema_seguranca_rls.sql)
 -- ---------------------------------------------------------------------
 drop policy if exists notas_fiscais_select on storage.objects;
 drop policy if exists notas_fiscais_insert on storage.objects;

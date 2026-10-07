@@ -3,7 +3,7 @@
 --
 -- Rode uma vez em Supabase > SQL Editor, num banco que já tem o Estoque.
 -- É idempotente. (Banco novo não precisa: schema_estoque.sql e
--- seguranca_rls.sql já trazem tudo isto.)
+-- schema_seguranca_rls.sql já trazem tudo isto.)
 --
 -- Libera o ícone de lápis na tabela de Movimentações:
 --   • só Administrador ajusta (policy mov_update, igual ao produto);
@@ -14,7 +14,7 @@
 --
 -- Depende das colunas do modelo "estoques centrais + setor de consumo"
 -- (setor_consumo, transferencia). Elas são criadas aqui também, caso
--- migracao_estoque_centrais.sql ainda não tenha sido rodado — mas rode-o
+-- schema_migracao_estoque_centrais.sql ainda não tenha sido rodado — mas rode-o
 -- também, para ativar as regras e devolver às centrais o saldo antigo.
 -- =====================================================================
 

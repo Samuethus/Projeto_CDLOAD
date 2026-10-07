@@ -6,7 +6,7 @@ O Clipping News é alimentado automaticamente pelo Google Notícias e pelo site 
 
 ## Antes de publicar
 
-1. Siga [supabase/LEIA-ME.md](supabase/LEIA-ME.md): configurar o Auth e rodar [supabase/seguranca_rls.sql](supabase/seguranca_rls.sql). **Sem isso o banco continua aberto.**
+1. Siga [supabase/LEIA-ME.md](supabase/LEIA-ME.md): configurar o Auth e rodar [supabase/schema_seguranca_rls.sql](supabase/schema_seguranca_rls.sql). **Sem isso o banco continua aberto.**
 2. Leia [SECURITY.md](SECURITY.md).
 
 ## Requisitos

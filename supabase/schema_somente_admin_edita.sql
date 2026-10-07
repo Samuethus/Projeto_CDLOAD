@@ -1,7 +1,7 @@
 -- ============================================================================
 -- CDLoad · Só Administrador edita e exclui dados
 --
--- Rode em Supabase > SQL Editor DEPOIS de seguranca_rls.sql, schema_agenda.sql
+-- Rode em Supabase > SQL Editor DEPOIS de schema_seguranca_rls.sql, schema_agenda.sql
 -- e schema_clipping.sql. É idempotente: pode rodar de novo sem quebrar.
 --
 -- Regra: quem tem a seção liberada (mesmo todas) só LÊ e CRIA registros.
@@ -9,8 +9,8 @@
 -- cargo = 'Administrador' e status 'Ativo' em `usuarios`.
 --
 -- Tabelas que já eram assim e não mudam aqui: usuarios, local,
--- movimentacoes_estoque (mov_update/mov_delete em seguranca_rls.sql e
--- estoque_editar_movimentacao.sql), relatorios_arquivos e o bucket "relatorios".
+-- movimentacoes_estoque (mov_update/mov_delete em schema_seguranca_rls.sql e
+-- schema_estoque_editar_movimentacao.sql), relatorios_arquivos e o bucket "relatorios".
 -- ============================================================================
 
 -- ---------- campanhas ----------

@@ -450,7 +450,7 @@ Deno.serve(async (req) => {
   }
 
   // UPDATE direto em `campanhas` é só do Administrador (RLS); a função do banco
-  // deixa quem criou a campanha gravar os ids do evento (supabase/somente_admin_edita.sql).
+  // deixa quem criou a campanha gravar os ids do evento (supabase/schema_somente_admin_edita.sql).
   const { error: erroGravar } = await supabase.rpc('cdl_gravar_agenda_sync', { p_campanha: campanhaId, p_sync: sync });
   if (erroGravar) console.error('[sincronizar-agenda] gravar agenda_sync:', erroGravar);
 

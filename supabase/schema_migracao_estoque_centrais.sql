@@ -49,7 +49,7 @@ alter table public.movimentacoes_estoque add column if not exists transferencia 
 alter table public.movimentacoes_estoque drop constraint if exists movimentacoes_estoque_setor_valido;
 alter table public.movimentacoes_estoque drop constraint if exists movimentacoes_estoque_consumo_valido;
 
--- O gatilho de ajuste (estoque_editar_movimentacao.sql) barra marcar uma
+-- O gatilho de ajuste (schema_estoque_editar_movimentacao.sql) barra marcar uma
 -- linha como transferência — é exatamente o que o passo 2 faz. Fica
 -- desligado só durante esta migração e é religado no passo 4.
 do $$

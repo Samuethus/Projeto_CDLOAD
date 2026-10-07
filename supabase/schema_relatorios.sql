@@ -7,7 +7,7 @@
 -- IMPORTANTE — este script NÃO abre acesso a nenhuma tabela/bucket: só
 -- cria a estrutura e habilita RLS sem nenhuma policy (ou seja, ninguém
 -- lê ou grava nada ainda, nem o dono). O acesso real (login + seção
--- "relatorios" liberada) é concedido por `supabase/seguranca_rls.sql`,
+-- "relatorios" liberada) é concedido por `supabase/schema_seguranca_rls.sql`,
 -- que deve ser executado LOGO DEPOIS deste.
 --
 --   relatorios_arquivos  → metadados de cada material enviado (título,
@@ -52,10 +52,10 @@ values ('relatorios', 'relatorios', false)
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
--- 3. RLS ligado, SEM policies — bloqueia geral até seguranca_rls.sql
+-- 3. RLS ligado, SEM policies — bloqueia geral até schema_seguranca_rls.sql
 --    conceder acesso a `authenticated` conforme a seção "relatorios".
 -- ---------------------------------------------------------------------
 alter table public.relatorios_arquivos enable row level security;
 revoke all on public.relatorios_arquivos from anon, authenticated;
 
--- Próximo passo obrigatório: supabase/seguranca_rls.sql
+-- Próximo passo obrigatório: supabase/schema_seguranca_rls.sql

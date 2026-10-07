@@ -3760,7 +3760,7 @@
        updated_at         timestamptz not null default now()
      );
      -- + trigger de updated_at, RLS habilitado com as mesmas policies
-     --   ver supabase/seguranca_rls.sql, e um seed do administrador principal
+     --   ver supabase/schema_seguranca_rls.sql, e um seed do administrador principal
      --   (cargo Administrador, acesso total; e-mail e senha inicial ficam
      --   fora do código — ver .env.example e SECURITY.md). O e-mail do
      --   administrador também é reconhecido no JS (ADMIN_EMAIL, vindo de
@@ -3768,7 +3768,7 @@
      --   registro no banco seja apagado por engano.
 
      Login: Supabase Auth (senha com hash, sessão por token). `usuarios` guarda só perfil e
-     permissões, sem senha. Todo o SQL de segurança está em supabase/seguranca_rls.sql.
+     permissões, sem senha. Todo o SQL de segurança está em supabase/schema_seguranca_rls.sql.
 
      Estrutura da tabela `clipping_news` (seção Clipping News):
 
@@ -3820,7 +3820,7 @@
 
      Estrutura do módulo Estoque (substitui a antiga seção "Ajuda"). O SQL
      das tabelas está em `supabase/schema_estoque.sql`; rode-o uma vez no
-     Supabase > SQL Editor e, em seguida, `supabase/seguranca_rls.sql`
+     Supabase > SQL Editor e, em seguida, `supabase/schema_seguranca_rls.sql`
      (concede o acesso real — login + seção liberada). Sem o segundo
      script, ninguém lê ou grava nada no Estoque, nem o `anon`.
 
@@ -5478,7 +5478,7 @@
     // ---------------- Login (Supabase Auth) ----------------
     // A senha é validada pelo Supabase Auth (hash + token de sessão). A tabela `usuarios`
     // guarda só perfil e permissões (cargo, status, seções); as policies de RLS
-    // (supabase/seguranca_rls.sql) são quem realmente protege os dados.
+    // (supabase/schema_seguranca_rls.sql) são quem realmente protege os dados.
     const waIdentifyOverlay = document.getElementById('waIdentifyOverlay');
     const waIdentifyEmail = document.getElementById('waIdentifyEmail');
     const waIdentifyPassword = document.getElementById('waIdentifyPassword');
@@ -5792,7 +5792,7 @@
 
     // Sites bloqueados (medida de segurança): nunca exibidos nem linkados.
     // O banco já os descarta (cadastro único em clipping_dominios_bloqueados —
-    // supabase/clipping_bloquear_dominios.sql); aqui é uma segunda barreira.
+    // supabase/schema_clipping_bloquear_dominios.sql); aqui é uma segunda barreira.
     // Mantenha esta lista igual à do banco:
     //   pnbonline.com.br · 01/09/2026 · alerta do antivírus ao acessar o portal
     //   jknoticias.com   · 07/10/2026 · alerta do antivírus ao acessar o portal
@@ -6368,7 +6368,7 @@ ${clipPlayerPills(n)}
     const waMovNfTitulo = document.getElementById('waMovNfTitulo');
     const waMovNfSub = document.getElementById('waMovNfSub');
     const waMovNfRemover = document.getElementById('waMovNfRemover');
-    // Nota fiscal (PDF) da Entrada: bucket privado "notas_fiscais" (supabase/estoque_nota_fiscal.sql).
+    // Nota fiscal (PDF) da Entrada: bucket privado "notas_fiscais" (supabase/schema_estoque_nota_fiscal.sql).
     const NF_BUCKET = 'notas_fiscais';
     const NF_MAX_BYTES = 10 * 1024 * 1024;
     let movNfArquivo = null;    // PDF escolhido agora (ainda não enviado)
@@ -6393,7 +6393,7 @@ ${clipPlayerPills(n)}
     const fmtQty = n => (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
     const currentUserEmail = () => (window.__getCurrentUser() || {}).email || null;
     // Remover produto/movimentação é restrito a Administrador no banco
-    // (supabase/seguranca_rls.sql); esconder o botão evita um clique que
+    // (supabase/schema_seguranca_rls.sql); esconder o botão evita um clique que
     // só resultaria em erro de permissão.
     const isAdminUser = () => (window.__getCurrentUser() || {}).cargo === 'Administrador';
 
@@ -6493,7 +6493,7 @@ ${clipPlayerPills(n)}
       const error = prodRes.error || saldoRes.error || movRes.error;
       if(error){
         console.error('Erro ao carregar estoque do Supabase:', error);
-        alert('Erro ao carregar estoque do Supabase: ' + error.message + '\n\nVerifique se supabase/schema_estoque.sql e supabase/seguranca_rls.sql já foram executados, e se este usuário tem a seção Estoque liberada.');
+        alert('Erro ao carregar estoque do Supabase: ' + error.message + '\n\nVerifique se supabase/schema_estoque.sql e supabase/schema_seguranca_rls.sql já foram executados, e se este usuário tem a seção Estoque liberada.');
       }
       stockProducts = (prodRes.data || []).map(normalizeProduct);
       stockBalances = new Map();
@@ -7232,7 +7232,7 @@ ${clipPlayerPills(n)}
       if(!supabaseReady) return { nota_fiscal_nome: f.name, nota_fiscal_path: null, nota_fiscal_bytes: f.size };
       const path = nfStoragePath(f.name);
       const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: 'application/pdf' });
-      if(error) throw new Error('Erro ao enviar a nota fiscal: ' + error.message + '\n\nConfira se supabase/estoque_nota_fiscal.sql já foi executado.');
+      if(error) throw new Error('Erro ao enviar a nota fiscal: ' + error.message + '\n\nConfira se supabase/schema_estoque_nota_fiscal.sql já foi executado.');
       return { nota_fiscal_nome: f.name, nota_fiscal_path: path, nota_fiscal_bytes: f.size };
     }
     async function removerNfStorage(paths){
@@ -7498,7 +7498,7 @@ ${clipPlayerPills(n)}
               console.error('Erro ao ajustar movimentação no Supabase:', error);
               alert('Erro ao ajustar movimentação no Supabase: ' + error.message);
             } else {
-              alert('O ajuste não foi gravado: o banco ainda não libera edição de movimentações para este usuário. Rode supabase/estoque_editar_movimentacao.sql (só Administrador pode ajustar).');
+              alert('O ajuste não foi gravado: o banco ainda não libera edição de movimentações para este usuário. Rode supabase/schema_estoque_editar_movimentacao.sql (só Administrador pode ajustar).');
             }
             await loadStock();
             return;

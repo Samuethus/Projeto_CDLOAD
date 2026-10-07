@@ -8,7 +8,7 @@
 -- reflete o novo formato e pode ser reexecutado normalmente (idempotente).
 --
 -- Se o Estoque está sendo criado do zero, IGNORE este arquivo — basta
--- rodar schema_estoque.sql e seguranca_rls.sql, que já criam tudo no
+-- rodar schema_estoque.sql e schema_seguranca_rls.sql, que já criam tudo no
 -- formato novo.
 --
 -- O que este script faz, em ordem:
@@ -224,7 +224,7 @@ $$;
 -- existentes (só permite adicionar no final) — a view antiga tinha
 -- `setor` como última coluna e a nova tem como a 2ª, então precisa
 -- dropar e recriar. Isso também apaga os grants da view, por isso eles
--- são refeitos logo abaixo (mesmo trecho de supabase/seguranca_rls.sql).
+-- são refeitos logo abaixo (mesmo trecho de supabase/schema_seguranca_rls.sql).
 drop view if exists public.vw_estoque_saldo;
 
 create view public.vw_estoque_saldo
