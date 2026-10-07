@@ -1404,6 +1404,15 @@
   .sm-dash-tits h2{margin:0;font-size:18px;font-weight:700;color:var(--wa-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sm-dash-meta{font-size:12.5px;color:var(--wa-text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sm-dash-meta .wa-badge{margin-right:6px;}
+  /* Lista de coletores alinhada ao switch Painel / Resposta individual (mesma altura e borda). */
+  .sm-dash-acoes{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:0 0 auto;}
+  .sm-coletor{appearance:none;-webkit-appearance:none;box-sizing:border-box;height:40px;min-width:200px;max-width:280px;
+    padding:0 34px 0 14px;border:1px solid var(--wa-border);border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;
+    color:var(--wa-text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    background:var(--wa-card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 12px center;background-size:13px;}
+  .sm-coletor:disabled{cursor:default;color:var(--wa-text-muted);}
+  .sm-coletor:focus-visible{outline:2px solid var(--wa-primary);outline-offset:1px;}
+  @media (max-width:768px){ .sm-dash-acoes{width:100%;} .sm-coletor{flex:1 1 100%;max-width:none;} }
   .sm-painel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;grid-auto-flow:row dense;}
   .sm-ind-vazio{padding:36px 20px;text-align:center;color:#94a3b8;font-size:13px;}
   @media (max-width:1200px){ .sm-painel{grid-template-columns:repeat(2,minmax(0,1fr));} }
@@ -2832,15 +2841,20 @@
               <h2 id="smDashTitulo"></h2>
               <div class="sm-dash-meta" id="smDashMeta"></div>
             </div>
-            <div class="wa-view-toggle" id="smVisao">
-              <button type="button" class="wa-view-toggle-btn active" data-visao="painel">
-                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                Painel
-              </button>
-              <button type="button" class="wa-view-toggle-btn" data-visao="individual">
-                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                Resposta individual
-              </button>
+            <div class="sm-dash-acoes">
+              <select class="sm-coletor" id="smColetor" title="Coletor (canal de coleta das respostas)" aria-label="Coletor">
+                <option value="">Todos os coletores</option>
+              </select>
+              <div class="wa-view-toggle" id="smVisao">
+                <button type="button" class="wa-view-toggle-btn active" data-visao="painel">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                  Painel
+                </button>
+                <button type="button" class="wa-view-toggle-btn" data-visao="individual">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  Resposta individual
+                </button>
+              </div>
             </div>
           </div>
           <div class="sm-painel" id="smPainel"></div>
@@ -4412,11 +4426,41 @@
       try { await carregarResumos(); }
       catch(e){ el('smPainel').innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Não foi possível carregar os dados do formulário (assets/data/surveymonkey_resumos.js).</div></div>'; return; }
       if(formAtual !== f) return;
-      const R = window.SM_RESUMOS[f.id];
-      renderPainel(f, R);
-      renderIndividual(f, R);
+      preencherColetores(window.SM_RESUMOS[f.id]);
+      renderFormulario();
       document.querySelector('.main') && document.querySelector('.main').scrollTo({ top: 0 });
     }
+    // ---- Coletores (canais de coleta: link, e-mail, QR code...) ----
+    // Formato esperado em SM_RESUMOS[id] (vem da sincronização pela API: /surveys/{id}/collectors):
+    //   coletores: [{ id, nome, tipo, status, respostas }]
+    //   porColetor: { [id do coletor]: { perguntas: [...] } }   (mesmo formato de perguntas do resumo geral)
+    // As respostas individuais já trazem o coletor em respostas[i].coletor_id.
+    // O MCP do Survey Monkey não lê coletores, então o retrato atual só tem "Todos os coletores".
+    const tipoColetor = { weblink: 'Link', email: 'E-mail', sms: 'SMS', popup: 'Pop-up', qr: 'QR code', embedded: 'Incorporado' };
+    function preencherColetores(R){
+      const sel = el('smColetor'), lista = (R && R.coletores) || [];
+      sel.innerHTML = '<option value="">Todos os coletores</option>' + lista.map(c =>
+        `<option value="${esc(c.id)}">${esc(c.nome || 'Coletor ' + c.id)}${c.tipo ? ' · ' + esc(tipoColetor[c.tipo] || c.tipo) : ''}${c.respostas != null ? ' (' + num(c.respostas) + ')' : ''}</option>`).join('');
+      sel.value = '';
+      sel.disabled = !lista.length;
+      sel.title = lista.length ? 'Filtrar o painel e as respostas por coletor'
+        : 'Coletores ainda não disponíveis neste retrato: entram com a sincronização pela API do Survey Monkey';
+    }
+    // Dados do formulário já filtrados pelo coletor escolhido (sem coletor = resumo geral).
+    function dadosFiltrados(R){
+      const cid = el('smColetor').value;
+      if(!R || !cid) return R;
+      const P = R.porColetor && R.porColetor[cid];
+      return { ...R, perguntas: P ? P.perguntas : R.perguntas,
+        respostas: (R.respostas || []).filter(r => String(r.coletor_id) === cid), semResumoColetor: !P };
+    }
+    function renderFormulario(){
+      if(!formAtual || !window.SM_RESUMOS) return;
+      const D = dadosFiltrados(window.SM_RESUMOS[formAtual.id]);
+      renderPainel(formAtual, D);
+      renderIndividual(formAtual, D);
+    }
+    el('smColetor').addEventListener('change', renderFormulario);
     function fecharFormulario(){
       formAtual = null;
       el('smDash').hidden = true;
