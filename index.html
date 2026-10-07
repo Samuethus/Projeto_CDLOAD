@@ -1371,6 +1371,9 @@
   .cd-barra{flex:1 1 0;min-height:26px;max-height:56px;display:grid;grid-template-columns:minmax(0,108px) 1fr minmax(34px,auto);align-items:center;gap:12px;font-size:13px;color:var(--cd-texto);outline:none;}
   .cd-barra:focus-visible{box-shadow:0 0 0 2px var(--cd-azul);border-radius:6px;}
   .cd-barra-rot{display:flex;align-items:center;gap:9px;min-width:0;}
+  /* Percentual de representação de cada linha (opcional, ex.: Valor (R$) por setor). */
+  .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,108px) 1fr minmax(34px,auto) 34px;}
+  .cd-barra-pct{color:var(--cd-muted);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;}
   .cd-barra-rot > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cd-barra-rot svg{width:16px;height:16px;stroke-width:2;flex:0 0 auto;color:var(--cd-texto);}
   /* Logo da marca ao lado do nome (Viabilidade › Custo anual por ferramenta): coluna do rótulo um pouco mais larga. */
@@ -9138,7 +9141,7 @@ ${clipPlayerPills(n)}
       const CE = stkDadosComprasPorSetor();
       const totalCompras = CE.porValor.reduce((s, x) => s + x.valor, 0);
       const wCompras = cdCard('Valor (R$) por setor - Entradas', `${CE.rotulo.charAt(0).toUpperCase() + CE.rotulo.slice(1)} · total ${stkMoedaCompacta(totalCompras)}`,
-        cdBarras(CE.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor),
+        cdBarras(CE.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), pct: stkPct(totalCompras ? s.valor / totalCompras : 0),
           dica: `${stkMoeda(s.valor)} · ${stkPct(totalCompras ? s.valor / totalCompras : 0, 1)} · ${stkNum(s.compras)} compra${s.compras === 1 ? '' : 's'}`, cor: stkCorEntrada(i, CE.porValor.length) })),
           'Valor (R$) por setor - Entradas', 'Nenhuma compra registrada.'));
 
@@ -9154,7 +9157,7 @@ ${clipPlayerPills(n)}
 
       // ---- Valor (R$) por setor - Saídas (custo das saídas por setor de consumo) ----
       const wValorSaida = cdCard('Valor (R$) por setor - Saídas', `${CS.rotulo.charAt(0).toUpperCase() + CS.rotulo.slice(1)} · total ${stkMoedaCompacta(totalValorConsumo)}`,
-        cdBarras(CS.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), dica: `${stkMoeda(s.valor)} · ${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0, 1)} · ${stkNum(s.retiradas)} retirada${s.retiradas === 1 ? '' : 's'}`, cor: stkCorSaida(i, CS.porValor.length, s.nome) })),
+        cdBarras(CS.porValor.map((s, i) => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), pct: stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0), dica: `${stkMoeda(s.valor)} · ${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0, 1)} · ${stkNum(s.retiradas)} retirada${s.retiradas === 1 ? '' : 's'}`, cor: stkCorSaida(i, CS.porValor.length, s.nome) })),
           'Valor (R$) por setor - Saídas', 'Nenhum consumo registrado.'));
 
       // ---- Maiores saídas do período (ranking de produtos consumidos) ----
@@ -9298,7 +9301,7 @@ ${clipPlayerPills(n)}
       return `<div class="cd-barras">${itens.map(i => `<div class="cd-barra" tabindex="0" data-stk-dica="${esc(titulo)}|${esc(i.nome)}|${esc(i.dica || i.rotulo || stkNum(i.valor))}|${i.cor}">
           <span class="cd-barra-rot">${i.logo ? `<span class="cd-barra-logo" aria-hidden="true">${i.logo}</span>` : i.icone ? stkIcone(i.icone) : ''}<span>${esc(i.nome)}</span></span>
           <span class="cd-barra-trilho"><i style="width:${Math.max(0, i.valor / max * 100).toFixed(1)}%;background:${i.cor}"></i></span>
-          <span class="cd-barra-val">${esc(i.rotulo || stkNum(i.valor))}</span></div>`).join('')}</div>`;
+          <span class="cd-barra-val">${esc(i.rotulo || stkNum(i.valor))}</span>${i.pct != null ? `<span class="cd-barra-pct">${esc(i.pct)}</span>` : ''}</div>`).join('')}</div>`;
     }
 
     function stkRenderClipping(){
