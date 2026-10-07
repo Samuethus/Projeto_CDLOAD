@@ -1668,6 +1668,16 @@
   .wa-input-with-btn{display:flex;gap:8px;align-items:stretch;}
   .wa-input-with-btn input, .wa-input-with-btn select{flex:1;min-width:0;}
   .wa-field[hidden]{display:none;}
+  /* Nota fiscal (PDF) da Entrada: área de clique/arraste com altura moderada. */
+  .wa-field .wa-nf-drop{position:relative;display:flex;align-items:center;gap:14px;min-height:96px;padding:16px 44px 16px 18px;border:1.5px dashed var(--wa-border);border-radius:12px;background:var(--wa-bg);cursor:pointer;transition:border-color .15s, background .15s;font-weight:400;margin:0;}
+  .wa-nf-drop:hover, .wa-nf-drop.arrastando{border-color:var(--wa-primary);background:var(--wa-primary-soft);}
+  .wa-nf-drop.anexado{border-style:solid;border-color:var(--wa-primary);background:var(--wa-primary-soft);}
+  .wa-nf-drop-ic{flex:0 0 auto;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--wa-primary-soft);color:var(--wa-primary);}
+  .wa-nf-drop-ic svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;}
+  .wa-nf-drop-txt{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .wa-nf-drop-tit{font-size:13.5px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wa-nf-drop-sub{font-size:12px;color:var(--wa-text-muted);}
+  .wa-nf-remover{position:absolute;top:8px;right:8px;font-size:18px;line-height:1;}
 
   /* ---- Leitor por câmera ---- */
   .wa-cam-reader{width:100%;min-height:240px;border-radius:12px;overflow:hidden;background:#0F172A;}
@@ -3630,6 +3640,21 @@
                 <label for="waMovObs">Observação</label>
                 <input type="text" id="waMovObs" placeholder="Ex: NF 1234, compra do mês, nome de quem retirou">
               </div>
+              <!-- Nota fiscal da compra (só na Entrada): PDF no bucket privado "notas_fiscais". -->
+              <div class="wa-field" id="waMovNfField" hidden>
+                <label for="waMovNf">Nota fiscal (PDF)</label>
+                <label class="wa-nf-drop" id="waMovNfDrop" for="waMovNf">
+                  <span class="wa-nf-drop-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                  </span>
+                  <span class="wa-nf-drop-txt">
+                    <span class="wa-nf-drop-tit" id="waMovNfTitulo">Clique ou arraste o PDF da nota fiscal</span>
+                    <span class="wa-nf-drop-sub" id="waMovNfSub">Somente PDF · até 10 MB</span>
+                  </span>
+                  <button type="button" class="wa-icon-btn danger wa-nf-remover" id="waMovNfRemover" title="Remover a nota fiscal" hidden>&times;</button>
+                </label>
+                <input type="file" id="waMovNf" accept="application/pdf,.pdf" hidden>
+              </div>
               <div class="wa-budget-summary" id="waMovSummary">Selecione um produto para ver o saldo.</div>
             </div>
             <div class="wa-modal-footer">
@@ -3805,7 +3830,8 @@
        usuario_email  text,
        created_at     timestamptz not null default now(),
        editado_em     timestamptz,  -- último ajuste (gravado pelo gatilho)
-       editado_por    text
+       editado_por    text,
+       nota_fiscal_nome / nota_fiscal_path / nota_fiscal_bytes  -- PDF da NF (só entrada), bucket privado "notas_fiscais"
      );
      -- + trigger que bloqueia saldo negativo POR CENTRAL, view `vw_estoque_saldo`
      --   (saldo por produto+central = origem + entradas − saídas daquela central)
@@ -6217,7 +6243,7 @@ ${clipPlayerPills(n)}
       { id: 'm5', produto_id: 'p5', tipo: 'origem', setor: 'Almoxarifado', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
       { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', setor_consumo: 'Comercial', quantidade: 25, observacao: 'Retirada para o Comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
       { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', setor_consumo: 'Térreo', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
-      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, observacao: 'NF 4521', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
+      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, observacao: 'NF 4521', nota_fiscal_nome: 'NF-4521.pdf', nota_fiscal_path: null, nota_fiscal_bytes: 184320, usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
       // Transferência entre as centrais: sai do Escritório e entra no Almoxarifado (não é consumo).
       { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
       { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'Almoxarifado', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
@@ -6303,6 +6329,17 @@ ${clipPlayerPills(n)}
     const waMovQtd = document.getElementById('waMovQtd');
     const waMovObs = document.getElementById('waMovObs');
     const waMovSummary = document.getElementById('waMovSummary');
+    const waMovNfField = document.getElementById('waMovNfField');
+    const waMovNfDrop = document.getElementById('waMovNfDrop');
+    const waMovNf = document.getElementById('waMovNf');
+    const waMovNfTitulo = document.getElementById('waMovNfTitulo');
+    const waMovNfSub = document.getElementById('waMovNfSub');
+    const waMovNfRemover = document.getElementById('waMovNfRemover');
+    // Nota fiscal (PDF) da Entrada: bucket privado "notas_fiscais" (supabase/estoque_nota_fiscal.sql).
+    const NF_BUCKET = 'notas_fiscais';
+    const NF_MAX_BYTES = 10 * 1024 * 1024;
+    let movNfArquivo = null;    // PDF escolhido agora (ainda não enviado)
+    let movNfRemover = false;   // edição: tirar a NF que já estava anexada
     // Opções fixas do formulário: centrais (entrada, saída, transferência) e setores de consumo (saída).
     [waMovSetor, waMovSetorOrigem, waMovSetorDestino].forEach(sel => {
       sel.innerHTML = STOCK_SETORES.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -6546,7 +6583,7 @@ ${clipPlayerPills(n)}
         if(ano && String(m.created_at).slice(0, 4) !== ano) return false;
         if(mes && String(m.created_at).slice(5, 7) !== mes) return false;
         if(term){
-          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
+          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', m.nota_fiscal_nome || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -6564,6 +6601,7 @@ ${clipPlayerPills(n)}
     const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
     const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
     const ICON_TRANSFER = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>';
+    const ICON_NF = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
 
     function renderStockProducts(){
       const list = getFilteredProducts();
@@ -6627,6 +6665,7 @@ ${clipPlayerPills(n)}
             <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
             <td>${m.usuario_email ? stockEsc(userNameOf(m.usuario_email) || m.usuario_email) : '—'}</td>
             <td class="wa-table-actions">
+              ${m.nota_fiscal_nome ? `<button class="wa-icon-btn" title="Ver nota fiscal · ${stockEsc(m.nota_fiscal_nome)}" onclick="waViewNotaFiscal('${m.id}')">${ICON_NF}</button>` : ''}
               ${isAdminUser() && p ? `<button class="wa-icon-btn" title="Editar lançamento" onclick="waEditMovement('${m.id}')">${ICON_EDIT}</button>` : ''}
               ${m.tipo === 'origem' || !isAdminUser() ? '' : `<button class="wa-icon-btn danger" title="Remover lançamento" onclick="waDeleteMovement('${m.id}')">${ICON_TRASH}</button>`}
             </td>
@@ -7078,12 +7117,16 @@ ${clipPlayerPills(n)}
         await loadStock();
         return;
       }
+      // As movimentações saem em cascata com o produto; as NFs delas ficariam
+      // órfãs no Storage — guarda os caminhos antes para removê-las depois.
+      const { data: comNf } = await supabaseClient.from('movimentacoes_estoque').select('nota_fiscal_path').eq('produto_id', id).not('nota_fiscal_path', 'is', null);
       const { error } = await supabaseClient.from('cadastro_de_produtos').delete().eq('id', id);
       if(error){
         console.error('Erro ao remover produto no Supabase:', error);
         alert('Erro ao remover produto no Supabase: ' + error.message);
         return;
       }
+      await removerNfStorage((comNf || []).map(r => r.nota_fiscal_path));
       await loadStock();
     };
 
@@ -7100,6 +7143,90 @@ ${clipPlayerPills(n)}
     // setor que consome. Transferência é só um par saída+entrada lançado
     // junto entre as duas centrais (`transferencia` = true): soma zero, sem
     // efeito no saldo total do produto — não é compra nem consumo.
+
+    // ---- Nota fiscal (PDF) da Entrada ---- (fmtBytes: a mesma do módulo Relatórios)
+    // Mostra o estado do campo: PDF novo escolhido, NF já anexada (edição) ou vazio.
+    function renderNfCampo(){
+      const atual = editingMov && !movNfRemover && editingMov.m.nota_fiscal_nome ? editingMov.m : null;
+      const anexado = !!(movNfArquivo || atual);
+      waMovNfDrop.classList.toggle('anexado', anexado);
+      waMovNfRemover.hidden = !anexado;
+      if(movNfArquivo){
+        waMovNfTitulo.textContent = movNfArquivo.name;
+        waMovNfSub.textContent = `${fmtBytes(movNfArquivo.size)} · clique para trocar`;
+      } else if(atual){
+        waMovNfTitulo.textContent = atual.nota_fiscal_nome;
+        waMovNfSub.textContent = `${atual.nota_fiscal_bytes ? fmtBytes(Number(atual.nota_fiscal_bytes)) + ' · ' : ''}anexada · clique para substituir`;
+      } else {
+        waMovNfTitulo.textContent = 'Clique ou arraste o PDF da nota fiscal';
+        waMovNfSub.textContent = 'Somente PDF · até 10 MB';
+      }
+    }
+    function resetNfCampo(){
+      movNfArquivo = null;
+      movNfRemover = false;
+      waMovNf.value = '';
+      renderNfCampo();
+    }
+    function escolherNf(file){
+      if(!file) return;
+      const ehPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if(!ehPdf){ alert('A nota fiscal precisa ser um arquivo PDF.'); return; }
+      if(file.size > NF_MAX_BYTES){ alert(`O PDF tem ${fmtBytes(file.size)} — o limite é 10 MB.`); return; }
+      movNfArquivo = file;
+      renderNfCampo();
+    }
+    waMovNf.addEventListener('change', () => { escolherNf(waMovNf.files && waMovNf.files[0]); waMovNf.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => waMovNfDrop.addEventListener(ev, e => { e.preventDefault(); waMovNfDrop.classList.add('arrastando'); }));
+    ['dragleave', 'drop'].forEach(ev => waMovNfDrop.addEventListener(ev, () => waMovNfDrop.classList.remove('arrastando')));
+    waMovNfDrop.addEventListener('drop', e => { e.preventDefault(); escolherNf(e.dataTransfer.files && e.dataTransfer.files[0]); });
+    waMovNfRemover.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();   // não reabre o seletor de arquivo
+      if(movNfArquivo) movNfArquivo = null; else movNfRemover = true;
+      renderNfCampo();
+    });
+    // Caminho no bucket: ano/mês da compra + nome único (sem acentos/espaços).
+    function nfStoragePath(nome){
+      const safe = String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
+      return `${new Date().toISOString().slice(0, 7)}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+    }
+    // Envia o PDF escolhido e devolve as colunas nota_fiscal_* (ou null se não há PDF novo).
+    // Sem Supabase (demonstração), guarda só o nome.
+    async function enviarNf(){
+      if(!movNfArquivo) return null;
+      const f = movNfArquivo;
+      if(!supabaseReady) return { nota_fiscal_nome: f.name, nota_fiscal_path: null, nota_fiscal_bytes: f.size };
+      const path = nfStoragePath(f.name);
+      const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: 'application/pdf' });
+      if(error) throw new Error('Erro ao enviar a nota fiscal: ' + error.message + '\n\nConfira se supabase/estoque_nota_fiscal.sql já foi executado.');
+      return { nota_fiscal_nome: f.name, nota_fiscal_path: path, nota_fiscal_bytes: f.size };
+    }
+    async function removerNfStorage(paths){
+      const lista = paths.filter(Boolean);
+      if(!supabaseReady || !lista.length) return;
+      const { error } = await supabaseClient.storage.from(NF_BUCKET).remove(lista);
+      if(error) console.warn('Nota fiscal não removida do Storage:', error.message);
+    }
+
+    window.waViewNotaFiscal = async function(id){
+      const m = stockMovements.find(x => x.id === id);
+      if(!m || !m.nota_fiscal_nome) return;
+      if(!supabaseReady || !m.nota_fiscal_path){
+        alert(`Modo de demonstração: "${m.nota_fiscal_nome}" não tem um arquivo real armazenado.`);
+        return;
+      }
+      // Abre a aba antes do await (senão o navegador trata como pop-up e bloqueia).
+      const aba = window.open('', '_blank');
+      const { data, error } = await supabaseClient.storage.from(NF_BUCKET).createSignedUrl(m.nota_fiscal_path, 120);
+      if(error || !data){
+        if(aba) aba.close();
+        console.error('Erro ao gerar link da nota fiscal:', error);
+        alert('Erro ao abrir a nota fiscal: ' + (error ? error.message : ''));
+        return;
+      }
+      if(aba){ aba.opener = null; aba.location.href = data.signedUrl; } else window.open(data.signedUrl, '_blank', 'noopener');
+    };
+
     function setMovTipo(tipo){
       movTipo = tipo;
       waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', b.dataset.tipo === tipo));
@@ -7107,6 +7234,7 @@ ${clipPlayerPills(n)}
       waMovSetorField.hidden = isTransfer;
       waMovTransferGrid.hidden = !isTransfer;
       waMovConsumoField.hidden = tipo !== 'saida';
+      waMovNfField.hidden = tipo !== 'entrada';
       waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : tipo === 'origem' ? 'Estoque central (origem)' : 'Estoque central';
       if(isTransfer){
         // Reinicia a animação mesmo se o usuário alternar rapidamente entre os tipos.
@@ -7221,6 +7349,7 @@ ${clipPlayerPills(n)}
       const ativos = stockProducts.filter(p => p.ativo || (mov && p.id === mov.produto_id));
       if(!ativos.length) return false;
       setMovEdicao(mov || null);
+      resetNfCampo();
       waMovSub.textContent = mov
         ? `Ajuste do lançamento de ${fmtDateTimeBR(mov.created_at)}${mov.usuario_email ? ' · ' + (userNameOf(mov.usuario_email) || mov.usuario_email) : ''}.`
         : 'Entrada abastece uma central; na saída, informe o setor que consome.';
@@ -7307,24 +7436,41 @@ ${clipPlayerPills(n)}
         ajustes = [{ r: m, payload: { produto_id: p.id, tipo, setor, setor_consumo: consumo || null, quantidade: q, observacao } }];
       }
 
+      // Nota fiscal: só entrada (não transferência) fica com PDF. Trocar,
+      // remover ou deixar de ser entrada apaga o PDF antigo — depois que o
+      // ajuste for gravado, para nunca perder o arquivo de um lançamento.
+      const SEM_NF = { nota_fiscal_nome: null, nota_fiscal_path: null, nota_fiscal_bytes: null };
+      const tinhaNf = !!m.nota_fiscal_nome;
+      const ficaEntrada = !m.transferencia && ajustes[0].payload.tipo === 'entrada';
+      let nfNova = null, nfAntigaPath = null;
+      if(ficaEntrada && movNfArquivo){
+        try { nfNova = await enviarNf(); } catch(e){ alert(e.message); return; }
+        Object.assign(ajustes[0].payload, nfNova);
+        nfAntigaPath = m.nota_fiscal_path;
+      } else if(tinhaNf && (!ficaEntrada || movNfRemover) && !m.transferencia){
+        Object.assign(ajustes[0].payload, SEM_NF);
+        nfAntigaPath = m.nota_fiscal_path;
+      }
+
       if(!supabaseReady){
         const agora = new Date().toISOString();
         ajustes.forEach(a => Object.assign(a.r, a.payload, { editado_em: agora, editado_por: currentUserEmail() }));
       } else {
         for(const a of ajustes){
           const { data, error } = await supabaseClient.from('movimentacoes_estoque').update(a.payload).eq('id', a.r.id).select('id');
-          if(error){
-            console.error('Erro ao ajustar movimentação no Supabase:', error);
-            alert('Erro ao ajustar movimentação no Supabase: ' + error.message);
-            await loadStock();
-            return;
-          }
-          if(!data || !data.length){
-            alert('O ajuste não foi gravado: o banco ainda não libera edição de movimentações para este usuário. Rode supabase/estoque_editar_movimentacao.sql (só Administrador pode ajustar).');
+          if(error || !data || !data.length){
+            if(nfNova) await removerNfStorage([nfNova.nota_fiscal_path]);
+            if(error){
+              console.error('Erro ao ajustar movimentação no Supabase:', error);
+              alert('Erro ao ajustar movimentação no Supabase: ' + error.message);
+            } else {
+              alert('O ajuste não foi gravado: o banco ainda não libera edição de movimentações para este usuário. Rode supabase/estoque_editar_movimentacao.sql (só Administrador pode ajustar).');
+            }
             await loadStock();
             return;
           }
         }
+        await removerNfStorage([nfAntigaPath]);
       }
 
       waCloseMovModal();
@@ -7335,6 +7481,7 @@ ${clipPlayerPills(n)}
     window.waCloseMovModal = function(){
       waMovModal.classList.remove('open');
       setMovEdicao(null);
+      resetNfCampo();
       if(waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque' && window.matchMedia('(pointer: fine)').matches) waScanInput.focus();
     };
@@ -7504,11 +7651,23 @@ ${clipPlayerPills(n)}
         usuario_email: currentUserEmail()
       };
 
+      // Entrada com nota fiscal: envia o PDF antes e grava o caminho no lançamento.
+      let nf = null;
+      if(movTipo === 'entrada' && movNfArquivo){
+        waMovSaveBtn.disabled = true;
+        waMovSaveBtn.textContent = 'Enviando nota fiscal...';
+        try { nf = await enviarNf(); }
+        catch(e){ alert(e.message); return; }
+        finally { waMovSaveBtn.disabled = false; waMovSaveBtn.textContent = 'Registrar'; }
+        Object.assign(payload, nf);
+      }
+
       if(!supabaseReady){
         stockMovements.unshift(Object.assign({ id: 'm' + Date.now(), created_at: new Date().toISOString() }, payload));
       } else {
         const { error } = await supabaseClient.from('movimentacoes_estoque').insert(payload);
         if(error){
+          if(nf) await removerNfStorage([nf.nota_fiscal_path]);
           console.error('Erro ao registrar movimentação no Supabase:', error);
           alert('Erro ao registrar movimentação no Supabase: ' + error.message);
           return;
@@ -7519,7 +7678,7 @@ ${clipPlayerPills(n)}
       await loadStock();
       showScanFeedback('ok', movTipo === 'saida'
         ? `Saída de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${setor} → consumo: ${consumo} · saldo em ${setor}: ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`
-        : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`);
+        : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}${nf ? ` · NF anexada: ${nf.nota_fiscal_nome}` : ''}`);
     };
 
     window.waDeleteMovement = async function(id){
@@ -7550,6 +7709,7 @@ ${clipPlayerPills(n)}
         alert('Erro ao remover movimentação no Supabase: ' + error.message);
         return;
       }
+      await removerNfStorage([m.nota_fiscal_path]);   // a NF da entrada sai junto
       await loadStock();
     };
 
@@ -7583,10 +7743,10 @@ ${clipPlayerPills(n)}
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
-        rows = [['Data/hora', 'Estoque', 'Setor de consumo', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Usuário']]
+        rows = [['Data/hora', 'Estoque', 'Setor de consumo', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Nota fiscal', 'Usuário']]
           .concat(getFilteredMovements().map(m => {
             const p = byId.get(m.produto_id) || {};
-            return [fmtDateTimeBR(m.created_at), m.setor || '', stockEhConsumo(m) ? stockConsumoDe(m) : '', p.codigo_barras || '', p.nome || '', m.transferencia ? `${MOV_LABEL[m.tipo]} (transferência)` : MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
+            return [fmtDateTimeBR(m.created_at), m.setor || '', stockEhConsumo(m) ? stockConsumoDe(m) : '', p.codigo_barras || '', p.nome || '', m.transferencia ? `${MOV_LABEL[m.tipo]} (transferência)` : MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', m.nota_fiscal_nome || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_movimentacoes_${currentSetor}.csv`;
       }

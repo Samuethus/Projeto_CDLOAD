@@ -103,6 +103,31 @@ alter table public.movimentacoes_estoque add column if not exists setor_consumo 
 alter table public.movimentacoes_estoque add column if not exists transferencia boolean not null default false;
 alter table public.movimentacoes_estoque add column if not exists editado_em timestamptz;
 alter table public.movimentacoes_estoque add column if not exists editado_por text;
+-- Nota fiscal (PDF) da compra: só em entrada que não é transferência.
+-- O arquivo fica no bucket privado "notas_fiscais" (seção 2b abaixo).
+alter table public.movimentacoes_estoque add column if not exists nota_fiscal_nome  text;
+alter table public.movimentacoes_estoque add column if not exists nota_fiscal_path  text;
+alter table public.movimentacoes_estoque add column if not exists nota_fiscal_bytes bigint;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'movimentacoes_estoque_nota_fiscal_path_key') then
+    alter table public.movimentacoes_estoque
+      add constraint movimentacoes_estoque_nota_fiscal_path_key unique (nota_fiscal_path);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'movimentacoes_estoque_nota_fiscal_valida') then
+    alter table public.movimentacoes_estoque
+      add constraint movimentacoes_estoque_nota_fiscal_valida
+      check (nota_fiscal_path is null or (tipo = 'entrada' and not transferencia and nota_fiscal_nome is not null));
+  end if;
+end $$;
+
+-- 2b. Bucket das notas fiscais: privado, só PDF, até 10 MB. As policies
+--     de storage.objects ficam em seguranca_rls.sql.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('notas_fiscais', 'notas_fiscais', false, 10485760, array['application/pdf'])
+on conflict (id) do update
+  set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 do $$
 begin

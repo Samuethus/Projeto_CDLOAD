@@ -168,6 +168,19 @@ create policy relatorios_storage_insert on storage.objects for insert to authent
 create policy relatorios_storage_delete on storage.objects for delete to authenticated
   using (bucket_id = 'relatorios' and public.cdl_admin());
 
+-- Storage das notas fiscais do Estoque (bucket "notas_fiscais", PDF das
+-- entradas): quem tem a seção Estoque vê e anexa; remover é só admin.
+drop policy if exists notas_fiscais_select on storage.objects;
+drop policy if exists notas_fiscais_insert on storage.objects;
+drop policy if exists notas_fiscais_delete on storage.objects;
+
+create policy notas_fiscais_select on storage.objects for select to authenticated
+  using (bucket_id = 'notas_fiscais' and public.cdl_secao('estoque'));
+create policy notas_fiscais_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'notas_fiscais' and public.cdl_secao('estoque'));
+create policy notas_fiscais_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'notas_fiscais' and public.cdl_admin());
+
 -- ---------- 5. Conferência (rode e leia o resultado) ----------
 -- Deve listar o administrador com cargo 'Administrador' e status 'Ativo'.
 -- Se o e-mail dele não estiver aqui, insira/corrija ANTES de sair da página:
