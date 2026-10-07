@@ -132,14 +132,16 @@ create policy produtos_insert on public.cadastro_de_produtos for insert to authe
 create policy produtos_update on public.cadastro_de_produtos for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
 create policy produtos_delete on public.cadastro_de_produtos for delete to authenticated using (public.cdl_admin());
 
--- movimentações são imutáveis (sem UPDATE), o autor não pode ser forjado,
--- e remover um lançamento (o que reescreve o saldo) fica só para Administrador.
+-- movimentações: o autor não pode ser forjado; ajustar ou remover um
+-- lançamento (o que reescreve o saldo) fica só para Administrador — o
+-- gatilho estoque_valida_ajuste impede saldo negativo e registra o ajuste.
 create policy mov_select on public.movimentacoes_estoque for select to authenticated using (public.cdl_secao('estoque'));
 create policy mov_insert on public.movimentacoes_estoque for insert to authenticated
   with check (
     public.cdl_secao('estoque')
     and (usuario_email is null or lower(usuario_email) = lower(auth.jwt() ->> 'email'))
   );
+create policy mov_update on public.movimentacoes_estoque for update to authenticated using (public.cdl_admin()) with check (public.cdl_admin());
 create policy mov_delete on public.movimentacoes_estoque for delete to authenticated using (public.cdl_admin());
 
 -- relatorios_arquivos: seção "relatorios" lê e envia; o autor não pode

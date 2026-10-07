@@ -3578,7 +3578,7 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
                 </div>
                 <div>
-                  <div class="wa-modal-title">Nova Movimentação</div>
+                  <div class="wa-modal-title" id="waMovTitle">Nova Movimentação</div>
                   <div class="wa-modal-sub" id="waMovSub">Registre uma entrada ou saída de estoque</div>
                 </div>
               </div>
@@ -3634,7 +3634,7 @@
             </div>
             <div class="wa-modal-footer">
               <button class="wa-btn wa-btn-outline" onclick="waCloseMovModal()">Cancelar</button>
-              <button class="wa-btn wa-btn-primary" onclick="waSaveMovement()">Registrar</button>
+              <button class="wa-btn wa-btn-primary" id="waMovSaveBtn" onclick="waSaveMovement()">Registrar</button>
             </div>
           </div>
         </div>
@@ -3803,12 +3803,15 @@
        quantidade     numeric(14,3) not null,
        observacao     text,
        usuario_email  text,
-       created_at     timestamptz not null default now()
+       created_at     timestamptz not null default now(),
+       editado_em     timestamptz,  -- último ajuste (gravado pelo gatilho)
+       editado_por    text
      );
      -- + trigger que bloqueia saldo negativo POR CENTRAL, view `vw_estoque_saldo`
      --   (saldo por produto+central = origem + entradas − saídas daquela central)
-     --   e RLS permissivo no mesmo padrão das demais tabelas (movimentações
-     --   sem UPDATE: o histórico é imutável; corrige-se removendo e relançando).
+     --   e RLS no mesmo padrão das demais tabelas (movimentações:
+     --   ajuste (UPDATE) e remoção só por Administrador; o gatilho
+     --   estoque_valida_ajuste impede saldo negativo e grava editado_por/editado_em).
 ============================================================================ -->
 <!-- Versões fixas + SRI: o navegador recusa o script se o conteúdo do CDN for alterado. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
@@ -6236,6 +6239,7 @@ ${clipPlayerPills(n)}
     let scanMode = 'consulta';
     let editingProductId = null;
     let movTipo = 'entrada';
+    let editingMov = null;   // { m, par } enquanto o modal de movimentação está em modo edição
     let currentPage = 'home';
 
     const MOV_LABEL = { origem: 'Origem', entrada: 'Entrada', saida: 'Saída' };
@@ -6285,6 +6289,9 @@ ${clipPlayerPills(n)}
     const waMovSub = document.getElementById('waMovSub');
     const waMovProduto = document.getElementById('waMovProduto');
     const waMovTipoGroup = document.getElementById('waMovTipoGroup');
+    const waMovTipoField = document.getElementById('waMovTipoField');
+    const waMovTitle = document.getElementById('waMovTitle');
+    const waMovSaveBtn = document.getElementById('waMovSaveBtn');
     const waMovSetorField = document.getElementById('waMovSetorField');
     const waMovSetor = document.getElementById('waMovSetor');
     const waMovSetorLabel = document.getElementById('waMovSetorLabel');
@@ -6606,7 +6613,7 @@ ${clipPlayerPills(n)}
         const qtyCls = m.tipo === 'saida' ? 'wa-qty-neg' : (m.tipo === 'entrada' ? 'wa-qty-pos' : '');
         return `
           <tr>
-            <td style="white-space:nowrap;">${fmtDateTimeBR(m.created_at)}</td>
+            <td style="white-space:nowrap;">${fmtDateTimeBR(m.created_at)}${m.editado_em ? `<div class="wa-td-sub" title="Ajustado em ${stockEsc(fmtDateTimeBR(m.editado_em))}${m.editado_por ? ' por ' + stockEsc(userNameOf(m.editado_por) || m.editado_por) : ''}">editado</div>` : ''}</td>
             <td class="wa-td-name">
               ${p ? stockEsc(p.nome) : '<span class="wa-empty-hint">Produto removido</span>'}
               ${p ? `<div class="wa-td-sub">${stockEsc(p.codigo_barras)}</div>` : ''}
@@ -6618,6 +6625,7 @@ ${clipPlayerPills(n)}
             <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
             <td>${m.usuario_email ? stockEsc(userNameOf(m.usuario_email) || m.usuario_email) : '—'}</td>
             <td class="wa-table-actions">
+              ${isAdminUser() && p ? `<button class="wa-icon-btn" title="Editar lançamento" onclick="waEditMovement('${m.id}')">${ICON_EDIT}</button>` : ''}
               ${m.tipo === 'origem' || !isAdminUser() ? '' : `<button class="wa-icon-btn danger" title="Remover lançamento" onclick="waDeleteMovement('${m.id}')">${ICON_TRASH}</button>`}
             </td>
           </tr>`;
@@ -7097,7 +7105,7 @@ ${clipPlayerPills(n)}
       waMovSetorField.hidden = isTransfer;
       waMovTransferGrid.hidden = !isTransfer;
       waMovConsumoField.hidden = tipo !== 'saida';
-      waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : 'Estoque central';
+      waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : tipo === 'origem' ? 'Estoque central (origem)' : 'Estoque central';
       if(isTransfer){
         // Reinicia a animação mesmo se o usuário alternar rapidamente entre os tipos.
         waMovTransferGrid.classList.remove('wa-fade-in');
@@ -7105,6 +7113,20 @@ ${clipPlayerPills(n)}
         waMovTransferGrid.classList.add('wa-fade-in');
       }
       updateMovSummary();
+    }
+
+    // Na edição, o saldo de referência desconta o próprio lançamento (e a
+    // outra ponta, numa transferência) — é o saldo "como se ele não existisse".
+    const movDelta = m => (m.tipo === 'saida' ? -1 : 1) * (Number(m.quantidade) || 0);
+    function saldoBase(pid, setor){
+      let s = saldoOf(pid, setor);
+      if(editingMov) [editingMov.m, editingMov.par].forEach(r => { if(r && r.produto_id === pid && r.setor === setor) s -= movDelta(r); });
+      return s;
+    }
+    // Outra ponta de uma transferência: gravada no mesmo INSERT (mesmo produto, horário e quantidade).
+    function parTransferencia(m){
+      return stockMovements.find(x => x.id !== m.id && x.transferencia && x.produto_id === m.produto_id
+        && x.tipo !== m.tipo && x.created_at === m.created_at && Number(x.quantidade) === Number(m.quantidade)) || null;
     }
 
     function updateMovSummary(){
@@ -7123,19 +7145,30 @@ ${clipPlayerPills(n)}
           waMovSummary.classList.add('over');
           return;
         }
-        const saldoOrigem = saldoOf(p.id, origem);
-        const saldoDestino = saldoOf(p.id, destino);
+        const saldoOrigem = saldoBase(p.id, origem);
+        const saldoDestino = saldoBase(p.id, destino);
         const aposOrigem = saldoOrigem - q;
         waMovSummary.textContent = `${origem}: ${fmtQty(saldoOrigem)} → ${fmtQty(aposOrigem)} ${p.unidade}  ·  ${destino}: ${fmtQty(saldoDestino)} → ${fmtQty(saldoDestino + q)} ${p.unidade}`;
         waMovSummary.classList.toggle('over', aposOrigem < 0);
         return;
       }
       const setor = waMovSetor.value;
-      const saldo = saldoOf(p.id, setor);
+      if(!setor){
+        waMovSummary.textContent = 'Escolha o estoque central (Escritório ou Almoxarifado).';
+        waMovSummary.classList.add('over');
+        return;
+      }
+      const saldo = saldoBase(p.id, setor);
       const apos = movTipo === 'saida' ? saldo - q : saldo + q;
       const consumo = movTipo === 'saida' && waMovConsumo.value ? ` · consumo: ${waMovConsumo.value}` : '';
-      waMovSummary.textContent = `Saldo atual em ${setor}: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}${consumo}`;
-      waMovSummary.classList.toggle('over', apos < 0);
+      const rotulo = editingMov ? `Saldo em ${setor} sem este lançamento` : `Saldo atual em ${setor}`;
+      const aposTxt = editingMov ? 'com o ajuste' : `após a ${movTipo === 'saida' ? 'saída' : 'entrada'}`;
+      // Trocou de produto/estoque: o lançamento sai de onde estava — o saldo antigo também precisa fechar.
+      const m = editingMov && editingMov.m;
+      const saiuDe = m && (m.produto_id !== p.id || m.setor !== setor) && STOCK_SETORES.includes(m.setor) ? saldoBase(m.produto_id, m.setor) : null;
+      waMovSummary.textContent = `${rotulo}: ${fmtQty(saldo)} ${p.unidade} → ${aposTxt}: ${fmtQty(apos)} ${p.unidade}${consumo}`
+        + (saiuDe === null ? '' : ` · ${m.setor} (antes): fica com ${fmtQty(saiuDe)}`);
+      waMovSummary.classList.toggle('over', apos < 0 || (saiuDe !== null && saiuDe < 0));
     }
 
     waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(btn => {
@@ -7164,12 +7197,31 @@ ${clipPlayerPills(n)}
       }, 50);
     };
 
+    // Modo do modal: novo lançamento (m = null) ou ajuste de um existente.
+    // Ajuste: origem não muda de produto nem de tipo; transferência só muda
+    // quantidade e observação (as duas pontas juntas); os demais podem trocar
+    // produto, Entrada/Saída, estoque, setor de consumo, quantidade e observação.
+    function setMovEdicao(m){
+      editingMov = m ? { m, par: m.transferencia ? parTransferencia(m) : null } : null;
+      const travado = !!m && (m.tipo === 'origem' || m.transferencia);
+      waMovTitle.textContent = m ? 'Editar Movimentação' : 'Nova Movimentação';
+      waMovSaveBtn.textContent = m ? 'Salvar Alterações' : 'Registrar';
+      waMovTipoGroup.querySelector('[data-tipo="transferencia"]').hidden = !!m;
+      waMovTipoField.hidden = travado;
+      waMovProduto.disabled = travado;
+      waMovProduto.nextElementSibling.disabled = travado;
+      waMovSetorOrigem.disabled = waMovSetorDestino.disabled = !!m && m.transferencia;
+    }
+
     // Preenche o formulário de movimentação sem abrir o modal (reusado pela
-    // central de operações). Retorna false se não houver produto ativo.
-    function fillMovForm(produtoId, tipo){
-      const ativos = stockProducts.filter(p => p.ativo);
+    // central de operações e pela edição). Retorna false se não houver produto ativo.
+    function fillMovForm(produtoId, tipo, mov){
+      const ativos = stockProducts.filter(p => p.ativo || (mov && p.id === mov.produto_id));
       if(!ativos.length) return false;
-      waMovSub.textContent = 'Entrada abastece uma central; na saída, informe o setor que consome.';
+      setMovEdicao(mov || null);
+      waMovSub.textContent = mov
+        ? `Ajuste do lançamento de ${fmtDateTimeBR(mov.created_at)}${mov.usuario_email ? ' · ' + (userNameOf(mov.usuario_email) || mov.usuario_email) : ''}.`
+        : 'Entrada abastece uma central; na saída, informe o setor que consome.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
@@ -7180,12 +7232,107 @@ ${clipPlayerPills(n)}
       waMovConsumo.value = '';
       waMovQtd.value = '1';
       waMovObs.value = '';
+      if(mov){
+        // Estoque fora das centrais (histórico antigo) fica em branco: o ajuste exige escolher uma central.
+        waMovSetor.value = STOCK_SETORES.includes(mov.setor) ? mov.setor : '';
+        waMovConsumo.value = STOCK_SETORES_CONSUMO.includes(mov.setor_consumo) ? mov.setor_consumo : '';
+        waMovQtd.value = String(mov.quantidade);
+        waMovObs.value = mov.observacao || '';
+        if(mov.transferencia){
+          const saida = mov.tipo === 'saida' ? mov : editingMov.par, entrada = mov.tipo === 'saida' ? editingMov.par : mov;
+          waMovSetorOrigem.value = saida ? saida.setor : outraCentral(entrada.setor);
+          waMovSetorDestino.value = entrada ? entrada.setor : outraCentral(saida.setor);
+        }
+      }
       setMovTipo(tipo || 'entrada');
       return true;
     }
 
+    window.waEditMovement = function(id){
+      if(!window.__exigirAdmin('editar movimentações')) return;
+      const m = stockMovements.find(x => x.id === id);
+      if(!m) return;
+      if(!stockProducts.some(p => p.id === m.produto_id)){ alert('O produto deste lançamento foi removido.'); return; }
+      fillMovForm(m.produto_id, m.transferencia ? 'transferencia' : m.tipo, m);
+      waMovModal.classList.add('open');
+      setTimeout(() => {
+        if(m.tipo === 'saida' && !m.transferencia && !waMovConsumo.value) waMovConsumo.focus();
+        else { waMovQtd.focus(); waMovQtd.select(); }
+      }, 50);
+    };
+
+    // Grava o ajuste. Transferência: as duas pontas recebem a mesma
+    // quantidade, na ordem que nunca deixa saldo negativo no caminho
+    // (aumentou: entrada antes; diminuiu: saída antes).
+    async function salvarAjusteMovimentacao(){
+      const { m, par } = editingMov;
+      const p = stockProducts.find(x => x.id === waMovProduto.value);
+      const q = Number(waMovQtd.value);
+      const observacao = waMovObs.value.trim() || null;
+      if(!p){ alert('Selecione o produto.'); return; }
+      if(m.tipo === 'origem' ? !(q >= 0) : !(q > 0)){ alert(m.tipo === 'origem' ? 'A quantidade da origem não pode ser negativa.' : 'Informe uma quantidade maior que zero.'); return; }
+
+      let ajustes;
+      if(m.transferencia){
+        if(!par && q !== Number(m.quantidade)){
+          alert('Não encontrei a outra ponta desta transferência — só a observação pode ser ajustada. Para mudar a quantidade, remova as duas pontas e registre a transferência de novo.');
+          return;
+        }
+        const saida = m.tipo === 'saida' ? m : par, entrada = m.tipo === 'saida' ? par : m;
+        const delta = q - Number(m.quantidade);
+        if(saida && saldoBase(p.id, saida.setor) - q < 0){
+          alert(`Saldo insuficiente em ${saida.setor}: ${p.nome} ficaria com ${fmtQty(saldoBase(p.id, saida.setor) - q)} ${p.unidade}.`);
+          return;
+        }
+        if(entrada && saldoBase(p.id, entrada.setor) + q < 0){
+          alert(`O saldo de ${p.nome} em ${entrada.setor} ficaria negativo com essa quantidade.`);
+          return;
+        }
+        const ordem = delta >= 0 ? [entrada, saida] : [saida, entrada];
+        ajustes = ordem.filter(Boolean).map(r => ({ r, payload: { quantidade: q, observacao } }));
+      } else {
+        const tipo = m.tipo === 'origem' ? 'origem' : movTipo;
+        const setor = waMovSetor.value;
+        const consumo = tipo === 'saida' ? waMovConsumo.value : '';
+        if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Escritório ou Almoxarifado).'); return; }
+        if(tipo === 'saida' && !STOCK_SETORES_CONSUMO.includes(consumo)){ alert('Informe o setor que vai consumir o produto.'); waMovConsumo.focus(); return; }
+        const novo = saldoBase(p.id, setor) + (tipo === 'saida' ? -q : q);
+        if(novo < 0){ alert(`Saldo insuficiente em ${setor}: ${p.nome} ficaria com ${fmtQty(novo)} ${p.unidade}.`); return; }
+        if((m.produto_id !== p.id || m.setor !== setor) && STOCK_SETORES.includes(m.setor) && saldoBase(m.produto_id, m.setor) < 0){
+          alert(`Não é possível mover este lançamento: o saldo anterior em ${m.setor} ficaria negativo.`);
+          return;
+        }
+        ajustes = [{ r: m, payload: { produto_id: p.id, tipo, setor, setor_consumo: consumo || null, quantidade: q, observacao } }];
+      }
+
+      if(!supabaseReady){
+        const agora = new Date().toISOString();
+        ajustes.forEach(a => Object.assign(a.r, a.payload, { editado_em: agora, editado_por: currentUserEmail() }));
+      } else {
+        for(const a of ajustes){
+          const { data, error } = await supabaseClient.from('movimentacoes_estoque').update(a.payload).eq('id', a.r.id).select('id');
+          if(error){
+            console.error('Erro ao ajustar movimentação no Supabase:', error);
+            alert('Erro ao ajustar movimentação no Supabase: ' + error.message);
+            await loadStock();
+            return;
+          }
+          if(!data || !data.length){
+            alert('O ajuste não foi gravado: o banco ainda não libera edição de movimentações para este usuário. Rode supabase/estoque_editar_movimentacao.sql (só Administrador pode ajustar).');
+            await loadStock();
+            return;
+          }
+        }
+      }
+
+      waCloseMovModal();
+      await loadStock();
+      showScanFeedback('ok', `Lançamento ajustado · ${p.nome} · ${fmtQty(q)} ${p.unidade}${m.transferencia && par ? ' (as duas pontas da transferência)' : ''}`);
+    }
+
     window.waCloseMovModal = function(){
       waMovModal.classList.remove('open');
+      setMovEdicao(null);
       if(waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque' && window.matchMedia('(pointer: fine)').matches) waScanInput.focus();
     };
@@ -7285,6 +7432,7 @@ ${clipPlayerPills(n)}
     }
 
     window.waSaveMovement = async function(){
+      if(editingMov) return salvarAjusteMovimentacao();
       const p = stockProducts.find(x => x.id === waMovProduto.value);
       const q = Number(waMovQtd.value);
       if(!p){ alert('Selecione o produto.'); return; }

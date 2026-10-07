@@ -9,7 +9,8 @@
 -- cargo = 'Administrador' e status 'Ativo' em `usuarios`.
 --
 -- Tabelas que já eram assim e não mudam aqui: usuarios, local,
--- movimentacoes_estoque, relatorios_arquivos e o bucket "relatorios".
+-- movimentacoes_estoque (mov_update/mov_delete em seguranca_rls.sql e
+-- estoque_editar_movimentacao.sql), relatorios_arquivos e o bucket "relatorios".
 -- ============================================================================
 
 -- ---------- campanhas ----------

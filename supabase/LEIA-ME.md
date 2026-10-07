@@ -22,12 +22,14 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 10. Cole o conteúdo de [schema_usuarios_setor_acesso.sql](schema_usuarios_setor_acesso.sql) > **Run** (em **Usuários**, cria o campo **Setor** do cadastro e a coluna **Último acesso**, gravada a cada entrada na plataforma pela função `registrar_acesso()` — o usuário comum só consegue atualizar o próprio horário).
 11. Cole o conteúdo de [secao_whatsapp.sql](secao_whatsapp.sql) > **Run** (a seção **Disparo** passou a se chamar **WhatsApp**: troca a chave `disparo` por `whatsapp` nas seções liberadas de cada usuário — o app já aceita a chave antiga, então a ordem não importa).
 12. **Só se o Estoque já tinha dados no modelo antigo** (saldo em RH, Institucional, Espaço): cole [migracao_estoque_centrais.sql](migracao_estoque_centrais.sql) > **Run**. O estoque passa a existir só em **Escritório** e **Almoxarifado** (o saldo que estava nos setores antigos é transferido para o Almoxarifado — troque a linha `DESTINO` se preferir o Escritório) e toda **saída** passa a exigir o **setor de consumo**. A consulta final deve voltar vazia. Banco novo não precisa: o `schema_estoque.sql` já cria tudo assim.
+13. Cole o conteúdo de [estoque_editar_movimentacao.sql](estoque_editar_movimentacao.sql) > **Run** (libera o **lápis de edição** na tabela de Movimentações do Estoque — só Administrador; o banco impede ajuste que deixe saldo negativo e registra quem e quando editou). Banco novo não precisa.
 
 ## Estoque › estoques centrais e setor de consumo
 
 - **Entrada** (compra do mês) e **origem** vão sempre para um dos dois estoques centrais: **Escritório** ou **Almoxarifado**.
 - **Saída** = retirada da central, informando o **setor que consome**: Térreo, 1º Piso, 2º Piso, Espaço CDL, Administrativo, Financeiro, Certificado, Comercial, Diretoria, Recepção, RH, Jurídico. Para incluir ou renomear um setor, edite `STOCK_SETORES_CONSUMO` em `index.html` (o banco não trava a lista).
 - **Transferência** move saldo entre as duas centrais e não conta como compra nem consumo.
+- **Editar lançamento** (lápis na aba Movimentações, só Administrador): corrige produto, tipo (entrada/saída), estoque, setor de consumo, quantidade e observação. Na origem, produto e tipo ficam travados; na transferência, só quantidade e observação (as duas pontas são ajustadas juntas). Saídas antigas sem setor podem ser completadas por aqui.
 - **Dashboard** e **Relatório** (Controle de Estoque) mostram o consumo por setor; saídas antigas, sem setor, aparecem como "Não informado".
 
 ## Clipping News (Google Notícias)
