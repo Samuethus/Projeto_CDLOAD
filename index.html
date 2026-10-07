@@ -9172,13 +9172,17 @@ ${clipPlayerPills(n)}
         }).join('')}</ol>` : '<div class="stk-vazio">Nenhuma saída no período.</div>');
 
       // ---- Alertas de estoque (zerados primeiro) ----
+      // Total projetado = custo para repor até o mínimo: (mínimo − saldo) × preço de custo.
+      // O subtítulo soma todos os produtos abaixo do mínimo (não só os listados).
+      const stkRepor = p => Math.max(0, (Number(p.estoque_minimo) || 0) - Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS))) * (p.preco_custo != null ? Number(p.preco_custo) || 0 : 0);
+      const totalRepor = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p))).reduce((s, p) => s + stkRepor(p), 0);
       const alertas = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p)))
         .sort((a, b) => (situacaoOf(a) === 'zerado' ? 0 : 1) - (situacaoOf(b) === 'zerado' ? 0 : 1) || a.nome.localeCompare(b.nome, 'pt-BR'))
         .slice(0, 5);
-      const wAlertas = cdCard('Alertas de estoque', qAbaixo ? `${stkNum(qAbaixo)} produto${qAbaixo === 1 ? '' : 's'} abaixo do mínimo` : 'Produtos abaixo do mínimo', alertas.length ? `<ul class="cd-dest">${alertas.map(p => {
+      const wAlertas = cdCard('Alertas de estoque', qAbaixo ? `${stkNum(qAbaixo)} produto${qAbaixo === 1 ? '' : 's'} abaixo do mínimo · total projetado ${stkMoedaCompacta(totalRepor)}` : 'Produtos abaixo do mínimo', alertas.length ? `<ul class="cd-dest">${alertas.map(p => {
           const zerado = situacaoOf(p) === 'zerado';
           return `<li><div title="${esc(p.nome)}"><span class="cd-dest-ic ${zerado ? 'vermelho' : 'amarelo'}">${stkIcone('alerta')}</span>
-            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(p.nome)}</span><span class="cd-dest-meta">${stkQtd(saldoOf(p.id, STOCK_SETOR_TODOS))} / mín. ${stkQtd(p.estoque_minimo)} ${esc(p.unidade)}</span></span>
+            <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(p.nome)}</span><span class="cd-dest-meta">${stkQtd(saldoOf(p.id, STOCK_SETOR_TODOS))} / ${stkQtd(p.estoque_minimo)} (mín. ${esc(p.unidade)}) · total projetado ${esc(stkMoedaCompacta(stkRepor(p)))}</span></span>
             <span class="stk-badge ${zerado ? 'danger' : 'delay'}">${zerado ? 'Sem estoque' : 'Estoque baixo'}</span></div></li>`;
         }).join('')}</ul>` : '<div class="stk-vazio">Nenhum produto abaixo do mínimo.</div>');
 
