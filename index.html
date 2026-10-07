@@ -4306,13 +4306,7 @@
       const top = [...itens].filter(c => !ehOutro(c[0])).sort((a, b) => b[1] - a[1]).slice(0, 5);
       return top.concat([['Outros', itens.filter(c => !top.includes(c)).reduce((t, c) => t + c[1], 0)]]);
     }
-    // multipla = true: o "Outros" soma marcações (uma pessoa marca várias opções), então mostra a contagem, não %.
-    const barras = (itens, total, cor, multipla) => `<div class="cd-barras">${itens.map(([nome, v], i) => multipla && nome === 'Outros' && i === itens.length - 1 ? `
-        <div class="cd-barra" title="Outros: ${num(v)} marcações nas demais opções (múltipla escolha)">
-          <div class="cd-barra-rot"><span>Outros</span></div>
-          <div class="cd-barra-trilho"><i style="width:${(v / Math.max(...itens.map(x => x[1]), 1) * 100).toFixed(1)}%;background:${CORES[i % CORES.length]}"></i></div>
-          <div class="cd-barra-val">${num(v)}<small>marc.</small></div>
-        </div>` : `
+    const barras = (itens, total, cor) => `<div class="cd-barras">${itens.map(([nome, v], i) => `
         <div class="cd-barra" title="${esc(nome)}: ${num(v)} (${pct(v, total)})">
           <div class="cd-barra-rot"><span>${esc(nome)}</span></div>
           <div class="cd-barra-trilho"><i style="width:${total ? (v / Math.max(...itens.map(x => x[1]), 1) * 100).toFixed(1) : 0}%;background:${cor || CORES[i % CORES.length]}"></i></div>
@@ -4364,7 +4358,7 @@
       if(!ehBarra) return card(q.t, subResp(q), rosca(itens, total), pos);
       // Múltipla escolha: % sobre quem respondeu (a soma passa de 100%), da mais para a menos escolhida.
       const lista = topSeis(q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens);
-      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : '') + (lista.length < itens.length ? ' · top 5 + Outros' : ''), barras(lista, total, null, q.f === 'm'), pos);
+      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : '') + (lista.length < itens.length ? ' · top 5 + Outros' : ''), barras(lista, total), pos);
     }
     function cardAbertas(abertas){
       if(!abertas.length) return '';
