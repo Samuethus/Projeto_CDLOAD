@@ -4,6 +4,8 @@ Painel web estático (HTML único, sem build) com Campanhas, Clipping News, Rela
 
 O Clipping News é alimentado automaticamente pelo Google Notícias e pelo site oficial da CDL, comparando dois players (CDL Cuiabá e Fecomércio MT), com a coleta rodando no próprio Supabase: ver [supabase/schema_clipping.sql](supabase/schema_clipping.sql). O Dashboard traz o painel "Clipping News" com os principais indicadores dessa comparação.
 
+Próxima etapa: integração com o Survey Monkey (leitura de pastas, formulários e respostas). Planejamento em [surveymonkey/LEIA-ME.md](surveymonkey/LEIA-ME.md).
+
 ## Antes de publicar
 
 1. Siga [supabase/LEIA-ME.md](supabase/LEIA-ME.md): configurar o Auth e rodar [supabase/schema_seguranca_rls.sql](supabase/schema_seguranca_rls.sql). **Sem isso o banco continua aberto.**
@@ -57,6 +59,7 @@ index.html               o app
 config.js                gerado pelo script (ignorado pelo Git)
 scripts/gerar_config.py  gera o config.js (.env ou variáveis de ambiente)
 supabase/                SQL de segurança (RLS) e passo a passo
+surveymonkey/            planejamento da integração com o Survey Monkey (LEIA-ME)
 .github/workflows/       deploy no GitHub Pages
 .env.example             modelo das variáveis
 SECURITY.md              riscos e limitações
