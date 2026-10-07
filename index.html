@@ -4606,14 +4606,25 @@
     document.dispatchEvent(new CustomEvent('cdload:pagechange', { detail: { page: pageId } }));
   }
 
-  // Última seção aberta, por usuário, para reabrir a mesma ao recarregar a página (em vez da Home).
+  // Última seção aberta, por usuário, para reabrir a mesma SÓ ao recarregar a página (F5).
+  // Fica no sessionStorage (vale apenas para esta aba): fechar e abrir a plataforma, ou abrir em
+  // nova janela/aba, começa pela Home. Além disso só é usada quando a navegação foi um recarregamento.
   const chaveSecao = () => 'cdload-secao:' + ((currentUser && currentUser.email) || '').toLowerCase();
+  const foiRecarregamento = (() => {
+    try {
+      const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      return nav ? nav.type === 'reload' : (performance.navigation && performance.navigation.type === 1);
+    } catch(e){ return false; }
+  })();
+  // Limpa a versão anterior, que guardava a seção no localStorage (persistia entre aberturas).
+  try { Object.keys(localStorage).filter(k => k.startsWith('cdload-secao:')).forEach(k => localStorage.removeItem(k)); } catch(e){}
   function lembrarSecao(pageId){
     if(!currentUser) return;
-    try { localStorage.setItem(chaveSecao(), pageId); } catch(e){ /* sem storage: volta para a Home ao recarregar */ }
+    try { sessionStorage.setItem(chaveSecao(), pageId); } catch(e){ /* sem storage: volta para a Home ao recarregar */ }
   }
   function secaoLembrada(){
-    try { return localStorage.getItem(chaveSecao()); } catch(e){ return null; }
+    if(!foiRecarregamento) return null;
+    try { return sessionStorage.getItem(chaveSecao()); } catch(e){ return null; }
   }
 
   navItems.forEach(item => {
@@ -4622,8 +4633,8 @@
 
   window.goTo = goTo;
 
-  // Página de entrada após o login: a última seção aberta por este usuário (se ainda existir e
-  // estiver liberada); senão a Home, se liberada; senão a primeira seção permitida na ordem do menu.
+  // Página de entrada após o login: ao recarregar a página, a última seção aberta nesta aba (se ainda
+  // existir e estiver liberada); senão — e sempre ao abrir a plataforma — a Home, se liberada; senão a primeira seção permitida na ordem do menu.
   // Sem nenhuma seção, nada é exibido.
   function goToInicial(){
     const secoes = (currentUser && currentUser.secoes) || [];
