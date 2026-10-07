@@ -584,7 +584,7 @@ revoke all on public.clipping_dominios_bloqueados from anon, authenticated;
 
 insert into public.clipping_dominios_bloqueados (dominio, motivo, bloqueado_em) values
   ('pnbonline.com.br', 'Segurança: alerta do antivírus ao acessar o portal', date '2026-09-01'),
-  ('jknoticias.com',   'Segurança: bloqueio manual solicitado pela equipe',  date '2026-10-07')
+  ('jknoticias.com',   'Segurança: alerta do antivírus ao acessar o portal',  date '2026-10-07')
 on conflict (dominio) do nothing;
 
 create or replace function public.clipping_dominio_bloqueado(url_ou_dominio text)

@@ -17,7 +17,7 @@
 --
 -- Sites bloqueados hoje:
 --   pnbonline.com.br  · 01/09/2026 · alerta do antivírus ao acessar o portal
---   jknoticias.com    · 07/10/2026 · bloqueio manual solicitado pela equipe
+--   jknoticias.com    · 07/10/2026 · alerta do antivírus ao acessar o portal
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -36,7 +36,7 @@ revoke all on public.clipping_dominios_bloqueados from anon, authenticated;
 -- ---------------------------------------------------------------------
 insert into public.clipping_dominios_bloqueados (dominio, motivo, bloqueado_em) values
   ('pnbonline.com.br', 'Segurança: alerta do antivírus ao acessar o portal', date '2026-09-01'),
-  ('jknoticias.com',   'Segurança: bloqueio manual solicitado pela equipe',  date '2026-10-07')
+  ('jknoticias.com',   'Segurança: alerta do antivírus ao acessar o portal',  date '2026-10-07')
 on conflict (dominio) do update set motivo = excluded.motivo, bloqueado_em = excluded.bloqueado_em;
 
 -- ---------------------------------------------------------------------

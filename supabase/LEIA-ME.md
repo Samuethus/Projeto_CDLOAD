@@ -47,7 +47,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
   | Domínio | Bloqueado em | Motivo |
   |---|---|---|
   | `pnbonline.com.br` | 01/09/2026 | Alerta do antivírus ao acessar o portal |
-  | `jknoticias.com` | 07/10/2026 | Bloqueio manual solicitado pela equipe |
+  | `jknoticias.com` | 07/10/2026 | Alerta do antivírus ao acessar o portal |
 
   Para bloquear outro: inclua a linha no passo 2 de [clipping_bloquear_dominios.sql](clipping_bloquear_dominios.sql) e rode o arquivo; acrescente o domínio também em `CLIP_DOMINIOS_BLOQUEADOS` no `index.html` (segunda barreira no navegador). Consultar a lista a qualquer momento: `select * from clipping_dominios_bloqueados order by bloqueado_em;`
 - **Verificação e imagens:** a cada 5 minutos, `clipping_verificar_materias()` descobre o link direto e a imagem de capa de até 15 matérias. Não filtra mais nada: a notícia aparece no app desde a coleta. Sem imagem, o app mostra uma arte gerada pela categoria.
