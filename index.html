@@ -2259,6 +2259,7 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
+            <option value="ivs">Painel · Stone (IVS)</option>
             <option value="viabilidades">Painel · Viabilidade</option>
           </select>
           <select class="filter-select" id="stkLeadsFiltro" title="Simulação Leads: quantidade de leads (planos) captados pelo projeto" hidden>
@@ -8876,7 +8877,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), viabilidades: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), viabilidades: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -9082,7 +9083,7 @@ ${clipPlayerPills(n)}
       const clipping = stkPainel() === 'clipping';
       const panorama = stkPainel() === 'panorama';
       const sefaz = stkPainel() === 'sefaz';
-      const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc';
+      const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs';
       const viab = stkPainel() === 'viabilidades';
       stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab;
       stkPlayerEl.hidden = !clipping;
@@ -9102,13 +9103,13 @@ ${clipPlayerPills(n)}
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
-        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc'){
-        // IPCA-15: o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs'){
+        // IPCA-15 e Stone (IVS): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
         const D = ibgeDados(), base = stkPainel() === 'pmc' ? 2 : 1;
         const anosI = [...new Set((D ? D.meses : []).map(m => m.slice(0, 4)))].sort().slice(base).reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosI.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
@@ -9631,7 +9632,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -9644,7 +9645,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'clipping') return stkRenderClipping();
       if(stkPainel() === 'panorama') return stkRenderPanorama();
       if(stkPainel() === 'sefaz') return sefRender();
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc') return ibgeRender();
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs') return ibgeRender();
       if(stkPainel() === 'viabilidades') return viabRender();
       return stkRenderEstoque();
     }
@@ -11030,7 +11031,8 @@ ${clipPlayerPills(n)}
     // scripts/ibge_extrair.ps1 (assets/data/ibge_ipca15.js e ibge_pmc.js). Tudo é filtrado no
     // navegador: Local (área do IPCA-15 / estado da PMC), Mês/Ano e busca (grupo/item ou atividade).
     const stkIbgeLocalEl = document.getElementById('stkIbgeLocalFiltro');
-    const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'] };
+    // ivs = Painel · Stone (IVS): mesma infraestrutura (Estado, Mês/Ano e busca por setor), dados da Stone.
+    const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'], ivs: ['assets/data/stone_ivs.js', 'STONE_IVS'] };
     const ibgeDados = () => { const a = IBGE_ARQ[stkPainel()]; return a ? window[a[1]] : null; };
     const ibgeProm = {};
     function ibgeCarregar(painel){
@@ -11056,12 +11058,12 @@ ${clipPlayerPills(n)}
     let ibgeUltimo = null;
 
     function ibgePreencherLocal(D){
-      const pmc = stkPainel() === 'pmc', rotulo = pmc ? 'Estado' : 'Região';
+      const pmc = stkPainel() === 'pmc' || stkPainel() === 'ivs', rotulo = pmc ? 'Estado' : 'Região';
       // Refaz a lista quando o painel muda (IPCA-15: áreas; PMC: estados).
       if(stkIbgeLocalEl.dataset.painel !== stkPainel()){
         stkIbgeLocalEl.dataset.painel = stkPainel();
         stkIbgeLocalEl.innerHTML = `<option value="">${rotulo}</option>` + D.locais.nomes.map((n, i) => i ? `<option value="${i}">${esc(n)}</option>` : '').join('');
-        stkIbgeLocalEl.title = pmc ? 'Estado (PMC)' : 'Região metropolitana pesquisada no IPCA-15';
+        stkIbgeLocalEl.title = stkPainel() === 'ivs' ? 'Estado (Índice do Varejo Stone)' : pmc ? 'Estado (PMC)' : 'Região metropolitana pesquisada no IPCA-15';
       }
     }
     // Janela comum: mês de referência = último mês da janela; comparação com o mesmo mês do ano anterior.
@@ -11077,7 +11079,7 @@ ${clipPlayerPills(n)}
         stkGrid.classList.add('cd-carregando');
         ibgeCarregar(painel).then(() => { if(stkPainel() === painel) ibgeRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
-          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados do IBGE (${esc(IBGE_ARQ[painel][0])}).</div></div>`;
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados ${painel === 'ivs' ? 'da Stone' : 'do IBGE'} (${esc(IBGE_ARQ[painel][0])}).</div></div>`;
         });
         return;
       }
@@ -11086,10 +11088,10 @@ ${clipPlayerPills(n)}
       const J = panJanela(D);
       if(!J.atual.size){
         stkGrid.classList.remove('cd-fit', 'cd-carregando');
-        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">O IBGE ainda não publicou dados para ${esc(J.rotulo)}.</div></div>`;
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">${painel === 'ivs' ? 'A Stone' : 'O IBGE'} ainda não publicou dados para ${esc(J.rotulo)}.</div></div>`;
         return;
       }
-      return painel === 'pmc' ? pmcDesenhar(D, J) : ipcaDesenhar(D, J);
+      return painel === 'pmc' ? pmcDesenhar(D, J) : painel === 'ivs' ? ivsDesenhar(D, J) : ipcaDesenhar(D, J);
     }
 
     function ibgeTela(kpis, linhaA, linhaB){
@@ -11330,6 +11332,107 @@ ${clipPlayerPills(n)}
           .concat(atv.sort((a, b) => b.v - a.v).map(x => [x.nome, (x.v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
             x.rec == null ? '' : (x.rec * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }), x.est ? 'sim' : 'não'])) };
     }
+    // ---------------- Painel · Stone (IVS) — Índice do Varejo Stone ----------------
+    // Dados: assets/data/stone_ivs.js (scripts/stone_ivs_extrair.py, CSV público de cada edição mensal).
+    // Mesma estrutura da PMC: 5 KPIs + 2 linhas. A Stone detalha setores só para o Brasil; nos estados
+    // há apenas o índice geral (varejo restrito). Séries: [índice, var. anual %, índice dessaz., var. mensal dessaz. %].
+    const IVS_NOME = { 'geral restrito': 'Varejo (geral restrito)', 'geral ampliado': 'Varejo ampliado',
+      'setores sensíveis a renda': 'Setores sensíveis à renda', 'setores sensíveis ao crédito': 'Setores sensíveis ao crédito' };
+    const ivsNome = s => IVS_NOME[s] || s.charAt(0).toUpperCase() + s.slice(1);
+    function ivsDesenhar(D, J){
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      const l = stkIbgeLocalEl.value === '' ? 0 : Number(stkIbgeLocalEl.value);
+      const { r, rA } = ibgeRef(D, J);
+      const ant2 = sefMesesDe(D, J.ano - 2, J.mesesNum);
+      const S = (s, loc) => D.series[s + ',' + loc] || null;
+      const G = D.setores.indexOf('geral restrito'), AMP = D.setores.indexOf('geral ampliado');
+      const atividades = D.setores.map((n, s) => s).filter(s => !IVS_NOME[D.setores[s]]);
+      // Busca: setor cujo nome contém o texto; a série principal passa a ser o 1º encontrado.
+      const achados = termos.length ? D.setores.map((n, s) => s).filter(s => ibgeCasa(ivsNome(D.setores[s]), termos)) : [];
+      const sSel = achados.length ? achados[0] : G;
+      const vazio = termos.length && !achados.length;
+      // Setor só existe no Brasil: com setor escolhido e estado no filtro, a série é a do Brasil.
+      const locSerie = S(sSel, l) ? l : 0;
+      const ser = S(sSel, locSerie);
+      const nomeSerie = ivsNome(D.setores[sSel]);
+      const local = D.locais.nomes[locSerie] + (sSel !== G ? ` · ${nomeSerie}` : '');
+      const aviso = locSerie !== l ? ` · a Stone detalha setores só para o Brasil (estado: ${D.locais.nomes[l]})` : '';
+      const soma = (arr, meses) => { let t = 0; for(const m of meses){ if(arr[m] == null) return null; t += arr[m]; } return t; };
+      // Variação acumulada: soma dos índices no período ÷ soma no mesmo período do ano anterior.
+      const acum = (arr, A, B) => { const a = soma(arr, A), b = soma(arr, B); return a == null || !b ? null : a / b - 1; };
+      const pctOf = (arr, m) => m < 0 || arr[m] == null ? null : arr[m] / 100;      // % da Stone (já calculado) → fração
+      const ult12 = (arr, m) => m < 23 ? null : acum(arr, Array.from({ length: 12 }, (_, k) => m - 11 + k), Array.from({ length: 12 }, (_, k) => m - 23 + k));
+      const rotR = ibgeRot(D, r), rotA = ibgeRot(D, rA);
+      const pctS = v => ibgePct(v == null ? null : v * 100, 1, true);
+      const kp = (icone, tom, label, v, vA, ref, dica) => cdKpiCard(icone, tom, label, vazio ? '—' : pctS(v), cdDelta(v || 0, vA || 0, true, v == null || vA == null), `vs. ${ref} (${pctS(vA)})`, dica + aviso);
+      const idx = ser ? ser[0] : [], yoy = ser ? ser[1] : [], mom = ser ? ser[3] : [];
+
+      // ---- KPIs ----
+      const kPer = kp('carrinho', 'azul', 'Vendas no período', acum(idx, J.atual, J.anterior), acum(idx, J.anterior, ant2), `${J.anoAnt}`,
+        `${nomeSerie}: índice ${J.rotulo} contra o mesmo período de ${J.anoAnt} · ${D.locais.nomes[locSerie]}`);
+      const kMes = kp('percent', 'amarelo', 'Vendas no mês', pctOf(yoy, r), pctOf(yoy, rA), rotA,
+        `${nomeSerie}: ${rotR} contra o mesmo mês do ano anterior (variação divulgada pela Stone) · ${D.locais.nomes[locSerie]}`);
+      const kMom = kp('barras', 'verde', 'Variação mensal', pctOf(mom, r), pctOf(mom, rA), rotA,
+        `${nomeSerie}: ${rotR} contra o mês anterior, com ajuste sazonal · ${D.locais.nomes[locSerie]}`);
+      const k12 = kp('trendUp', 'azul', 'Últimos 12 meses', ult12(idx, r), ult12(idx, rA), rotA, `${nomeSerie}: 12 meses até ${rotR} · ${D.locais.nomes[locSerie]}`);
+      const ampl = S(AMP, 0);
+      const k5 = locSerie === 0 && sSel === G && ampl
+        ? kp('carro', 'verde', 'Varejo ampliado', acum(ampl[0], J.atual, J.anterior), acum(ampl[0], J.anterior, ant2), `${J.anoAnt}`,
+          `Varejo + veículos e material de construção · ${J.rotulo} · Brasil`)
+        : kp('banco', 'verde', 'Brasil no período', acum(S(sSel, 0)[0], J.atual, J.anterior), acum(S(sSel, 0)[0], J.anterior, ant2), `${J.anoAnt}`,
+          `${nomeSerie} no Brasil, para comparar · ${J.rotulo}`);
+
+      // ---- Evolução do índice ----
+      const E = ibgeEvolucao(D, J, m => idx[m]);
+      const wVolume = cdCard('Evolução das vendas', `Índice do Varejo Stone · ${local} · Stone (até ${ibgeRot(D, D.meses.length - 1)})`, '<div id="stkFluxoGraf"></div>', ibgeLegenda(E.V.series));
+
+      // ---- Vendas por estado (índice geral; o estado escolhido sempre aparece) ----
+      const porUf = D.locais.nomes.map((n, k) => [k, k > 0 && S(G, k) ? acum(S(G, k)[0], J.atual, J.anterior) : null]).filter(([, v]) => v != null).sort((a, b) => b[1] - a[1]);
+      const topUf = porUf.slice(0, 7);
+      if(l && !topUf.some(([k]) => k === l)){ const x = porUf.find(([k]) => k === l); if(x) topUf.splice(6, 1, x); }
+      const wEstados = cdCard('Vendas por estado', (l ? `${D.locais.nomes[l]} em destaque` : 'Estados com maior crescimento no período') + ' · índice geral',
+        cdBarras(topUf.map(([k, v], i) => ({ nome: D.locais.nomes[k], valor: Math.max(0, v) * 100, rotulo: pctS(v),
+          cor: l ? (k === l ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUf.length > 1 ? i / (topUf.length - 1) : 0) })), 'Vendas por estado', 'Sem dados no período.'));
+
+      // ---- Setores (Brasil): desempenho (rosca), maiores altas (barras) e quedas (ranking) ----
+      const lista = achados.length ? achados.filter(s => !IVS_NOME[D.setores[s]]) : atividades;
+      const atv = lista.map(s => ({ s, nome: ivsNome(D.setores[s]), v: acum(S(s, 0)[0], J.atual, J.anterior), mes: pctOf(S(s, 0)[1], r) })).filter(x => x.v != null);
+      const subSet = `Brasil · ${J.rotulo}${l ? ' (a Stone não detalha setores por estado)' : ''}`;
+      const faixas = [['alta', 'Em alta', x => x.v > 0.01], ['estavel', 'Estáveis', x => Math.abs(x.v) <= 0.01], ['queda', 'Em queda', x => x.v < -0.01]]
+        .map(([k, nome, f]) => { const its = atv.filter(f); return { nome, sigla: nome, cor: PMC_COR[k], valor: its.length, dica: `${nome}: ${its.map(x => x.nome).join('; ') || 'nenhum'}` }; })
+        .filter(d => d.valor > 0).sort((a, b) => b.valor - a.valor);
+      const wRosca = ibgeRosca('Desempenho dos setores', subSet, faixas, [String(atv.length), atv.length === 1 ? 'setor' : 'setores']);
+      const altas = atv.filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+      const wAltas = cdCard('Setores que mais cresceram', subSet,
+        cdBarras(altas.slice(0, 6).map(x => ({ nome: x.nome, valor: x.v * 100, rotulo: pctS(x.v), cor: CD_COR.verde })), 'Setores que mais cresceram',
+          vazio ? `Nenhum setor com “${busca}”.` : 'Nenhum setor em alta no período.'));
+      const quedas = atv.filter(x => x.v < 0).sort((a, b) => a.v - b.v).slice(0, 5);
+      const wQuedas = cdCard('Setores em queda', `${subSet} · período e variação no mês`, quedas.length ? `<ol class="cd-rank">${quedas.map((x, k) => `
+          <li><span class="cd-rank-pos">${k + 1}</span><span class="cd-rank-nome" title="${esc(x.nome)}">${esc(x.nome)}</span><strong>${pctS(x.v)}</strong><span class="cd-rank-pct" title="Variação no mês (${esc(rotR)})">${pctS(x.mes)}</span></li>`).join('')}</ol>`
+        : `<div class="stk-vazio">${vazio ? esc(`Nenhum setor com “${busca}”.`) : 'Nenhum setor em queda no período.'}</div>`);
+
+      // ---- Destaques: estados no mês de referência (variação anual divulgada pela Stone) ----
+      const noMes = D.locais.nomes.map((n, k) => [k, k > 0 && S(G, k) ? pctOf(S(G, k)[1], r) : null]).filter(([, v]) => v != null).sort((a, b) => b[1] - a[1]);
+      let dest = noMes.slice(0, 5);
+      if(l && !dest.some(([k]) => k === l)){ const x = noMes.find(([k]) => k === l); if(x) dest.splice(4, 1, x); }
+      const wDest = cdCard(`Destaques em ${rotR}`, 'Estados com maior alta nas vendas no mês · índice geral', dest.length ? `<ul class="cd-dest">${dest.map(([k, v]) => {
+          const vA = pctOf(S(G, k)[1], rA), d = cdDelta(v, vA || 0, true, vA == null);
+          const [ic, tom] = v > 0 ? ['setaCima', 'verde'] : v < 0 ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
+          return `<li${k === l ? ' class="cd-dest-sel"' : ''}><div title="${esc(D.locais.nomes[k])} · ${pctS(v)} · ${esc(d.txt)} vs. ${rotA} (${pctS(vA)})"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(D.locais.nomes[k])} · ${pctS(v)}</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${esc(rotA)} (${pctS(vA)})</span></span></span></div></li>`;
+        }).join('')}</ul>` : '<div class="stk-vazio">Sem dados no mês.</div>');
+
+      ibgeTela([kPer, kMes, kMom, k12, k5], [wVolume, wEstados, wRosca], [wAltas, wQuedas, wDest]);
+      stkDesenharRoscaCd(faixas, 'Desempenho dos setores', 196);
+      ibgeDesenharEvolucao(E.nMeses, E.V);
+      cdAjustarListas();
+      ibgeUltimo = { painel: 'ivs',
+        arquivo: `stone_ivs_${stkNorm(D.locais.nomes[l]).replace(/[^a-z0-9]+/g, '_')}_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`,
+        linhas: [['Tipo', 'Nome', `Variação ${J.rotulo} vs. ${J.anoAnt} (%)`, `Variação em ${rotR} vs. ${rotA} (%)`]]
+          .concat(atv.slice().sort((a, b) => b.v - a.v).map(x => ['Setor (Brasil)', x.nome, (x.v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }), x.mes == null ? '' : (x.mes * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })]))
+          .concat(porUf.map(([k, v]) => ['Estado', D.locais.nomes[k], (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
+            (() => { const m = pctOf(S(G, k)[1], r); return m == null ? '' : (m * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }); })()])) };
+    }
     stkIbgeLocalEl.addEventListener('change', stkRender);
 
     stkPeriodoEstEl.addEventListener('change', () => {
@@ -11410,7 +11513,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -11441,7 +11544,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -11527,7 +11630,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc'){
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs'){
         if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
