@@ -292,6 +292,10 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental e controle de limite.
 - [x] Seção **Survey Monkey** criada no `index.html` (antiga "Templates", hoje só com o cabeçalho; os templates de WhatsApp continuam em WhatsApp › Templates).
 - [x] Retrato fixo na seção **Survey Monkey** (`SM_RETRATO` no `index.html`, lido pelo MCP em 07/10/2026): filtros (busca, pasta, status, ano), KPIs, respostas por pasta, tabela de formulários e exportação CSV. Nomes das pastas provisórios (o MCP não informa o nome da pasta).
+- [x] Seção **Survey Monkey** sem o gráfico "Respostas por pasta" e sem o texto do retrato; tabela de formulários no padrão da tabela de Movimentações do Estoque (largura total, sem quebra de linha, ordenação Mais respostas / Mais recente / A-Z).
+- [x] Clique no formulário abre o **dashboard do formulário** (cards do Dashboard › CAGED, sem os KPIs do topo): um card por pergunta (rosca para escolha única, barras para múltipla escolha, média + barras para notas, barras empilhadas para matriz) e a lista de perguntas abertas (só contagem).
+- [x] Switch **Painel / Resposta individual**. A tabela de respostas individuais já tem a estrutura (uma coluna por pergunta, colunas de dado pessoal marcadas e mascaradas), mas fica **vazia no retrato**: as respostas individuais têm nome, CPF, telefone e IP e não podem ir para o arquivo público. Elas entram com a sincronização ao vivo (preencher `SM_RESUMOS[id].respostas`).
+- [x] Resumos agregados dos 38 formulários com respostas em `assets/data/surveymonkey_resumos.js` (lidos com `get_response_summary` em 07/10/2026; somas conferidas).
 - [ ] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout.
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.

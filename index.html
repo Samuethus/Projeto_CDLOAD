@@ -1384,24 +1384,57 @@
   .cd-barra-trilho i{display:block;height:100%;border-radius:9999px;}
   .cd-barra-val{text-align:right;font-size:12.5px;color:var(--cd-texto);font-variant-numeric:tabular-nums;}
 
-  /* ===== Survey Monkey: retrato dos formulários (KPIs, respostas por pasta e tabela) ===== */
-  .sm-fonte{font-size:12.5px;color:var(--cd-muted);margin:-6px 0 14px;}
-  .sm-fonte b{color:var(--cd-texto);font-weight:600;}
-  .sm-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start;}
-  @media (max-width:1100px){ .sm-row{grid-template-columns:1fr;} }
-  .sm-barras{gap:10px;}
-  .sm-barras .cd-barra{grid-template-columns:minmax(0,190px) 1fr minmax(44px,auto);min-height:30px;}
-  .sm-barras .cd-barra-rot small{color:var(--cd-muted);font-size:11.5px;margin-left:4px;flex:0 0 auto;}
+  /* ===== Survey Monkey: lista de formulários (tabela no padrão do Estoque) e dashboard por formulário ===== */
+  #page-surveymonkey [hidden]{display:none !important;}
   .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
-  .sm-card-tabela{padding-bottom:6px;}
-  .sm-card-tabela .wa-table-wrap{margin:0 -20px;max-height:640px;overflow:auto;}
-  .sm-tabela th{position:sticky;top:0;background:#F8FAFC;z-index:1;}
-  .sm-tabela td{padding:11px 20px;vertical-align:top;}
-  .sm-tabela .sm-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .sm-tabela .sm-nome{font-weight:600;color:var(--wa-text);min-width:220px;}
-  .sm-tabela .sm-pasta{white-space:nowrap;}
-  .sm-tabela .sm-data{white-space:nowrap;}
-  .sm-tabela .sm-vazio td{text-align:center;color:var(--cd-muted);padding:28px 20px;}
+  /* Tabelas sem quebra de linha em nenhuma célula: rolam na horizontal quando não cabem. */
+  .sm-tabela th, .sm-tabela td{white-space:nowrap;}
+  .sm-tabela th{position:sticky;top:0;z-index:1;}
+  #smLista .wa-table-wrap{max-height:calc(100vh - 330px);min-height:240px;overflow:auto;}
+  .sm-tabela tbody tr.sm-linha{cursor:pointer;}
+  .sm-tabela tbody tr.sm-linha:focus-visible{outline:2px solid var(--wa-primary);outline-offset:-2px;}
+  .sm-tabela .wa-td-num{font-weight:600;}
+  /* Dashboard do formulário */
+  .sm-dash-topo{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .sm-voltar{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;}
+  .sm-voltar svg{width:15px;height:15px;stroke-width:2.2;}
+  .sm-dash-tits{flex:1 1 320px;min-width:0;}
+  .sm-dash-tits h2{margin:0;font-size:18px;font-weight:700;color:var(--wa-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sm-dash-meta{font-size:12.5px;color:var(--wa-text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sm-dash-meta .wa-badge{margin-right:6px;}
+  .sm-painel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;grid-auto-flow:row dense;}
+  .sm-ind-vazio{padding:36px 20px;text-align:center;color:#94a3b8;font-size:13px;}
+  @media (max-width:1200px){ .sm-painel{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:760px){ .sm-painel{grid-template-columns:1fr;} }
+  .sm-painel > .sm-span{grid-column:1 / -1;}
+  .sm-painel .cd-card{min-height:260px;}
+  .sm-painel .cd-card-body{justify-content:flex-start;gap:12px;}
+  .sm-painel .cd-card-body > *{flex:0 0 auto;}
+  .sm-painel .cd-rank li{flex:0 0 auto;}
+  .sm-painel .cd-rosca-wrap{flex:1 1 auto;}
+  .sm-painel .cd-card-head h3{font-size:14.5px;}
+  .sm-painel .cd-barras{justify-content:flex-start;gap:9px;}
+  .sm-painel .cd-barra{flex:0 0 auto;min-height:24px;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) 58px;}
+  .sm-painel .cd-barra-val small{color:var(--cd-muted);margin-left:4px;}
+  .sm-media{font-size:30px;font-weight:700;color:var(--cd-texto);line-height:1.1;letter-spacing:-.01em;}
+  .sm-media span{font-size:13px;font-weight:500;color:var(--cd-muted);margin-left:6px;}
+  .sm-rosca-svg{display:block;}
+  .sm-painel .cd-rosca-legenda{flex:1 1 auto;max-width:60%;gap:9px;}
+  .sm-painel .cd-rosca-legenda strong{margin-left:6px;}
+  /* Matriz: uma barra 100% empilhada por linha + legenda das opções */
+  .sm-matriz{display:flex;flex-direction:column;gap:12px;}
+  .sm-matriz-linha{display:grid;grid-template-columns:minmax(0,180px) 1fr 52px;align-items:center;gap:12px;font-size:13px;color:var(--cd-texto);}
+  .sm-matriz-linha > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sm-matriz-linha > b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;}
+  .sm-pilha{display:flex;height:14px;border-radius:9999px;overflow:hidden;background:var(--cd-trilho);}
+  .sm-pilha i{display:block;height:100%;}
+  .sm-matriz .cd-legenda{flex-wrap:wrap;row-gap:6px;margin-top:4px;}
+  .sm-cad-ic{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border-radius:6px;padding:2px 7px;margin-left:8px;}
+  .sm-cad-ic svg{width:11px;height:11px;stroke-width:2.4;}
+  .sm-aviso{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--wa-text-muted);min-width:0;}
+  .sm-aviso svg{width:15px;height:15px;stroke-width:2;flex:0 0 auto;color:#B45309;}
+  .sm-tabela-ind th{max-width:260px;overflow:hidden;text-overflow:ellipsis;}
+  .sm-tabela-ind td{max-width:260px;overflow:hidden;text-overflow:ellipsis;}
 
   /* Rosca de sentimento: total no centro + legenda à direita */
   .cd-rosca-wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:100%;}
@@ -2719,7 +2752,7 @@
         <!-- Integração com o Survey Monkey (ver surveymonkey/LEIA-ME.md).
              Etapa atual: retrato fixo (SM_RETRATO), lido pelo MCP do Survey Monkey.
              Depois troca pela leitura das tabelas survey_* sincronizadas no Supabase. -->
-        <div class="filter-bar wa-stock-filters">
+        <div class="filter-bar wa-stock-filters" id="smFiltros">
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="smBusca" placeholder="Buscar formulário..." autocomplete="off">
@@ -2741,20 +2774,75 @@
             <span class="btn-label">Exportar</span>
           </button>
         </div>
-        <div class="sm-fonte" id="smFonte"></div>
-        <div class="cd-kpis sm-kpis" id="smKpis"></div>
-        <div class="sm-row">
-          <div class="cd-card">
-            <div class="cd-card-head"><div class="cd-card-tits"><h3>Respostas por pasta</h3><div class="cd-sub" id="smPastasSub"></div></div></div>
-            <div class="cd-card-body"><div class="cd-barras sm-barras" id="smPastas"></div></div>
+        <!-- Lista de formulários (mesmo layout da tabela de Movimentações do Estoque) -->
+        <div id="smLista">
+          <div class="cd-kpis sm-kpis" id="smKpis"></div>
+          <div class="wa-sort-row">
+            <div class="wa-sort-group">
+              <span class="wa-sort-label">Ordenar por</span>
+              <div class="wa-sort-pills" id="smOrdem">
+                <button type="button" class="wa-sort-pill active" data-sort="respostas">Mais respostas</button>
+                <button type="button" class="wa-sort-pill" data-sort="recente">Mais recente</button>
+                <button type="button" class="wa-sort-pill" data-sort="az">A-Z</button>
+              </div>
+            </div>
+            <div class="wa-clip-count" id="smContagem">0 formulários</div>
           </div>
-          <div class="cd-card sm-card-tabela">
-            <div class="cd-card-head"><div class="cd-card-tits"><h3>Formulários</h3><div class="cd-sub" id="smTabelaSub"></div></div></div>
+          <div class="wa-card">
             <div class="wa-table-wrap">
               <table class="wa-table sm-tabela">
-                <thead><tr><th>Formulário</th><th>Pasta</th><th>Status</th><th class="sm-num">Respostas</th><th>Última alteração</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Formulário</th>
+                    <th>Pasta</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Respostas</th>
+                    <th>Última alteração</th>
+                    <th class="wa-table-actions">Ações</th>
+                  </tr>
+                </thead>
                 <tbody id="smTabela"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard do formulário: Painel (gráficos por pergunta) / Resposta individual (tabela linha a linha) -->
+        <div id="smDash" hidden>
+          <div class="sm-dash-topo">
+            <button type="button" class="wa-btn wa-btn-outline sm-voltar" id="smVoltar">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Formulários
+            </button>
+            <div class="sm-dash-tits">
+              <h2 id="smDashTitulo"></h2>
+              <div class="sm-dash-meta" id="smDashMeta"></div>
+            </div>
+            <div class="wa-view-toggle" id="smVisao">
+              <button type="button" class="wa-view-toggle-btn active" data-visao="painel">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Painel
+              </button>
+              <button type="button" class="wa-view-toggle-btn" data-visao="individual">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                Resposta individual
+              </button>
+            </div>
+          </div>
+          <div class="sm-painel" id="smPainel"></div>
+          <div id="smIndividual" hidden>
+            <div class="wa-sort-row">
+              <div class="sm-aviso" id="smIndAviso"></div>
+              <div class="wa-clip-count" id="smIndContagem"></div>
+            </div>
+            <div class="wa-card">
+              <div class="wa-table-wrap">
+                <table class="wa-table sm-tabela sm-tabela-ind">
+                  <thead id="smIndCab"></thead>
+                  <tbody id="smIndCorpo"></tbody>
+                </table>
+              </div>
+              <div class="wa-empty-row sm-ind-vazio" id="smIndVazio" hidden>Nenhuma resposta individual neste retrato. A tabela é preenchida linha a linha quando a sincronização ao vivo estiver ativa.</div>
             </div>
           </div>
         </div>
@@ -4104,7 +4192,7 @@
       .forEach(id => fPasta.insertAdjacentHTML('beforeend', `<option value="${id}">${esc(pastaNome(id))}</option>`));
     [...new Set(forms.map(f => f.date_modified.slice(0, 4)))].sort().reverse()
       .forEach(a => fAno.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`));
-    el('smFonte').innerHTML = `Retrato de <b>${dataBR(SM_RETRATO.lido_em)}</b> lido do Survey Monkey (somente leitura) · dados fixos, sem atualização automática · nomes das pastas provisórios`;
+    let ordem = 'respostas';
 
     function filtrados(){
       const q = semAcento(busca.value.trim());
@@ -4141,30 +4229,162 @@
         kpi('aberto', 'amarelo', 'Coletando', num(abertos.length), `${num(abertos.reduce((s, f) => s + f.response_count, 0))} respostas até agora`) +
         kpi('pasta', semPasta ? 'vermelho' : '', 'Pastas', num([...pastas].filter(p => p !== '0').length), semPasta ? `${num(semPasta)} formulário(s) sem pasta` : 'todos organizados');
 
-      // Respostas por pasta (maior primeiro)
-      const porPasta = {};
-      lista.forEach(f => { const p = porPasta[f.folder_id] || (porPasta[f.folder_id] = { qtd: 0, resp: 0 }); p.qtd++; p.resp += f.response_count; });
-      const linhas = Object.entries(porPasta).sort((a, b) => b[1].resp - a[1].resp);
-      const max = Math.max(1, ...linhas.map(([, v]) => v.resp));
-      el('smPastasSub').textContent = `${num(linhas.length)} pasta(s) · ${num(total)} respostas`;
-      el('smPastas').innerHTML = linhas.length ? linhas.map(([id, v]) => `
-        <div class="cd-barra" title="${esc(pastaNome(id))}: ${num(v.resp)} respostas em ${v.qtd} formulário(s)">
-          <div class="cd-barra-rot"><span>${esc(pastaNome(id))}</span><small>${v.qtd}</small></div>
-          <div class="cd-barra-trilho"><i style="width:${(v.resp / max * 100).toFixed(1)}%;background:${id === '0' ? 'var(--cd-verm)' : 'var(--cd-azul)'}"></i></div>
-          <div class="cd-barra-val">${num(v.resp)}</div>
-        </div>`).join('') : '<div class="stk-vazio">Nenhum formulário com esses filtros.</div>';
-
-      // Tabela: mais respostas primeiro; empate pela alteração mais recente
-      const ordem = [...lista].sort((a, b) => b.response_count - a.response_count || b.date_modified.localeCompare(a.date_modified));
-      el('smTabelaSub').textContent = `${num(lista.length)} formulário(s) · ordenados por nº de respostas`;
-      el('smTabela').innerHTML = ordem.length ? ordem.map(f => `<tr>
-          <td class="sm-nome">${esc(f.title)}</td>
-          <td class="sm-pasta">${esc(pastaNome(f.folder_id))}</td>
-          <td><span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span></td>
-          <td class="sm-num">${num(f.response_count)}</td>
-          <td class="sm-data">${dataBR(f.date_modified)}</td>
-        </tr>`).join('') : '<tr class="sm-vazio"><td colspan="5">Nenhum formulário com esses filtros.</td></tr>';
+      // Tabela (layout das Movimentações do Estoque): clique na linha abre o dashboard do formulário.
+      const ordenar = {
+        respostas: (a, b) => b.response_count - a.response_count || b.date_modified.localeCompare(a.date_modified),
+        recente: (a, b) => b.date_modified.localeCompare(a.date_modified),
+        az: (a, b) => a.title.localeCompare(b.title, 'pt-BR')
+      };
+      const linhas = [...lista].sort(ordenar[ordem]);
+      el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas`;
+      el('smTabela').innerHTML = linhas.length ? linhas.map(f => `
+          <tr class="sm-linha" data-id="${f.id}" tabindex="0" title="Abrir o dashboard do formulário">
+            <td class="wa-td-name">${esc(f.title)}</td>
+            <td>${esc(pastaNome(f.folder_id))}</td>
+            <td><span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span></td>
+            <td class="wa-td-num">${num(f.response_count)}</td>
+            <td>${dataBR(f.date_modified)}</td>
+            <td class="wa-table-actions"><button type="button" class="wa-icon-btn" title="Abrir dashboard">${ICONE_PAINEL}</button></td>
+          </tr>`).join('') : '<tr class="wa-empty-row"><td colspan="6">Nenhum formulário encontrado com esses filtros.</td></tr>';
     }
+
+    // ================= Dashboard do formulário =================
+    // Painel = um card por pergunta (mesmos cards/gráficos do Dashboard › CAGED, sem os KPIs do topo).
+    // Resposta individual = tabela linha a linha (uma coluna por pergunta).
+    // Dados: assets/data/surveymonkey_resumos.js (somente agregados, lido pelo MCP). As respostas
+    // individuais NÃO entram no retrato público (nome, CPF, telefone...): chegam com a sincronização
+    // ao vivo, protegidas por login. Quando existirem, basta preencher SM_RESUMOS[id].respostas.
+    const ICONE_PAINEL = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>';
+    const ICONE_CADEADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+    const CORES = ['#1D5FD3', '#5DB14E', '#E3AE1F', '#EF4444', '#8B5CF6', '#14B8A6', '#F97316', '#64748B', '#EC4899', '#0EA5E9'];
+    const pct = (v, t) => t ? (v / t * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : '0%';
+    let resumosProm = null, formAtual = null, visao = 'painel';
+    function carregarResumos(){
+      if(window.SM_RESUMOS) return Promise.resolve();
+      return resumosProm || (resumosProm = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/surveymonkey_resumos.js';
+        sc.onload = ok;
+        sc.onerror = () => { resumosProm = null; falha(new Error('surveymonkey_resumos.js')); };
+        document.head.appendChild(sc);
+      }));
+    }
+
+    const card = (titulo, sub, corpo, extra) => `<div class="cd-card${extra ? ' ' + extra : ''}">
+        <div class="cd-card-head"><div class="cd-card-tits"><h3 title="${esc(titulo)}">${esc(titulo)}</h3><div class="cd-sub">${sub}</div></div></div>
+        <div class="cd-card-body">${corpo}</div></div>`;
+    const subResp = q => `${num(q.a)} resposta${q.a === 1 ? '' : 's'}${q.k ? ` · ${num(q.k)} pulada${q.k === 1 ? '' : 's'}` : ''}`;
+    const barras = (itens, total, cor) => `<div class="cd-barras">${itens.map(([nome, v], i) => `
+        <div class="cd-barra" title="${esc(nome)}: ${num(v)} (${pct(v, total)})">
+          <div class="cd-barra-rot"><span>${esc(nome)}</span></div>
+          <div class="cd-barra-trilho"><i style="width:${total ? (v / Math.max(...itens.map(x => x[1]), 1) * 100).toFixed(1) : 0}%;background:${cor || CORES[i % CORES.length]}"></i></div>
+          <div class="cd-barra-val">${pct(v, total)}<small>${num(v)}</small></div>
+        </div>`).join('')}</div>`;
+    function rosca(itens, total){
+      // Anel em SVG (r = 15.915 → circunferência 100): cada fatia é um traço com o tamanho do percentual.
+      let acum = 0;
+      const fatias = itens.map(([, v], i) => {
+        const p = total ? v / total * 100 : 0, f = `<circle cx="21" cy="21" r="15.915" fill="none" stroke="${CORES[i % CORES.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${(25 - acum).toFixed(3)}"></circle>`;
+        acum += p; return f;
+      }).join('');
+      const maior = itens.reduce((m, x) => x[1] > m[1] ? x : m, itens[0]);
+      return `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><svg class="sm-rosca-svg" viewBox="0 0 42 42" width="150" height="150"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#EEF2F7" stroke-width="6"></circle>${fatias}</svg>
+            <div class="cd-rosca-centro"><strong>${pct(maior[1], total)}</strong><span>${esc(maior[0].length > 14 ? maior[0].slice(0, 13) + '…' : maior[0])}</span></div></div>
+          <ul class="cd-rosca-legenda">${itens.map(([nome, v], i) => `<li title="${esc(nome)}: ${num(v)} (${pct(v, total)})"><i style="background:${CORES[i % CORES.length]}"></i><span>${esc(nome)}</span><strong>${pct(v, total)}</strong></li>`).join('')}</ul>
+        </div>`;
+    }
+    function cardPergunta(q){
+      if(q.f === 'x'){
+        const opcoes = q.l[0][1].map(c => c[0]);
+        const notas = opcoes.every(o => /^\d+$/.test(o));
+        const corpo = `<div class="sm-matriz">${q.l.map(([linha, cs]) => {
+            const t = cs.reduce((s, c) => s + c[1], 0);
+            const media = notas && t ? cs.reduce((s, c) => s + Number(c[0]) * c[1], 0) / t : null;
+            const top = cs.reduce((m, c) => c[1] > m[1] ? c : m, cs[0]);
+            const dica = cs.map(c => `${c[0]}: ${num(c[1])} (${pct(c[1], t)})`).join(' · ');
+            return `<div class="sm-matriz-linha" title="${esc(linha)} — ${esc(dica)}"><span>${esc(linha)}</span>
+              <div class="sm-pilha">${cs.map((c, i) => c[1] ? `<i style="width:${(c[1] / t * 100).toFixed(2)}%;background:${CORES[i % CORES.length]}"></i>` : '').join('')}</div>
+              <b>${media != null ? media.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : pct(top[1], t)}</b></div>`;
+          }).join('')}
+          <div class="cd-legenda">${opcoes.map((o, i) => `<span><i style="background:${CORES[i % CORES.length]}"></i>${esc(o)}</span>`).join('')}</div></div>`;
+        return card(q.t, subResp(q) + (notas ? ' · nota média por item' : ' · % da opção mais escolhida'), corpo, 'sm-span');
+      }
+      const itens = q.c, total = q.f === 'm' ? q.a : itens.reduce((s, c) => s + c[1], 0);
+      if(!q.a) return card(q.t, subResp(q), '<div class="stk-vazio">Ninguém respondeu esta pergunta.</div>');
+      if(q.f === 'r'){
+        const media = itens.reduce((s, c) => s + Number(c[0]) * c[1], 0) / total;
+        return card(q.t, subResp(q), `<div class="sm-media">${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}<span>nota média (de ${itens[itens.length - 1][0]})</span></div>`
+          + barras(itens.map(c => ['Nota ' + c[0], c[1]]), total, CORES[0]));
+      }
+      if(q.f === 's' && itens.length <= 6) return card(q.t, subResp(q), rosca(itens, total));
+      // Múltipla escolha: % sobre quem respondeu (a soma passa de 100%), da mais para a menos escolhida.
+      const lista = q.f === 'm' ? [...itens].sort((a, b) => b[1] - a[1]) : itens;
+      return card(q.t, subResp(q) + (q.f === 'm' ? ' · múltipla escolha' : ''), barras(lista, total));
+    }
+    function cardAbertas(abertas){
+      if(!abertas.length) return '';
+      const corpo = `<ol class="cd-rank">${abertas.map((q, i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(q.t)}">${esc(q.t)}${q.p ? `<span class="sm-cad-ic">${ICONE_CADEADO}dado pessoal</span>` : ''}</span><strong>${num(q.a)}</strong><span class="cd-rank-pct">${pct(q.a, q.a + q.k)}</span></li>`).join('')}</ol>`;
+      return card('Perguntas abertas', 'Texto livre: só a contagem de quem respondeu (o conteúdo não é importado)', corpo, 'sm-span');
+    }
+
+    function renderPainel(f, R){
+      const P = el('smPainel');
+      if(!f.response_count) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Este formulário ainda não recebeu respostas.</div></div>'; return; }
+      if(!R) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Resumo deste formulário não disponível no retrato atual.</div></div>'; return; }
+      const fechadas = R.perguntas.filter(q => q.f !== 'o'), abertas = R.perguntas.filter(q => q.f === 'o');
+      P.innerHTML = fechadas.map(cardPergunta).join('') + cardAbertas(abertas);
+    }
+    function renderIndividual(f, R){
+      const perguntas = R ? R.perguntas : [];
+      const respostas = (R && R.respostas) || [];
+      el('smIndCab').innerHTML = `<tr><th>#</th><th>Status</th><th>Data</th>${perguntas.map(q => `<th title="${esc(q.t)}">${esc(q.t)}${q.p ? `<span class="sm-cad-ic">${ICONE_CADEADO}</span>` : ''}</th>`).join('')}</tr>`;
+      el('smIndContagem').textContent = `${num(respostas.length)} de ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · ${num(perguntas.length)} pergunta${perguntas.length === 1 ? '' : 's'}`;
+      el('smIndAviso').innerHTML = `${ICONE_CADEADO}<span>Respostas individuais entram com a sincronização ao vivo (protegidas por login). O retrato público traz só os números agregados (LGPD).</span>`;
+      el('smIndCorpo').innerHTML = respostas.length ? respostas.map((r, i) => `<tr>
+          <td class="wa-td-num">${i + 1}</td><td>${esc(r.status === 'partial' ? 'Parcial' : 'Completa')}</td><td>${r.data ? dataBR(r.data) : '—'}</td>
+          ${perguntas.map((q, j) => `<td title="${esc(r.valores[j] || '')}">${q.p ? '•••' : esc(r.valores[j] || '—')}</td>`).join('')}</tr>`).join('') : '';
+      el('smIndVazio').hidden = respostas.length > 0;
+    }
+    function mostrarVisao(){
+      el('smVisao').querySelectorAll('.wa-view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.visao === visao));
+      el('smPainel').hidden = visao !== 'painel';
+      el('smIndividual').hidden = visao !== 'individual';
+    }
+    async function abrirFormulario(id){
+      const f = forms.find(x => x.id === id);
+      if(!f) return;
+      formAtual = f; visao = 'painel';
+      el('smDashTitulo').textContent = f.title;
+      el('smDashMeta').innerHTML = `<span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · alterado em ${dataBR(f.date_modified)}`;
+      el('smFiltros').hidden = el('smLista').hidden = true;
+      el('smDash').hidden = false;
+      mostrarVisao();
+      el('smPainel').innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Carregando…</div></div>';
+      try { await carregarResumos(); }
+      catch(e){ el('smPainel').innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Não foi possível carregar os dados do formulário (assets/data/surveymonkey_resumos.js).</div></div>'; return; }
+      if(formAtual !== f) return;
+      const R = window.SM_RESUMOS[f.id];
+      renderPainel(f, R);
+      renderIndividual(f, R);
+      document.querySelector('.main') && document.querySelector('.main').scrollTo({ top: 0 });
+    }
+    function fecharFormulario(){
+      formAtual = null;
+      el('smDash').hidden = true;
+      el('smFiltros').hidden = el('smLista').hidden = false;
+    }
+    el('smTabela').addEventListener('click', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr) abrirFormulario(tr.dataset.id); });
+    el('smTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrirFormulario(tr.dataset.id); } });
+    el('smVoltar').addEventListener('click', fecharFormulario);
+    el('smVisao').addEventListener('click', ev => { const b = ev.target.closest('.wa-view-toggle-btn'); if(b){ visao = b.dataset.visao; mostrarVisao(); } });
+    el('smOrdem').addEventListener('click', ev => {
+      const b = ev.target.closest('.wa-sort-pill'); if(!b) return;
+      ordem = b.dataset.sort;
+      el('smOrdem').querySelectorAll('.wa-sort-pill').forEach(x => x.classList.toggle('active', x === b));
+      render();
+    });
 
     busca.addEventListener('input', render);
     [fPasta, fStatus, fAno].forEach(s => s.addEventListener('change', render));
