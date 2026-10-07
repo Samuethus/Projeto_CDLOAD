@@ -21,6 +21,14 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 9. Cole o conteúdo de [schema_paineis_usuario.sql](schema_paineis_usuario.sql) > **Run** (em **Usuários > Etapa 2**, escolha quais **painéis Power BI** aparecem na Home de cada usuário; os não selecionados ficam ocultos. Quem já estava cadastrado continua vendo todos até ser editado; usuário novo começa sem nenhum; Administrador vê todos. O script também apaga a coluna antiga `acesso_power_bi`, do campo "Power BI" que foi removido).
 10. Cole o conteúdo de [schema_usuarios_setor_acesso.sql](schema_usuarios_setor_acesso.sql) > **Run** (em **Usuários**, cria o campo **Setor** do cadastro e a coluna **Último acesso**, gravada a cada entrada na plataforma pela função `registrar_acesso()` — o usuário comum só consegue atualizar o próprio horário).
 11. Cole o conteúdo de [secao_whatsapp.sql](secao_whatsapp.sql) > **Run** (a seção **Disparo** passou a se chamar **WhatsApp**: troca a chave `disparo` por `whatsapp` nas seções liberadas de cada usuário — o app já aceita a chave antiga, então a ordem não importa).
+12. **Só se o Estoque já tinha dados no modelo antigo** (saldo em RH, Institucional, Espaço): cole [migracao_estoque_centrais.sql](migracao_estoque_centrais.sql) > **Run**. O estoque passa a existir só em **Escritório** e **Almoxarifado** (o saldo que estava nos setores antigos é transferido para o Almoxarifado — troque a linha `DESTINO` se preferir o Escritório) e toda **saída** passa a exigir o **setor de consumo**. A consulta final deve voltar vazia. Banco novo não precisa: o `schema_estoque.sql` já cria tudo assim.
+
+## Estoque › estoques centrais e setor de consumo
+
+- **Entrada** (compra do mês) e **origem** vão sempre para um dos dois estoques centrais: **Escritório** ou **Almoxarifado**.
+- **Saída** = retirada da central, informando o **setor que consome**: Térreo, 1º Piso, 2º Piso, Espaço CDL, Administrativo, Financeiro, Certificado, Comercial, Diretoria, Recepção, RH, Jurídico. Para incluir ou renomear um setor, edite `STOCK_SETORES_CONSUMO` em `index.html` (o banco não trava a lista).
+- **Transferência** move saldo entre as duas centrais e não conta como compra nem consumo.
+- **Dashboard** e **Relatório** (Controle de Estoque) mostram o consumo por setor; saídas antigas, sem setor, aparecem como "Não informado".
 
 ## Clipping News (Google Notícias)
 

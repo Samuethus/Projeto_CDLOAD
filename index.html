@@ -2407,10 +2407,10 @@
                   <div id="relOpcoesEstoque" hidden>
                     <h3 class="wa-step-title" style="margin-top:22px;">3. Setor</h3>
                     <div class="wa-field">
-                      <label for="relSetor">Setor do relatório</label>
+                      <label for="relSetor">Setor de consumo</label>
                       <select id="relSetor"></select>
                     </div>
-                    <div class="wa-empty-hint">O relatório cobre os 6 meses até o mês de referência. "Todas" gera o consolidado de todos os setores.</div>
+                    <div class="wa-empty-hint">O relatório cobre os 6 meses até o mês de referência. O consolidado traz as compras dos estoques centrais e o consumo de todos os setores; um setor traz só o que ele consumiu.</div>
                   </div>
                   <div id="relOpcoesCaged" hidden>
                     <h3 class="wa-step-title" style="margin-top:22px;">3. Tipo de relatório</h3>
@@ -3247,7 +3247,7 @@
             </div>
             <div>
               <div class="wa-topcard-title">Controle de Estoque</div>
-              <div class="wa-topcard-sub">Catálogo único de produtos — cada entrada e saída informa o setor, permitindo redistribuir o estoque entre setores.</div>
+              <div class="wa-topcard-sub">Compras abastecem os estoques centrais (Escritório e Almoxarifado) — cada saída informa o setor que consome o produto.</div>
             </div>
           </div>
           <div class="wa-stock-actions" id="waStockActions">
@@ -3261,7 +3261,7 @@
               <span class="wa-stock-action-label">Saída</span>
               <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
             </button>
-            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre setores">
+            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre Escritório e Almoxarifado">
               <svg class="wa-stock-action-icon wa-stock-action-icon-always" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               <span class="wa-stock-action-label">Transferência</span>
             </button>
@@ -3319,7 +3319,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="waStockSearch" placeholder="Buscar por nome ou código...">
           </div>
-          <select class="filter-select" id="waStockSetorSelect" title="Setor"></select>
+          <select class="filter-select" id="waStockSetorSelect" title="Estoque central"></select>
+          <select class="filter-select" id="waStockConsumoFilter" title="Setor de consumo (saídas)" hidden>
+            <option value="">Setor de consumo</option>
+          </select>
           <select class="filter-select" id="waStockProductFilter" title="Produto">
             <option value="">Produto</option>
           </select>
@@ -3338,6 +3341,7 @@
             <option value="origem">Origem</option>
             <option value="entrada">Entrada</option>
             <option value="saida">Saída</option>
+            <option value="transferencia">Transferência</option>
           </select>
           <select class="filter-select" id="waStockUserFilter" hidden>
             <option value="">Colaborador</option>
@@ -3422,8 +3426,9 @@
                 <tr>
                   <th>Data / hora</th>
                   <th>Produto</th>
-                  <th>Setor</th>
+                  <th>Estoque</th>
                   <th>Tipo</th>
+                  <th>Setor de consumo</th>
                   <th style="text-align:right;">Quantidade</th>
                   <th>Observação</th>
                   <th>Usuário</th>
@@ -3460,17 +3465,17 @@
                 <div class="wa-category-card" data-acao="entrada">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
                   <h4>Entrada</h4>
-                  <p>Recebimento de produtos em um setor.</p>
+                  <p>Compra que abastece o Escritório ou o Almoxarifado.</p>
                 </div>
                 <div class="wa-category-card" data-acao="saida">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
                   <h4>Saída</h4>
-                  <p>Consumo ou retirada de produtos de um setor.</p>
+                  <p>Retirada da central, informando o setor que consome.</p>
                 </div>
                 <div class="wa-category-card" data-acao="transferencia">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
                   <h4>Transferência</h4>
-                  <p>Move o saldo de um setor para outro.</p>
+                  <p>Move o saldo entre Escritório e Almoxarifado.</p>
                 </div>
                 <div class="wa-category-card" data-acao="produto">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg></div>
@@ -3599,36 +3604,22 @@
               </div>
               <div class="wa-form-grid" style="margin-bottom:0;" id="waMovSetorField">
                 <div class="wa-field">
-                  <label for="waMovSetor">Setor</label>
-                  <select id="waMovSetor">
-                    <option value="Escritório">Escritório</option>
-                    <option value="Almoxarifado">Almoxarifado</option>
-                    <option value="RH">RH</option>
-                    <option value="Institucional">Institucional</option>
-                    <option value="Espaço">Espaço</option>
-                  </select>
+                  <label for="waMovSetor" id="waMovSetorLabel">Estoque central</label>
+                  <select id="waMovSetor"></select>
+                </div>
+                <div class="wa-field" id="waMovConsumoField" hidden>
+                  <label for="waMovConsumo">Setor que consome</label>
+                  <select id="waMovConsumo"></select>
                 </div>
               </div>
               <div class="wa-form-grid" style="margin-bottom:0;" id="waMovTransferGrid" hidden>
                 <div class="wa-field">
                   <label for="waMovSetorOrigem">Origem</label>
-                  <select id="waMovSetorOrigem">
-                    <option value="Escritório">Escritório</option>
-                    <option value="Almoxarifado">Almoxarifado</option>
-                    <option value="RH">RH</option>
-                    <option value="Institucional">Institucional</option>
-                    <option value="Espaço">Espaço</option>
-                  </select>
+                  <select id="waMovSetorOrigem"></select>
                 </div>
                 <div class="wa-field">
                   <label for="waMovSetorDestino">Destino</label>
-                  <select id="waMovSetorDestino">
-                    <option value="Escritório">Escritório</option>
-                    <option value="Almoxarifado">Almoxarifado</option>
-                    <option value="RH">RH</option>
-                    <option value="Institucional">Institucional</option>
-                    <option value="Espaço">Espaço</option>
-                  </select>
+                  <select id="waMovSetorDestino"></select>
                 </div>
               </div>
               <div class="wa-field">
@@ -3637,7 +3628,7 @@
               </div>
               <div class="wa-field">
                 <label for="waMovObs">Observação</label>
-                <input type="text" id="waMovObs" placeholder="Ex: NF 1234, requisição do setor comercial">
+                <input type="text" id="waMovObs" placeholder="Ex: NF 1234, compra do mês, nome de quem retirou">
               </div>
               <div class="wa-budget-summary" id="waMovSummary">Selecione um produto para ver o saldo.</div>
             </div>
@@ -3796,7 +3787,7 @@
        nome            text not null,
        descricao       text,
        unidade         text not null default 'UN',
-       estoque_minimo  numeric(14,3) not null default 0,  -- total único (soma do mínimo de todos os setores que consomem)
+       estoque_minimo  numeric(14,3) not null default 0,  -- total único (soma dos dois estoques centrais)
        preco_custo     numeric(14,2),
        ativo           boolean not null default true,
        created_at / updated_at
@@ -3806,14 +3797,16 @@
        id             uuid primary key default gen_random_uuid(),
        produto_id     uuid not null references cadastro_de_produtos(id) on delete cascade,
        tipo           text not null,  -- 'origem' (1º lançamento, único por produto) | 'entrada' | 'saida'
-       setor          text not null,  -- 'Escritório' | 'Almoxarifado' | 'RH' | 'Institucional' | 'Espaço'
+       setor          text not null,  -- estoque central: 'Escritório' | 'Almoxarifado'
+       setor_consumo  text,           -- só na saída: setor que consome (STOCK_SETORES_CONSUMO)
+       transferencia  boolean not null default false,  -- par saída+entrada entre as centrais
        quantidade     numeric(14,3) not null,
        observacao     text,
        usuario_email  text,
        created_at     timestamptz not null default now()
      );
-     -- + trigger que bloqueia saldo negativo POR SETOR, view `vw_estoque_saldo`
-     --   (saldo por produto+setor = origem + entradas − saídas daquele setor)
+     -- + trigger que bloqueia saldo negativo POR CENTRAL, view `vw_estoque_saldo`
+     --   (saldo por produto+central = origem + entradas − saídas daquela central)
      --   e RLS permissivo no mesmo padrão das demais tabelas (movimentações
      --   sem UPDATE: o histórico é imutável; corrige-se removendo e relançando).
 ============================================================================ -->
@@ -6186,16 +6179,25 @@ ${clipPlayerPills(n)}
     // ---------------- Estoque (produtos · origem / entradas / saídas) ----------------
     // Produto é global — cadastro em `cadastro_de_produtos` não tem setor,
     // só código de barras (único no catálogo), nome e estoque_minimo (um
-    // total único, somando o mínimo desejado em todos os setores que
-    // consomem o produto). Todo lançamento em `movimentacoes_estoque` (tipo
-    // origem | entrada | saida) tem o seu próprio setor — o saldo por
-    // produto + setor vem da view `vw_estoque_saldo`, nunca é gravado
-    // direto no produto. Entradas e saídas podem acontecer em qualquer
-    // setor, permitindo redistribuir o estoque entre eles (ex: saída do
-    // Escritório + entrada em outro setor).
-    const STOCK_SETORES = ['Escritório', 'Almoxarifado', 'RH', 'Institucional', 'Espaço'];
+    // total único, somando os dois estoques centrais). O estoque só existe
+    // nas centrais (STOCK_SETORES): a compra do mês entra no Escritório ou
+    // no Almoxarifado (`setor` do lançamento) e toda saída é uma retirada
+    // de uma delas, informando em `setor_consumo` o setor que consome o
+    // produto — é o que mapeia os setores que mais demandam. O saldo por
+    // produto + central vem da view `vw_estoque_saldo`. Transferência
+    // (`transferencia` = true) só move saldo entre as duas centrais: não
+    // é compra nem consumo.
+    const STOCK_SETORES = ['Escritório', 'Almoxarifado'];
+    // "Por enquanto" — para incluir/renomear, basta editar esta lista (o banco não trava os nomes).
+    const STOCK_SETORES_CONSUMO = ['Térreo', '1º Piso', '2º Piso', 'Espaço CDL', 'Administrativo', 'Financeiro', 'Certificado', 'Comercial', 'Diretoria', 'Recepção', 'RH', 'Jurídico'];
+    // Saídas antigas (antes do setor de consumo) aparecem com este rótulo nas análises.
+    const STOCK_CONSUMO_SEM = 'Não informado';
     const STOCK_SETOR_TODOS = 'Todos';
     const STOCK_SETOR_STORAGE_KEY = 'cdload_estoque_setor';
+    // Consumo = saída que não é transferência entre centrais; compra = entrada/origem idem.
+    const stockEhConsumo = m => m.tipo === 'saida' && !m.transferencia;
+    const stockEhCompra = m => m.tipo !== 'saida' && !m.transferencia;
+    const stockConsumoDe = m => m.setor_consumo || STOCK_CONSUMO_SEM;
 
     const FALLBACK_PRODUCTS = [
       { id: 'p1', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, descricao: '', ativo: true },
@@ -6209,13 +6211,15 @@ ${clipPlayerPills(n)}
       { id: 'm2', produto_id: 'p2', tipo: 'origem', setor: 'Escritório', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
       { id: 'm3', produto_id: 'p3', tipo: 'origem', setor: 'Almoxarifado', quantidade: 12, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:10:00' },
       { id: 'm4', produto_id: 'p4', tipo: 'origem', setor: 'Almoxarifado', quantidade: 30, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:15:00' },
-      { id: 'm5', produto_id: 'p5', tipo: 'origem', setor: 'Espaço', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
-      { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', quantidade: 25, observacao: 'Requisição do setor comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
-      { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
+      { id: 'm5', produto_id: 'p5', tipo: 'origem', setor: 'Almoxarifado', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
+      { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', setor_consumo: 'Comercial', quantidade: 25, observacao: 'Retirada para o Comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
+      { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', setor_consumo: 'Térreo', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
       { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, observacao: 'NF 4521', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
-      // Redistribuição interna: sai do Escritório e entra no RH (mesmo produto, dois setores).
-      { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', quantidade: 10, observacao: 'Transferência interna para o RH', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
-      { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'RH', quantidade: 10, observacao: 'Transferência interna do Escritório', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' }
+      // Transferência entre as centrais: sai do Escritório e entra no Almoxarifado (não é consumo).
+      { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
+      { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'Almoxarifado', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
+      { id: 'm11', produto_id: 'p4', tipo: 'saida', setor: 'Almoxarifado', setor_consumo: '2º Piso', quantidade: 8, observacao: '', usuario_email: ADMIN_EMAIL, created_at: '2026-09-25T09:30:00' },
+      { id: 'm12', produto_id: 'p2', tipo: 'saida', setor: 'Escritório', setor_consumo: 'Financeiro', quantidade: 1, observacao: '', usuario_email: ADMIN_EMAIL, created_at: '2026-10-01T15:10:00' }
     ];
 
     let currentSetor = STOCK_SETOR_TODOS;
@@ -6250,6 +6254,7 @@ ${clipPlayerPills(n)}
     const waScanModeToggle = document.getElementById('waScanModeToggle');
     const waStockSearch = document.getElementById('waStockSearch');
     const waStockSetorSelect = document.getElementById('waStockSetorSelect');
+    const waStockConsumoFilter = document.getElementById('waStockConsumoFilter');
     const waStockProductFilter = document.getElementById('waStockProductFilter');
     const waStockUnitFilter = document.getElementById('waStockUnitFilter');
     const waStockUserFilter = document.getElementById('waStockUserFilter');
@@ -6282,12 +6287,20 @@ ${clipPlayerPills(n)}
     const waMovTipoGroup = document.getElementById('waMovTipoGroup');
     const waMovSetorField = document.getElementById('waMovSetorField');
     const waMovSetor = document.getElementById('waMovSetor');
+    const waMovSetorLabel = document.getElementById('waMovSetorLabel');
+    const waMovConsumoField = document.getElementById('waMovConsumoField');
+    const waMovConsumo = document.getElementById('waMovConsumo');
     const waMovTransferGrid = document.getElementById('waMovTransferGrid');
     const waMovSetorOrigem = document.getElementById('waMovSetorOrigem');
     const waMovSetorDestino = document.getElementById('waMovSetorDestino');
     const waMovQtd = document.getElementById('waMovQtd');
     const waMovObs = document.getElementById('waMovObs');
     const waMovSummary = document.getElementById('waMovSummary');
+    // Opções fixas do formulário: centrais (entrada, saída, transferência) e setores de consumo (saída).
+    [waMovSetor, waMovSetorOrigem, waMovSetorDestino].forEach(sel => {
+      sel.innerHTML = STOCK_SETORES.map(s => `<option value="${s}">${s}</option>`).join('');
+    });
+    waMovConsumo.innerHTML = '<option value="">Selecione o setor...</option>' + STOCK_SETORES_CONSUMO.map(s => `<option value="${s}">${s}</option>`).join('');
 
     const waCamModal = document.getElementById('waCamModal');
     const waCamSub = document.getElementById('waCamSub');
@@ -6453,6 +6466,10 @@ ${clipPlayerPills(n)}
       fillSelect(waStockUnitFilter, 'Unidade', [...new Set(prods.map(p => p.unidade).filter(Boolean))].sort().map(u => ({ value: u, label: u })));
 
       const setorMovs = setorMovements();
+      // Setores de consumo: a lista oficial + o que existir no histórico (ex.: "Não informado").
+      const consumos = [...STOCK_SETORES_CONSUMO];
+      setorMovs.filter(stockEhConsumo).forEach(m => { const c = stockConsumoDe(m); if(!consumos.includes(c)) consumos.push(c); });
+      fillSelect(waStockConsumoFilter, 'Setor de consumo', consumos.map(c => ({ value: c, label: c })));
       const colabs = new Map(stockUsers.filter(u => u.email).map(u => [u.email.toLowerCase(), u.nome || u.email]));
       setorMovs.forEach(m => { if(m.usuario_email && !colabs.has(m.usuario_email.toLowerCase())) colabs.set(m.usuario_email.toLowerCase(), m.usuario_email); });
       fillSelect(waStockUserFilter, 'Colaborador', [...colabs].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).map(([value, label]) => ({ value, label })));
@@ -6510,17 +6527,19 @@ ${clipPlayerPills(n)}
       const colab = waStockUserFilter.value;
       const ano = waStockYearFilter.value;
       const mes = waStockMonthFilter.value;
+      const consumo = waStockConsumoFilter.value;
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const list = setorMovements().filter(m => {
         const p = byId.get(m.produto_id);
         if(!p) return false;
-        if(tipo && m.tipo !== tipo) return false;
+        if(tipo === 'transferencia' ? !m.transferencia : tipo && (m.tipo !== tipo || m.transferencia)) return false;
+        if(consumo && !(stockEhConsumo(m) && stockConsumoDe(m) === consumo)) return false;
         if(produto && m.produto_id !== produto) return false;
         if(colab && (m.usuario_email || '').toLowerCase() !== colab) return false;
         if(ano && String(m.created_at).slice(0, 4) !== ano) return false;
         if(mes && String(m.created_at).slice(5, 7) !== mes) return false;
         if(term){
-          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.observacao || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
+          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -6551,7 +6570,7 @@ ${clipPlayerPills(n)}
         const moveBtns = p.ativo ? `
             <button class="wa-icon-btn" title="Registrar entrada" onclick="waOpenMovModal('${p.id}','entrada')">${ICON_PLUS}</button>
             <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>
-            <button class="wa-icon-btn" title="Transferência entre setores" onclick="waOpenMovModal('${p.id}','transferencia')">${ICON_TRANSFER}</button>` : '';
+            <button class="wa-icon-btn" title="Transferência entre Escritório e Almoxarifado" onclick="waOpenMovModal('${p.id}','transferencia')">${ICON_TRANSFER}</button>` : '';
         return `
           <tr>
             <td><span class="wa-mono-pill">${stockEsc(p.codigo_barras)}</span></td>
@@ -6577,7 +6596,7 @@ ${clipPlayerPills(n)}
       const list = getFilteredMovements();
       waStockCount.textContent = `${list.length} movimentaç${list.length === 1 ? 'ão' : 'ões'} · ${currentSetor}`;
       if(!list.length){
-        waMovTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="8">Nenhuma movimentação encontrada${currentSetor === STOCK_SETOR_TODOS ? '' : ` no setor ${stockEsc(currentSetor)}`}.</td></tr>`;
+        waMovTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="9">Nenhuma movimentação encontrada${currentSetor === STOCK_SETOR_TODOS ? '' : ` no estoque ${stockEsc(currentSetor)}`}.</td></tr>`;
         return;
       }
       const byId = new Map(stockProducts.map(p => [p.id, p]));
@@ -6593,7 +6612,8 @@ ${clipPlayerPills(n)}
               ${p ? `<div class="wa-td-sub">${stockEsc(p.codigo_barras)}</div>` : ''}
             </td>
             <td>${stockEsc(m.setor)}</td>
-            <td><span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span></td>
+            <td><span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span>${m.transferencia ? '<div class="wa-td-sub">Transferência</div>' : ''}</td>
+            <td>${stockEhConsumo(m) ? (m.setor_consumo ? stockEsc(m.setor_consumo) : `<span class="wa-empty-hint">${STOCK_CONSUMO_SEM}</span>`) : '—'}</td>
             <td class="wa-td-num ${qtyCls}">${sign}${fmtQty(m.quantidade)} ${p ? stockEsc(p.unidade) : ''}</td>
             <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
             <td>${m.usuario_email ? stockEsc(userNameOf(m.usuario_email) || m.usuario_email) : '—'}</td>
@@ -6611,6 +6631,7 @@ ${clipPlayerPills(n)}
       const isProdutos = stockTab === 'produtos';
       waStockUnitFilter.hidden = !isProdutos;
       waStockUserFilter.hidden = isProdutos;
+      waStockConsumoFilter.hidden = isProdutos;
       waStockYearFilter.hidden = isProdutos;
       waStockMonthFilter.hidden = isProdutos;
       waStockTabToggle.querySelectorAll('.wa-view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === stockTab));
@@ -7029,7 +7050,7 @@ ${clipPlayerPills(n)}
       const wasEditing = !!editingProductId;
       waCloseProductModal();
       await loadStock();
-      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · use Nova Movimentação para dar entrada em algum setor.`);
+      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · use Entrada para abastecer o Escritório ou o Almoxarifado.`);
     };
 
     window.waDeleteProduct = async function(id){
@@ -7060,20 +7081,23 @@ ${clipPlayerPills(n)}
       const p = stockProducts.find(x => x.id === id);
       if(!p) return;
       waStockSearch.value = p.codigo_barras;
-      [waMovTypeFilter, waStockProductFilter, waStockUserFilter, waStockYearFilter, waStockMonthFilter].forEach(el => { el.value = ''; });
+      [waMovTypeFilter, waStockProductFilter, waStockUserFilter, waStockConsumoFilter, waStockYearFilter, waStockMonthFilter].forEach(el => { el.value = ''; });
       setStockTab('movimentacoes');
     };
 
     // ---------------- CRUD: Movimentações (entrada / saída / transferência) ----------------
-    // Transferência é só um par saída+entrada lançado junto: soma zero
-    // (o que sai de um setor é exatamente o que entra no outro), sem
-    // efeito no saldo total do produto — só redistribui entre setores.
+    // Entrada: abastece uma central. Saída: retira de uma central e exige o
+    // setor que consome. Transferência é só um par saída+entrada lançado
+    // junto entre as duas centrais (`transferencia` = true): soma zero, sem
+    // efeito no saldo total do produto — não é compra nem consumo.
     function setMovTipo(tipo){
       movTipo = tipo;
       waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', b.dataset.tipo === tipo));
       const isTransfer = tipo === 'transferencia';
       waMovSetorField.hidden = isTransfer;
       waMovTransferGrid.hidden = !isTransfer;
+      waMovConsumoField.hidden = tipo !== 'saida';
+      waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : 'Estoque central';
       if(isTransfer){
         // Reinicia a animação mesmo se o usuário alternar rapidamente entre os tipos.
         waMovTransferGrid.classList.remove('wa-fade-in');
@@ -7095,7 +7119,7 @@ ${clipPlayerPills(n)}
         const origem = waMovSetorOrigem.value;
         const destino = waMovSetorDestino.value;
         if(origem === destino){
-          waMovSummary.textContent = 'Origem e destino precisam ser setores diferentes.';
+          waMovSummary.textContent = 'Origem e destino precisam ser estoques diferentes.';
           waMovSummary.classList.add('over');
           return;
         }
@@ -7109,7 +7133,8 @@ ${clipPlayerPills(n)}
       const setor = waMovSetor.value;
       const saldo = saldoOf(p.id, setor);
       const apos = movTipo === 'saida' ? saldo - q : saldo + q;
-      waMovSummary.textContent = `Saldo atual em ${setor}: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}`;
+      const consumo = movTipo === 'saida' && waMovConsumo.value ? ` · consumo: ${waMovConsumo.value}` : '';
+      waMovSummary.textContent = `Saldo atual em ${setor}: ${fmtQty(saldo)} ${p.unidade} → após a ${movTipo === 'saida' ? 'saída' : 'entrada'}: ${fmtQty(apos)} ${p.unidade}${consumo}`;
       waMovSummary.classList.toggle('over', apos < 0);
     }
 
@@ -7118,8 +7143,11 @@ ${clipPlayerPills(n)}
     });
     waMovProduto.addEventListener('change', updateMovSummary);
     waMovSetor.addEventListener('change', updateMovSummary);
-    waMovSetorOrigem.addEventListener('change', updateMovSummary);
-    waMovSetorDestino.addEventListener('change', updateMovSummary);
+    waMovConsumo.addEventListener('change', updateMovSummary);
+    // Só existem duas centrais: escolher uma ponta da transferência ajusta a outra.
+    const outraCentral = s => STOCK_SETORES.find(x => x !== s) || s;
+    waMovSetorOrigem.addEventListener('change', () => { waMovSetorDestino.value = outraCentral(waMovSetorOrigem.value); updateMovSummary(); });
+    waMovSetorDestino.addEventListener('change', () => { waMovSetorOrigem.value = outraCentral(waMovSetorDestino.value); updateMovSummary(); });
     waMovQtd.addEventListener('input', updateMovSummary);
     waMovQtd.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
@@ -7131,7 +7159,8 @@ ${clipPlayerPills(n)}
       }
       waMovModal.classList.add('open');
       setTimeout(() => {
-        if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovProduto.focus(); }
+        if(produtoId && tipo === 'saida') waMovConsumo.focus();
+        else if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovProduto.focus(); }
       }, 50);
     };
 
@@ -7140,14 +7169,15 @@ ${clipPlayerPills(n)}
     function fillMovForm(produtoId, tipo){
       const ativos = stockProducts.filter(p => p.ativo);
       if(!ativos.length) return false;
-      waMovSub.textContent = 'Escolha o setor e registre a entrada, saída ou transferência entre setores.';
+      waMovSub.textContent = 'Entrada abastece uma central; na saída, informe o setor que consome.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
       const setorPadrao = currentSetor !== STOCK_SETOR_TODOS ? currentSetor : STOCK_SETORES[0];
       waMovSetor.value = setorPadrao;
       waMovSetorOrigem.value = setorPadrao;
-      waMovSetorDestino.value = STOCK_SETORES[(STOCK_SETORES.indexOf(setorPadrao) + 1) % STOCK_SETORES.length];
+      waMovSetorDestino.value = outraCentral(setorPadrao);
+      waMovConsumo.value = '';
       waMovQtd.value = '1';
       waMovObs.value = '';
       setMovTipo(tipo || 'entrada');
@@ -7264,7 +7294,7 @@ ${clipPlayerPills(n)}
         const origem = waMovSetorOrigem.value;
         const destino = waMovSetorDestino.value;
         if(!STOCK_SETORES.includes(origem) || !STOCK_SETORES.includes(destino)){ alert('Selecione a origem e o destino.'); return; }
-        if(origem === destino){ alert('Origem e destino precisam ser setores diferentes.'); return; }
+        if(origem === destino){ alert('Origem e destino precisam ser estoques diferentes.'); return; }
         // Estoque físico não pode ficar negativo: a saída da origem nunca
         // pode passar do que existe lá, mesmo sendo uma transferência.
         if(q > saldoOf(p.id, origem)){
@@ -7276,8 +7306,8 @@ ${clipPlayerPills(n)}
         const nota = `Transferência ${origem} → ${destino}`;
         const observacao = obsBase ? `${obsBase} · ${nota}` : nota;
         const usuario_email = currentUserEmail();
-        const payloadSaida = { produto_id: p.id, tipo: 'saida', setor: origem, quantidade: q, observacao, usuario_email };
-        const payloadEntrada = { produto_id: p.id, tipo: 'entrada', setor: destino, quantidade: q, observacao, usuario_email };
+        const payloadSaida = { produto_id: p.id, tipo: 'saida', setor: origem, transferencia: true, quantidade: q, observacao, usuario_email };
+        const payloadEntrada = { produto_id: p.id, tipo: 'entrada', setor: destino, transferencia: true, quantidade: q, observacao, usuario_email };
 
         if(!supabaseReady){
           const now = new Date().toISOString();
@@ -7296,13 +7326,19 @@ ${clipPlayerPills(n)}
 
         waCloseMovModal();
         await loadStock();
-        // Total do produto não muda numa transferência — só a distribuição entre setores.
+        // Total do produto não muda numa transferência — só a distribuição entre as centrais.
         showScanFeedback('ok', `Transferência de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${origem} → ${destino} · saldo total do produto: ${fmtQty(saldoOf(p.id, STOCK_SETOR_TODOS))} ${p.unidade} (sem alteração)`);
         return;
       }
 
       const setor = waMovSetor.value;
-      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o setor.'); return; }
+      const consumo = movTipo === 'saida' ? waMovConsumo.value : '';
+      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Escritório ou Almoxarifado).'); return; }
+      if(movTipo === 'saida' && !STOCK_SETORES_CONSUMO.includes(consumo)){
+        alert('Informe o setor que vai consumir o produto.');
+        waMovConsumo.focus();
+        return;
+      }
       if(movTipo === 'saida' && q > saldoOf(p.id, setor)){
         alert(`Saldo insuficiente em ${setor}: ${p.nome} tem ${fmtQty(saldoOf(p.id, setor))} ${p.unidade} em estoque.`);
         return;
@@ -7312,6 +7348,7 @@ ${clipPlayerPills(n)}
         produto_id: p.id,
         tipo: movTipo,
         setor,
+        setor_consumo: consumo || null,
         quantidade: q,
         observacao: waMovObs.value.trim() || null,
         usuario_email: currentUserEmail()
@@ -7330,7 +7367,9 @@ ${clipPlayerPills(n)}
 
       waCloseMovModal();
       await loadStock();
-      showScanFeedback('ok', `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`);
+      showScanFeedback('ok', movTipo === 'saida'
+        ? `Saída de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${setor} → consumo: ${consumo} · saldo em ${setor}: ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`
+        : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`);
     };
 
     window.waDeleteMovement = async function(id){
@@ -7370,12 +7409,12 @@ ${clipPlayerPills(n)}
     });
     waStockSearch.addEventListener('input', renderStock);
     waStockStatusFilter.addEventListener('change', renderStock);
-    [waMovTypeFilter, waStockProductFilter, waStockUnitFilter, waStockUserFilter, waStockYearFilter, waStockMonthFilter]
+    [waMovTypeFilter, waStockProductFilter, waStockUnitFilter, waStockUserFilter, waStockConsumoFilter, waStockYearFilter, waStockMonthFilter]
       .forEach(el => el.addEventListener('change', renderStock));
 
     document.getElementById('waStockClearBtn').addEventListener('click', () => {
       waStockSearch.value = '';
-      [waStockStatusFilter, waMovTypeFilter, waStockProductFilter, waStockUnitFilter, waStockUserFilter, waStockYearFilter, waStockMonthFilter]
+      [waStockStatusFilter, waMovTypeFilter, waStockProductFilter, waStockUnitFilter, waStockUserFilter, waStockConsumoFilter, waStockYearFilter, waStockMonthFilter]
         .forEach(el => { el.value = ''; });
       stockSort = 'recente';
       waScanFeedback.hidden = true;
@@ -7394,10 +7433,10 @@ ${clipPlayerPills(n)}
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
-        rows = [['Data/hora', 'Setor', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Usuário']]
+        rows = [['Data/hora', 'Estoque', 'Setor de consumo', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Usuário']]
           .concat(getFilteredMovements().map(m => {
             const p = byId.get(m.produto_id) || {};
-            return [fmtDateTimeBR(m.created_at), m.setor || '', p.codigo_barras || '', p.nome || '', MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
+            return [fmtDateTimeBR(m.created_at), m.setor || '', stockEhConsumo(m) ? stockConsumoDe(m) : '', p.codigo_barras || '', p.nome || '', m.transferencia ? `${MOV_LABEL[m.tipo]} (transferência)` : MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_movimentacoes_${currentSetor}.csv`;
       }
@@ -7977,11 +8016,10 @@ ${clipPlayerPills(n)}
       const mix = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
       return `#${mix(ra, rb)}${mix(ga, gb)}${mix(ba, bb)}`;
     };
-    const stkSetorCor = setor => {
-      const i = STOCK_SETORES.indexOf(setor);
-      if(i === -1) return '#8297A8';
-      const t = STOCK_SETORES.length > 1 ? i / (STOCK_SETORES.length - 1) : 0;
-      return stkMisturarCor('#1D5FD3', '#BCD4F6', t);
+    // Cor pela posição no ranking (maior consumo = mais escuro); "Não informado"/"Demais" em cinza.
+    const stkSetorCor = (i, n, nome) => {
+      if(nome === STOCK_CONSUMO_SEM || nome === 'Demais') return '#A5B1C2';
+      return stkMisturarCor('#1D5FD3', '#BCD4F6', n > 1 ? i / (n - 1) : 0);
     };
 
     // Janela: Mês/Ano (quando preenchidos) substituem o segmented control
@@ -8047,13 +8085,28 @@ ${clipPlayerPills(n)}
       const fimAnt = stkSomaDias(range.ini, -1);
       return { ini: stkSomaDias(fimAnt, -(dias - 1)), fim: fimAnt };
     }
-    // Setor (quando escolhido) filtra as movimentações em todo o painel —
-    // exceto nos dois widgets que comparam setores entre si (Distribuição,
-    // Valor de saída por setor), que sempre mostram todos.
+    // Filtro "Setor" do painel tem dois grupos (valor com prefixo):
+    //   c:<central>  → Escritório/Almoxarifado: filtra tudo (saldo e movimentações daquela central);
+    //   s:<consumo>  → setor de consumo: filtra as saídas por quem consome; as compras
+    //                  (entradas nas centrais) continuam inteiras e o saldo é o total.
+    // Os widgets que comparam setores de consumo entre si (Consumo por setor,
+    // Valor consumido por setor) ignoram o grupo s: e mostram todos.
+    const stkFiltroSetor = () => {
+      const v = stkSetorEl.value;
+      return v ? { central: v.startsWith('c:'), nome: v.slice(2) } : null;
+    };
+    const stkSaldoSetor = () => { const f = stkFiltroSetor(); return f && f.central ? f.nome : STOCK_SETOR_TODOS; };
+    const stkMovOkSetor = (m, ignorarConsumo) => {
+      const f = stkFiltroSetor();
+      if(!f) return true;
+      if(f.central) return m.setor === f.nome;
+      if(ignorarConsumo) return true;
+      return stockEhCompra(m) || (stockEhConsumo(m) && stockConsumoDe(m) === f.nome);
+    };
     const stkMovsEntre = (ini, fim) => stockMovements.filter(m => {
       const d = String(m.created_at).slice(0, 10);
       if(d < ini || d > fim || !stkProdOk(m.produto_id)) return false;
-      return !stkSetorEl.value || m.setor === stkSetorEl.value;
+      return stkMovOkSetor(m);
     });
     const stkSomaQtd = lista => lista.reduce((s, m) => s + (Number(m.quantidade) || 0), 0);
     // Player (quando escolhido) filtra as notícias em todo o painel de
@@ -8153,8 +8206,12 @@ ${clipPlayerPills(n)}
         return;
       }
       const curSetor = stkSetorEl.value;
-      stkSetorEl.innerHTML = '<option value="">Setor</option>' + STOCK_SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
-      if(STOCK_SETORES.includes(curSetor)) stkSetorEl.value = curSetor;
+      const consumos = [...STOCK_SETORES_CONSUMO];
+      if(stockMovements.some(m => stockEhConsumo(m) && !m.setor_consumo)) consumos.push(STOCK_CONSUMO_SEM);
+      stkSetorEl.innerHTML = '<option value="">Setor</option>'
+        + `<optgroup label="Estoque central">${STOCK_SETORES.map(s => `<option value="c:${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`
+        + `<optgroup label="Setor de consumo">${consumos.map(s => `<option value="s:${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`;
+      if([...stkSetorEl.options].some(o => o.value === curSetor)) stkSetorEl.value = curSetor;
       const anos = [...new Set(stockMovements.map(m => String(m.created_at).slice(0, 4)))].sort().reverse();
       stkAnoEl.innerHTML = '<option value="">Ano</option>' + anos.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
       if(anos.includes(curAno)) stkAnoEl.value = curAno;
@@ -8360,9 +8417,9 @@ ${clipPlayerPills(n)}
       const entradas = chaves.map(() => 0), saidas = chaves.map(() => 0);
       const idx = new Map(chaves.map((k, i) => [k, i]));
       const janelaIni = semanal ? chaves[0] : chaves[0] + '-01';
-      const setor = stkSetorEl.value;
+      // Entradas = compras; Saídas = consumo (transferência entre centrais não entra).
       stockMovements.forEach(m => {
-        if((setor && m.setor !== setor) || !stkProdOk(m.produto_id)) return;
+        if(m.transferencia || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
         const d = String(m.created_at).slice(0, 10);
         if(d < janelaIni) return;
         const chave = semanal ? d : d.slice(0, 7);
@@ -8386,9 +8443,8 @@ ${clipPlayerPills(n)}
       const valores = chaves.map(() => 0);
       const idx = new Map(chaves.map((k, i) => [k, i]));
       const byId = new Map(stockProducts.map(p => [p.id, p]));
-      const setor = stkSetorEl.value;
       stockMovements.forEach(m => {
-        if(m.tipo === 'saida' || (setor && m.setor !== setor) || !stkProdOk(m.produto_id)) return;
+        if(!stockEhCompra(m) || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
         const i = idx.get(String(m.created_at).slice(0, 7));
         if(i === undefined) return;
         const p = byId.get(m.produto_id);
@@ -8398,18 +8454,33 @@ ${clipPlayerPills(n)}
       return { categorias, valores };
     }
 
-    // Valor de saída (custo × quantidade das saídas) por setor — todo o histórico.
-    function stkDadosValorSaidaPorSetor(){
+    // Consumo por setor de consumo (quantidade e custo = preço × quantidade
+    // das saídas). Janela: Mês/Ano quando escolhidos; sem eles, todo o
+    // histórico (o objetivo é mapear quem mais demanda). Respeita a central
+    // e a seleção de produtos, mas não o filtro de setor de consumo — o
+    // widget compara os setores entre si. Só setores com consumo, do maior
+    // para o menor.
+    function stkDadosConsumoPorSetor(){
+      const janela = (stkMesEl.value || stkAnoEl.value) ? stkRange() : null;
       const byId = new Map(stockProducts.map(p => [p.id, p]));
-      const porSetor = new Map(STOCK_SETORES.map(s => [s, 0]));
+      const porSetor = new Map();
       stockMovements.forEach(m => {
-        if(m.tipo !== 'saida' || !porSetor.has(m.setor) || !stkProdOk(m.produto_id)) return;
+        if(!stockEhConsumo(m) || !stkMovOkSetor(m, true) || !stkProdOk(m.produto_id)) return;
+        const d = String(m.created_at).slice(0, 10);
+        if(janela && (d < janela.ini || d > janela.fim)) return;
         const p = byId.get(m.produto_id);
         const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
-        porSetor.set(m.setor, porSetor.get(m.setor) + preco * (Number(m.quantidade) || 0));
+        const k = stockConsumoDe(m), q = Number(m.quantidade) || 0;
+        const v = porSetor.get(k) || { nome: k, qtd: 0, valor: 0, retiradas: 0 };
+        v.qtd += q; v.valor += preco * q; v.retiradas++;
+        porSetor.set(k, v);
       });
-      const linhas = [...porSetor.entries()].sort((a, b) => b[1] - a[1]);
-      return { categorias: linhas.map(l => l[0]), valores: linhas.map(l => l[1]) };
+      const linhas = [...porSetor.values()];
+      return {
+        rotulo: janela ? janela.rotulo : 'todo o histórico',
+        porQtd: linhas.slice().sort((a, b) => b.qtd - a.qtd),
+        porValor: linhas.slice().sort((a, b) => b.valor - a.valor)
+      };
     }
 
     // Volume de notícias por player, ao longo do tempo (dia/semana ou mês
@@ -8654,20 +8725,29 @@ ${clipPlayerPills(n)}
       });
       const range = stkRange(stkPeriodoAtual);
       const rangeAnt = stkRangeAnterior(range);
-      const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
+      const setorAtivo = stkSaldoSetor();
       const produtos = stockProducts.filter(p => stkProdOk(p.id));
       const ativos = produtos.filter(p => p.ativo);
       const movsPeriodo = stkMovsEntre(range.ini, range.fim);
       const movsAnteriores = stkMovsEntre(rangeAnt.ini, rangeAnt.fim);
 
       // ---- KPIs (layout "cd", o mesmo do Clipping) ----
+      // Entradas = compras nas centrais; Saídas = consumo pelos setores (transferências fora).
       const totalStockAtual = ativos.reduce((s, p) => s + Math.max(0, saldoOf(p.id, setorAtivo)), 0);
-      const entradasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo !== 'saida'));
-      const saidasQtd = stkSomaQtd(movsPeriodo.filter(m => m.tipo === 'saida'));
-      const entradasQtdAnt = stkSomaQtd(movsAnteriores.filter(m => m.tipo !== 'saida'));
-      const saidasQtdAnt = stkSomaQtd(movsAnteriores.filter(m => m.tipo === 'saida'));
-      const netPeriodo = entradasQtd - saidasQtd;
+      const entradasQtd = stkSomaQtd(movsPeriodo.filter(stockEhCompra));
+      const saidasQtd = stkSomaQtd(movsPeriodo.filter(stockEhConsumo));
+      const entradasQtdAnt = stkSomaQtd(movsAnteriores.filter(stockEhCompra));
+      const saidasQtdAnt = stkSomaQtd(movsAnteriores.filter(stockEhConsumo));
+      // Saldo no início: desfaz tudo o que mexeu no saldo exibido (com filtro de
+      // central, as transferências também contam; com filtro de consumo, o saldo
+      // é o total e só o consumo daquele setor estaria na lista — usa o total).
+      const filtroSetor = stkFiltroSetor();
+      const movsSaldo = filtroSetor && !filtroSetor.central
+        ? stockMovements.filter(m => { const d = String(m.created_at).slice(0, 10); return d >= range.ini && d <= range.fim && stkProdOk(m.produto_id); })
+        : movsPeriodo;
+      const netPeriodo = movsSaldo.reduce((s, m) => s + (m.tipo === 'saida' ? -1 : 1) * (Number(m.quantidade) || 0), 0);
       const totalStockInicio = totalStockAtual - netPeriodo;
+      const porCentral = STOCK_SETORES.map(c => `${c}: ${stkQtd(ativos.reduce((s, p) => s + Math.max(0, saldoOf(p.id, c)), 0))}`).join(' · ');
       const qOk = ativos.filter(p => situacaoOf(p) === 'ok').length;
       const eficiencia = ativos.length ? qOk / ativos.length : 0;
       const qAbaixo = ativos.filter(p => ['baixo', 'zerado'].includes(situacaoOf(p))).length;
@@ -8675,12 +8755,12 @@ ${clipPlayerPills(n)}
       const vsAnt = (stkMesEl.value || stkAnoEl.value) ? 'vs. per. ant.' : ({ hoje: 'vs. ontem', mes: 'vs. mês ant.' }[stkPeriodoAtual] || 'vs. sem. ant.');
       const unid = (v, sing, plur) => `${stkNum(v)}<span class="cd-kpi-un"> ${v === 1 ? sing : plur}</span>`;
       const kTotal = cdKpiCard('layers', 'azul', 'Total em estoque', stkNum(totalStockAtual), cdDelta(totalStockAtual, totalStockInicio),
-        `vs. início (${unid(totalStockInicio, 'unidade', 'unidades')})`, 'Saldo atual dos produtos ativos comparado ao início do período');
+        `vs. início (${unid(totalStockInicio, 'unidade', 'unidades')})`, `Saldo atual dos produtos ativos comparado ao início do período · ${porCentral}`);
       // Saídas: subir consome o estoque (variação em vermelho); Entradas: subir é favorável.
       const kOut = cdKpiCard('arrowUpRight', 'vermelho', 'Saídas', stkNum(saidasQtd), cdDelta(saidasQtd, saidasQtdAnt, false, false, true),
-        `${vsAnt} (${unid(saidasQtdAnt, 'unidade', 'unidades')})`);
+        `${vsAnt} (${unid(saidasQtdAnt, 'unidade', 'unidades')})`, 'Consumo: retiradas das centrais pelos setores (sem transferências)');
       const kIn = cdKpiCard('arrowDownLeft', 'verde', 'Entradas', stkNum(entradasQtd), cdDelta(entradasQtd, entradasQtdAnt),
-        `${vsAnt} (${unid(entradasQtdAnt, 'unidade', 'unidades')})`);
+        `${vsAnt} (${unid(entradasQtdAnt, 'unidade', 'unidades')})`, 'Compras que abasteceram o Escritório e o Almoxarifado (sem transferências)');
       // Sem comparação temporal: situação atual frente à meta de 80% dos produtos com estoque adequado.
       const eficOk = eficiencia >= 0.8;
       const kEfic = cdKpiCard('percent', eficOk ? 'verde' : 'vermelho', 'Eficiência', stkPct(eficiencia),
@@ -8708,25 +8788,26 @@ ${clipPlayerPills(n)}
         cdBarras(C.categorias.map((mes, i) => ({ nome: mes.charAt(0).toUpperCase() + mes.slice(1), valor: C.valores[i], rotulo: stkMoedaCompacta(C.valores[i]), dica: stkMoeda(C.valores[i]), cor: CD_COR.azul })),
           'Valor gasto com compras', 'Nenhuma compra registrada.'));
 
-      // ---- Distribuição por setor (rosca com total no centro) ----
-      const setores = STOCK_SETORES.map(s => ({ nome: s, cor: stkSetorCor(s), qtd: produtos.reduce((sum, p) => sum + Math.max(0, saldoOf(p.id, s)), 0) })).sort((a, b) => b.qtd - a.qtd);
-      const totalSetores = setores.reduce((s, x) => s + x.qtd, 0);
-      const wDistribuicao = cdCard('Distribuição por setor', 'Saldo atual por setor', `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(totalSetores)}</strong><span>unidade${totalSetores === 1 ? '' : 's'}</span></div></div>
-          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(stkQtd(s.qtd))} un."><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalSetores ? s.qtd / totalSetores : 0)}</strong></li>`).join('')}</ul>
-        </div>`);
+      // ---- Consumo por setor (rosca: quantidade retirada por setor de consumo; top 5 + Demais) ----
+      const CS = stkDadosConsumoPorSetor();
+      const totalConsumo = CS.porQtd.reduce((s, x) => s + x.qtd, 0);
+      const topConsumo = CS.porQtd.length > 6 ? CS.porQtd.slice(0, 5).concat([{ nome: 'Demais', qtd: CS.porQtd.slice(5).reduce((s, x) => s + x.qtd, 0) }]) : CS.porQtd;
+      const setores = topConsumo.map((s, i) => ({ nome: s.nome, qtd: s.qtd, cor: stkSetorCor(i, topConsumo.length, s.nome) }));
+      const wDistribuicao = cdCard('Consumo por setor', `Unidades retiradas · ${CS.rotulo}`, setores.length ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${stkNum(totalConsumo)}</strong><span>unidade${totalConsumo === 1 ? '' : 's'}</span></div></div>
+          <ul class="cd-rosca-legenda">${setores.map(s => `<li title="${esc(s.nome)}: ${esc(stkQtd(s.qtd))} un."><i style="background:${s.cor}"></i><span>${esc(s.nome)}</span><strong>${stkPct(totalConsumo ? s.qtd / totalConsumo : 0)}</strong></li>`).join('')}</ul>
+        </div>` : '<div class="stk-vazio">Nenhum consumo registrado.</div>');
 
-      // ---- Valor de saída por setor (custo das saídas, todo o histórico) ----
-      const VS = stkDadosValorSaidaPorSetor();
-      const totalValorSaida = VS.valores.reduce((s, v) => s + v, 0);
-      const wValorSaida = cdCard('Valor de saída por setor', `Custo das saídas · total ${stkMoedaCompacta(totalValorSaida)}`,
-        cdBarras(VS.categorias.map((setor, i) => ({ nome: setor, valor: VS.valores[i], rotulo: stkMoedaCompacta(VS.valores[i]), dica: stkMoeda(VS.valores[i]), cor: CD_COR.azul })),
-          'Valor de saída por setor', 'Nenhuma saída registrada.'));
+      // ---- Valor consumido por setor (custo das saídas por setor de consumo) ----
+      const totalValorConsumo = CS.porValor.reduce((s, x) => s + x.valor, 0);
+      const wValorSaida = cdCard('Valor consumido por setor', `${CS.rotulo.charAt(0).toUpperCase() + CS.rotulo.slice(1)} · total ${stkMoedaCompacta(totalValorConsumo)}`,
+        cdBarras(CS.porValor.map(s => ({ nome: s.nome, valor: s.valor, rotulo: stkMoedaCompacta(s.valor), dica: `${stkMoeda(s.valor)} · ${stkPct(totalValorConsumo ? s.valor / totalValorConsumo : 0, 1)} · ${stkNum(s.retiradas)} retirada${s.retiradas === 1 ? '' : 's'}`, cor: s.nome === STOCK_CONSUMO_SEM ? CD_COR.cinza : CD_COR.azul })),
+          'Valor consumido por setor', 'Nenhum consumo registrado.'));
 
-      // ---- Maiores saídas do período (ranking de produtos) ----
+      // ---- Maiores saídas do período (ranking de produtos consumidos) ----
       const prodById = new Map(stockProducts.map(p => [p.id, p]));
       const contSaida = new Map();
-      movsPeriodo.filter(m => m.tipo === 'saida').forEach(m => contSaida.set(m.produto_id, (contSaida.get(m.produto_id) || 0) + (Number(m.quantidade) || 0)));
+      movsPeriodo.filter(stockEhConsumo).forEach(m => contSaida.set(m.produto_id, (contSaida.get(m.produto_id) || 0) + (Number(m.quantidade) || 0)));
       const topSaidas = [...contSaida.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
       const wTopSaidas = cdCard('Maiores saídas', `Produtos mais retirados · ${range.rotulo}`, topSaidas.length ? `<ol class="cd-rank">${topSaidas.map(([id, q], i) => {
           const p = prodById.get(id);
@@ -8761,7 +8842,7 @@ ${clipPlayerPills(n)}
 
       const movsTabela = movsPeriodo.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
       const corpoMovimentacoes = movsTabela.length ? `<table class="stk-table">
-          <thead><tr><th>Data/hora</th><th>Produto</th><th>Setor</th><th>Tipo</th><th style="text-align:right;">Quantidade</th><th>Usuário</th></tr></thead>
+          <thead><tr><th>Data/hora</th><th>Produto</th><th>Estoque</th><th>Tipo</th><th>Setor de consumo</th><th style="text-align:right;">Quantidade</th><th>Usuário</th></tr></thead>
           <tbody>${movsTabela.map(m => {
             const p = byId.get(m.produto_id);
             const saida = m.tipo === 'saida';
@@ -8769,7 +8850,8 @@ ${clipPlayerPills(n)}
               <td>${stkDataHoraBR(m.created_at)}</td>
               <td>${p ? esc(p.nome) : '—'}</td>
               <td>${esc(m.setor)}</td>
-              <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${saida ? 'danger' : 'ok'}">${saida ? 'Saída' : 'Entrada'}</span></td>
+              <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(m.transferencia ? 'transferencia' : saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${m.transferencia ? 'ongoing' : saida ? 'danger' : 'ok'}">${m.transferencia ? 'Transferência' : saida ? 'Saída' : 'Entrada'}</span></td>
+              <td>${stockEhConsumo(m) ? esc(stockConsumoDe(m)) : '—'}</td>
               <td class="num">${stkQtd(m.quantidade)} ${p ? esc(p.unidade) : ''}</td>
               <td>${esc(userNameOf(m.usuario_email) || m.usuario_email || '—')}</td>
             </tr>`;
@@ -8792,7 +8874,7 @@ ${clipPlayerPills(n)}
         + `<div class="cd-row cd-row-a">${wFluxo}${wCompras}${wDistribuicao}</div>`
         + `<div class="cd-row cd-row-b">${wValorSaida}${wTopSaidas}${wAlertas}</div></div>`
         + `<div class="stk-grid cd-extra">${wTabela}</div>`;
-      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: stkQtd(s.qtd) + ' un.' })), 'Distribuição por setor');
+      stkDesenharRoscaCd(setores.map(s => ({ nome: s.nome, cor: s.cor, valor: s.qtd, rotuloValor: stkQtd(s.qtd) + ' un.' })), 'Consumo por setor');
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, F.categorias, seriesFluxo, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
@@ -10583,7 +10665,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      const setorAtivo = stkSetorEl.value || STOCK_SETOR_TODOS;
+      const setorAtivo = stkSaldoSetor();
       if(stkTabelaAba === 'produtos'){
         rows = [['Código', 'Produto', 'Unidade', 'Saldo', 'Mínimo', 'Situação']]
           .concat(stockProducts.filter(p => stkProdOk(p.id))
@@ -10591,10 +10673,11 @@ ${clipPlayerPills(n)}
         filename = `estoque_dashboard_produtos_${stkHojeIso()}.csv`;
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
-        rows = [['Data/hora', 'Produto', 'Setor', 'Tipo', 'Quantidade', 'Usuário']]
+        rows = [['Data/hora', 'Produto', 'Estoque', 'Tipo', 'Setor de consumo', 'Quantidade', 'Usuário']]
           .concat(stkMovsEntre(range.ini, range.fim).map(m => {
             const p = byId.get(m.produto_id);
-            return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.tipo === 'saida' ? 'Saída' : 'Entrada', stkQtd(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
+            const tipo = m.tipo === 'saida' ? 'Saída' : 'Entrada';
+            return [stkDataHoraBR(m.created_at), p ? p.nome : '', m.setor, m.transferencia ? `${tipo} (transferência)` : tipo, stockEhConsumo(m) ? stockConsumoDe(m) : '', stkQtd(m.quantidade), userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_dashboard_movimentacoes_${range.ini}_a_${range.fim}.csv`;
       }
@@ -11593,8 +11676,12 @@ ${quadro}
 
     // ===== Relatório "Controle de Estoque" (página única) =====
     // Dados do próprio módulo Estoque (produtos, saldos e movimentações). Período: os 6 meses
-    // até o mês de referência. Modelo: report/estoque/branding/1.png. Conteúdo: KPIs, valor gasto por mês
-    // (entradas), valor utilizado por setor (saídas) e as tabelas de entradas e saídas lado a lado.
+    // até o mês de referência. Modelo: report/estoque/branding/1.png.
+    //   Consolidado ("Todas"): KPIs, valor gasto na compra por mês (entradas nas centrais), valor
+    //     consumido por setor de consumo (saídas) e as tabelas de entradas e saídas lado a lado.
+    //   Um setor de consumo: KPIs do consumo do setor (e a participação no total), valor consumido
+    //     por mês, produtos mais consumidos e as tabelas de saídas e de retiradas por funcionário.
+    // Transferências entre as centrais não contam como compra nem consumo.
     const reMoeda = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const reQtd = v => relNum(Math.round(Number(v) || 0));
 
@@ -11620,38 +11707,51 @@ ${quadro}
       await Promise.all(['700 25px Inter', '800 46px Inter', '700 32px Inter'].map(f => document.fonts.load(f)));
       const meses = [];
       for(let k = 5; k >= 0; k--){ const d = new Date(Date.UTC(Number(alvo.slice(0, 4)), Number(alvo.slice(5, 7)) - 1 - k, 1)); meses.push(d.toISOString().slice(0, 7)); }
-      const movs = (await reMovimentos(meses[0], meses[5])).filter(m => setor === 'Todas' || m.setor === setor);
+      const consolidado = setor === 'Todas';
+      const movs = await reMovimentos(meses[0], meses[5]);
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       const preco = id => { const p = byId.get(id); return p && p.preco_custo != null ? Number(p.preco_custo) : 0; };
       const nomeProd = id => (byId.get(id) || {}).nome || 'Produto removido';
-      const entra = m => m.tipo !== 'saida';
-      const ent = movs.filter(entra), sai = movs.filter(m => m.tipo === 'saida');
+      // compras = entradas nas centrais; consumo = saídas para os setores (sem transferências)
+      const ent = movs.filter(stockEhCompra), consumoTodos = movs.filter(stockEhConsumo);
+      const sai = consolidado ? consumoTodos : consumoTodos.filter(m => stockConsumoDe(m) === setor);
       const soma = (l, f) => l.reduce((t, m) => t + f(m), 0);
       const totEnt = soma(ent, m => m.quantidade), totSai = soma(sai, m => m.quantidade);
-      // saldo atual (quantidade em estoque hoje)
+      // saldo atual (quantidade em estoque hoje, nas duas centrais)
       let saldo = 0;
-      stockBalances.forEach(mp => mp.forEach((v, s) => { if(setor === 'Todas' || s === setor) saldo += Number(v) || 0; }));
+      stockBalances.forEach(mp => mp.forEach(v => { saldo += Number(v) || 0; }));
       const ativos = stockProducts.filter(p => p.ativo !== false);
-      // valor gasto (entradas × preço de custo) por mês e por setor
+      // valor gasto (entradas × preço de custo) por mês
       const gastoMes = meses.map(mm => soma(ent.filter(m => String(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
       const gastoTot = gastoMes.reduce((a, b) => a + b, 0), gastoMed = gastoTot / 6;
+      const usado = m => m.quantidade * preco(m.produto_id);
+      const usadoTot = soma(sai, usado), usadoTodos = soma(consumoTodos, usado);
+      const moedaCurta = v => 'R$ ' + relNum(Math.round(Number(v) || 0));
 
       passo('Montando o relatório…');
       const pg = relPagina(), x = pg.x;
       x.drawImage(await relImg('1.png', 'estoque'), 0, 0, REL_W, REL_H);
       x.fillStyle = '#fff'; x.fillRect(36, 172, 1000, 80);
       x.fillStyle = '#0B2A5B'; x.font = '700 32px Inter'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
-      x.fillText(`CONTROLE DE ESTOQUE – ${setor === 'Todas' ? 'CONSOLIDADO' : setor.toUpperCase()}`, 52, 228);
+      x.fillText(relCortar(x, `CONTROLE DE ESTOQUE – ${consolidado ? 'CONSOLIDADO' : 'CONSUMO ' + setor.toUpperCase()}`, 970), 52, 228);
       x.fillStyle = RC_MUTED; x.font = '600 19px Inter';
-      x.fillText(`Período: ${relRot(meses[0])} a ${relRot(meses[5])} · Setor: ${setor === 'Todas' ? 'todos os setores' : setor}`, 52, 312);
+      x.fillText(`Período: ${relRot(meses[0])} a ${relRot(meses[5])} · ${consolidado ? 'Estoques centrais (Escritório e Almoxarifado) e consumo de todos os setores' : `Setor de consumo: ${setor}`}`, 52, 312);
 
       // ---- KPIs ----
       let y = 334;
       const w4 = (1310 - 3 * 18) / 4;
-      rcKpi(x, 52, y, w4, 150, 'Produtos cadastrados', reQtd(ativos.length), 'itens ativos no catálogo');
-      rcKpi(x, 52 + (w4 + 18), y, w4, 150, 'Total de entradas', reQtd(totEnt), 'unidades no período');
-      rcKpi(x, 52 + 2 * (w4 + 18), y, w4, 150, 'Total de saídas', reQtd(totSai), 'unidades no período', RC_VERM);
-      rcKpi(x, 52 + 3 * (w4 + 18), y, w4, 150, 'Saldo em estoque', reQtd(saldo), 'quantidade atual');
+      if(consolidado){
+        rcKpi(x, 52, y, w4, 150, 'Produtos cadastrados', reQtd(ativos.length), 'itens ativos no catálogo');
+        rcKpi(x, 52 + (w4 + 18), y, w4, 150, 'Total de entradas', reQtd(totEnt), 'unidades compradas no período');
+        rcKpi(x, 52 + 2 * (w4 + 18), y, w4, 150, 'Total de saídas', reQtd(totSai), 'unidades consumidas no período', RC_VERM);
+        rcKpi(x, 52 + 3 * (w4 + 18), y, w4, 150, 'Saldo em estoque', reQtd(saldo), 'quantidade atual nas centrais');
+      } else {
+        const prodDistintos = new Set(sai.map(m => m.produto_id)).size;
+        rcKpi(x, 52, y, w4, 150, 'Produtos consumidos', reQtd(prodDistintos), 'itens diferentes retirados');
+        rcKpi(x, 52 + (w4 + 18), y, w4, 150, 'Total consumido', reQtd(totSai), `unidades em ${sai.length} retirada${sai.length === 1 ? '' : 's'}`, RC_VERM);
+        rcKpi(x, 52 + 2 * (w4 + 18), y, w4, 150, 'Valor consumido', moedaCurta(usadoTot), `média de ${reMoeda(usadoTot / 6)}/mês`);
+        rcKpi(x, 52 + 3 * (w4 + 18), y, w4, 150, 'Participação', `${relNum(usadoTodos ? usadoTot / usadoTodos * 100 : 0, 1)}%`, `do consumo total (${moedaCurta(usadoTodos)})`);
+      }
       y += 150 + 28;
 
       // Colunas na largura toda: coluna / valor / linha de apoio (variação ou participação)
@@ -11675,57 +11775,80 @@ ${quadro}
         y += h + 16;
       };
 
-      // ---- Valor gasto na compra por mês (entradas × preço de custo) ----
-      colunas(`Valor gasto na compra por mês · total ${reMoeda(gastoTot)} · média ${reMoeda(gastoMed)}/mês`, meses.map(relRot), gastoMes, j => {
-        if(!j || !gastoMes[j - 1]) return null;
-        const d = (gastoMes[j] - gastoMes[j - 1]) / gastoMes[j - 1] * 100;
-        return { t: `${d > 0 ? '+' : d < 0 ? '-' : ''}${relNum(Math.abs(d), 1)}%`, cor: d > 0 ? RC_VERM : RC_VERDE };   // gastar mais = pior
-      }, 5);
+      // Variação mês a mês (gastar/consumir mais = pior)
+      const varMes = serie => j => {
+        if(!j || !serie[j - 1]) return null;
+        const d = (serie[j] - serie[j - 1]) / serie[j - 1] * 100;
+        return { t: `${d > 0 ? '+' : d < 0 ? '-' : ''}${relNum(Math.abs(d), 1)}%`, cor: d > 0 ? RC_VERM : RC_VERDE };
+      };
+      // Ranking em colunas: os 7 maiores + "Demais", com a participação de cada um
+      const ranking = (titulo, pares, total) => {
+        const ord = pares.filter(p => p[1] > 0).sort((p, q) => q[1] - p[1]);
+        const cols = ord.length > 8 ? ord.slice(0, 7).concat([[`Demais (${ord.length - 7})`, ord.slice(7).reduce((t, p) => t + p[1], 0)]]) : ord;
+        if(!cols.length) cols.push(['Sem consumo no período', 0]);
+        colunas(titulo, cols.map(c => c[0]), cols.map(c => c[1]),
+          j => total ? { t: `${relNum(cols[j][1] / total * 100)}% do total`, cor: RC_MUTED } : null, total ? 0 : -1);
+      };
 
-      // ---- Valor utilizado por setor (saídas × preço de custo) ----
-      const usado = m => m.quantidade * preco(m.produto_id);
-      const usadoTot = soma(sai, usado);
-      if(setor === 'Todas'){
-        const setores = STOCK_SETORES.map(st => [st, soma(sai.filter(m => m.setor === st), usado)]);
-        const iMax = setores.reduce((im, s, j) => s[1] > setores[im][1] ? j : im, 0);
-        colunas(`Valor utilizado por setor · total ${reMoeda(usadoTot)}`, setores.map(s => s[0]), setores.map(s => s[1]),
-          j => usadoTot ? { t: `${relNum(setores[j][1] / usadoTot * 100)}% do total`, cor: RC_MUTED } : null, usadoTot ? iMax : -1);
+      if(consolidado){
+        // ---- Valor gasto na compra por mês (entradas × preço de custo) ----
+        colunas(`Valor gasto na compra por mês · total ${reMoeda(gastoTot)} · média ${reMoeda(gastoMed)}/mês`, meses.map(relRot), gastoMes, varMes(gastoMes), 5);
+        // ---- Valor consumido por setor de consumo (saídas × preço de custo) ----
+        const porSetor = new Map();
+        sai.forEach(m => { const k = stockConsumoDe(m); porSetor.set(k, (porSetor.get(k) || 0) + usado(m)); });
+        ranking(`Valor consumido por setor · total ${reMoeda(usadoTot)}`, [...porSetor.entries()], usadoTot);
       } else {
+        // ---- Valor consumido por mês pelo setor ----
         const usadoMes = meses.map(mm => soma(sai.filter(m => String(m.created_at).slice(0, 7) === mm), usado));
-        colunas(`Valor utilizado por setor · ${setor} · total ${reMoeda(usadoTot)}`, meses.map(relRot), usadoMes, () => null, 5);
+        colunas(`Valor consumido por mês · ${setor} · total ${reMoeda(usadoTot)}`, meses.map(relRot), usadoMes, varMes(usadoMes), 5);
+        // ---- Produtos mais consumidos pelo setor (valor) ----
+        const porProd = new Map();
+        sai.forEach(m => { const k = nomeProd(m.produto_id); porProd.set(k, (porProd.get(k) || 0) + usado(m)); });
+        ranking(`Produtos mais consumidos · ${setor}`, [...porProd.entries()], usadoTot);
       }
 
-      // ---- Entradas e saídas lado a lado: NOME / QUANTIDADE / FUNCIONÁRIO / VALOR ----
+      // ---- Tabelas lado a lado: NOME / QUANTIDADE / (FUNCIONÁRIO | SETOR | ITENS) / VALOR ----
+      // funcionário pelo primeiro nome (cadastro de usuários); sem cadastro, o e-mail
+      const funcDe = m => (userNameOf(m.usuario_email) || '').trim().split(/\s+/)[0] || m.usuario_email || '—';
       const yTab = y + 8;
-      const tabela = (a, titulo, lista) => {
+      // agrupar(m) → { k, nome, ter } (ter null = conta os produtos diferentes do grupo)
+      const tabela = (a, titulo, rotNome, rotTer, lista, agrupar) => {
         let yy = rcSecao(x, a, yTab, titulo);
         const mp = new Map();
         lista.forEach(m => {
-          // funcionário pelo primeiro nome (cadastro de usuários); sem cadastro, o e-mail
-          const func = (userNameOf(m.usuario_email) || '').trim().split(/\s+/)[0] || m.usuario_email || '—', k = `${m.produto_id}|${func}`;
-          const v = mp.get(k) || { id: m.produto_id, func, q: 0, v: 0 }; v.q += m.quantidade; v.v += usado(m); mp.set(k, v);
+          const g = agrupar(m);
+          const v = mp.get(g.k) || { nome: g.nome, ter: g.ter, q: 0, v: 0, prods: new Set() };
+          v.q += m.quantidade; v.v += usado(m); v.prods.add(m.produto_id); mp.set(g.k, v);
         });
         const itens = [...mp.values()].sort((p, q) => q.v - p.v || q.q - p.q);
+        itens.forEach(it => { if(it.ter === null) it.ter = `${it.prods.size} ${it.prods.size === 1 ? 'item' : 'itens'}`; });
         const HL = 36, cabem = Math.max(2, Math.floor((1792 - yy - 46) / HL) - 1);
         let linhas = itens.slice(0, itens.length > cabem ? cabem - 1 : cabem);
         const resto = itens.slice(linhas.length);
-        const fmtL = it => ({ cel: [{ t: nomeProd(it.id), bold: true }, { t: reQtd(it.q) }, { t: it.func }, { t: reMoeda(it.v) }] });
+        const fmtL = it => ({ cel: [{ t: it.nome, bold: true }, { t: reQtd(it.q) }, { t: it.ter }, { t: reMoeda(it.v) }] });
         const rows = linhas.map(fmtL);
         if(resto.length) rows.push({ cel: [{ t: `Demais itens (${resto.length})`, cor: RC_MUTED }, { t: reQtd(resto.reduce((t, i) => t + i.q, 0)) }, { t: '' }, { t: reMoeda(resto.reduce((t, i) => t + i.v, 0)) }] });
         if(!itens.length) rows.push({ cel: [{ t: 'Sem movimentações no período', cor: RC_MUTED }, { t: '' }, { t: '' }, { t: '' }] });
         rows.push({ total: true, cel: [{ t: 'Total' }, { t: reQtd(itens.reduce((t, i) => t + i.q, 0)) }, { t: '' }, { t: reMoeda(itens.reduce((t, i) => t + i.v, 0)) }] });
-        rcTabela(x, a, yy, 645, [{ t: 'Nome', w: .46 }, { t: 'Qtd.', w: .1, al: 'r' }, { t: 'Funcionário', w: .24 }, { t: 'Valor', w: .2, al: 'r' }], rows, HL, 16);
+        rcTabela(x, a, yy, 645, [{ t: rotNome, w: .46 }, { t: 'Qtd.', w: .1, al: 'r' }, { t: rotTer, w: .24 }, { t: 'Valor', w: .2, al: 'r' }], rows, HL, 16);
       };
-      tabela(52, 'Entradas', ent);
-      tabela(717, 'Saídas', sai);
-
+      if(consolidado){
+        tabela(52, 'Entradas', 'Nome', 'Funcionário', ent, m => ({ k: `${m.produto_id}|${funcDe(m)}`, nome: nomeProd(m.produto_id), ter: funcDe(m) }));
+        tabela(717, 'Saídas', 'Nome', 'Setor', sai, m => ({ k: `${m.produto_id}|${stockConsumoDe(m)}`, nome: nomeProd(m.produto_id), ter: stockConsumoDe(m) }));
+      } else {
+        tabela(52, `Saídas · ${setor}`, 'Nome', 'Funcionário', sai, m => ({ k: `${m.produto_id}|${funcDe(m)}`, nome: nomeProd(m.produto_id), ter: funcDe(m) }));
+        tabela(717, 'Retiradas por funcionário', 'Funcionário', 'Produtos', sai, m => ({ k: funcDe(m), nome: funcDe(m), ter: null }));
+      }
 
       const ref = meses[5];
+      const rotSetor = consolidado ? 'Consolidado' : `Consumo ${setor}`;
       return {
-        paginas: [pg], arquivo: `Controle_Estoque_${setor === 'Todas' ? 'Consolidado' : stkNorm(setor).replace(/[^a-z0-9]+/g, '_')}_${ref.slice(5, 7)}-${ref.slice(0, 4)}.pdf`,
-        titulo: `Controle de Estoque · ${setor === 'Todas' ? 'Consolidado' : setor} · ${relRot(meses[0])} a ${relRot(ref)}`,
-        pronto: `Controle de Estoque (${setor === 'Todas' ? 'todos os setores' : setor}) · ${relRot(meses[0])} a ${relRot(ref)} · 1 página.`,
-        resumo: `<li><strong>${reQtd(movs.length)} movimentações</strong> <span>· ${reQtd(totEnt)} un. de entrada e ${reQtd(totSai)} un. de saída</span></li><li><strong>Valor gasto</strong> <span>· ${reMoeda(gastoTot)}</span></li>`
+        paginas: [pg], arquivo: `Controle_Estoque_${consolidado ? 'Consolidado' : 'Consumo_' + stkNorm(setor).replace(/[^a-z0-9]+/g, '_')}_${ref.slice(5, 7)}-${ref.slice(0, 4)}.pdf`,
+        titulo: `Controle de Estoque · ${rotSetor} · ${relRot(meses[0])} a ${relRot(ref)}`,
+        pronto: `Controle de Estoque (${consolidado ? 'todos os setores' : `consumo de ${setor}`}) · ${relRot(meses[0])} a ${relRot(ref)} · 1 página.`,
+        resumo: consolidado
+          ? `<li><strong>${reQtd(ent.length + sai.length)} movimentações</strong> <span>· ${reQtd(totEnt)} un. de entrada e ${reQtd(totSai)} un. de saída</span></li><li><strong>Valor gasto</strong> <span>· ${reMoeda(gastoTot)} em compras · ${reMoeda(usadoTot)} consumidos</span></li>`
+          : `<li><strong>${reQtd(sai.length)} retiradas</strong> <span>· ${reQtd(totSai)} un. consumidas por ${esc(setor)}</span></li><li><strong>Valor consumido</strong> <span>· ${reMoeda(usadoTot)} (${relNum(usadoTodos ? usadoTot / usadoTodos * 100 : 0, 1)}% do total)</span></li>`
       };
     }
 
@@ -11794,7 +11917,8 @@ ${quadro}
     });
 
     (function relMontar(){
-      document.getElementById('relSetor').innerHTML = ['Todas', ...STOCK_SETORES].map(st => `<option value="${esc(st)}">${esc(st)}</option>`).join('');
+      document.getElementById('relSetor').innerHTML = '<option value="Todas">Todos os setores (consolidado)</option>'
+        + `<optgroup label="Setor de consumo">${STOCK_SETORES_CONSUMO.map(st => `<option value="${esc(st)}">${esc(st)}</option>`).join('')}</optgroup>`;
       const hoje = new Date(), anoAtual = hoje.getFullYear();
       relMes.innerHTML = REL_MES_LONGO.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m[0].toUpperCase() + m.slice(1)}</option>`).join('');
       relAno.innerHTML = Array.from({ length: anoAtual - 2022 }, (_, k) => anoAtual - k).map(a => `<option value="${a}">${a}</option>`).join('');
@@ -11827,7 +11951,7 @@ ${quadro}
       if(relTipo.value === 'estoque'){
         const st = document.getElementById('relSetor').value;
         relGerarBtn.disabled = false;
-        relRodape.textContent = `Controle de Estoque · ${st === 'Todas' ? 'todos os setores' : st} · até ${mesTxt}`;
+        relRodape.textContent = `Controle de Estoque · ${st === 'Todas' ? 'todos os setores' : `consumo de ${st}`} · até ${mesTxt}`;
         return;
       }
       const pronto = relTipo.value === 'panorama' && relSel.size === 3 && !faltaNot;
