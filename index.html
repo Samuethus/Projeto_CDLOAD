@@ -633,7 +633,7 @@
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
+  #page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -1890,7 +1890,7 @@
     --bg-panel:#1A2436;
     --bg-card:#172033;
   }
-  :root[data-theme="dark"] :is(#page-home, #page-templates, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
     --wa-bg:#0B1220;
     --wa-card:#131C2E;
     --wa-border:#243047;
@@ -2074,9 +2074,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
         <span>Instâncias</span>
       </button>
-      <button class="nav-item" data-page="templates" data-title="Templates" data-desc="Crie e organize seus modelos de comunicação.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-        <span>Templates</span>
+      <button class="nav-item" data-page="surveymonkey" data-title="Survey Monkey" data-desc="Formulários e respostas das pesquisas do Survey Monkey.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+        <span>Survey Monkey</span>
       </button>
       <button class="nav-item" data-page="whatsapp" data-title="WhatsApp" data-desc="Instâncias, templates e envios de mensagens pelo WhatsApp.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
@@ -2696,8 +2696,87 @@
 
       </section>
 
-      <section class="page" id="page-templates">
-        <!-- Bloco de Templates: também é exibido em WhatsApp > Templates (mesmos dados e cadastro). -->
+      <section class="page" id="page-surveymonkey">
+        <!-- Conteúdo da integração com o Survey Monkey (ver surveymonkey/LEIA-ME.md). -->
+      </section>
+
+      <!-- WHATSAPP — barra de filtros no padrão do Dashboard (painel CAGED).
+           Ainda sem dados: os filtros só guardam a escolha; o switch troca a visão. -->
+      <section class="page" id="page-whatsapp">
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="zapBusca" placeholder="Buscar instância..." autocomplete="off">
+          </div>
+          <div class="stk-segmented" id="zapVisao" role="tablist" aria-label="Visão">
+            <button type="button" class="stk-seg-btn active" data-visao="instancias" role="tab" aria-selected="true">Instâncias</button>
+            <button type="button" class="stk-seg-btn" data-visao="templates" role="tab" aria-selected="false">Templates</button>
+            <button type="button" class="stk-seg-btn" data-visao="disparos" role="tab" aria-selected="false">Disparos</button>
+          </div>
+          <select class="filter-select" id="zapMesFiltro" title="Mês">
+            <option value="">Mês</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+          <select class="filter-select" id="zapAnoFiltro" title="Ano">
+            <option value="">Ano</option>
+          </select>
+          <select class="filter-select" id="zapUfFiltro" title="Estado">
+            <option value="">Estado</option>
+            <option value="AC">AC</option>
+            <option value="AL">AL</option>
+            <option value="AM">AM</option>
+            <option value="AP">AP</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="DF">DF</option>
+            <option value="ES">ES</option>
+            <option value="GO">GO</option>
+            <option value="MA">MA</option>
+            <option value="MG">MG</option>
+            <option value="MS">MS</option>
+            <option value="MT">MT</option>
+            <option value="PA">PA</option>
+            <option value="PB">PB</option>
+            <option value="PE">PE</option>
+            <option value="PI">PI</option>
+            <option value="PR">PR</option>
+            <option value="RJ">RJ</option>
+            <option value="RN">RN</option>
+            <option value="RO">RO</option>
+            <option value="RR">RR</option>
+            <option value="RS">RS</option>
+            <option value="SC">SC</option>
+            <option value="SE">SE</option>
+            <option value="SP">SP</option>
+            <option value="TO">TO</option>
+          </select>
+          <select class="filter-select" id="zapCidadeFiltro" title="Cidade (escolha um estado)" disabled>
+            <option value="">Cidade</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="zapLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="zapExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
+          </button>
+        </div>
+        <div id="zapTemplates" hidden>
+        <!-- Bloco de Templates (cabeçalho, lista e assistente) da visão WhatsApp > Templates. -->
         <div id="waTemplatesBloco">
 
         <div class="wa-topcard">
@@ -2830,84 +2909,7 @@
         </div>
 
         </div><!-- /waTemplatesBloco -->
-      </section>
-
-      <!-- WHATSAPP — barra de filtros no padrão do Dashboard (painel CAGED).
-           Ainda sem dados: os filtros só guardam a escolha; o switch troca a visão. -->
-      <section class="page" id="page-whatsapp">
-        <div class="filter-bar wa-stock-filters">
-          <div class="wa-clip-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="zapBusca" placeholder="Buscar instância..." autocomplete="off">
-          </div>
-          <div class="stk-segmented" id="zapVisao" role="tablist" aria-label="Visão">
-            <button type="button" class="stk-seg-btn active" data-visao="instancias" role="tab" aria-selected="true">Instâncias</button>
-            <button type="button" class="stk-seg-btn" data-visao="templates" role="tab" aria-selected="false">Templates</button>
-            <button type="button" class="stk-seg-btn" data-visao="disparos" role="tab" aria-selected="false">Disparos</button>
-          </div>
-          <select class="filter-select" id="zapMesFiltro" title="Mês">
-            <option value="">Mês</option>
-            <option value="01">Janeiro</option>
-            <option value="02">Fevereiro</option>
-            <option value="03">Março</option>
-            <option value="04">Abril</option>
-            <option value="05">Maio</option>
-            <option value="06">Junho</option>
-            <option value="07">Julho</option>
-            <option value="08">Agosto</option>
-            <option value="09">Setembro</option>
-            <option value="10">Outubro</option>
-            <option value="11">Novembro</option>
-            <option value="12">Dezembro</option>
-          </select>
-          <select class="filter-select" id="zapAnoFiltro" title="Ano">
-            <option value="">Ano</option>
-          </select>
-          <select class="filter-select" id="zapUfFiltro" title="Estado">
-            <option value="">Estado</option>
-            <option value="AC">AC</option>
-            <option value="AL">AL</option>
-            <option value="AM">AM</option>
-            <option value="AP">AP</option>
-            <option value="BA">BA</option>
-            <option value="CE">CE</option>
-            <option value="DF">DF</option>
-            <option value="ES">ES</option>
-            <option value="GO">GO</option>
-            <option value="MA">MA</option>
-            <option value="MG">MG</option>
-            <option value="MS">MS</option>
-            <option value="MT">MT</option>
-            <option value="PA">PA</option>
-            <option value="PB">PB</option>
-            <option value="PE">PE</option>
-            <option value="PI">PI</option>
-            <option value="PR">PR</option>
-            <option value="RJ">RJ</option>
-            <option value="RN">RN</option>
-            <option value="RO">RO</option>
-            <option value="RR">RR</option>
-            <option value="RS">RS</option>
-            <option value="SC">SC</option>
-            <option value="SE">SE</option>
-            <option value="SP">SP</option>
-            <option value="TO">TO</option>
-          </select>
-          <select class="filter-select" id="zapCidadeFiltro" title="Cidade (escolha um estado)" disabled>
-            <option value="">Cidade</option>
-          </select>
-          <div class="filter-spacer"></div>
-          <div class="filter-divider"></div>
-          <button class="btn btn-clear" id="zapLimpar" title="Limpar filtros" aria-label="Limpar filtros">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            <span class="btn-label">Limpar</span>
-          </button>
-          <button class="btn btn-export" id="zapExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            <span class="btn-label">Exportar</span>
-          </button>
         </div>
-        <div id="zapTemplates" hidden></div>
         <div class="empty-state" id="zapVazio">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></div>
           <div class="empty-title" id="zapVazioTitulo">Nenhuma instância conectada</div>
@@ -3907,7 +3909,7 @@
     { key: 'clipping', label: 'Clipping News' },
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'instancias', label: 'Instâncias' },
-    { key: 'templates', label: 'Templates' },
+    { key: 'surveymonkey', label: 'Survey Monkey' },
     { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'campanhas', label: 'Campanhas' },
     { key: 'usuarios', label: 'Usuários' },
@@ -3915,8 +3917,10 @@
     { key: 'estoque', label: 'Estoque' }
   ];
   let currentUser = null;
-  // A seção "Disparo" virou "WhatsApp": cadastros antigos ainda podem trazer a chave antiga.
-  const normalizarSecoes = lista => [...new Set((lista || []).map(k => k === 'disparo' ? 'whatsapp' : k))];
+  // Chaves antigas de seções renomeadas que cadastros antigos ainda podem trazer:
+  // "Disparo" virou "WhatsApp" e "Templates" virou "Survey Monkey".
+  const SECOES_RENOMEADAS = { disparo: 'whatsapp', templates: 'surveymonkey' };
+  const normalizarSecoes = lista => [...new Set((lista || []).map(k => SECOES_RENOMEADAS[k] || k))];
 
   function applySectionPermissions(){
     const wrap = document.getElementById('currentUserWrap');
@@ -3970,14 +3974,11 @@
     const ano = document.getElementById('zapAnoFiltro'), uf = document.getElementById('zapUfFiltro'), cidade = document.getElementById('zapCidadeFiltro');
     const atual = new Date().getFullYear();
     for(let a = atual; a >= atual - 2; a--) ano.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
-    // Templates: o bloco da seção Templates (cabeçalho, lista e assistente) é
-    // movido para cá enquanto esta visão está aberta, e volta ao abrir Templates.
-    const blocoTpl = document.getElementById('waTemplatesBloco');
+    // Templates: o bloco de Templates (cabeçalho, lista e assistente) fica em #zapTemplates.
     const zapTpl = document.getElementById('zapTemplates'), zapVazio = document.getElementById('zapVazio');
     let visao = 'instancias';
     function mostrarVisao(){
       const tpl = visao === 'templates';
-      if(tpl && blocoTpl.parentElement !== zapTpl) zapTpl.appendChild(blocoTpl);
       zapTpl.hidden = !tpl;
       zapVazio.hidden = tpl;
     }
@@ -3992,8 +3993,7 @@
       mostrarVisao();
     });
     document.addEventListener('cdload:pagechange', ev => {
-      if(ev.detail.page === 'templates') document.getElementById('page-templates').appendChild(blocoTpl);
-      else if(ev.detail.page === 'whatsapp') mostrarVisao();
+      if(ev.detail.page === 'whatsapp') mostrarVisao();
     });
     uf.addEventListener('change', () => { cidade.disabled = !uf.value; cidade.value = ''; });
     document.getElementById('zapLimpar').addEventListener('click', () => {
@@ -5167,7 +5167,7 @@
     // ---------------- Estado: Usuários & Permissões ----------------
     const FALLBACK_USERS = [
       { id: 'admin-seed', createdAt: '2026-09-20', nome: 'Administrador', email: ADMIN_EMAIL.toLowerCase(), senha: 'demo1234', cargo: 'Administrador', status: 'Ativo', setor: 'Núcleo Inteligência', ultimo_acesso: null, secoes_permitidas: ALL_SECTIONS.map(s => s.key) },
-      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', setor: 'Marketing', ultimo_acesso: '2026-10-02T14:35:00-04:00', secoes_permitidas: ['home', 'campanhas', 'templates'] }
+      { id: 'u2', createdAt: '2026-09-22', nome: 'Ana Souza', email: 'ana.souza@cdlcuiaba.com.br', senha: 'demo1234', cargo: 'Usuário', status: 'Ativo', setor: 'Marketing', ultimo_acesso: '2026-10-02T14:35:00-04:00', secoes_permitidas: ['home', 'campanhas', 'surveymonkey'] }
     ];
 
     let users = [];

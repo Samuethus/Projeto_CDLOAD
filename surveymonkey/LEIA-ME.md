@@ -98,7 +98,7 @@ Supabase Edge Function  surveymonkey-sincronizar      ← agendada pelo pg_cron 
 Tabelas survey_* (Postgres, RLS por seção)
         │  leitura com login (anon key + RLS)
         ▼
-CDLoad (index.html): seção "Pesquisas" e "Painel · Pesquisas" no Dashboard
+CDLoad (index.html): seção "Survey Monkey" e "Painel · Pesquisas" no Dashboard
 ```
 
 **Por que não chamar a API direto do app:** o CDLoad é um site estático (GitHub Pages). Tudo o que está no navegador é público, e o token do Survey Monkey daria acesso a **todas** as pesquisas e respostas da conta. O token fica só no servidor (secret da Edge Function), o mesmo cuidado já usado na sincronização da agenda ([supabase/functions/sincronizar-agenda](../supabase/functions/sincronizar-agenda/index.ts)).
@@ -245,9 +245,9 @@ Arquivo a criar: `supabase/schema_surveymonkey.sql` (seguindo o prefixo `schema_
 
 **Segurança (RLS):** mesmo padrão do resto do projeto ([schema_seguranca_rls.sql](../supabase/schema_seguranca_rls.sql)):
 
-- leitura só com login **e** a nova seção `pesquisas` liberada ao usuário (`public.cdl_secao('pesquisas')`);
+- leitura só com login **e** a seção `surveymonkey` liberada ao usuário (`public.cdl_secao('surveymonkey')`);
 - escrita só pela Edge Function (`service_role`); ninguém grava pelo app;
-- incluir a seção `pesquisas` em **Usuários › Permissões de Acesso** (lista `ALL_SECTIONS` do `index.html`).
+- a seção `surveymonkey` já está em **Usuários › Permissões de Acesso** (lista `ALL_SECTIONS` do `index.html`; quem tinha a antiga `templates` passa a ter `surveymonkey`).
 
 **LGPD (dados pessoais):**
 
@@ -261,7 +261,7 @@ Arquivo a criar: `supabase/schema_surveymonkey.sql` (seguindo o prefixo `schema_
 
 | Fase | Entrega | Onde aparece |
 |---|---|---|
-| **1. Leitura** | Sincronização + seção **Pesquisas**: pastas como abas/filtro, formulários com período, status, nº de respostas e link de pré-visualização | Menu lateral › Pesquisas |
+| **1. Leitura** | Sincronização + seção **Survey Monkey**: pastas como abas/filtro, formulários com período, status, nº de respostas e link de pré-visualização | Menu lateral › Survey Monkey |
 | **2. Análise** | **Painel · Pesquisas** no Dashboard, no mesmo layout dos demais (KPIs + 2 linhas de cards): respostas no período, taxa de conclusão, evolução diária, distribuição por pergunta fechada, comparação entre edições do mesmo tema | Dashboard › Painel · Pesquisas |
 | **3. Tempo real e relatórios** | Webhook `response_completed` (resposta entra no CDLoad em segundos, sem esperar a sincronização) e modelo de relatório em PDF por pesquisa | Relatórios |
 
@@ -288,9 +288,10 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [ ] Testar com os `curl` do item 6.
 
 **Desenvolvimento**
-- [ ] `supabase/schema_surveymonkey.sql`: tabelas, RLS, seção `pesquisas` e agendamento (pg_cron + pg_net a cada 1 h).
+- [ ] `supabase/schema_surveymonkey.sql`: tabelas, RLS, seção `surveymonkey` e agendamento (pg_cron + pg_net a cada 1 h).
 - [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental e controle de limite.
-- [ ] Seção **Pesquisas** no `index.html` (fase 1).
+- [x] Seção **Survey Monkey** criada no `index.html` (antiga "Templates", hoje só com o cabeçalho; os templates de WhatsApp continuam em WhatsApp › Templates).
+- [ ] Conteúdo da seção **Survey Monkey**: leitura e apresentação dos formulários (fase 1). Sem nenhuma alteração na conta do Survey Monkey.
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
 
