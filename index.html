@@ -6619,7 +6619,9 @@ ${clipPlayerPills(n)}
               ${p ? `<div class="wa-td-sub">${stockEsc(p.codigo_barras)}</div>` : ''}
             </td>
             <td>${stockEsc(m.setor)}</td>
-            <td><span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span>${m.transferencia ? '<div class="wa-td-sub">Transferência</div>' : ''}</td>
+            <td>${m.transferencia
+              ? '<span class="wa-badge wa-badge-pending">Transferência</span>'   /* amarelo, o mesmo selo de "Estoque baixo" */
+              : `<span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span>`}</td>
             <td>${stockEhConsumo(m) ? (m.setor_consumo ? stockEsc(m.setor_consumo) : `<span class="wa-empty-hint">${STOCK_CONSUMO_SEM}</span>`) : '—'}</td>
             <td class="wa-td-num ${qtyCls}">${sign}${fmtQty(m.quantidade)} ${p ? stockEsc(p.unidade) : ''}</td>
             <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
@@ -8998,7 +9000,7 @@ ${clipPlayerPills(n)}
               <td>${stkDataHoraBR(m.created_at)}</td>
               <td>${p ? esc(p.nome) : '—'}</td>
               <td>${esc(m.setor)}</td>
-              <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(m.transferencia ? 'transferencia' : saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${m.transferencia ? 'ongoing' : saida ? 'danger' : 'ok'}">${m.transferencia ? 'Transferência' : saida ? 'Saída' : 'Entrada'}</span></td>
+              <td><span class="stk-mov-ic ${saida ? 'out' : 'in'}">${stkIcone(m.transferencia ? 'transferencia' : saida ? 'arrowUpRight' : 'arrowDownLeft')}</span> <span class="stk-badge ${m.transferencia ? 'delay' : saida ? 'danger' : 'ok'}">${m.transferencia ? 'Transferência' : saida ? 'Saída' : 'Entrada'}</span></td>
               <td>${stockEhConsumo(m) ? esc(stockConsumoDe(m)) : '—'}</td>
               <td class="num">${stkQtd(m.quantidade)} ${p ? esc(p.unidade) : ''}</td>
               <td>${esc(userNameOf(m.usuario_email) || m.usuario_email || '—')}</td>
