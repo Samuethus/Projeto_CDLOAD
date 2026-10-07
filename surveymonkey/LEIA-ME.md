@@ -1,6 +1,6 @@
 # Integração CDLoad × Survey Monkey
 
-> **Status:** etapa 1 em andamento — **MCP Server oficial do Survey Monkey** configurado no projeto para uso no Claude Code (item 5). A sincronização com o app (Edge Function + tabelas) ainda não está implementada.
+> **Status:** etapa 1 em andamento — **MCP Server oficial do Survey Monkey** configurado no projeto para uso no Claude Code (item 5) e seção **Survey Monkey** no app com um **retrato fixo** dos formulários (lido em 07/10/2026). A sincronização ao vivo (Edge Function + tabelas) ainda não está implementada.
 > Este documento define **como o CDLoad vai ler as pastas e os formulários do Survey Monkey** e o passo a passo para implementar.
 
 ---
@@ -291,7 +291,8 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [ ] `supabase/schema_surveymonkey.sql`: tabelas, RLS, seção `surveymonkey` e agendamento (pg_cron + pg_net a cada 1 h).
 - [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental e controle de limite.
 - [x] Seção **Survey Monkey** criada no `index.html` (antiga "Templates", hoje só com o cabeçalho; os templates de WhatsApp continuam em WhatsApp › Templates).
-- [ ] Conteúdo da seção **Survey Monkey**: leitura e apresentação dos formulários (fase 1). Sem nenhuma alteração na conta do Survey Monkey.
+- [x] Retrato fixo na seção **Survey Monkey** (`SM_RETRATO` no `index.html`, lido pelo MCP em 07/10/2026): filtros (busca, pasta, status, ano), KPIs, respostas por pasta, tabela de formulários e exportação CSV. Nomes das pastas provisórios (o MCP não informa o nome da pasta).
+- [ ] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout.
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
 

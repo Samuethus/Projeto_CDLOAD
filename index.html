@@ -1195,7 +1195,7 @@
      entrada/sucesso = verde, saída = vermelho, em progresso = azul claro,
      alerta = laranja.
   =================================================================== */
-  #page-dashboard, #page-whatsapp{
+  #page-dashboard, #page-whatsapp, #page-surveymonkey{
     --stk-primary-dark:#002B54;
     --stk-primary:#0056D2;
     --stk-primary-light:#0099FF;
@@ -1216,11 +1216,11 @@
   /* Mais itens que as demais páginas (painel + busca + período + mês/ano/setor
      ou player) — quebra em linha ao invés de rolagem horizontal, para nenhum
      filtro (em especial o seletor de Painel) ficar fora da área visível. */
-  :is(#page-dashboard, #page-whatsapp) .filter-bar{margin-bottom:20px;}
-  :is(#page-dashboard, #page-whatsapp) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
-  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search,
-  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
-  :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .wa-clip-search{width:260px;min-width:260px;max-width:260px;flex:0 0 260px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar{margin-bottom:20px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search,
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search{width:260px;min-width:260px;max-width:260px;flex:0 0 260px;}
   #page-dashboard .wa-stock-filters #stkPainelFiltro{flex:0 0 auto;min-width:0;overflow:visible;}
   /* Dashboard: busca 80% maior (260 → 468px); encolhe só quando fica sozinha na linha
      (telas estreitas), sem ultrapassar a barra. Limpar/Exportar viram só ícone (como no
@@ -1300,7 +1300,7 @@
 
   /* ===== Clipping (layout "cd") — KPIs com acento lateral, cards com título +
      subtítulo, barras com trilho, ranking e destaques ===== */
-  #page-dashboard{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
+  #page-dashboard, #page-surveymonkey{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
     --cd-texto:#0F1E3D;--cd-muted:#64748B;--cd-borda:#E6EBF2;--cd-trilho:#EEF2F7;}
   .cd-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:16px;}
   @media (max-width:1200px){ .cd-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
@@ -1384,6 +1384,25 @@
   .cd-barra-trilho i{display:block;height:100%;border-radius:9999px;}
   .cd-barra-val{text-align:right;font-size:12.5px;color:var(--cd-texto);font-variant-numeric:tabular-nums;}
 
+  /* ===== Survey Monkey: retrato dos formulários (KPIs, respostas por pasta e tabela) ===== */
+  .sm-fonte{font-size:12.5px;color:var(--cd-muted);margin:-6px 0 14px;}
+  .sm-fonte b{color:var(--cd-texto);font-weight:600;}
+  .sm-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start;}
+  @media (max-width:1100px){ .sm-row{grid-template-columns:1fr;} }
+  .sm-barras{gap:10px;}
+  .sm-barras .cd-barra{grid-template-columns:minmax(0,190px) 1fr minmax(44px,auto);min-height:30px;}
+  .sm-barras .cd-barra-rot small{color:var(--cd-muted);font-size:11.5px;margin-left:4px;flex:0 0 auto;}
+  .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
+  .sm-card-tabela{padding-bottom:6px;}
+  .sm-card-tabela .wa-table-wrap{margin:0 -20px;max-height:640px;overflow:auto;}
+  .sm-tabela th{position:sticky;top:0;background:#F8FAFC;z-index:1;}
+  .sm-tabela td{padding:11px 20px;vertical-align:top;}
+  .sm-tabela .sm-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .sm-tabela .sm-nome{font-weight:600;color:var(--wa-text);min-width:220px;}
+  .sm-tabela .sm-pasta{white-space:nowrap;}
+  .sm-tabela .sm-data{white-space:nowrap;}
+  .sm-tabela .sm-vazio td{text-align:center;color:var(--cd-muted);padding:28px 20px;}
+
   /* Rosca de sentimento: total no centro + legenda à direita */
   .cd-rosca-wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:100%;}
   .cd-rosca{position:relative;flex:0 0 auto;margin:0 auto;}
@@ -1457,8 +1476,8 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters .filter-select{min-width:80px;flex:1 1 80px;}
     #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:120px;flex:1 1 120px;}
     #page-whatsapp .wa-stock-filters .wa-clip-search{width:160px;min-width:160px;max-width:160px;flex:0 0 160px;}
@@ -1466,8 +1485,8 @@
     #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:288px;max-width:288px;flex:0 0 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
-    :is(#page-dashboard, #page-whatsapp) .stk-segmented{padding:2px;}
-    :is(#page-dashboard, #page-whatsapp) .stk-seg-btn{padding:6px 9px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .stk-segmented{padding:2px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .stk-seg-btn{padding:6px 9px;}
     #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
     /* Barra de rolagem invisível (a rolagem pela roda do mouse/toque continua). */
     #stkGrid.cd-fit::-webkit-scrollbar{display:none;}
@@ -1909,7 +1928,7 @@
     --wa-slate-bg:#1E293B;
     --wa-slate-text:#CBD5E1;
   }
-  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp){
+  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp, #page-surveymonkey){
     --stk-primary-dark:#E2E8F0;
     --stk-secondary-dark:#CBD5E1;
     --stk-neutral-bg:#243047;
@@ -2697,7 +2716,48 @@
       </section>
 
       <section class="page" id="page-surveymonkey">
-        <!-- Conteúdo da integração com o Survey Monkey (ver surveymonkey/LEIA-ME.md). -->
+        <!-- Integração com o Survey Monkey (ver surveymonkey/LEIA-ME.md).
+             Etapa atual: retrato fixo (SM_RETRATO), lido pelo MCP do Survey Monkey.
+             Depois troca pela leitura das tabelas survey_* sincronizadas no Supabase. -->
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="smBusca" placeholder="Buscar formulário..." autocomplete="off">
+          </div>
+          <select class="filter-select" id="smPastaFiltro" title="Pasta"><option value="">Pasta</option></select>
+          <select class="filter-select" id="smStatusFiltro" title="Status">
+            <option value="">Status</option>
+            <option value="OPEN">Coletando</option>
+            <option value="CLOSED">Encerrado</option>
+          </select>
+          <select class="filter-select" id="smAnoFiltro" title="Ano da última alteração"><option value="">Ano</option></select>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="smLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="smExportar" title="Exportar formulários (CSV)" aria-label="Exportar formulários (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
+          </button>
+        </div>
+        <div class="sm-fonte" id="smFonte"></div>
+        <div class="cd-kpis sm-kpis" id="smKpis"></div>
+        <div class="sm-row">
+          <div class="cd-card">
+            <div class="cd-card-head"><div class="cd-card-tits"><h3>Respostas por pasta</h3><div class="cd-sub" id="smPastasSub"></div></div></div>
+            <div class="cd-card-body"><div class="cd-barras sm-barras" id="smPastas"></div></div>
+          </div>
+          <div class="cd-card sm-card-tabela">
+            <div class="cd-card-head"><div class="cd-card-tits"><h3>Formulários</h3><div class="cd-sub" id="smTabelaSub"></div></div></div>
+            <div class="wa-table-wrap">
+              <table class="wa-table sm-tabela">
+                <thead><tr><th>Formulário</th><th>Pasta</th><th>Status</th><th class="sm-num">Respostas</th><th>Última alteração</th></tr></thead>
+                <tbody id="smTabela"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- WHATSAPP — barra de filtros no padrão do Dashboard (painel CAGED).
@@ -3962,6 +4022,165 @@
   const headerTitle = document.getElementById('headerTitle');
   const headerDesc = document.getElementById('headerDesc');
   const headerActions = document.getElementById('headerActions');
+
+  // ---- Survey Monkey: retrato fixo dos formulários ----
+  // Lido em 07/10/2026 pelo MCP oficial do Survey Monkey (search_surveys), somente leitura.
+  // Campos no formato da API v3 (id, title, folder_id, survey_state, response_count,
+  // date_modified) para a troca pelos dados sincronizados (survey_formularios) ser direta.
+  // O MCP não informa o nome das pastas: os nomes abaixo são provisórios, deduzidos dos formulários.
+  const SM_RETRATO = {
+    lido_em: '2026-10-07',
+    pastas: {
+      '2329856': 'Intenção de Consumo',
+      '2329857': 'Inscrições',
+      '2333012': 'Pesquisas de Mercado',
+      '2333228': 'Pós Data Comemorativa',
+      '2403675': 'Emprego e Trabalho',
+      '2408924': 'Satisfação / NPS',
+      '2458328': 'Projetos 2026',
+      '0': 'Sem pasta'
+    },
+    formularios: [
+      { id: '524947900', title: 'Pós-Liquida Grande Cuiabá', folder_id: '2333012', survey_state: 'CLOSED', response_count: 23, date_modified: '2025-10-07T00:29:00' },
+      { id: '422077591', title: 'INSCRIÇÃO - HAPPY HOUR', folder_id: '2329857', survey_state: 'CLOSED', response_count: 35, date_modified: '2026-04-23T22:39:00' },
+      { id: '527108109', title: 'INSCRIÇÃO - SEMINÁRIO 2040', folder_id: '2329857', survey_state: 'CLOSED', response_count: 123, date_modified: '2026-04-30T08:41:00' },
+      { id: '421867222', title: 'SATISFAÇÃO - NPS VENDAS E ATENDIMENTO', folder_id: '2408924', survey_state: 'CLOSED', response_count: 22, date_modified: '2026-05-22T18:08:00' },
+      { id: '421900180', title: 'SATISFAÇÃO - CDL Cuiabá', folder_id: '2408924', survey_state: 'CLOSED', response_count: 37, date_modified: '2026-05-22T16:56:00' },
+      { id: '421926777', title: 'POS DATA COMEMORATIVA - CDL Cuiabá', folder_id: '2333228', survey_state: 'CLOSED', response_count: 19, date_modified: '2026-05-13T19:35:00' },
+      { id: '527477841', title: 'SATISFAÇÃO - NPS UP SUMMIT', folder_id: '2408924', survey_state: 'CLOSED', response_count: 10, date_modified: '2026-05-27T17:46:00' },
+      { id: '422553023', title: 'INSCRIÇÃO – DIREITO DE COMPRA CARRO – DLI 2026', folder_id: '2329857', survey_state: 'CLOSED', response_count: 150, date_modified: '2026-05-29T02:02:00' },
+      { id: '527509129', title: 'INSCRIÇÃO – DIREITO DE COMPRA MOTO – DLI 2026', folder_id: '2329857', survey_state: 'CLOSED', response_count: 77, date_modified: '2026-05-29T01:19:00' },
+      { id: '417209905', title: 'Pós Data Comemorativa', folder_id: '2333228', survey_state: 'CLOSED', response_count: 9, date_modified: '2025-05-13T19:55:00' },
+      { id: '523331080', title: 'PREENCHIMENTO DADOS INADIMPLÊNCIA', folder_id: '2333012', survey_state: 'CLOSED', response_count: 23, date_modified: '2026-01-02T19:19:00' },
+      { id: '416823414', title: 'Pesquisa Geração 50+ no Mercado de Trabalho', folder_id: '2333012', survey_state: 'CLOSED', response_count: 100, date_modified: '2025-02-03T13:30:00' },
+      { id: '417151428', title: 'Pesquisa de Intenção de Consumo', folder_id: '2329856', survey_state: 'CLOSED', response_count: 3239, date_modified: '2026-03-25T18:03:00' },
+      { id: '525500412', title: 'Pesquisa com os Participantes da Convenção de Contabilidade', folder_id: '2333012', survey_state: 'CLOSED', response_count: 23, date_modified: '2025-11-13T12:00:00' },
+      { id: '527497914', title: 'INSCRIÇÃO – DIREITO DE COMPRA TELEVISÃO – DLI 2026', folder_id: '2329857', survey_state: 'CLOSED', response_count: 302, date_modified: '2026-05-29T11:55:00' },
+      { id: '422745970', title: 'PÓS DATA - DIAS DOS NAMORADOS (EMPRESARIOS)', folder_id: '0', survey_state: 'CLOSED', response_count: 5, date_modified: '2026-06-22T17:07:00' },
+      { id: '421956645', title: 'INSCRIÇÃO - CDL & SEBRAE: CONECTA NEGÓCIOS (23/07)', folder_id: '2329857', survey_state: 'CLOSED', response_count: 539, date_modified: '2026-07-13T14:25:00' },
+      { id: '422947465', title: 'INSCRIÇÃO – VISITA TECNICA', folder_id: '0', survey_state: 'CLOSED', response_count: 7, date_modified: '2026-07-16T16:37:00' },
+      { id: '527947034', title: 'PESQUISA DE IMPACTO - BETs/APOSTAS NO COMÉRCIO', folder_id: '2458328', survey_state: 'OPEN', response_count: 13, date_modified: '2026-07-17T23:27:00' },
+      { id: '422981815', title: 'PESQUISA DE IMPACTO - BETs/APOSTAS NO COMÉRCIO', folder_id: '0', survey_state: 'CLOSED', response_count: 0, date_modified: '2026-07-14T18:17:00' },
+      { id: '528016091', title: 'PESQUISA DE IMPACTO - REFORMA TRIBUTARIA IBS/CBS', folder_id: '0', survey_state: 'OPEN', response_count: 0, date_modified: '2026-07-23T19:42:00' },
+      { id: '527761192', title: 'INSCRIÇÃO – PRÊMIO CDL DE FOTOGRAFIA', folder_id: '2329857', survey_state: 'CLOSED', response_count: 60, date_modified: '2026-07-27T13:51:00' },
+      { id: '422818064', title: 'AUTORIZAÇÃO – PRÊMIO CDL - FOTOGRAFADO', folder_id: '2458328', survey_state: 'CLOSED', response_count: 14, date_modified: '2026-07-27T13:13:00' },
+      { id: '422818503', title: 'AUTORIZAÇÃO – PRÊMIO CDL - ESTABELECIMENTO', folder_id: '2458328', survey_state: 'CLOSED', response_count: 4, date_modified: '2026-07-26T21:29:00' },
+      { id: '422985100', title: 'PESQUISA - GESTAO ESTRATEGICA E NEGOCIAÇÃO', folder_id: '2458328', survey_state: 'CLOSED', response_count: 30, date_modified: '2026-07-25T13:09:00' },
+      { id: '528515085', title: 'ENVIDENCIA DO COMERCIO', folder_id: '0', survey_state: 'OPEN', response_count: 0, date_modified: '2026-09-21T14:05:00' },
+      { id: '528526710', title: 'Pesquisa de Avaliação de Impacto e Desempenho – Liquida Cuiabá', folder_id: '0', survey_state: 'OPEN', response_count: 0, date_modified: '2026-09-22T21:58:00' },
+      { id: '525254307', title: 'Pesquisa de Avaliação – Feira de Empregos CDL Cuiabá', folder_id: '2403675', survey_state: 'CLOSED', response_count: 9, date_modified: '2025-10-27T21:59:00' },
+      { id: '420357788', title: 'Pesquisa sobre Maquinas de Pagamento', folder_id: '2333012', survey_state: 'CLOSED', response_count: 60, date_modified: '2025-11-11T15:39:00' },
+      { id: '417084067', title: 'Sondagem Impacto dos Ambulantes no Comércio Local', folder_id: '2333012', survey_state: 'CLOSED', response_count: 100, date_modified: '2025-02-07T14:51:00' },
+      { id: '419956179', title: 'Pesquisa Colaboradores (Pós-fechamento da Rua 13 de Junho)', folder_id: '2333012', survey_state: 'CLOSED', response_count: 41, date_modified: '2025-10-02T14:50:00' },
+      { id: '521949154', title: 'Pesquisa Impacto das Obras do BRT no Comércio Local', folder_id: '2333012', survey_state: 'CLOSED', response_count: 30, date_modified: '2025-01-30T16:04:00' },
+      { id: '419490457', title: 'Pesquisa - Parceria em Foco: Avaliação e Necessidades das CDLs Parceiras', folder_id: '2333012', survey_state: 'CLOSED', response_count: 20, date_modified: '2025-08-19T20:12:00' },
+      { id: '419955590', title: 'Pesquisa Empresários (Pós-fechamento da Rua 13 de Junho)', folder_id: '2333012', survey_state: 'CLOSED', response_count: 27, date_modified: '2025-10-03T13:30:00' },
+      { id: '524844446', title: 'Pesquisa Calçadão na 13 de junho: Visão dos Empresários', folder_id: '2333012', survey_state: 'CLOSED', response_count: 36, date_modified: '2025-09-16T17:05:00' },
+      { id: '418121350', title: 'Pesquisa de Interesse - Clube de Benefícios entre Associados', folder_id: '2333012', survey_state: 'CLOSED', response_count: 22, date_modified: '2025-05-02T14:21:00' },
+      { id: '417668306', title: 'Pesquisa de Percepção e Imagem da CDL Cuiabá', folder_id: '2333012', survey_state: 'CLOSED', response_count: 90, date_modified: '2025-07-09T21:14:00' },
+      { id: '524900112', title: 'Panorama Empresarial - Contratações e Demandas de Trabalho em Cuiabá', folder_id: '2403675', survey_state: 'CLOSED', response_count: 100, date_modified: '2025-10-08T20:10:00' },
+      { id: '524968203', title: 'Pesquisa Redes Sociais CDL Cuiabá', folder_id: '0', survey_state: 'CLOSED', response_count: 45, date_modified: '2025-09-26T13:09:00' },
+      { id: '421928762', title: 'PESQUISA DE INTENÇÃO - CDL Cuiabá', folder_id: '2329856', survey_state: 'CLOSED', response_count: 1909, date_modified: '2026-09-30T04:47:00' },
+      { id: '528533699', title: 'SATISFAÇÃO - Impacto e Desempenho: Liquida Cuiabá', folder_id: '2408924', survey_state: 'OPEN', response_count: 0, date_modified: '2026-09-23T11:39:00' },
+      { id: '420282924', title: 'Pesquisa - Contratações Temporárias', folder_id: '2333012', survey_state: 'CLOSED', response_count: 102, date_modified: '2026-10-01T18:48:00' },
+      { id: '528623766', title: 'Questionário de Prospecção e Intenção de Contratação', folder_id: '2333012', survey_state: 'OPEN', response_count: 2, date_modified: '2026-10-06T22:12:00' }
+    ]
+  };
+
+  (function(){
+    const forms = SM_RETRATO.formularios;
+    const pastaNome = id => SM_RETRATO.pastas[id] || ('Pasta ' + id);
+    const statusTxt = { OPEN: 'Coletando', CLOSED: 'Encerrado', DRAFT: 'Rascunho' };
+    const statusCls = { OPEN: 'wa-badge-approved', CLOSED: 'sm-badge-encerrado', DRAFT: 'wa-badge-pending' };
+    const num = n => n.toLocaleString('pt-BR');
+    const dataBR = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
+    const semAcento = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const el = id => document.getElementById(id);
+    const busca = el('smBusca'), fPasta = el('smPastaFiltro'), fStatus = el('smStatusFiltro'), fAno = el('smAnoFiltro');
+
+    // Pastas em ordem alfabética, "Sem pasta" por último; anos do mais recente ao mais antigo.
+    Object.keys(SM_RETRATO.pastas)
+      .sort((a, b) => (a === '0') - (b === '0') || pastaNome(a).localeCompare(pastaNome(b), 'pt-BR'))
+      .forEach(id => fPasta.insertAdjacentHTML('beforeend', `<option value="${id}">${esc(pastaNome(id))}</option>`));
+    [...new Set(forms.map(f => f.date_modified.slice(0, 4)))].sort().reverse()
+      .forEach(a => fAno.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`));
+    el('smFonte').innerHTML = `Retrato de <b>${dataBR(SM_RETRATO.lido_em)}</b> lido do Survey Monkey (somente leitura) · dados fixos, sem atualização automática · nomes das pastas provisórios`;
+
+    function filtrados(){
+      const q = semAcento(busca.value.trim());
+      return forms.filter(f =>
+        (!q || semAcento(f.title).includes(q)) &&
+        (!fPasta.value || f.folder_id === fPasta.value) &&
+        (!fStatus.value || f.survey_state === fStatus.value) &&
+        (!fAno.value || f.date_modified.startsWith(fAno.value)));
+    }
+
+    const ICONES = {
+      form: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline>',
+      resp: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
+      media: '<line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>',
+      aberto: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>',
+      pasta: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>'
+    };
+    const kpi = (ic, tom, label, valor, ref) => `<div class="cd-kpi ${tom}"><div class="cd-kpi-in">
+        <span class="cd-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICONES[ic]}</svg></span>
+        <div class="cd-kpi-txt"><div class="cd-kpi-label">${esc(label)}</div><div class="cd-kpi-valor">${valor}</div></div>
+        <div class="cd-kpi-rodape"><span class="cd-kpi-ref">${esc(ref)}</span></div>
+      </div></div>`;
+
+    function render(){
+      const lista = filtrados();
+      const total = lista.reduce((s, f) => s + f.response_count, 0);
+      const abertos = lista.filter(f => f.survey_state === 'OPEN');
+      const pastas = new Set(lista.map(f => f.folder_id));
+      const semPasta = lista.filter(f => f.folder_id === '0').length;
+      el('smKpis').innerHTML =
+        kpi('form', '', 'Formulários', num(lista.length), `de ${num(forms.length)} na conta`) +
+        kpi('resp', 'verde', 'Respostas', num(total), 'soma dos formulários') +
+        kpi('media', '', 'Média por formulário', num(lista.length ? Math.round(total / lista.length) : 0), 'respostas') +
+        kpi('aberto', 'amarelo', 'Coletando', num(abertos.length), `${num(abertos.reduce((s, f) => s + f.response_count, 0))} respostas até agora`) +
+        kpi('pasta', semPasta ? 'vermelho' : '', 'Pastas', num([...pastas].filter(p => p !== '0').length), semPasta ? `${num(semPasta)} formulário(s) sem pasta` : 'todos organizados');
+
+      // Respostas por pasta (maior primeiro)
+      const porPasta = {};
+      lista.forEach(f => { const p = porPasta[f.folder_id] || (porPasta[f.folder_id] = { qtd: 0, resp: 0 }); p.qtd++; p.resp += f.response_count; });
+      const linhas = Object.entries(porPasta).sort((a, b) => b[1].resp - a[1].resp);
+      const max = Math.max(1, ...linhas.map(([, v]) => v.resp));
+      el('smPastasSub').textContent = `${num(linhas.length)} pasta(s) · ${num(total)} respostas`;
+      el('smPastas').innerHTML = linhas.length ? linhas.map(([id, v]) => `
+        <div class="cd-barra" title="${esc(pastaNome(id))}: ${num(v.resp)} respostas em ${v.qtd} formulário(s)">
+          <div class="cd-barra-rot"><span>${esc(pastaNome(id))}</span><small>${v.qtd}</small></div>
+          <div class="cd-barra-trilho"><i style="width:${(v.resp / max * 100).toFixed(1)}%;background:${id === '0' ? 'var(--cd-verm)' : 'var(--cd-azul)'}"></i></div>
+          <div class="cd-barra-val">${num(v.resp)}</div>
+        </div>`).join('') : '<div class="stk-vazio">Nenhum formulário com esses filtros.</div>';
+
+      // Tabela: mais respostas primeiro; empate pela alteração mais recente
+      const ordem = [...lista].sort((a, b) => b.response_count - a.response_count || b.date_modified.localeCompare(a.date_modified));
+      el('smTabelaSub').textContent = `${num(lista.length)} formulário(s) · ordenados por nº de respostas`;
+      el('smTabela').innerHTML = ordem.length ? ordem.map(f => `<tr>
+          <td class="sm-nome">${esc(f.title)}</td>
+          <td class="sm-pasta">${esc(pastaNome(f.folder_id))}</td>
+          <td><span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span></td>
+          <td class="sm-num">${num(f.response_count)}</td>
+          <td class="sm-data">${dataBR(f.date_modified)}</td>
+        </tr>`).join('') : '<tr class="sm-vazio"><td colspan="5">Nenhum formulário com esses filtros.</td></tr>';
+    }
+
+    busca.addEventListener('input', render);
+    [fPasta, fStatus, fAno].forEach(s => s.addEventListener('change', render));
+    el('smLimpar').addEventListener('click', () => { busca.value = ''; fPasta.value = fStatus.value = fAno.value = ''; render(); });
+    el('smExportar').addEventListener('click', () => {
+      const cel = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const rows = [['ID', 'Formulário', 'Pasta', 'Status', 'Respostas', 'Última alteração']]
+        .concat(filtrados().map(f => [f.id, f.title, pastaNome(f.folder_id), statusTxt[f.survey_state] || f.survey_state, f.response_count, dataBR(f.date_modified)]));
+      const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `survey_monkey_formularios_${SM_RETRATO.lido_em}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    render();
+  })();
 
   // ---- WhatsApp: switch Instâncias / Templates / Disparos e filtros (ainda sem dados) ----
   (function(){
