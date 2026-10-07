@@ -7,6 +7,8 @@ links_power.txt
 .env.*.local
 .env.*
 !.env.example
+# .mcp.json só tem o endereço do MCP do Survey Monkey (login por OAuth, sem token)
+!.mcp.json
 # config.js é gerado do .env (contém URL/chave do projeto)
 config.js
 *.pem

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "surveymonkey": {
+      "type": "http",
+      "url": "https://mcp.surveymonkey.com/mcp"
+    }
+  }
+}

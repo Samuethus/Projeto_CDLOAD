@@ -1,6 +1,6 @@
 # Integração CDLoad × Survey Monkey
 
-> **Status:** planejamento (próxima etapa). Nada desta integração está implementado ainda.
+> **Status:** etapa 1 em andamento — **MCP Server oficial do Survey Monkey** configurado no projeto para uso no Claude Code (item 5). A sincronização com o app (Edge Function + tabelas) ainda não está implementada.
 > Este documento define **como o CDLoad vai ler as pastas e os formulários do Survey Monkey** e o passo a passo para implementar.
 
 ---
@@ -82,7 +82,7 @@ AAAA-MM · <Tema> · <Público>
 
 - Prefira perguntas **fechadas** (múltipla escolha, escala, matriz) para tudo o que precisa virar gráfico.
 - Use sempre **as mesmas opções** para a mesma pergunta em pesquisas diferentes (ex.: faixas de renda, bairros). Isso permite comparar uma edição com a outra.
-- Perguntas de **contato** (nome, e-mail, telefone, CPF) devem ficar na **última página**. Ver item 7 (LGPD).
+- Perguntas de **contato** (nome, e-mail, telefone, CPF) devem ficar na **última página**. Ver item 8 (LGPD).
 
 ---
 
@@ -107,7 +107,75 @@ CDLoad (index.html): seção "Pesquisas" e "Painel · Pesquisas" no Dashboard
 
 ---
 
-## 5. Pré-requisitos (fazer uma vez)
+## 5. MCP Server do Survey Monkey (Claude Code) — etapa atual
+
+O Survey Monkey tem um **MCP Server oficial e hospedado** (lançado em mai/2026, verificado pela Anthropic). Com ele, o Claude Code lê as pastas, formulários, perguntas e respostas da conta direto na conversa, sem token manual e sem instalar nada.
+
+| Item | Valor |
+|---|---|
+| Endereço | `https://mcp.surveymonkey.com/mcp` |
+| Transporte | Streamable HTTP |
+| Login | OAuth (janela do navegador na primeira conexão; a credencial fica guardada no Claude Code, **não no repositório**) |
+| Plano | Basic ou superior |
+
+### 5.1 Para que serve (e para que não serve)
+
+| Serve para | Não serve para |
+|---|---|
+| Explorar a conta: listar formulários, ver estrutura e contagem de respostas | Alimentar o CDLoad: o login OAuth é pessoal e fica na máquina de quem conectou |
+| Conferir se a convenção de nomes (item 3) está sendo seguida | Rodar sozinho/agendado (não tem gatilho de nova resposta) |
+| Validar campos reais da API antes de escrever a sincronização (item 7) | Substituir a Edge Function: o app continua precisando dela + `SURVEYMONKEY_TOKEN` |
+| Análises pontuais pedidas ao Claude ("resuma as respostas da pesquisa X") | |
+
+### 5.2 O que já está no projeto
+
+- [`.mcp.json`](../.mcp.json) (versionado): registra o servidor `surveymonkey`. Não contém token nem senha, só o endereço.
+- `.claude/settings.json` (local, fora do Git pelo `.gitignore`): ativa o servidor e define permissões **somente leitura**:
+
+  | Ferramentas liberadas (sem perguntar) | Ferramentas bloqueadas |
+  |---|---|
+  | `get_server_info`, `search_surveys`, `get_survey`, `get_pages`, `get_page`, `get_questions`, `get_question`, `get_question_types`, `get_response_count`, `get_responses` | `create_survey`, `update_survey`, `add_page`, `add_question`, `edit_question`, `delete_question`, `reorder_questions`, `create_weblink_collector` |
+
+  Quem clonar o projeto em outra máquina deve criar o mesmo arquivo (conteúdo abaixo) para manter o bloqueio de escrita:
+
+  ```json
+  {
+    "enabledMcpjsonServers": ["surveymonkey"],
+    "permissions": {
+      "allow": ["mcp__surveymonkey__get_server_info", "mcp__surveymonkey__search_surveys", "mcp__surveymonkey__get_survey",
+                "mcp__surveymonkey__get_pages", "mcp__surveymonkey__get_page", "mcp__surveymonkey__get_questions",
+                "mcp__surveymonkey__get_question", "mcp__surveymonkey__get_question_types",
+                "mcp__surveymonkey__get_response_count", "mcp__surveymonkey__get_responses"],
+      "deny":  ["mcp__surveymonkey__create_survey", "mcp__surveymonkey__update_survey", "mcp__surveymonkey__add_page",
+                "mcp__surveymonkey__add_question", "mcp__surveymonkey__edit_question", "mcp__surveymonkey__delete_question",
+                "mcp__surveymonkey__reorder_questions", "mcp__surveymonkey__create_weblink_collector"]
+    }
+  }
+  ```
+
+### 5.3 Passo a passo para conectar (cada pessoa, uma vez)
+
+1. **Reabrir o Claude Code** na pasta do projeto (no VS Code: fechar e abrir o painel do Claude, ou *Developer: Reload Window*). Se perguntar se confia no servidor `surveymonkey` do `.mcp.json`, responder **sim**.
+2. Na conversa, digitar **`/mcp`**, selecionar **surveymonkey** e escolher **Authenticate**.
+3. O navegador abre a tela do Survey Monkey: entrar com a **conta da CDL dona das pesquisas** e clicar em **Authorize**.
+4. Voltar ao Claude Code: em `/mcp` o servidor deve aparecer como **connected**.
+5. **Testar** pedindo ao Claude, por exemplo:
+   - "Liste os formulários da conta do Survey Monkey com nº de respostas."
+   - "Mostre as perguntas e opções do formulário *2026-10 · Dia das Crianças · Consumidores*."
+   - "Quais formulários estão fora do padrão `AAAA-MM · Tema · Público`?"
+
+Sem Claude Code no VS Code? Pelo terminal o equivalente é `claude mcp add surveymonkey --transport http https://mcp.surveymonkey.com/mcp` e depois `/mcp` › Authenticate. Também dá para usar no claude.ai pelo diretório de conectores (*Settings › Connectors › SurveyMonkey*).
+
+### 5.4 Cuidados
+
+- O login dá ao Claude o acesso **da sua conta** no Survey Monkey. Conectar com a conta institucional, não com contas pessoais.
+- **Respostas com dados pessoais** (nome, e-mail, telefone, CPF) aparecem na conversa ao usar `get_responses`. Pedir ao Claude números agregados e não colar respostas identificadas em relatórios, e-mails ou commits (LGPD, item 8).
+- Para desconectar: `/mcp` › surveymonkey › **Clear authentication**. Para revogar de vez, remover o app autorizado nas configurações da conta do Survey Monkey.
+- Erro **401** ou "needs authentication" no `/mcp`: refazer o passo 2. Erro de plano: conferir se a conta é Basic ou superior.
+
+---
+
+## 6. Pré-requisitos da sincronização (fazer uma vez)
 
 1. **Plano da conta:** confirmar que o plano contratado (hoje *Plano individual*) permite acesso à API e leitura das respostas. Planos gratuitos têm limites de respostas visíveis e de chamadas.
 2. **Criar o app privado** em <https://developer.surveymonkey.com/apps> (logado na conta da CDL que é dona das pesquisas):
@@ -142,7 +210,7 @@ CDLoad (index.html): seção "Pesquisas" e "Painel · Pesquisas" no Dashboard
 
 ---
 
-## 6. Estrutura de leitura (o que a sincronização faz, em ordem)
+## 7. Estrutura de leitura (o que a sincronização faz, em ordem)
 
 Cada execução da `surveymonkey-sincronizar`:
 
@@ -163,7 +231,7 @@ Cada execução da `surveymonkey-sincronizar`:
 
 ---
 
-## 7. Modelo de dados no Supabase (sugestão)
+## 8. Modelo de dados no Supabase (sugestão)
 
 Arquivo a criar: `supabase/schema_surveymonkey.sql` (seguindo o prefixo `schema_` da pasta).
 
@@ -189,7 +257,7 @@ Arquivo a criar: `supabase/schema_surveymonkey.sql` (seguindo o prefixo `schema_
 
 ---
 
-## 8. Como o CDLoad vai usar (fases)
+## 9. Como o CDLoad vai usar (fases)
 
 | Fase | Entrega | Onde aparece |
 |---|---|---|
@@ -201,43 +269,50 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 
 ---
 
-## 9. Checklist de implementação
+## 10. Checklist de implementação
 
 **Organização (equipe)**
 - [ ] Combinar e aplicar a convenção de pastas `CDLOAD · <Categoria>` (item 3.1).
 - [ ] Renomear os formulários existentes no padrão `AAAA-MM · Tema · Público` (item 3.2).
 - [ ] Mover as perguntas de contato para a última página.
 
-**Acesso (administrador da conta)**
+**MCP Server (Claude Code)**
+- [x] Registrar o servidor oficial em `.mcp.json` com permissões somente leitura (item 5.2).
+- [ ] Cada pessoa: conectar com `/mcp` › Authenticate usando a conta da CDL (item 5.3).
+- [ ] Usar o MCP para levantar pastas/formulários atuais e conferir a convenção (item 3).
+
+**Acesso para a sincronização (administrador da conta)**
 - [ ] Confirmar no plano que a API e as respostas estão liberadas.
-- [ ] Criar o app privado com os 4 escopos de leitura (item 5).
+- [ ] Criar o app privado com os 4 escopos de leitura (item 6).
 - [ ] Gerar o token e gravar em `SURVEYMONKEY_TOKEN` (secret do Supabase).
-- [ ] Testar com os `curl` do item 5.
+- [ ] Testar com os `curl` do item 6.
 
 **Desenvolvimento**
 - [ ] `supabase/schema_surveymonkey.sql`: tabelas, RLS, seção `pesquisas` e agendamento (pg_cron + pg_net a cada 1 h).
-- [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 6, com paginação, leitura incremental e controle de limite.
+- [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental e controle de limite.
 - [ ] Seção **Pesquisas** no `index.html` (fase 1).
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
 
 ---
 
-## 10. Erros comuns
+## 11. Erros comuns
 
 | Erro | Causa provável | O que fazer |
 |---|---|---|
 | `401 Unauthorized` | Token errado, revogado ou de outra conta | Gerar outro token no app e atualizar o secret |
-| `403 Forbidden` | Escopo faltando ou plano sem acesso ao recurso | Conferir os escopos (item 5) e o plano |
+| `403 Forbidden` | Escopo faltando ou plano sem acesso ao recurso | Conferir os escopos (item 6) e o plano |
 | `404 Not Found` | Formulário excluído ou movido para fora das pastas `CDLOAD` | Normal: a sincronização marca como inativo |
 | `429 Too Many Requests` | Limite de chamadas atingido | Aguardar: a próxima execução continua de onde parou |
 | Pasta não aparece no CDLoad | Nome fora do padrão `CDLOAD · …` | Renomear a pasta no Survey Monkey |
 
 ---
 
-## 11. Referências
+## 12. Referências
 
 - Documentação da API v3: <https://api.surveymonkey.com/v3/docs>
+- MCP Server oficial (conector do Claude): <https://claude.com/connectors/surveymonkey>
+- Anúncio do conector: <https://www.surveymonkey.com/newsroom/surveymonkey-claude-ai-integration/>
 - Apps e tokens (portal do desenvolvedor): <https://developer.surveymonkey.com/apps>
 - Padrão de segurança do projeto: [SECURITY.md](../SECURITY.md) e [supabase/LEIA-ME.md](../supabase/LEIA-ME.md)
 
