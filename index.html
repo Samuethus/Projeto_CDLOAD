@@ -155,6 +155,9 @@
     border-left:3px solid var(--branco);
   }
   .nav-item.active svg{stroke:#ffffff;}
+  /* Ícones de forma cheia (ex.: Survey Monkey): mesma cor dos demais, aplicada no preenchimento. */
+  .nav-item svg.nav-ic-preenchido{stroke:none; fill:#dbe4ee;}
+  .nav-item.active svg.nav-ic-preenchido{fill:#ffffff;}
   .sidebar.collapsed .nav-item{justify-content:center; padding:13px 0;}
   .sidebar.collapsed .nav-item span{display:none;}
 
@@ -2152,7 +2155,7 @@
         <span>Instâncias</span>
       </button>
       <button class="nav-item" data-page="surveymonkey" data-title="Survey Monkey" data-desc="Formulários e respostas das pesquisas do Survey Monkey.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+        <svg class="nav-ic-preenchido" viewBox="-8 -154 974 974" aria-hidden="true"><!-- ícone do Survey Monkey (cabeça do macaco), desenhado a partir da logo --><path d="M190 665C150 590 128 500 135 420C150 250 300 125 480 125C660 125 810 250 825 420C832 500 810 590 770 665L672 605C700 560 715 500 715 450C715 360 680 315 610 312C560 312 515 335 485 368L470 368C440 335 395 312 345 312C275 315 243 360 243 450C243 500 258 560 285 605Z"/><path d="M380 72L392 55C428 72 452 92 462 112L418 130C412 105 400 86 380 72Z"/><path d="M458 118C466 60 510 22 563 0L573 20C538 40 522 78 522 128Z"/><path fill-rule="evenodd" d="M128 378A116 114 0 1 0 128 606A116 114 0 1 0 128 378ZM106 462A30 30 0 1 0 106 522A30 30 0 1 0 106 462Z"/><path fill-rule="evenodd" d="M830 378A116 114 0 1 1 830 606A116 114 0 1 1 830 378ZM852 462A30 30 0 1 1 852 522A30 30 0 1 1 852 462Z"/></svg>
         <span>Survey Monkey</span>
       </button>
       <button class="nav-item" data-page="whatsapp" data-title="WhatsApp" data-desc="Instâncias, templates e envios de mensagens pelo WhatsApp.">
