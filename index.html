@@ -4274,7 +4274,14 @@
     // ao vivo, protegidas por login. Quando existirem, basta preencher SM_RESUMOS[id].respostas.
     const ICONE_PAINEL = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>';
     const ICONE_CADEADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
-    const CORES = ['#1D5FD3', '#5DB14E', '#E3AE1F', '#EF4444', '#8B5CF6', '#14B8A6', '#F97316', '#64748B', '#EC4899', '#0EA5E9'];
+    // Paleta do guia de estilo (azul --stk-/--cd-azul e verde --cd-verde), alternando azul e verde em tons
+    // diferentes para fatias/linhas vizinhas continuarem distinguíveis.
+    const CORES = ['#1D5FD3', '#5DB14E', '#002B54', '#A7C7F4', '#3D8B37', '#52A0FF', '#9BD18E', '#0B3C6D', '#CBE8C4', '#0099FF'];
+    // Escalas numéricas (notas): degradê de azul, da nota mais baixa (claro) à mais alta (escuro).
+    const corEscala = (i, n) => {
+      const t = n > 1 ? i / (n - 1) : 1, a = [0xD6, 0xE6, 0xFA], b = [0x00, 0x2B, 0x54];
+      return '#' + a.map((v, k) => Math.round(v + (b[k] - v) * t).toString(16).padStart(2, '0')).join('');
+    };
     const pct = (v, t) => t ? (v / t * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : '0%';
     let resumosProm = null, formAtual = null, visao = 'painel';
     function carregarResumos(){
@@ -4335,10 +4342,10 @@
             const top = cs.reduce((m, c) => c[1] > m[1] ? c : m, cs[0]);
             const dica = cs.map(c => `${c[0]}: ${num(c[1])} (${pct(c[1], t)})`).join(' · ');
             return `<div class="sm-matriz-linha" title="${esc(linha)} — ${esc(dica)}"><span>${esc(linha)}</span>
-              <div class="sm-pilha">${cs.map((c, i) => c[1] ? `<i style="width:${(c[1] / t * 100).toFixed(2)}%;background:${CORES[i % CORES.length]}"></i>` : '').join('')}</div>
+              <div class="sm-pilha">${cs.map((c, i) => c[1] ? `<i style="width:${(c[1] / t * 100).toFixed(2)}%;background:${notas ? corEscala(i, cs.length) : CORES[i % CORES.length]}"></i>` : '').join('')}</div>
               <b>${media != null ? media.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : pct(top[1], t)}</b></div>`;
           }).join('')}
-          <div class="cd-legenda">${opcoes.map((o, i) => `<span><i style="background:${CORES[i % CORES.length]}"></i>${esc(o)}</span>`).join('')}</div></div>`;
+          <div class="cd-legenda">${opcoes.map((o, i) => `<span><i style="background:${notas ? corEscala(i, opcoes.length) : CORES[i % CORES.length]}"></i>${esc(o)}</span>`).join('')}</div></div>`;
         return card(q.t, subResp(q) + (notas ? ' · nota média por item' : ' · % da opção mais escolhida'), corpo, 'sm-col-barra');
       }
       const itens = q.c, total = q.f === 'm' ? q.a : itens.reduce((s, c) => s + c[1], 0);
