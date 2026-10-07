@@ -1408,13 +1408,9 @@
   .sm-ind-vazio{padding:36px 20px;text-align:center;color:#94a3b8;font-size:13px;}
   @media (max-width:1200px){ .sm-painel{grid-template-columns:repeat(2,minmax(0,1fr));} }
   @media (max-width:760px){ .sm-painel{grid-template-columns:1fr;} }
-  /* Todos os cards com o mesmo tamanho (o do gráfico de barras com 10 linhas). Barras sempre na coluna 1;
-     roscas nas colunas 2 e 3 (alternadas pelo JS). */
+  /* Todos os cards com o mesmo tamanho (o do gráfico de barras). A ordem vem do JS (renderPainel):
+     coluna 1 prioriza barras horizontais e depois roscas; colunas 2 e 3 completam a linha sem espaços vazios. */
   .sm-painel .cd-card{height:300px;min-height:0;}
-  .sm-painel > .sm-col-barra{grid-column:1;}
-  .sm-painel > .sm-c2{grid-column:2;}
-  .sm-painel > .sm-c3{grid-column:3;}
-  @media (max-width:1200px){ .sm-painel > .sm-c3{grid-column:2;} }
   @media (max-width:760px){ .sm-painel > .cd-card{grid-column:auto;height:auto;min-height:260px;} }
   .sm-painel > .sm-span{grid-column:1 / -1;height:auto;min-height:160px;}
   .sm-painel .cd-card-body{justify-content:flex-start;gap:12px;min-height:0;}
@@ -4372,13 +4368,17 @@
       if(!f.response_count) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Este formulário ainda não recebeu respostas.</div></div>'; return; }
       if(!R) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Resumo deste formulário não disponível no retrato atual.</div></div>'; return; }
       const fechadas = R.perguntas.filter(q => q.f !== 'o'), abertas = R.perguntas.filter(q => q.f === 'o');
-      const cards = fechadas.map(cardPergunta).join('');
-      // Com gráfico de barras: barras na coluna 1 e roscas alternando entre as colunas 2 e 3.
-      // Sem nenhum gráfico de barras: as roscas seguem lado a lado, em sequência, ocupando as 3 colunas.
-      let k = 0;
-      P.innerHTML = (cards.includes('sm-col-barra')
-        ? cards.replace(/sm-col-rosca/g, () => (k++ % 2 ? 'sm-c3' : 'sm-c2'))
-        : cards.replace(/ sm-col-rosca/g, '')) + cardAbertas(abertas);
+      // Ordem de preenchimento (linha a linha, 3 colunas, sem espaços vazios):
+      // coluna 1 = prioridade 1 (barras horizontais) enquanto existir; acabando, segue para a rosca.
+      // Colunas 2 e 3 = sem prioridade: usam o que sobrar (roscas primeiro, para guardar as barras para a coluna 1).
+      const cards = fechadas.map(cardPergunta);
+      const barrasQ = cards.filter(c => c.includes('sm-col-barra')), roscasQ = cards.filter(c => !c.includes('sm-col-barra'));
+      const ordem = [];
+      while(barrasQ.length || roscasQ.length){
+        ordem.push(barrasQ.shift() || roscasQ.shift());
+        for(let col = 2; col <= 3 && (barrasQ.length || roscasQ.length); col++) ordem.push(roscasQ.shift() || barrasQ.shift());
+      }
+      P.innerHTML = ordem.join('') + cardAbertas(abertas);
     }
     function renderIndividual(f, R){
       const perguntas = R ? R.perguntas : [];
