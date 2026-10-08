@@ -237,6 +237,8 @@
   .wa-field label.wa-restricao-check:has(input:checked){border-color:#F59E0B;background:#FFFBEB;color:#92400E;}
   .wa-field label.wa-restricao-check:has(input:disabled){opacity:.55;cursor:not-allowed;background:#F8FAFC;}
   @media (max-width:560px){ .wa-user-linha{flex-wrap:wrap;} .wa-user-linha > .wa-field{flex:1 1 40% !important;} }
+  /* Usuários: cabeçalho da tabela sempre numa linha só. */
+  .wa-user-tabela th{white-space:nowrap;}
   .wa-badge.wa-role-restrito{background:#FEF3C7;color:#92400E;margin-left:6px;}
 
   /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
@@ -3377,7 +3379,7 @@
 
         <div class="wa-card">
           <div class="wa-table-wrap">
-            <table class="wa-table">
+            <table class="wa-table wa-user-tabela">
               <thead>
                 <tr>
                   <th>Usuário</th>
@@ -5851,7 +5853,14 @@
         waUserTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="7">Nenhum usuário cadastrado.</td></tr>';
         return;
       }
-      users.forEach(u => {
+      // Ordem: Administradores primeiro; dentro de cada perfil, último acesso do mais recente ao mais
+      // antigo (quem nunca acessou vai para o fim); empate pelo nome.
+      const acesso = u => (u.ultimo_acesso && Date.parse(u.ultimo_acesso)) || 0;
+      const ordenados = [...users].sort((a, b) =>
+        (b.cargo === 'Administrador') - (a.cargo === 'Administrador')
+        || acesso(b) - acesso(a)
+        || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+      ordenados.forEach(u => {
         const isAdmin = u.cargo === 'Administrador';
         const sections = u.secoes_permitidas || [];
         const sectionsHtml = isAdmin
