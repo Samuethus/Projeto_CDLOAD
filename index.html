@@ -242,6 +242,8 @@
   /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
   #page-estoque.estoque-restrito > *:not(#waStockRestrito):not(.wa-modal-overlay){display:none !important;}
   .wa-restrito{display:flex;flex-direction:column;gap:16px;min-height:calc(100vh - 190px);}
+  /* Só o usuário restrito vê esta tela: escondida, nunca aparece (o display:flex acima venceria o atributo hidden). */
+  .wa-restrito[hidden], .wa-restrito-msg[hidden], #page-estoque:not(.estoque-restrito) .wa-restrito{display:none !important;}
   .wa-restrito-ler{flex:1 1 auto;min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
     width:100%;padding:32px 20px;border:3px dashed #0056D2;border-radius:24px;background:#EFF6FF;color:#002B54;
     font-family:inherit;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;}
