@@ -353,8 +353,6 @@
   }
   .wa-identify-error[hidden]{display:none;}
 
-  .login-card label.login-manter{display:flex;align-items:center;gap:9px;margin:4px 0 16px;font-size:13.5px;font-weight:500;color:#334155;cursor:pointer;user-select:none;width:fit-content;}
-  .login-card .login-manter input[type="checkbox"]{width:17px;height:17px;min-height:0;margin:0;padding:0;border:none;box-shadow:none;accent-color:#2563EB;cursor:pointer;flex:0 0 auto;}
   .login-cta{
     width:100%; display:flex; align-items:center; justify-content:center;
     padding:13px 18px; margin-top:6px; border:none; border-radius:10px;
@@ -2165,11 +2163,6 @@
           </button>
         </div>
       </div>
-
-      <label class="login-manter" for="waIdentifyManter" title="Neste aparelho, a plataforma abre já conectada, sem pedir e-mail e senha de novo. Não marque em computadores compartilhados.">
-        <input type="checkbox" id="waIdentifyManter">
-        <span>Manter conectado</span>
-      </label>
 
       <div class="wa-identify-error" id="waIdentifyError" hidden></div>
 
@@ -5138,17 +5131,7 @@
 
     const SB_CONFIG = window.SUPABASE_CONFIG || {};
     const supabaseReady = !!(SB_CONFIG.url && SB_CONFIG.anonKey && window.supabase);
-    // Onde a sessão do login fica guardada ("Manter conectado" na tela de login):
-    //   marcado (ou nunca escolhido) → localStorage: o aparelho abre já conectado;
-    //   desmarcado → sessionStorage: vale só nesta aba (recarregar ok; aba/janela nova pede login).
-    // A escolha é lida a cada acesso, então vale já no login em que foi marcada/desmarcada.
-    const authManter = () => { try { return localStorage.getItem('cdload-manter') !== '0'; } catch(e){ return true; } };
-    const authStorage = {
-      getItem: k => { try { return (authManter() ? localStorage : sessionStorage).getItem(k); } catch(e){ return null; } },
-      setItem: (k, v) => { try { (authManter() ? localStorage : sessionStorage).setItem(k, v); (authManter() ? sessionStorage : localStorage).removeItem(k); } catch(e){} },
-      removeItem: k => { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch(e){} }
-    };
-    const supabaseClient = supabaseReady ? window.supabase.createClient(SB_CONFIG.url, SB_CONFIG.anonKey, { auth: { storage: authStorage, persistSession: true } }) : null;
+    const supabaseClient = supabaseReady ? window.supabase.createClient(SB_CONFIG.url, SB_CONFIG.anonKey) : null;
 
     const waSupabaseBanner = document.getElementById('waSupabaseBanner');
     if(waSupabaseBanner) waSupabaseBanner.hidden = supabaseReady;
@@ -6489,31 +6472,9 @@
       window.__loadAllData();
     }
 
-    // ---- Manter conectado ----
-    // Marcado: a sessão fica gravada neste aparelho (abre já conectado, como um app) e o e-mail
-    // vem preenchido. Desmarcado: a sessão vale só enquanto esta aba estiver aberta — fechar e
-    // abrir de novo, ou abrir em outra aba/janela, pede o login (recarregar a página continua ok).
-    // localStorage 'cdload-manter' = '1' | '0' (sem valor = sessões antigas: continuam conectadas).
-    const waIdentifyManter = document.getElementById('waIdentifyManter');
-    const MANTER = 'cdload-manter', MANTER_EMAIL = 'cdload-manter-email';
-    const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
-    const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch(e){} };
-    const ssGet = k => { try { return sessionStorage.getItem(k); } catch(e){ return null; } };
-    const ssSet = (k, v) => { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch(e){} };
-    waIdentifyManter.checked = lsGet(MANTER) === '1';
-    if(waIdentifyManter.checked && lsGet(MANTER_EMAIL) && !waIdentifyEmail.value) waIdentifyEmail.value = lsGet(MANTER_EMAIL);
-    function gravarEscolhaManter(email){
-      const manter = waIdentifyManter.checked;
-      lsSet(MANTER, manter ? '1' : '0');
-      lsSet(MANTER_EMAIL, manter ? email : null);
-      // Modo demonstração (sem Supabase): guarda o e-mail para reabrir conectado.
-      if(!supabaseReady){ lsSet('cdload-demo-sessao', manter ? email : null); ssSet('cdload-demo-sessao', email); }
-    }
-
     async function handleIdentifySubmit(){
       waIdentifyError.hidden = true;
       waIdentifyBtn.disabled = true;
-      lsSet(MANTER, waIdentifyManter.checked ? '1' : '0');
       const result = await resolveIdentity(waIdentifyEmail.value, waIdentifyPassword.value);
       waIdentifyBtn.disabled = false;
 
@@ -6522,7 +6483,6 @@
         waIdentifyError.hidden = false;
         return;
       }
-      gravarEscolhaManter((waIdentifyEmail.value || '').trim().toLowerCase());
       enterApp(result.user);
     }
 
@@ -6593,22 +6553,15 @@
     if(currentUserSwitchBtn){
       currentUserSwitchBtn.addEventListener('click', async () => {
         if(supabaseReady) await supabaseClient.auth.signOut();
-        ssSet('cdload-demo-sessao', null); lsSet('cdload-demo-sessao', null);
         location.reload();
       });
     }
 
     (async function initIdentify(){
-      if(!supabaseReady){
-        // Demonstração: reabre conectado se escolheu manter (ou se é a mesma aba).
-        const email = ssGet('cdload-demo-sessao') || lsGet('cdload-demo-sessao');
-        if(email){ const r = await buildSessionUser(email); if(r.ok) enterApp(r.user); }
-        return;
-      }
+      if(!supabaseReady) return;
       const { data } = await supabaseClient.auth.getSession();
       const session = data && data.session;
       if(!session) return;
-      // (sem "Manter conectado", a sessão está no sessionStorage: aba/janela nova já chega sem ela)
       const result = await buildSessionUser((session.user.email || '').toLowerCase());
       if(result.ok) enterApp(result.user);
       else await supabaseClient.auth.signOut();
