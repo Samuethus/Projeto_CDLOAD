@@ -4808,6 +4808,22 @@
 
   window.goTo = goTo;
 
+  // ESC fecha o modal (wizard) aberto em qualquer seção — o de cima, quando há mais de um.
+  // Usa o próprio botão "×" do modal, então roda a mesma rotina de fechar (devolve formulários,
+  // para a câmera etc.). Quem já tratou o Esc antes (ex.: lista de participantes) chama preventDefault.
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape' || e.defaultPrevented) return;
+    const abertos = [...document.querySelectorAll('.wa-modal-overlay.open')];
+    if(!abertos.length) return;
+    // O de cima: maior z-index; empate, o que vem depois no HTML.
+    const zi = el => Number(getComputedStyle(el).zIndex) || 0;
+    const topo = abertos.reduce((a, b) => (zi(b) >= zi(a) ? b : a));
+    const fechar = topo.querySelector('.wa-modal-close');
+    if(!fechar) return;
+    e.preventDefault();
+    fechar.click();
+  });
+
   // Página de entrada após o login: ao recarregar a página, a última seção aberta nesta aba (se ainda
   // existir e estiver liberada); senão — e sempre ao abrir a plataforma — a Home, se liberada; senão a primeira seção permitida na ordem do menu.
   // Sem nenhuma seção, nada é exibido.
@@ -5602,6 +5618,8 @@
         const pick = participantMatches[participantActiveIdx >= 0 ? participantActiveIdx : 0];
         if(pick) addParticipant(pick);
       } else if(e.key === 'Escape'){
+        // Com a lista de sugestões aberta, o Esc fecha só a lista (não o modal da campanha).
+        if(!waCampParticipantDropdown.hidden){ e.preventDefault(); e.stopPropagation(); }
         closeParticipantDropdown();
       } else if(e.key === 'Backspace' && !waCampParticipantSearch.value && selectedParticipants.size){
         const last = [...selectedParticipants.keys()].pop();
@@ -7674,7 +7692,7 @@ ${clipPlayerPills(n)}
 
     // ESC fecha o modal aberto do Estoque (o que estiver por cima), igual ao "×".
     document.addEventListener('keydown', (e) => {
-      if(e.key !== 'Escape' || currentPage !== 'estoque') return;
+      if(e.key !== 'Escape' || currentPage !== 'estoque' || e.defaultPrevented) return;   // o ESC global já fechou o modal de cima
       const modais = [
         ['waCamModal', waCloseCamModal],
         ['waMovModal', waCloseMovModal],
