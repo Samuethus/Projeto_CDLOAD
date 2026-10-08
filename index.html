@@ -226,12 +226,17 @@
   a.sidebar-logo img{transition:opacity .15s ease;}
   a.sidebar-logo[href]:hover img{opacity:.75;}
 
-  /* ---- Usuários › campo Restrição ---- */
-  .wa-restricao-check{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer;background:#F8FAFC;}
-  .wa-restricao-check input{width:18px;height:18px;margin:2px 0 0;flex:0 0 auto;accent-color:#0056D2;cursor:pointer;}
-  .wa-restricao-check strong{display:block;font-size:13.5px;color:#0F172A;}
-  .wa-restricao-desc{display:block;font-size:12.5px;color:#64748B;font-weight:400;margin-top:2px;line-height:1.4;}
-  .wa-restricao-check:has(input:disabled){opacity:.6;cursor:not-allowed;}
+  /* ---- Usuários › campo Restrição (na linha de Perfil / Status / Setor, à direita do Setor) ---- */
+  .wa-user-linha{flex-wrap:nowrap;}
+  .wa-user-linha > .wa-field{min-width:0 !important;}
+  .wa-user-linha > .wa-field select{min-width:0;text-overflow:ellipsis;}
+  .wa-user-restricao{flex:0 0 auto !important;}
+  .wa-field label.wa-restricao-check{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:39px;padding:0 12px;border:1px solid var(--wa-border, #E2E8F0);
+    border-radius:10px;background:#fff;cursor:pointer;font-size:13.5px;font-weight:600;color:#0F172A;white-space:nowrap;margin:0;}
+  .wa-field label.wa-restricao-check input{width:17px;height:17px;margin:0;flex:0 0 auto;accent-color:#0056D2;cursor:pointer;}
+  .wa-field label.wa-restricao-check:has(input:checked){border-color:#F59E0B;background:#FFFBEB;color:#92400E;}
+  .wa-field label.wa-restricao-check:has(input:disabled){opacity:.55;cursor:not-allowed;background:#F8FAFC;}
+  @media (max-width:560px){ .wa-user-linha{flex-wrap:wrap;} .wa-user-linha > .wa-field{flex:1 1 40% !important;} }
   .wa-badge.wa-role-restrito{background:#FEF3C7;color:#92400E;margin-left:6px;}
 
   /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
@@ -3419,7 +3424,7 @@
                 <div class="wa-field">
                   <div class="wa-empty-hint">A senha é definida pelo próprio usuário no primeiro acesso (link “Realizar primeiro acesso” na tela de login), usando este e-mail.</div>
                 </div>
-                <div class="wa-field-row" style="gap:12px;flex-wrap:wrap;align-items:flex-start;">
+                <div class="wa-field-row wa-user-linha" style="gap:12px;align-items:flex-start;">
                   <div class="wa-field" style="flex:1;min-width:120px;">
                     <label for="waUserCargo">Perfil</label>
                     <select id="waUserCargo">
@@ -3450,16 +3455,14 @@
                       <option value="RH">RH</option>
                     </select>
                   </div>
-                </div>
-                <!-- Restrição: usuário de operação. No Estoque vê só a tela de leitura do produto e registra apenas saída. -->
-                <div class="wa-field">
-                  <label class="wa-restricao-check" for="waUserRestrito">
-                    <input type="checkbox" id="waUserRestrito">
-                    <span>
-                      <strong>Restrição</strong>
-                      <span class="wa-restricao-desc" id="waUserRestritoDesc">Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).</span>
-                    </span>
-                  </label>
+                  <!-- Restrição: usuário de operação. No Estoque vê só a tela de leitura do produto e registra apenas saída. -->
+                  <div class="wa-field wa-user-restricao">
+                    <label for="waUserRestrito">Restrição</label>
+                    <label class="wa-restricao-check" id="waUserRestritoBox" title="Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).">
+                      <input type="checkbox" id="waUserRestrito">
+                      <span id="waUserRestritoDesc">Restrito</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -5929,13 +5932,12 @@
     const waUserStatus = document.getElementById('waUserStatus');
     const waUserSetor = document.getElementById('waUserSetor');
     const waUserRestrito = document.getElementById('waUserRestrito');
-    const waUserRestritoDesc = document.getElementById('waUserRestritoDesc');
     // Administrador nunca é restrito: o campo fica desmarcado e travado.
     function atualizarCampoRestricao(){
       const admin = waUserCargo.value === 'Administrador';
       if(admin) waUserRestrito.checked = false;
       waUserRestrito.disabled = admin;
-      waUserRestritoDesc.textContent = admin ? 'Não se aplica ao perfil Administrador.'
+      document.getElementById('waUserRestritoBox').title = admin ? 'Não se aplica ao perfil Administrador.'
         : 'Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).';
     }
     waUserCargo.addEventListener('change', atualizarCampoRestricao);
