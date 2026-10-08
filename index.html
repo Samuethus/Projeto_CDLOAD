@@ -235,6 +235,7 @@
     border-radius:10px;background:#fff;cursor:pointer;font-size:13.5px;font-weight:600;color:#0F172A;white-space:nowrap;margin:0;}
   .wa-field label.wa-restricao-check input{width:17px;height:17px;margin:0;flex:0 0 auto;accent-color:#0056D2;cursor:pointer;}
   .wa-field label.wa-restricao-check:has(input:checked){border-color:#F59E0B;background:#FFFBEB;color:#92400E;}
+  .wa-field label.wa-edicao-check:has(input:checked){border-color:#3B82F6;background:#EFF6FF;color:#1D4ED8;}
   .wa-field label.wa-restricao-check:has(input:disabled){opacity:.55;cursor:not-allowed;background:#F8FAFC;}
   @media (max-width:560px){ .wa-user-linha{flex-wrap:wrap;} .wa-user-linha > .wa-field{flex:1 1 40% !important;} }
   /* Usuários: cabeçalho da tabela sempre numa linha só. */
@@ -246,6 +247,7 @@
   .wa-secoes-linha .wa-pill-category[hidden]{display:none !important;}
   .wa-pill-category.wa-pill-mais{background:#E2E8F0;color:#334155;cursor:default;}
   .wa-badge.wa-role-restrito{background:#FEF3C7;color:#92400E;margin-left:6px;}
+  .wa-badge.wa-role-edicao{background:#DBEAFE;color:#1D4ED8;margin-left:6px;}
 
   /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
   #page-estoque.estoque-restrito > *:not(#waStockRestrito):not(.wa-modal-overlay){display:none !important;}
@@ -3473,6 +3475,14 @@
                       <span id="waUserRestritoDesc">Restrito</span>
                     </label>
                   </div>
+                  <!-- Edição: edita e exclui registros nas seções liberadas, sem ser Administrador. -->
+                  <div class="wa-field wa-user-restricao">
+                    <label for="waUserEdicao">Edição</label>
+                    <label class="wa-restricao-check wa-edicao-check" id="waUserEdicaoBox" title="Pode editar e excluir registros nas seções liberadas para este usuário, sem ser Administrador.">
+                      <input type="checkbox" id="waUserEdicao">
+                      <span>Editar</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -4235,14 +4245,23 @@
     logoLanding.addEventListener('auxclick', bloquear);
   }
   window.__getCurrentUser = () => currentUser;
-  // Editar e excluir dados é exclusivo de Administrador, mesmo para quem tem
-  // todas as seções liberadas (o RLS do Supabase aplica a mesma regra).
+  // Editar e excluir dados: Administrador, ou usuário com a flag "Edição" na seção liberada
+  // (ver __podeEditar abaixo). O cadastro de Usuários continua só do Administrador.
   window.__isAdmin = () => !!currentUser && currentUser.cargo === 'Administrador';
   // Usuário restrito (flag "Restrição" do cadastro): no Estoque só vê a leitura do produto e registra saída.
   window.__isRestrito = () => !!currentUser && !!currentUser.restrito && currentUser.cargo !== 'Administrador';
   window.__exigirAdmin = (acao) => {
     if(window.__isAdmin()) return true;
     alert('Somente Administradores podem ' + acao + '.');
+    return false;
+  };
+  // Editar e excluir registros de uma seção: Administrador, ou usuário com "Edição" (cadastro) que
+  // tenha a seção liberada e não seja restrito. O RLS do Supabase aplica a mesma regra (cdl_pode_editar).
+  window.__podeEditar = (secao) => window.__isAdmin()
+    || (!!currentUser && !!currentUser.edicao && !currentUser.restrito && (currentUser.secoes || []).includes(secao));
+  window.__exigirEdicao = (secao, acao) => {
+    if(window.__podeEditar(secao)) return true;
+    alert('Você não tem permissão para ' + acao + '. Peça a um Administrador o acesso de Edição.');
     return false;
   };
   window.__setCurrentUser = (u) => { currentUser = u; };
@@ -4831,7 +4850,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
               <span class="wa-badge ${templateBadgeClass[tpl.status] || 'wa-badge-approved'}">${esc(tpl.status)}</span>
-              ${window.__isAdmin() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenTemplateModal('${tpl.id}')">
+              ${window.__podeEditar('whatsapp') ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenTemplateModal('${tpl.id}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
               </button>
               <button class="wa-icon-btn danger" title="Remover" onclick="waDeleteTemplate('${tpl.id}')">
@@ -4847,7 +4866,7 @@
     }
 
     window.waDeleteTemplate = function(id){
-      if(!window.__exigirAdmin('remover templates')) return;
+      if(!window.__exigirEdicao('whatsapp', 'remover templates')) return;
       if(confirm('Deseja remover este template?')){
         const idx = templates.findIndex(t => t.id === id);
         if(idx > -1) templates.splice(idx, 1);
@@ -4877,7 +4896,7 @@
     const waTemplateModalSub = document.querySelector('#waTemplateModal .wa-modal-sub');
 
     window.waOpenTemplateModal = function(id){
-      if(id && !window.__exigirAdmin('editar templates')) return;
+      if(id && !window.__exigirEdicao('whatsapp', 'editar templates')) return;
       templateStep = 1;
       editingTemplateId = id || null;
       const editing = templates.find(t => t.id === editingTemplateId);
@@ -4936,7 +4955,7 @@
     };
 
     function waSaveTemplate(){
-      if(editingTemplateId && !window.__exigirAdmin('editar templates')) return;
+      if(editingTemplateId && !window.__exigirEdicao('whatsapp', 'editar templates')) return;
       const name = waTplName.value.trim().toLowerCase().replace(/\s+/g, '_');
       const header = waTplHeaderType.value === 'Texto' ? waTplHeaderText.value : '';
 
@@ -5090,7 +5109,7 @@
           <td>${formatDateBR(p.data_inicio)} – ${formatDateBR(p.data_fim)}</td>
           <td><span class="wa-badge ${campaignStatusClass[status] || 'wa-status-agendado'}">${status}</span></td>
           <td class="wa-table-actions">
-            ${window.__isAdmin() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenCampaignModal('${camp.id}')">
+            ${window.__podeEditar('campanhas') ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenCampaignModal('${camp.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
             </button>` : ''}
             <button class="wa-icon-btn" title="Duplicar" onclick="waDuplicateCampaign('${camp.id}')">
@@ -5099,7 +5118,7 @@
             <button class="wa-icon-btn" title="Baixar JSON" onclick="waDownloadCampaignJSON('${camp.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
-            ${window.__isAdmin() ? `<button class="wa-icon-btn danger" title="Remover" onclick="waDeleteCampaign('${camp.id}')">
+            ${window.__podeEditar('campanhas') ? `<button class="wa-icon-btn danger" title="Remover" onclick="waDeleteCampaign('${camp.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>` : ''}
           </td>
@@ -5222,7 +5241,7 @@
             <div class="wa-cal-events">
               ${dayCampaigns.map(c => {
                 const color = getCampaignCalColor(c.nome_campanha);
-                return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};" ${window.__isAdmin() ? `onclick="waOpenCampaignModal('${c.id}')"` : 'style="cursor:default;"'} title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
+                return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};" ${window.__podeEditar('campanhas') ? `onclick="waOpenCampaignModal('${c.id}')"` : 'style="cursor:default;"'} title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
               }).join('')}
             </div>
           </div>
@@ -5654,7 +5673,7 @@
         return;
       }
 
-      if(editingCampaignId && !window.__exigirAdmin('editar campanhas')) return;
+      if(editingCampaignId && !window.__exigirEdicao('campanhas', 'editar campanhas')) return;
       const previous = editingCampaignId ? campaigns.find(c => c.id === editingCampaignId) : null;
       const query = editingCampaignId
         ? supabaseClient.from('campanhas').update(payload).eq('id', editingCampaignId).select().single()
@@ -5714,7 +5733,7 @@
     }
 
     window.waOpenCampaignModal = function(id){
-      if(id && !window.__exigirAdmin('editar campanhas')) return;
+      if(id && !window.__exigirEdicao('campanhas', 'editar campanhas')) return;
       campStep = 1;
       editingCampaignId = id || null;
       const editing = campaigns.find(c => c.id === editingCampaignId);
@@ -5779,7 +5798,7 @@
     };
 
     window.waDeleteCampaign = async function(id){
-      if(!window.__exigirAdmin('remover campanhas')) return;
+      if(!window.__exigirEdicao('campanhas', 'remover campanhas')) return;
       if(!confirm('Deseja remover esta campanha?')) return;
 
       if(!supabaseReady){
@@ -5909,7 +5928,7 @@
             ${esc(u.nome)}
             <div style="font-size:11.5px;font-weight:400;color:var(--wa-text-muted);margin-top:2px;">${esc(u.email)}</div>
           </td>
-          <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span>${!isAdmin && u.restrito ? '<span class="wa-badge wa-role-restrito" title="Usuário restrito: no Estoque só registra saída pela leitura do produto">Restrito</span>' : ''}</td>
+          <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span>${!isAdmin && u.restrito ? '<span class="wa-badge wa-role-restrito" title="Usuário restrito: no Estoque só registra saída pela leitura do produto">Restrito</span>' : ''}${!isAdmin && !u.restrito && u.edicao ? '<span class="wa-badge wa-role-edicao" title="Edição: edita e exclui registros nas seções liberadas">Edição</span>' : ''}</td>
           <td class="wa-user-secoes-td"><div class="wa-channel-tags wa-secoes-linha">${sectionsHtml}</div></td>
           <td>${u.setor ? esc(u.setor) : '<span class="wa-empty-hint">—</span>'}</td>
           <td><span class="wa-badge ${u.status === 'Ativo' ? 'wa-status-ativo' : 'wa-status-inativo'}">${esc(u.status)}</span></td>
@@ -5955,6 +5974,7 @@
         status: row.status,
         setor: row.setor || '',
         restrito: !!row.restrito,
+        edicao: !!row.edicao,
         ultimo_acesso: row.ultimo_acesso || null,
         secoes_permitidas: normalizarSecoes(row.secoes_permitidas),
         paineis_permitidos: row.paineis_permitidos ?? null  // null = todos os painéis
@@ -5975,11 +5995,18 @@
     const waUserStatus = document.getElementById('waUserStatus');
     const waUserSetor = document.getElementById('waUserSetor');
     const waUserRestrito = document.getElementById('waUserRestrito');
-    // Administrador nunca é restrito: o campo fica desmarcado e travado.
+    const waUserEdicao = document.getElementById('waUserEdicao');
+    // Administrador nunca é restrito e já edita tudo: os dois campos ficam desmarcados e travados.
+    // Restrição e Edição não andam juntas (restrito só registra saída): marcar uma desmarca a outra.
+    waUserRestrito.addEventListener('change', () => { if(waUserRestrito.checked) waUserEdicao.checked = false; });
+    waUserEdicao.addEventListener('change', () => { if(waUserEdicao.checked) waUserRestrito.checked = false; });
     function atualizarCampoRestricao(){
       const admin = waUserCargo.value === 'Administrador';
-      if(admin) waUserRestrito.checked = false;
+      if(admin){ waUserRestrito.checked = false; waUserEdicao.checked = false; }
       waUserRestrito.disabled = admin;
+      waUserEdicao.disabled = admin;
+      document.getElementById('waUserEdicaoBox').title = admin ? 'O Administrador já edita e exclui em todas as seções.'
+        : 'Pode editar e excluir registros nas seções liberadas para este usuário, sem ser Administrador.';
       document.getElementById('waUserRestritoBox').title = admin ? 'Não se aplica ao perfil Administrador.'
         : 'Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).';
     }
@@ -6079,6 +6106,7 @@
         status: waUserStatus.value,
         setor: waUserSetor.value || null,
         restrito: waUserCargo.value !== 'Administrador' && waUserRestrito.checked,
+        edicao: waUserCargo.value !== 'Administrador' && !waUserRestrito.checked && waUserEdicao.checked,
         // null = todos os painéis (Administrador)
         paineis_permitidos: waUserCargo.value === 'Administrador' ? null : [...selectedUserPaineis],
         secoes_permitidas: waUserCargo.value === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : [...selectedUserSections]
@@ -6090,7 +6118,7 @@
       const cu = window.__getCurrentUser();
       if(cu && cu.email === payload.email){
         const updated = { email: payload.email, nome: payload.nome, cargo: payload.cargo, status: payload.status, secoes: payload.secoes_permitidas,
-          paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos, restrito: !!payload.restrito };
+          paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos, restrito: !!payload.restrito, edicao: !!payload.edicao };
         window.__setCurrentUser(updated);
         window.applySectionPermissions();
         window.__renderHubHome();
@@ -6128,6 +6156,10 @@
           alert('O campo "Restrição" ainda não existe no banco. Rode supabase/schema_usuarios_restricao.sql no SQL Editor do Supabase e salve de novo.');
           return;
         }
+        if(/edicao/.test(error.message || '')){
+          alert('O campo "Edição" ainda não existe no banco. Rode supabase/schema_usuarios_edicao.sql no SQL Editor do Supabase e salve de novo.');
+          return;
+        }
         alert('Erro ao salvar usuário no Supabase: ' + error.message);
         return;
       }
@@ -6154,6 +6186,7 @@
       waUserStatus.value = editing ? editing.status : 'Ativo';
       waUserSetor.value = editing && [...waUserSetor.options].some(o => o.value === editing.setor) ? editing.setor : '';
       waUserRestrito.checked = !!(editing && editing.restrito);
+      waUserEdicao.checked = !!(editing && editing.edicao);
       atualizarCampoRestricao();
 
       selectedUserSections = new Set(editing ? (editing.secoes_permitidas || []) : []);
@@ -6263,7 +6296,8 @@
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
       registrarAcesso(row);
       const restrito = !isAdminEmail && row.cargo !== 'Administrador' && !!row.restrito;
-      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis, restrito } };
+      const edicao = !restrito && row.cargo !== 'Administrador' && !!row.edicao;
+      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis, restrito, edicao } };
     }
 
     async function resolveIdentity(rawEmail, rawSenha){
@@ -6681,7 +6715,7 @@
             ${/^https:\/\//.test(n.imagem || '') ? `<img class="wa-clip-img" src="${esc(n.imagem)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
             ${href ? `<a class="wa-clip-thumb-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Abrir a matéria em ${esc(portalNome)}" aria-label="Abrir a matéria em ${esc(portalNome)}"></a>` : ''}
             <div class="wa-clip-actions">
-              ${window.__isAdmin() ? `<button class="wa-clip-action-btn" title="Editar" onclick="waOpenClipModal('${n.id}')">
+              ${window.__podeEditar('clipping') ? `<button class="wa-clip-action-btn" title="Editar" onclick="waOpenClipModal('${n.id}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
               </button>
               <button class="wa-clip-action-btn danger" title="Remover" onclick="waDeleteClipNews('${n.id}')">
@@ -6811,7 +6845,7 @@ ${clipPlayerPills(n)}
     }
 
     window.waOpenClipModal = function(id){
-      if(id && !window.__exigirAdmin('editar notícias')) return;
+      if(id && !window.__exigirEdicao('clipping', 'editar notícias')) return;
       editingClipId = id || null;
       const editing = clippingNews.find(n => n.id === editingClipId);
 
@@ -6863,7 +6897,7 @@ ${clipPlayerPills(n)}
         return;
       }
 
-      if(editingClipId && !window.__exigirAdmin('editar notícias')) return;
+      if(editingClipId && !window.__exigirEdicao('clipping', 'editar notícias')) return;
       const dbPayload = Object.assign({}, payload, { data_publicacao: waClipData.value });
       const query = editingClipId
         ? supabaseClient.from('clipping_news').update(dbPayload).eq('id', editingClipId)
@@ -6880,7 +6914,7 @@ ${clipPlayerPills(n)}
     };
 
     window.waDeleteClipNews = async function(id){
-      if(!window.__exigirAdmin('remover notícias')) return;
+      if(!window.__exigirEdicao('clipping', 'remover notícias')) return;
       if(!confirm('Deseja remover esta notícia?')) return;
 
       if(!supabaseReady){
@@ -7118,6 +7152,9 @@ ${clipPlayerPills(n)}
     // (supabase/schema_seguranca_rls.sql); esconder o botão evita um clique que
     // só resultaria em erro de permissão.
     const isAdminUser = () => (window.__getCurrentUser() || {}).cargo === 'Administrador';
+    // Editar/excluir no Estoque e nos Relatórios: Administrador ou usuário com Edição na seção.
+    const podeEditarEstoque = () => window.__podeEditar('estoque');
+    const podeEditarRelatorios = () => window.__podeEditar('relatorios');
 
     function fmtDateTimeBR(iso){
       if(!iso) return '—';
@@ -7389,7 +7426,7 @@ ${clipPlayerPills(n)}
             <td class="wa-table-actions">
               ${moveBtns}
               <button class="wa-icon-btn" title="Histórico de movimentações" onclick="waShowStockHistory('${p.id}')">${ICON_HISTORY}</button>
-              ${isAdminUser() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenProductModal('${p.id}')">${ICON_EDIT}</button>
+              ${podeEditarEstoque() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenProductModal('${p.id}')">${ICON_EDIT}</button>
               <button class="wa-icon-btn danger" title="Remover" onclick="waDeleteProduct('${p.id}')">${ICON_TRASH}</button>` : ''}
             </td>
           </tr>`;
@@ -7425,8 +7462,8 @@ ${clipPlayerPills(n)}
             <td>${m.usuario_email ? stockEsc(userNameOf(m.usuario_email) || m.usuario_email) : '—'}</td>
             <td class="wa-table-actions">
               ${m.nota_fiscal_nome ? `<button class="wa-icon-btn" title="Ver nota fiscal · ${stockEsc(m.nota_fiscal_nome)}" onclick="waViewNotaFiscal('${m.id}')">${ICON_NF}</button>` : ''}
-              ${isAdminUser() && p ? `<button class="wa-icon-btn" title="Editar lançamento" onclick="waEditMovement('${m.id}')">${ICON_EDIT}</button>` : ''}
-              ${m.tipo === 'origem' || !isAdminUser() ? '' : `<button class="wa-icon-btn danger" title="Remover lançamento" onclick="waDeleteMovement('${m.id}')">${ICON_TRASH}</button>`}
+              ${podeEditarEstoque() && p ? `<button class="wa-icon-btn" title="Editar lançamento" onclick="waEditMovement('${m.id}')">${ICON_EDIT}</button>` : ''}
+              ${m.tipo === 'origem' || !podeEditarEstoque() ? '' : `<button class="wa-icon-btn danger" title="Remover lançamento" onclick="waDeleteMovement('${m.id}')">${ICON_TRASH}</button>`}
             </td>
           </tr>`;
       }).join('');
@@ -7773,7 +7810,7 @@ ${clipPlayerPills(n)}
     // Cadastro cria só o produto (catálogo global) — para colocar saldo em
     // algum setor, use Nova Movimentação (Entrada) depois de salvar.
     window.waOpenProductModal = function(id, presetCode){
-      if(id && !window.__exigirAdmin('editar produtos')) return;
+      if(id && !window.__exigirEdicao('estoque', 'editar produtos')) return;
       fillProductForm(id, presetCode);
       waProductModal.classList.add('open');
       setTimeout(() => (waProdCodigo.value ? waProdNome : waProdCodigo).focus(), 50);
@@ -7845,7 +7882,7 @@ ${clipPlayerPills(n)}
           stockProducts.push(Object.assign({ id, created_at: now }, payload));
         }
       } else if(editingProductId){
-        if(!window.__exigirAdmin('editar produtos')) return;
+        if(!window.__exigirEdicao('estoque', 'editar produtos')) return;
         const { error } = await supabaseClient.from('cadastro_de_produtos').update(payload).eq('id', editingProductId);
         if(error){
           console.error('Erro ao salvar produto no Supabase:', error);
@@ -7870,8 +7907,8 @@ ${clipPlayerPills(n)}
     window.waDeleteProduct = async function(id){
       const p = stockProducts.find(x => x.id === id);
       if(!p) return;
-      if(!isAdminUser()){
-        alert('Só um Administrador pode remover produtos.');
+      if(!podeEditarEstoque()){
+        alert('Você não tem permissão para remover produtos. Peça a um Administrador o acesso de Edição.');
         return;
       }
       if(!confirm(`Remover "${p.nome}"?\n\nTodo o histórico de movimentações deste produto também será apagado. Para apenas tirá-lo de uso, edite e marque como Inativo.`)) return;
@@ -8155,7 +8192,7 @@ ${clipPlayerPills(n)}
     }
 
     window.waEditMovement = function(id){
-      if(!window.__exigirAdmin('editar movimentações')) return;
+      if(!window.__exigirEdicao('estoque', 'editar movimentações')) return;
       const m = stockMovements.find(x => x.id === id);
       if(!m) return;
       if(!stockProducts.some(p => p.id === m.produto_id)){ alert('O produto deste lançamento foi removido.'); return; }
@@ -8464,8 +8501,8 @@ ${clipPlayerPills(n)}
     window.waDeleteMovement = async function(id){
       const m = stockMovements.find(x => x.id === id);
       if(!m) return;
-      if(!isAdminUser()){
-        alert('Só um Administrador pode remover uma movimentação.');
+      if(!podeEditarEstoque()){
+        alert('Você não tem permissão para remover movimentações. Peça a um Administrador o acesso de Edição.');
         return;
       }
       if(m.tipo === 'origem'){
@@ -8664,7 +8701,7 @@ ${clipPlayerPills(n)}
           <td class="wa-table-actions">
             <button class="wa-icon-btn" title="Visualizar" onclick="waViewReport('${r.id}')">${ICON_EYE}</button>
             <button class="wa-icon-btn" title="Baixar" onclick="waDownloadReport('${r.id}')">${ICON_DOWNLOAD}</button>
-            ${isAdminUser() ? `<button class="wa-icon-btn danger" title="Remover" onclick="waDeleteReport('${r.id}')">${ICON_TRASH}</button>` : ''}
+            ${podeEditarRelatorios() ? `<button class="wa-icon-btn danger" title="Remover" onclick="waDeleteReport('${r.id}')">${ICON_TRASH}</button>` : ''}
           </td>
         </tr>`).join('');
     }
@@ -8791,7 +8828,7 @@ ${clipPlayerPills(n)}
             <div class="wa-clip-actions">
               <button class="wa-clip-action-btn" title="Visualizar" onclick="waViewReport('${r.id}')">${ICON_EYE}</button>
               <button class="wa-clip-action-btn" title="Baixar" onclick="waDownloadReport('${r.id}')">${ICON_DOWNLOAD}</button>
-              ${isAdminUser() ? `<button class="wa-clip-action-btn danger" title="Remover" onclick="waDeleteReport('${r.id}')">${ICON_TRASH}</button>` : ''}
+              ${podeEditarRelatorios() ? `<button class="wa-clip-action-btn danger" title="Remover" onclick="waDeleteReport('${r.id}')">${ICON_TRASH}</button>` : ''}
             </div>
           </div>
           <div class="wa-clip-body">
@@ -8957,7 +8994,7 @@ ${clipPlayerPills(n)}
     };
 
     window.waDeleteReport = async function(id){
-      if(!window.__exigirAdmin('remover relatórios')) return;
+      if(!window.__exigirEdicao('relatorios', 'remover relatórios')) return;
       if(!confirm('Deseja remover este relatório? O arquivo será apagado definitivamente.')) return;
       const r = reports.find(x => x.id === id);
 
@@ -12060,6 +12097,12 @@ ${clipPlayerPills(n)}
       if(JSON.stringify(paineis) !== JSON.stringify(cu.paineis ?? null)){
         cu.paineis = paineis;
         renderHubHome();
+      }
+      // Edição e Restrição também passam a valer na sessão aberta (os botões de editar/excluir
+      // aparecem ou somem ao voltar à aba ou abrir a Home).
+      if(data && data.cargo !== 'Administrador'){
+        const restrito = !!data.restrito, edicao = !restrito && !!data.edicao;
+        if(restrito !== !!cu.restrito || edicao !== !!cu.edicao){ cu.restrito = restrito; cu.edicao = edicao; renderTemplates(); }
       }
     }
     document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home') atualizarPaineisLiberados(); });
