@@ -239,6 +239,12 @@
   @media (max-width:560px){ .wa-user-linha{flex-wrap:wrap;} .wa-user-linha > .wa-field{flex:1 1 40% !important;} }
   /* Usuários: cabeçalho da tabela sempre numa linha só. */
   .wa-user-tabela th{white-space:nowrap;}
+  /* Seções liberadas: uma linha só até o limite da coluna; o excedente vira "+N". */
+  .wa-user-tabela td.wa-user-secoes-td{width:36%;max-width:0;}
+  .wa-secoes-linha{flex-wrap:nowrap !important;overflow:hidden;min-width:0;}
+  .wa-secoes-linha .wa-pill-category{flex:0 0 auto;white-space:nowrap;}
+  .wa-secoes-linha .wa-pill-category[hidden]{display:none !important;}
+  .wa-pill-category.wa-pill-mais{background:#E2E8F0;color:#334155;cursor:default;}
   .wa-badge.wa-role-restrito{background:#FEF3C7;color:#92400E;margin-left:6px;}
 
   /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
@@ -5847,7 +5853,33 @@
       const data = d.toLocaleDateString('pt-BR'), hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       return `${data}<div class="wa-user-acesso-hora">${hora}</div>`;
     }
+    // Seções liberadas: mostra quantas cabem na largura da coluna, numa linha só; as que
+    // sobram viram um selo "+N" (passe o mouse para ver quais são).
+    function ajustarSecoesUsuarios(){
+      waUserTableBody.querySelectorAll('.wa-secoes-linha').forEach(linha => {
+        const pills = [...linha.querySelectorAll('.wa-pill-category:not(.wa-pill-mais)')];
+        linha.querySelectorAll('.wa-pill-mais').forEach(x => x.remove());
+        pills.forEach(x => { x.hidden = false; });
+        if(!linha.clientWidth || linha.scrollWidth <= linha.clientWidth + 1) return;
+        const mais = document.createElement('span');
+        mais.className = 'wa-pill-category wa-pill-mais';
+        linha.appendChild(mais);
+        let ocultas = 0;
+        for(let i = pills.length - 1; i > 0; i--){
+          pills[i].hidden = true; ocultas++;
+          mais.textContent = '+' + ocultas;
+          if(linha.scrollWidth <= linha.clientWidth + 1) break;
+        }
+        mais.title = 'Também tem acesso a: ' + pills.filter(x => x.hidden).map(x => x.textContent).join(', ');
+      });
+    }
+    let ajusteSecoesTimer = null;
+    window.addEventListener('resize', () => { clearTimeout(ajusteSecoesTimer); ajusteSecoesTimer = setTimeout(ajustarSecoesUsuarios, 120); });
+    document.addEventListener('cdload:pagechange', e => { if(e.detail.page === 'usuarios') requestAnimationFrame(ajustarSecoesUsuarios); });
+    document.addEventListener('cdload:menuresize', () => setTimeout(ajustarSecoesUsuarios, 250));
+
     function renderUsers(){
+      requestAnimationFrame(ajustarSecoesUsuarios);
       waUserTableBody.innerHTML = '';
       if(!users.length){
         waUserTableBody.innerHTML = '<tr class="wa-empty-row"><td colspan="7">Nenhum usuário cadastrado.</td></tr>';
@@ -5878,7 +5910,7 @@
             <div style="font-size:11.5px;font-weight:400;color:var(--wa-text-muted);margin-top:2px;">${esc(u.email)}</div>
           </td>
           <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span>${!isAdmin && u.restrito ? '<span class="wa-badge wa-role-restrito" title="Usuário restrito: no Estoque só registra saída pela leitura do produto">Restrito</span>' : ''}</td>
-          <td><div class="wa-channel-tags">${sectionsHtml}</div></td>
+          <td class="wa-user-secoes-td"><div class="wa-channel-tags wa-secoes-linha">${sectionsHtml}</div></td>
           <td>${u.setor ? esc(u.setor) : '<span class="wa-empty-hint">—</span>'}</td>
           <td><span class="wa-badge ${u.status === 'Ativo' ? 'wa-status-ativo' : 'wa-status-inativo'}">${esc(u.status)}</span></td>
           <td class="wa-user-acesso">${waFormatarAcesso(u.ultimo_acesso)}</td>
