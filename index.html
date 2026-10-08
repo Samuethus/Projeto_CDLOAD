@@ -226,6 +226,47 @@
   a.sidebar-logo img{transition:opacity .15s ease;}
   a.sidebar-logo[href]:hover img{opacity:.75;}
 
+  /* ---- Usuários › campo Restrição ---- */
+  .wa-restricao-check{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer;background:#F8FAFC;}
+  .wa-restricao-check input{width:18px;height:18px;margin:2px 0 0;flex:0 0 auto;accent-color:#0056D2;cursor:pointer;}
+  .wa-restricao-check strong{display:block;font-size:13.5px;color:#0F172A;}
+  .wa-restricao-desc{display:block;font-size:12.5px;color:#64748B;font-weight:400;margin-top:2px;line-height:1.4;}
+  .wa-restricao-check:has(input:disabled){opacity:.6;cursor:not-allowed;}
+  .wa-badge.wa-role-restrito{background:#FEF3C7;color:#92400E;margin-left:6px;}
+
+  /* ---- Estoque › usuário restrito: só o botão de leitura (prioridade celular) ---- */
+  #page-estoque.estoque-restrito > *:not(#waStockRestrito):not(.wa-modal-overlay){display:none !important;}
+  .wa-restrito{display:flex;flex-direction:column;gap:16px;min-height:calc(100vh - 190px);}
+  .wa-restrito-ler{flex:1 1 auto;min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    width:100%;padding:32px 20px;border:3px dashed #0056D2;border-radius:24px;background:#EFF6FF;color:#002B54;
+    font-family:inherit;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;}
+  .wa-restrito-ler:active{background:#DBEAFE;transform:scale(.99);}
+  .wa-restrito-ler:focus-visible{outline:3px solid #0056D2;outline-offset:3px;}
+  .wa-restrito-ic{width:112px;height:112px;border-radius:50%;background:#0056D2;color:#fff;display:flex;align-items:center;justify-content:center;}
+  .wa-restrito-ic svg{width:60px;height:60px;stroke:currentColor;stroke-width:2;}
+  .wa-restrito-tit{font-size:28px;font-weight:800;line-height:1.2;}
+  .wa-restrito-sub{font-size:18px;font-weight:500;color:#334155;}
+  .wa-restrito-msg{padding:18px 20px;border-radius:16px;font-size:20px;font-weight:700;line-height:1.35;text-align:center;}
+  .wa-restrito-msg.ok{background:#DCFCE7;color:#166534;border:2px solid #86EFAC;}
+  .wa-restrito-msg.err, .wa-restrito-msg.warn{background:#FEE2E2;color:#991B1B;border:2px solid #FCA5A5;}
+  /* Modal de saída do restrito: só o essencial e letras grandes. */
+  #waMovModal.wa-mov-restrito #waMovTipoField, #waMovModal.wa-mov-restrito #waMovNfField,
+  #waMovModal.wa-mov-restrito .wa-input-with-btn .wa-btn{display:none !important;}
+  #waMovModal.wa-mov-restrito .wa-modal-title{font-size:24px;}
+  #waMovModal.wa-mov-restrito .wa-modal-sub{font-size:16px;}
+  #waMovModal.wa-mov-restrito .wa-field label{font-size:18px;font-weight:700;color:#0F172A;}
+  #waMovModal.wa-mov-restrito .wa-field select, #waMovModal.wa-mov-restrito .wa-field input{font-size:20px;min-height:54px;padding:10px 14px;}
+  #waMovModal.wa-mov-restrito #waMovProduto:disabled{opacity:1;color:#0F172A;font-weight:700;background:#F1F5F9;}
+  #waMovModal.wa-mov-restrito .wa-budget-summary{font-size:17px;line-height:1.45;}
+  #waMovModal.wa-mov-restrito .wa-modal-footer .wa-btn{font-size:20px;min-height:58px;flex:1 1 0;justify-content:center;}
+  #waMovModal.wa-mov-restrito .wa-form-grid{grid-template-columns:1fr;margin-bottom:14px !important;}
+  @media (max-width:640px){
+    .wa-restrito{min-height:calc(100vh - 150px);}
+    .wa-restrito-tit{font-size:26px;}
+    #waMovModal.wa-mov-restrito{padding:0;align-items:stretch;}
+    #waMovModal.wa-mov-restrito .wa-modal{max-width:none !important;width:100%;min-height:100%;border-radius:0;margin:0;}
+  }
+
   /* ---- Tela de Login (overlay full-screen) ---- */
   .wa-identify-overlay{
     position:fixed; inset:0; z-index:500;
@@ -438,6 +479,12 @@
     .header-title{font-size:18px;}
     .header-desc{font-size:12.5px;}
     .content{padding:18px 16px 40px;}
+    /* As seções (fundo próprio) compensam o espaçamento menor do celular; com a margem do
+       desktop (-34px) elas ficavam 36px mais largas que a tela e cortavam o lado direito. */
+    .content > :is(#page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+      margin:-18px -16px -40px;
+      padding:18px 16px 40px;
+    }
   }
   /* Celulares baixos: itens do menu mais justos para continuar tudo na tela. */
   @media (max-width:768px) and (max-height:680px){
@@ -3404,6 +3451,16 @@
                     </select>
                   </div>
                 </div>
+                <!-- Restrição: usuário de operação. No Estoque vê só a tela de leitura do produto e registra apenas saída. -->
+                <div class="wa-field">
+                  <label class="wa-restricao-check" for="waUserRestrito">
+                    <input type="checkbox" id="waUserRestrito">
+                    <span>
+                      <strong>Restrição</strong>
+                      <span class="wa-restricao-desc" id="waUserRestritoDesc">Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).</span>
+                    </span>
+                  </label>
+                </div>
               </div>
 
               <!-- ETAPA 2: Permissões de Acesso -->
@@ -3444,6 +3501,19 @@
       </section>
 
       <section class="page" id="page-estoque">
+
+        <!-- Usuário restrito (Usuários › "Restrição"): só esta tela — um botão grande para ler o
+             produto pela câmera e registrar a SAÍDA. Pensada para o celular de quem opera o estoque. -->
+        <div class="wa-restrito" id="waStockRestrito" hidden>
+          <button type="button" class="wa-restrito-ler" id="waRestritoLer">
+            <span class="wa-restrito-ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="8" x2="7" y2="16"></line><line x1="10" y1="8" x2="10" y2="16"></line><line x1="13" y1="8" x2="13" y2="16"></line><line x1="17" y1="8" x2="17" y2="16"></line></svg>
+            </span>
+            <span class="wa-restrito-tit">Toque aqui para ler o produto</span>
+            <span class="wa-restrito-sub">Aponte a câmera para o código de barras</span>
+          </button>
+          <div class="wa-restrito-msg" id="waRestritoMsg" role="status" aria-live="polite" hidden></div>
+        </div>
 
         <div class="wa-supabase-banner" id="waStockSupabaseBanner" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
@@ -4155,6 +4225,8 @@
   // Editar e excluir dados é exclusivo de Administrador, mesmo para quem tem
   // todas as seções liberadas (o RLS do Supabase aplica a mesma regra).
   window.__isAdmin = () => !!currentUser && currentUser.cargo === 'Administrador';
+  // Usuário restrito (flag "Restrição" do cadastro): no Estoque só vê a leitura do produto e registra saída.
+  window.__isRestrito = () => !!currentUser && !!currentUser.restrito && currentUser.cargo !== 'Administrador';
   window.__exigirAdmin = (acao) => {
     if(window.__isAdmin()) return true;
     alert('Somente Administradores podem ' + acao + '.');
@@ -5791,7 +5863,7 @@
             ${esc(u.nome)}
             <div style="font-size:11.5px;font-weight:400;color:var(--wa-text-muted);margin-top:2px;">${esc(u.email)}</div>
           </td>
-          <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span></td>
+          <td><span class="wa-badge ${isAdmin ? 'wa-role-admin' : 'wa-role-user'}">${esc(u.cargo)}</span>${!isAdmin && u.restrito ? '<span class="wa-badge wa-role-restrito" title="Usuário restrito: no Estoque só registra saída pela leitura do produto">Restrito</span>' : ''}</td>
           <td><div class="wa-channel-tags">${sectionsHtml}</div></td>
           <td>${u.setor ? esc(u.setor) : '<span class="wa-empty-hint">—</span>'}</td>
           <td><span class="wa-badge ${u.status === 'Ativo' ? 'wa-status-ativo' : 'wa-status-inativo'}">${esc(u.status)}</span></td>
@@ -5836,6 +5908,7 @@
         cargo: row.cargo,
         status: row.status,
         setor: row.setor || '',
+        restrito: !!row.restrito,
         ultimo_acesso: row.ultimo_acesso || null,
         secoes_permitidas: normalizarSecoes(row.secoes_permitidas),
         paineis_permitidos: row.paineis_permitidos ?? null  // null = todos os painéis
@@ -5855,6 +5928,17 @@
     const waUserCargo = document.getElementById('waUserCargo');
     const waUserStatus = document.getElementById('waUserStatus');
     const waUserSetor = document.getElementById('waUserSetor');
+    const waUserRestrito = document.getElementById('waUserRestrito');
+    const waUserRestritoDesc = document.getElementById('waUserRestritoDesc');
+    // Administrador nunca é restrito: o campo fica desmarcado e travado.
+    function atualizarCampoRestricao(){
+      const admin = waUserCargo.value === 'Administrador';
+      if(admin) waUserRestrito.checked = false;
+      waUserRestrito.disabled = admin;
+      waUserRestritoDesc.textContent = admin ? 'Não se aplica ao perfil Administrador.'
+        : 'Usuário restrito: no Estoque, vê só a tela de leitura do produto e registra apenas saída (feita para o celular).';
+    }
+    waUserCargo.addEventListener('change', atualizarCampoRestricao);
     const waUserSectionsGroup = document.getElementById('waUserSectionsGroup');
     const waUserAdminHint = document.getElementById('waUserAdminHint');
 
@@ -5949,6 +6033,7 @@
         cargo: waUserCargo.value,
         status: waUserStatus.value,
         setor: waUserSetor.value || null,
+        restrito: waUserCargo.value !== 'Administrador' && waUserRestrito.checked,
         // null = todos os painéis (Administrador)
         paineis_permitidos: waUserCargo.value === 'Administrador' ? null : [...selectedUserPaineis],
         secoes_permitidas: waUserCargo.value === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : [...selectedUserSections]
@@ -5960,7 +6045,7 @@
       const cu = window.__getCurrentUser();
       if(cu && cu.email === payload.email){
         const updated = { email: payload.email, nome: payload.nome, cargo: payload.cargo, status: payload.status, secoes: payload.secoes_permitidas,
-          paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos };
+          paineis: payload.cargo === 'Administrador' ? null : payload.paineis_permitidos, restrito: !!payload.restrito };
         window.__setCurrentUser(updated);
         window.applySectionPermissions();
         window.__renderHubHome();
@@ -5994,6 +6079,10 @@
           alert('Já existe um usuário cadastrado com o e-mail ' + payload.email + '. Edite o cadastro existente em vez de criar outro.');
           return;
         }
+        if(/restrito/.test(error.message || '')){
+          alert('O campo "Restrição" ainda não existe no banco. Rode supabase/schema_usuarios_restricao.sql no SQL Editor do Supabase e salve de novo.');
+          return;
+        }
         alert('Erro ao salvar usuário no Supabase: ' + error.message);
         return;
       }
@@ -6019,6 +6108,8 @@
       waUserCargo.disabled = isFixedAdmin;
       waUserStatus.value = editing ? editing.status : 'Ativo';
       waUserSetor.value = editing && [...waUserSetor.options].some(o => o.value === editing.setor) ? editing.setor : '';
+      waUserRestrito.checked = !!(editing && editing.restrito);
+      atualizarCampoRestricao();
 
       selectedUserSections = new Set(editing ? (editing.secoes_permitidas || []) : []);
       // Cadastro antigo (coluna vazia) = todos os painéis; usuário novo começa sem nenhum.
@@ -6126,7 +6217,8 @@
       const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : normalizarSecoes(row.secoes_permitidas);
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
       registrarAcesso(row);
-      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis } };
+      const restrito = !isAdminEmail && row.cargo !== 'Administrador' && !!row.restrito;
+      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis, restrito } };
     }
 
     async function resolveIdentity(rawEmail, rawSenha){
@@ -7052,6 +7144,9 @@ ${clipPlayerPills(n)}
       waScanFeedback.className = 'wa-scan-feedback ' + kind;
       waScanFeedback.textContent = text;
       waScanFeedback.hidden = false;
+      // Usuário restrito: a mensagem aparece em destaque, abaixo do botão de leitura.
+      const msg = document.getElementById('waRestritoMsg');
+      if(msg){ msg.className = 'wa-restrito-msg ' + kind; msg.textContent = text; msg.hidden = false; }
     }
 
     // ---------------- Carregamento ----------------
@@ -7323,6 +7418,12 @@ ${clipPlayerPills(n)}
       stockBeep();
 
       const p = findProductByCode(code);
+      if(window.__isRestrito()){
+        if(!p){ showScanFeedback('err', `Produto não encontrado (código ${code}). Avise o responsável pelo estoque.`); return; }
+        if(!p.ativo){ showScanFeedback('err', `${p.nome} está inativo. Avise o responsável pelo estoque.`); return; }
+        waOpenMovModal(p.id, 'saida');
+        return;
+      }
       if(!p){
         showScanFeedback('warn', `Código ${code} não cadastrado — preencha os dados para cadastrar o produto.`);
         waOpenProductModal(null, code);
@@ -7935,9 +8036,19 @@ ${clipPlayerPills(n)}
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
 
     window.waOpenMovModal = function(produtoId, tipo){
+      const restrito = window.__isRestrito();
+      if(restrito) tipo = 'saida';
       if(!fillMovForm(produtoId, tipo)){
         alert('Cadastre um produto ativo antes de registrar movimentações.');
         return;
+      }
+      waMovModal.classList.toggle('wa-mov-restrito', restrito);
+      if(restrito){
+        waMovTitle.textContent = 'Saída de produto';
+        waMovSub.textContent = 'Confira o produto, escolha o setor e a quantidade.';
+        waMovSaveBtn.textContent = 'Confirmar saída';
+        waMovProduto.disabled = !!produtoId;
+        waMovObs.placeholder = 'Opcional';
       }
       waMovModal.classList.add('open');
       setTimeout(() => {
@@ -8099,6 +8210,9 @@ ${clipPlayerPills(n)}
 
     window.waCloseMovModal = function(){
       waMovModal.classList.remove('open');
+      waMovModal.classList.remove('wa-mov-restrito');
+      waMovProduto.disabled = false;
+      waMovObs.placeholder = 'Ex: NF 1234, compra do mês, nome de quem retirou';
       setMovEdicao(null);
       resetNfCampo();
       if(waStockHubModal.classList.contains('open')) waCloseStockHub();
@@ -8295,7 +8409,9 @@ ${clipPlayerPills(n)}
 
       waCloseMovModal();
       await loadStock();
-      showScanFeedback('ok', movTipo === 'saida'
+      showScanFeedback('ok', movTipo === 'saida' && window.__isRestrito()
+        ? `✓ Saída registrada: ${fmtQty(q)} ${p.unidade} de ${p.nome} para ${consumo}.`
+        : movTipo === 'saida'
         ? `Saída de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${setor} → consumo: ${consumo} · saldo em ${setor}: ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`
         : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}${nf ? ` · NF anexada: ${nf.nota_fiscal_nome}` : ''}`);
     };
@@ -11741,6 +11857,26 @@ ${clipPlayerPills(n)}
     });
     document.addEventListener('cdload:menuresize', () => { if(currentPage === 'dashboard') stkRender(); });
 
+    // ---------------- Estoque › usuário restrito ----------------
+    // Restrito (Usuários › "Restrição"): a seção mostra só o botão "Toque aqui para ler o produto".
+    // A leitura abre direto a saída do produto (mesmo formulário e validações), com letras grandes.
+    function aplicarEstoqueRestrito(){
+      const restrito = window.__isRestrito();
+      document.getElementById('page-estoque').classList.toggle('estoque-restrito', restrito);
+      document.getElementById('waStockRestrito').hidden = !restrito;
+      if(restrito){
+        scanMode = 'saida';
+        document.getElementById('waRestritoMsg').hidden = true;
+        const desc = document.getElementById('headerDesc');
+        if(desc) desc.textContent = 'Leia o produto para registrar a saída.';
+      }
+      return restrito;
+    }
+    document.getElementById('waRestritoLer').addEventListener('click', () => {
+      document.getElementById('waRestritoMsg').hidden = true;
+      openCameraScanner(handleScannedCode, 'Aponte a câmera para o código de barras do produto');
+    });
+
     // ---------------- Integração com a navegação ----------------
     document.addEventListener('cdload:pagechange', (e) => {
       currentPage = e.detail.page;
@@ -11748,8 +11884,10 @@ ${clipPlayerPills(n)}
       // Saindo do Estoque com a central aberta: fecha e devolve os formulários.
       if(currentPage !== 'estoque' && waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque'){
+        const restrito = aplicarEstoqueRestrito();
         loadStock().then(hubAposCarregarEstoque);
-        if(STOCK_HUB_AUTO_OPEN) waOpenStockHub();
+        if(restrito){ /* restrito: só o botão grande de leitura, sem a central de operações */ }
+        else if(STOCK_HUB_AUTO_OPEN) waOpenStockHub();
         else if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
       } else if(currentPage === 'relatorios'){
         loadReports();
