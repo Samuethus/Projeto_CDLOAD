@@ -1307,8 +1307,8 @@
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
   .stk-segmented-inativo{opacity:.45;pointer-events:none;}
   /* Sefaz MT: Setor | Associação no card estreito da rosca — compacto para o título caber. */
-  #sefRoscaVisao .stk-seg-btn, #cagRoscaVisao .stk-seg-btn, #empRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
-  .cd-card-head:has(#sefRoscaVisao) h3, .cd-card-head:has(#cagRoscaVisao) h3, .cd-card-head:has(#empRoscaVisao) h3{white-space:normal;}
+  #sefRoscaVisao .stk-seg-btn, #cagRoscaVisao .stk-seg-btn, #empRoscaVisao .stk-seg-btn, #empMatrizVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
+  .cd-card-head:has(#sefRoscaVisao) h3, .cd-card-head:has(#cagRoscaVisao) h3, .cd-card-head:has(#empRoscaVisao) h3, .cd-card-head:has(#empMatrizVisao) h3{white-space:normal;}
   /* Clipping: Mês/Ano/Player ficam ignorados enquanto há notícias selecionadas na busca. */
   .stk-filtro-ignorado{opacity:.45;}
   .stk-tema-aviso{display:flex;align-items:center;gap:10px;background:#EAF3FF;color:#0B3C6D;border:1px solid #CFE2FF;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
@@ -1583,6 +1583,20 @@
   .vb-pc-txt small{color:var(--cd-muted);font-size:11.5px;}
   .vb-pc-item.vazio .vb-pc-txt{color:var(--cd-muted);}
   .cd-rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+  /* EMPRESAS: Perfil das empresas — porte × regime tributário (calor pela participação no total). */
+  .emp-matriz-wrap{flex:1 1 auto;min-height:0;overflow:auto;}
+  .emp-matriz{width:100%;border-collapse:separate;border-spacing:3px;font-size:12.5px;color:var(--cd-texto);font-variant-numeric:tabular-nums;}
+  .emp-matriz th{font-weight:600;font-size:12px;line-height:1.25;color:var(--cd-muted);text-align:right;vertical-align:bottom;padding:2px 6px 4px;white-space:normal;}
+  .emp-matriz th:first-child, .emp-matriz td:first-child{text-align:left;}
+  .emp-matriz td{text-align:right;padding:6px 6px;border-radius:6px;white-space:nowrap;}
+  .emp-matriz td:first-child{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .emp-matriz tr.total td{font-weight:700;border-top:1px solid var(--cd-borda);}
+  .emp-matriz td.total{font-weight:700;}
+  @media (max-width:1500px){
+    .emp-matriz{font-size:11.5px;border-spacing:2px;}
+    .emp-matriz th{font-size:11px;padding:2px 4px 3px;}
+    .emp-matriz td{padding:4px 4px;}
+  }
   .cd-rank li{flex:1 1 0;}
   .cd-rank li{display:grid;grid-template-columns:26px minmax(0,1fr) auto 44px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--cd-trilho);font-size:13px;color:var(--cd-texto);}
   .cd-rank li:last-child{border-bottom:none;}
@@ -11003,33 +11017,47 @@ ${clipPlayerPills(n)}
     // arquivos Estabelecimentos — uma inscrição por matriz ou filial). Mesmo racional do CAGED:
     //   aberturas = início de atividade no mês · baixas = situação BAIXADA com data no mês · saldo = diferença
     //   estoque = inscrições abertas e não baixadas no fim do mês (estoque inicial + saldo acumulado).
+    // Cruzamento com as bases Empresas (porte) e Simples (regime: MEI, Simples Nacional ou não optante); o regime de uma
+    // abertura/baixa é o vigente no mês do evento. Período: só o ano atual e o anterior.
     // Filtros: Estado/Cidade, Mês/Ano e busca por atividade (código ou nome da subclasse CNAE).
     // O arquivo traz atividade por estado; na cidade há só aberturas e baixas (a composição por atividade é a do estado).
-    let empRoscaVisao = 'setor'; // setor | assoc — mesmo switch e mesmas regras do CAGED/Sefaz
-    // Seções CNAE pela divisão (2 dígitos) e grandes setores como no CAGED.
-    const EMP_SECOES = [[1, 3, 'Agricultura, pecuária, produção florestal, pesca e aquicultura'], [5, 9, 'Indústrias extrativas'], [10, 33, 'Indústrias de transformação'],
-      [35, 35, 'Eletricidade e gás'], [36, 39, 'Água, esgoto, gestão de resíduos e descontaminação'], [41, 43, 'Construção'],
-      [45, 47, 'Comércio, reparação de veículos automotores e motocicletas'], [49, 53, 'Transporte, armazenagem e correio'], [55, 56, 'Alojamento e alimentação'],
-      [58, 63, 'Informação e comunicação'], [64, 66, 'Atividades financeiras, de seguros e serviços relacionados'], [68, 68, 'Atividades imobiliárias'],
-      [69, 75, 'Atividades profissionais, científicas e técnicas'], [77, 82, 'Atividades administrativas e serviços complementares'],
-      [84, 84, 'Administração pública, defesa e seguridade social'], [85, 85, 'Educação'], [86, 88, 'Saúde humana e serviços sociais'],
-      [90, 93, 'Artes, cultura, esporte e recreação'], [94, 96, 'Outras atividades de serviços'], [97, 97, 'Serviços domésticos'], [99, 99, 'Organismos internacionais']];
-    const empSecao = cod => { const d = Number(String(cod).slice(0, 2)); const x = EMP_SECOES.find(([a, b]) => d >= a && d <= b); return x ? x[2] : 'Não informada'; };
+    // Porte × regime: por estado e, em Mato Grosso, também por município.
+    let empRoscaVisao = 'setor';   // setor | assoc | porte — Setor/Associação com as mesmas regras do CAGED/Sefaz
+    let empMatrizVisao = 'ab';     // ab (aberturas) | bx (baixas) | at (ativas na edição)
+    // Rosca por porte: MEI separado da microempresa (a Receita classifica o MEI como ME).
+    const EMP_PORTE_ROSCA = [['MEI', CD_COR.verde], ['ME', CD_COR.azul], ['EPP', CD_COR.azulClaro], ['Demais', '#64748B'], ['Não informado', '#CBD5E1']];
+    const empPorteRosca = (p, r) => r === 0 ? 0 : p + 1;   // p: 0 ME, 1 EPP, 2 Demais, 3 Não informado · r: 0 MEI
     const empSetor = cod => { const d = Number(String(cod).slice(0, 2));
       return d >= 1 && d <= 3 ? 'Agropecuária' : d >= 5 && d <= 39 ? 'Indústria' : d >= 41 && d <= 43 ? 'Construção' : d >= 45 && d <= 47 ? 'Comércio' : d >= 49 ? 'Serviços' : ''; };
     function empCidades(uf){
       return ibgeCarregar('empresas').then(() => { const D = window.CNPJ_EMPRESAS, iu = D.ufs.indexOf(uf);
         return D.mun.nome.map((n, k) => ({ cod: String(k), nome: n, uf: D.mun.uf[k] })).filter(c => c.uf === iu).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')); });
     }
-    // Pré-cálculo feito uma vez: séries compactas ('3,,1' = 3, 0, 1, 0…) viram vetores; setor, seção e associação por CNAE.
+    // Pré-cálculo feito uma vez: séries compactas ('3,,1' = 3, 0, 1, 0…) viram vetores; setor e associação por CNAE.
     function empPreparar(D){
       if(D._prep) return D._prep;
       const cods = D.cnaes.cod, nM = D.meses.length;
       const vet = t => { const v = new Int32Array(nM); if(t) t.split(',').forEach((x, i) => { if(x) v[i] = Number(x); }); return v; };
-      return (D._prep = { setor: cods.map(empSetor), secao: cods.map(empSecao), assoc: cods.map(c => CAG_ASSOC[cagAssoc(c)]),
+      return (D._prep = { setor: cods.map(empSetor), assoc: cods.map(c => CAG_ASSOC[cagAssoc(c)]),
         busca: D.cnaes.nome.map((n, k) => stkNorm(`${cods[k]} ${n}`)),
         pares: D.f.map(([u, c, a, b]) => ({ u, c, a: vet(a), b: vet(b) })),
-        mun: D.fm.map(([a, b]) => ({ a: vet(a), b: vet(b) })) });
+        mun: D.fm.map(([a, b]) => ({ a: vet(a), b: vet(b) })),
+        pr: (D.pr || []).map(([u, p, r, a, b]) => ({ u, p, r, a: vet(a), b: vet(b) })),
+        prm: (D.prm || []).map(([x, p, r, a, b]) => ({ x, p, r, a: vet(a), b: vet(b) })) });
+    }
+    // Porte × regime do recorte: matriz [porte][regime] de aberturas, baixas (meses da janela) ou ativas (edição).
+    // Cidade de Mato Grosso: dados do município; outra cidade: os do estado (a base aberta só detalha MT).
+    function empMatriz(D, P, iu, imun, meses, visao){
+      const mt = D.ufs.indexOf('MT'), cidadeMT = imun >= 0 && D.mun.uf[imun] === mt;
+      const M = D.portes.map(() => D.regimes.map(() => 0));
+      if(visao === 'at'){
+        if(cidadeMT) (D.atm || []).forEach(([x, p, r, v]) => { if(x === imun) M[p][r] += v; });
+        else (D.at || []).forEach(([u, p, r, v]) => { if(iu < 0 || u === iu) M[p][r] += v; });
+      } else {
+        const lista = cidadeMT ? P.prm.filter(o => o.x === imun) : P.pr.filter(o => iu < 0 || o.u === iu);
+        lista.forEach(o => { const s = visao === 'bx' ? o.b : o.a; let t = 0; for(const m of meses) t += s[m]; M[o.p][o.r] += t; });
+      }
+      return { M, cidadeMT };
     }
     function empRender(){
       const D = window.CNPJ_EMPRESAS;
@@ -11055,11 +11083,10 @@ ${clipPlayerPills(n)}
       const cidade = imun >= 0 ? D.mun.nome[imun] : '';
       const local = (cidade || (iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil')) + (busca ? ` · “${busca}”` : '');
       const escopoAtv = iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil';   // composição por atividade (cidade → estado)
-      const avisoCidade = cidade ? ` (atividades: ${escopoAtv})` : '';
       // ---- Séries mensais do recorte ----
       const ab = new Array(nM).fill(0), bx = new Array(nM).fill(0);
       let est0 = 0;
-      const porUf = new Map(), setor = new Map(), assoc = new Map(), secao = new Map(), sub = new Map();
+      const porUf = new Map(), setor = new Map(), assoc = new Map(), sub = new Map();
       const add = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
       const noAtual = new Array(nM).fill(false); J.atual.forEach(i => { noAtual[i] = true; });
       const atual = [...J.atual];
@@ -11072,7 +11099,6 @@ ${clipPlayerPills(n)}
         if(imun < 0) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; }
         if(pa || pb){
           if(pa){ add(setor, P.setor[c], pa); add(assoc, P.assoc[c], pa); }
-          const sc = secao.get(P.secao[c]) || [0, 0]; sc[0] += pa; sc[1] += pb; secao.set(P.secao[c], sc);
           add(sub, c, pa - pb);
         }
       }
@@ -11119,27 +11145,47 @@ ${clipPlayerPills(n)}
         cdBarras(topUfs.map(([k, v], i) => ({ nome: PAN_UF_NOME[D.ufs[k]] || D.ufs[k], valor: Math.max(0, v), rotulo: cagSinal(v),
           cor: ufSel >= 0 ? (k === ufSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUfs.length > 1 ? i / (topUfs.length - 1) : 0) })), 'Saldo por estado', 'Sem movimentação no período.'));
 
-      // ---- Aberturas por setor | por associação (rosca com switch, como no CAGED/Sefaz) ----
-      const visaoAssoc = empRoscaVisao === 'assoc';
-      const dadosSetor = visaoAssoc
+      // ---- Aberturas por setor | associação | porte (rosca com switch, como no CAGED/Sefaz) ----
+      const visaoAssoc = empRoscaVisao === 'assoc', visaoPorte = empRoscaVisao === 'porte';
+      const MP = visaoPorte ? empMatriz(D, P, iu, imun, atual, 'ab') : null;
+      const porteRosca = MP ? EMP_PORTE_ROSCA.map(([n, cor]) => ({ nome: n, sigla: n, cor, valor: 0 })) : [];
+      if(MP) MP.M.forEach((linha, pI) => linha.forEach((v, r) => { porteRosca[empPorteRosca(pI, r)].valor += v; }));
+      const escopoPorte = MP && MP.cidadeMT ? cidade : escopoAtv;
+      const dadosSetor = visaoPorte ? porteRosca.filter(d => d.valor > 0)
+        : visaoAssoc
         ? CAG_ASSOC.map(n => ({ nome: n, sigla: n, cor: SEF_ROSCA.assoc.cores[n] || CD_COR.cinza, valor: assoc.get(n) || 0 })).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'))
         : CAG_SETORES.map(x => ({ nome: x.nome, sigla: x.nome, cor: x.cor, valor: setor.get(x.nome) || 0 }));
       const totSet = dadosSetor.reduce((t, d) => t + d.valor, 0);
       const centro = totSet >= 1000000 ? [stkNum(Math.round(totSet / 100000) / 10), 'mi aberturas'] : totSet >= 10000 ? [stkNum(Math.round(totSet / 1000)), 'mil aberturas'] : [stkNum(totSet), 'aberturas'];
       const switchRosca = `<div class="cd-head-acoes"><div class="stk-segmented" id="empRoscaVisao" role="tablist" aria-label="Visão do gráfico">
-          ${[['setor', 'Setor'], ['assoc', 'Associação']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empRoscaVisao === k}">${rot}</button>`).join('')}
+          ${[['setor', 'Setor'], ['assoc', 'Associação'], ['porte', 'Porte']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empRoscaVisao === k}">${rot}</button>`).join('')}
         </div></div>`;
-      const wSetor = cdCard(visaoAssoc ? 'Aberturas por associação' : 'Aberturas por setor',
-        (visaoAssoc ? 'Atividades (CNAE) agrupadas por associação · ' : 'Grandes setores da economia · ') + escopoAtv, `<div class="cd-rosca-wrap">
+      const tituloRosca = visaoPorte ? 'Aberturas por porte' : visaoAssoc ? 'Aberturas por associação' : 'Aberturas por setor';
+      const wSetor = cdCard(tituloRosca,
+        visaoPorte ? `MEI, microempresa (ME), pequeno porte (EPP) e demais · ${escopoPorte}` : (visaoAssoc ? 'Atividades (CNAE) agrupadas por associação · ' : 'Grandes setores da economia · ') + escopoAtv, `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centro[0]}</strong><span>${centro[1]}</span></div></div>
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosSetor.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))} aberturas"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totSet ? d.valor / totSet : 0)}</strong></li>`).join('')}</ul>
         </div>`, switchRosca);
 
-      // ---- Atividades (seção CNAE) que mais geraram empresas ----
-      const secoes = [...secao.entries()].map(([k, [a, b]]) => [k, a - b]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
-      const wSecao = cdCard('Atividades que mais geraram empresas', `Saldo por atividade econômica (CNAE) · ${escopoAtv}${avisoCidade ? '' : ''}`,
-        cdBarras(secoes.map(([k, v]) => ({ nome: k, valor: v, rotulo: cagSinal(v), cor: CD_COR.verde })), 'Atividades que mais geraram empresas',
-          vazio ? `Nenhuma atividade com “${busca}”.` : 'Nenhuma atividade com saldo positivo no período.'));
+      // ---- Perfil das empresas: quantidade de CNPJs por porte × regime tributário (MEI, Simples, não optante) ----
+      const MZ = empMatriz(D, P, iu, imun, atual, empMatrizVisao);
+      const totReg = D.regimes.map((_, r) => MZ.M.reduce((t, l) => t + l[r], 0)), totGeral = totReg.reduce((t, v) => t + v, 0);
+      const maxCel = Math.max(1, ...MZ.M.flat());
+      const curtoPorte = ['ME', 'EPP', 'Demais', 'N/I'];
+      const dicaPorte = ['Microempresa (ME), inclui o MEI', 'Empresa de Pequeno Porte (EPP)', 'Demais portes (médias e grandes)', 'Porte não informado na base'];
+      const rotMatriz = { ab: `Aberturas · ${J.rotulo}`, bx: `Baixas · ${J.rotulo}`, at: `Ativas na edição de ${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}` }[empMatrizVisao];
+      const escopoMatriz = MZ.cidadeMT ? cidade : escopoAtv;
+      // Milhões abreviados (3,08 mi) para a tabela caber no card; o número exato fica na dica.
+      const nCel = v => v >= 1e6 ? `${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi` : stkNum(v);
+      const celula = (v, tot) => `<td title="${esc(stkNum(v))} · ${esc(stkPct(tot ? v / tot : 0))} do total" style="background:rgba(29,95,211,${(0.04 + 0.26 * v / maxCel).toFixed(3)})">${nCel(v)}</td>`;
+      const switchMatriz = `<div class="cd-head-acoes"><div class="stk-segmented" id="empMatrizVisao" role="tablist" aria-label="Quantidade exibida">
+          ${[['ab', 'Aberturas'], ['bx', 'Baixas'], ['at', 'Ativas']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empMatrizVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empMatrizVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wSecao = cdCard('Perfil das empresas', `CNPJs por porte e regime tributário · ${rotMatriz} · ${escopoMatriz}${busca ? ' (sem a busca)' : ''}`,
+        totGeral ? `<div class="emp-matriz-wrap"><table class="emp-matriz"><thead><tr><th>Porte</th>${D.regimes.map(r => `<th title="${esc(r === 'Não optante' ? 'Fora do Simples e do MEI (Lucro Presumido ou Real — a base aberta não separa)' : r)}">${esc(r)}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+          ${MZ.M.map((linha, pI) => { const t = linha.reduce((a, b) => a + b, 0); if(!t) return ''; return `<tr><td title="${esc(dicaPorte[pI])}">${esc(curtoPorte[pI])}</td>${linha.map(v => celula(v, totGeral)).join('')}<td class="total" title="${esc(stkNum(t))}">${nCel(t)}</td></tr>`; }).join('')}
+          <tr class="total"><td>Total</td>${totReg.map(v => `<td title="${esc(stkNum(v))} · ${esc(stkPct(v / totGeral))} do total">${nCel(v)}</td>`).join('')}<td title="${esc(stkNum(totGeral))}">${nCel(totGeral)}</td></tr>
+        </tbody></table></div>` : '<div class="stk-vazio">Sem dados de porte e regime no período.</div>', switchMatriz);
 
       // ---- Ranking: subclasses CNAE com maior saldo ----
       const subs = [...sub.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -11173,22 +11219,16 @@ ${clipPlayerPills(n)}
         }).join('')}</ul>` : '<div class="stk-vazio">Sem movimentação no período.</div>');
 
       ibgeTela([kSaldo, kAb, kBx, kEst, kVar], [wVolume, wEstados, wSetor], [wSecao, wSub, wMun]);
-      stkDesenharRoscaCd(dadosSetor, visaoAssoc ? 'Aberturas por associação' : 'Aberturas por setor', 196);
+      stkDesenharRoscaCd(dadosSetor, tituloRosca, 196);
       const graf = document.getElementById('stkFluxoGraf');
       if(graf) stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200));
       cdAjustarListas();
-      const mesesJ = [...J.atual].sort((a, b) => a - b);
-      ibgeUltimo = { painel: 'empresas',
-        arquivo: `cnpj_empresas_${stkNorm(local).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`,
-        linhas: [['Mês', 'Local', 'Aberturas', 'Baixas', 'Saldo', 'Estoque (fim do mês)']]
-          .concat(mesesJ.map(m => [D.meses[m], local, ab[m], bx[m], ab[m] - bx[m], est[m]]))
-          .concat([[], ['Estado', `Saldo ${J.rotulo}`]], ufs.map(([k, v]) => [PAN_UF_NOME[D.ufs[k]] || D.ufs[k], v]))
-          .concat([[], ['Subclasse CNAE', 'Atividade', `Saldo ${J.rotulo} (${escopoAtv})`]], [...sub.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => [D.cnaes.cod[c], D.cnaes.nome[c], v])) };
     }
     stkGrid.addEventListener('click', ev => {
-      const btn = ev.target.closest('#empRoscaVisao .stk-seg-btn');
-      if(!btn || btn.dataset.visao === empRoscaVisao) return;
-      empRoscaVisao = btn.dataset.visao;
+      const btn = ev.target.closest('#empRoscaVisao .stk-seg-btn, #empMatrizVisao .stk-seg-btn');
+      if(!btn) return;
+      if(btn.closest('#empRoscaVisao')){ if(btn.dataset.visao === empRoscaVisao) return; empRoscaVisao = btn.dataset.visao; }
+      else { if(btn.dataset.visao === empMatrizVisao) return; empMatrizVisao = btn.dataset.visao; }
       stkRender();
     });
 
@@ -12410,8 +12450,8 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      // EMPRESAS: amostra da base do CNPJ (até 10 estabelecimentos, todas as colunas do arquivo + descrições
-      // usadas no painel), só para entender os dados. E-mail e telefones já vêm mascarados do extrator.
+      // EMPRESAS: amostra da base consolidada do CNPJ (até 10 estabelecimentos; todas as colunas de Estabelecimentos,
+      // Empresas e Simples + descrições usadas no painel), só para entender os dados. Contatos e CPF já vêm mascarados.
       if(stkPainel() === 'empresas'){
         const A = window.CNPJ_EMPRESAS && window.CNPJ_EMPRESAS.amostra;
         if(!A || !A.linhas.length) return;

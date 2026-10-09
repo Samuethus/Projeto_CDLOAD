@@ -47,11 +47,12 @@ jobs:
       - name: Extrair dados da Cielo (ICVA)
         continue-on-error: true
         run: python scripts/cielo_icva_extrair.py
-      # Receita Federal: dados abertos do CNPJ (~5 GB por edição mensal). Consulta só a lista de pastas e
-      # sai na hora quando a edição mais recente já foi processada; falha sem bloquear os demais.
+      # Receita Federal: dados abertos do CNPJ (~7 GB por edição mensal: Estabelecimentos, Empresas e Simples).
+      # Consulta só a lista de pastas e sai na hora quando a edição mais recente já foi processada; falha sem
+      # bloquear os demais. Prazo largo: o servidor da Receita às vezes fica lento (~1 MB/s).
       - name: Extrair dados do CNPJ (Receita Federal)
         continue-on-error: true
-        timeout-minutes: 120
+        timeout-minutes: 300
         env:
           CNPJ_TMP: ${{ runner.temp }}/cnpj
         run: python scripts/cnpj_extrair.py
