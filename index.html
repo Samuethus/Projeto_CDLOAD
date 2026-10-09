@@ -2952,8 +2952,8 @@
 
       <section class="page" id="page-surveymonkey">
         <!-- Integração com o Survey Monkey (ver surveymonkey/LEIA-ME.md).
-             Etapa atual: retrato fixo (SM_RETRATO), lido pelo MCP do Survey Monkey.
-             Depois troca pela leitura das tabelas survey_* sincronizadas no Supabase. -->
+             Dados ao vivo: tabelas survey_* (Edge Function surveymonkey-sincronizar, a cada 15 min), lidas com login.
+             Sem login ou sem dados sincronizados, usa o retrato fixo (SM_RETRATO + surveymonkey_resumos.js). -->
         <div class="filter-bar wa-stock-filters" id="smFiltros">
           <div class="wa-clip-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -4491,8 +4491,10 @@
   };
 
   (function(){
-    const forms = SM_RETRATO.formularios;
-    const pastaNome = id => SM_RETRATO.pastas[id] || ('Pasta ' + id);
+    // Fonte: 'retrato' (SM_RETRATO + surveymonkey_resumos.js) até as tabelas survey_* (sincronizadas pela Edge
+    // Function surveymonkey-sincronizar) responderem; aí tudo passa a vir delas ('vivo').
+    let forms = SM_RETRATO.formularios, pastas = SM_RETRATO.pastas, fonte = 'retrato', ultimaSync = null;
+    const pastaNome = id => pastas[id] || ('Pasta ' + id);
     const statusTxt = { OPEN: 'Coletando', CLOSED: 'Encerrado', DRAFT: 'Rascunho' };
     const statusCls = { OPEN: 'wa-badge-approved', CLOSED: 'sm-badge-encerrado', DRAFT: 'wa-badge-pending' };
     const num = n => n.toLocaleString('pt-BR');
@@ -4501,12 +4503,18 @@
     const el = id => document.getElementById(id);
     const busca = el('smBusca'), fPasta = el('smPastaFiltro'), fStatus = el('smStatusFiltro'), fAno = el('smAnoFiltro');
 
-    // Pastas em ordem alfabética, "Sem pasta" por último; anos do mais recente ao mais antigo.
-    Object.keys(SM_RETRATO.pastas)
-      .sort((a, b) => (a === '0') - (b === '0') || pastaNome(a).localeCompare(pastaNome(b), 'pt-BR'))
-      .forEach(id => fPasta.insertAdjacentHTML('beforeend', `<option value="${id}">${esc(pastaNome(id))}</option>`));
-    [...new Set(forms.map(f => f.date_modified.slice(0, 4)))].sort().reverse()
-      .forEach(a => fAno.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`));
+    // Pastas em ordem alfabética, "Sem pasta" por último; anos do mais recente ao mais antigo (mantém a escolha).
+    function montarFiltros(){
+      const vP = fPasta.value, vA = fAno.value;
+      fPasta.innerHTML = '<option value="">Pasta</option>' + Object.keys(pastas)
+        .filter(id => id !== '0' || forms.some(f => f.folder_id === '0'))
+        .sort((a, b) => (a === '0') - (b === '0') || pastaNome(a).localeCompare(pastaNome(b), 'pt-BR'))
+        .map(id => `<option value="${esc(id)}">${esc(pastaNome(id))}</option>`).join('');
+      fAno.innerHTML = '<option value="">Ano</option>' + [...new Set(forms.map(f => f.date_modified.slice(0, 4)))].sort().reverse()
+        .map(a => `<option value="${a}">${a}</option>`).join('');
+      fPasta.value = vP; fAno.value = vA;
+    }
+    montarFiltros();
     let ordem = 'respostas';
 
     function filtrados(){
@@ -4551,7 +4559,10 @@
         az: (a, b) => a.title.localeCompare(b.title, 'pt-BR')
       };
       const linhas = [...lista].sort(ordenar[ordem]);
-      el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas`;
+      const quando = fonte === 'vivo'
+        ? (ultimaSync ? ' · ao vivo, sincronizado em ' + new Date(ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ' · ao vivo')
+        : ' · retrato de ' + dataBR(SM_RETRATO.lido_em);
+      el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas${quando}`;
       el('smTabela').innerHTML = linhas.length ? linhas.map(f => `
           <tr class="sm-linha" data-id="${f.id}" tabindex="0" title="Abrir o dashboard do formulário">
             <td class="wa-td-name" title="${esc(f.title)}">${esc(f.title)}</td>
@@ -4562,6 +4573,118 @@
             <td class="wa-table-actions"><button type="button" class="wa-icon-btn" title="Abrir dashboard">${ICONE_PAINEL}</button></td>
           </tr>`).join('') : '<tr class="wa-empty-row"><td colspan="6">Nenhum formulário encontrado com esses filtros.</td></tr>';
     }
+
+    // ================= Dados ao vivo (tabelas survey_*) =================
+    // Lista: ao abrir a seção (no máximo a cada 5 min). Formulário: ao abrir o dashboard, calculando o resumo
+    // por pergunta (mesmo formato do retrato) a partir das respostas — por coletor também. Sem login ou sem
+    // dados sincronizados, fica o retrato. Perguntas de dado pessoal chegam sem conteúdo (só "respondida").
+    let vivoEm = 0, vivoProm = null;
+    const vivoCache = new Map();   // id do formulário → { em, R }
+    const VIVO_TTL = 5 * 60000;
+    async function carregarListaVivo(){
+      const sb = window.CDL_SB;
+      if(!sb) return;
+      const [fr, pr, sr] = await Promise.all([
+        sb.from('survey_formularios').select('id,pasta_id,titulo,status,qtd_respostas,criado_em,modificado_em,pendente').eq('ativo', true),
+        sb.from('survey_pastas').select('id,titulo'),
+        sb.from('survey_sincronizacoes').select('finalizado_em').not('finalizado_em', 'is', null).order('id', { ascending: false }).limit(1)
+      ]);
+      if(fr.error || !fr.data || !fr.data.length) return;   // tabelas ainda vazias ou sem acesso: segue o retrato
+      const retrato = new Map(SM_RETRATO.formularios.map(f => [f.id, f]));
+      forms = fr.data.map(f => ({
+        id: f.id, title: f.titulo, folder_id: f.pasta_id || '0',
+        survey_state: f.status || (retrato.get(f.id) || {}).survey_state || 'CLOSED',
+        response_count: f.qtd_respostas || 0, date_modified: f.modificado_em || f.criado_em || '', pendente: f.pendente
+      }));
+      pastas = { '0': 'Sem pasta' };
+      (pr.data || []).forEach(p => { if(p.id !== '0') pastas[p.id] = p.titulo; });
+      ultimaSync = sr.data && sr.data[0] ? sr.data[0].finalizado_em : null;
+      fonte = 'vivo'; vivoEm = Date.now();
+      montarFiltros();
+      render();
+    }
+    document.addEventListener('cdload:pagechange', ev => {
+      if(ev.detail.page !== 'surveymonkey' || vivoProm || Date.now() - vivoEm < VIVO_TTL) return;
+      vivoProm = carregarListaVivo().catch(e => console.warn('[Survey Monkey] dados ao vivo indisponíveis:', e)).finally(() => { vivoProm = null; });
+    });
+
+    // Lê todas as linhas (o PostgREST devolve no máximo 1.000 por consulta).
+    async function lerTudo(consulta){
+      const out = [];
+      for(let i = 0; ; i += 1000){
+        const { data, error } = await consulta().range(i, i + 999);
+        if(error) throw error;
+        out.push(...data);
+        if(data.length < 1000) return out;
+      }
+    }
+    // Resumo por pergunta no formato do retrato: f = s/m/r/x/o · a = respondidas · k = puladas · c = [[opção, n]] · l = matriz.
+    function resumir(defs, resps){
+      const n = resps.length;
+      return defs.map(d => {
+        const op = d.opcoes || {}, choices = op.choices || [], rows = op.rows || [];
+        const base = { t: d.titulo, p: d.dado_pessoal ? 1 : 0 };
+        const respondeu = r => (r.respostas[d.id] || []).length > 0;
+        const fechada = !d.dado_pessoal && ['single_choice', 'multiple_choice', 'matrix'].includes(d.familia) && choices.length;
+        if(!fechada){ const a = resps.filter(respondeu).length; return { ...base, f: 'o', a, k: n - a }; }
+        let a = 0;
+        if(d.familia === 'matrix' && rows.length){
+          const cont = new Map(rows.map(rw => [rw.id, new Map(choices.map(c => [c.id, 0]))]));
+          resps.forEach(r => { const xs = r.respostas[d.id] || []; if(xs.length) a++;
+            xs.forEach(x => { const m = cont.get(x.r); if(m && m.has(x.c)) m.set(x.c, m.get(x.c) + 1); }); });
+          return { ...base, f: 'x', a, k: n - a, l: rows.map(rw => [rw.text, choices.map(c => [c.text, cont.get(rw.id).get(c.id)])]) };
+        }
+        const cont = new Map(choices.map(c => [c.id, 0]));
+        let outro = 0;
+        resps.forEach(r => {
+          const xs = r.respostas[d.id] || [], vistos = new Set();
+          if(xs.length) a++;
+          xs.forEach(x => {
+            if(x.c && cont.has(x.c) && !vistos.has(x.c)){ vistos.add(x.c); cont.set(x.c, cont.get(x.c) + 1); }
+            else if(x.o && !vistos.has('o')){ vistos.add('o'); outro++; }
+          });
+        });
+        const c = choices.map(ch => [ch.text, cont.get(ch.id)]);
+        if(op.other) c.push([op.other.text || 'Outro', outro]);
+        const nota = d.familia === 'single_choice' && c.length > 1 && c.every(x => /^\d+$/.test(String(x[0]).trim()));
+        return { ...base, f: d.familia === 'multiple_choice' ? 'm' : nota ? 'r' : 's', a, k: n - a, c };
+      });
+    }
+    // Texto de cada resposta para a tabela individual ("linha: opção" na matriz; "Outro: texto" no campo aberto).
+    function textoResposta(d, xs){
+      const op = d.opcoes || {}, nome = new Map([...(op.choices || []), ...(op.rows || []), ...(op.cols || [])].map(o => [o.id, o.text]));
+      if(op.other) nome.set(op.other.id, op.other.text || 'Outro');
+      return (xs || []).map(x => x.p ? '•••' : [x.r && nome.get(x.r), x.c && nome.get(x.c), x.k && nome.get(x.k), x.o && !x.c && nome.get(x.o), x.t]
+        .filter(Boolean).join(': ')).filter(Boolean).join(' | ');
+    }
+    async function carregarFormVivo(f){
+      const c = vivoCache.get(f.id);
+      if(c && Date.now() - c.em < VIVO_TTL) return c.R;
+      const sb = window.CDL_SB;
+      const [dq, dc] = await Promise.all([
+        sb.from('survey_perguntas').select('id,pagina,posicao,titulo,familia,opcoes,dado_pessoal').eq('formulario_id', f.id)
+          .order('pagina', { ascending: true }).order('posicao', { ascending: true }),
+        sb.from('survey_coletores').select('id,nome,tipo,status,qtd_respostas').eq('formulario_id', f.id)
+      ]);
+      if(dq.error) throw dq.error;
+      if(dc.error) throw dc.error;
+      const defs = (dq.data || []).filter(d => d.familia !== 'presentation');
+      let R = null;
+      if(defs.length){
+        const resps = await lerTudo(() => sb.from('survey_respostas').select('id,coletor_id,status,iniciada_em,respostas')
+          .eq('formulario_id', f.id).order('iniciada_em', { ascending: true }).order('id', { ascending: true }));
+        const coletores = (dc.data || []).map(c => ({ id: c.id, nome: c.nome, tipo: c.tipo, status: c.status,
+          respostas: resps.filter(r => r.coletor_id === c.id).length }));
+        const porColetor = {};
+        coletores.forEach(c => { porColetor[c.id] = { perguntas: resumir(defs, resps.filter(r => r.coletor_id === c.id)) }; });
+        R = { total: resps.length, perguntas: resumir(defs, resps), coletores: coletores.length > 1 ? coletores : [], porColetor,
+          respostas: resps.map(r => ({ coletor_id: r.coletor_id, status: r.status, data: r.iniciada_em,
+            valores: defs.map(d => textoResposta(d, r.respostas[d.id])) })) };
+      }
+      vivoCache.set(f.id, { em: Date.now(), R });
+      return R;
+    }
+    const resumoDe = id => fonte === 'vivo' ? ((vivoCache.get(id) || {}).R || null) : (window.SM_RESUMOS ? window.SM_RESUMOS[id] : null);
 
     // ================= Dashboard do formulário =================
     // Painel = um card por pergunta (mesmos cards/gráficos do Dashboard › CAGED, sem os KPIs do topo).
@@ -4667,7 +4790,9 @@
     function renderPainel(f, R){
       const P = el('smPainel');
       if(!f.response_count) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Este formulário ainda não recebeu respostas.</div></div>'; return; }
-      if(!R) { P.innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Resumo deste formulário não disponível no retrato atual.</div></div>'; return; }
+      if(!R) { P.innerHTML = `<div class="cd-card sm-span"><div class="stk-vazio">${fonte === 'vivo'
+        ? 'Este formulário ainda está sendo sincronizado com o Survey Monkey. Volte em alguns minutos.'
+        : 'Resumo deste formulário não disponível no retrato atual.'}</div></div>`; return; }
       const fechadas = R.perguntas.filter(q => q.f !== 'o'), abertas = R.perguntas.filter(q => q.f === 'o');
       // Ordem de preenchimento (linha a linha, 3 colunas, sem espaços vazios):
       // coluna 1 = prioridade 1 (barras horizontais) enquanto existir; acabando, segue para a rosca.
@@ -4686,7 +4811,11 @@
       const respostas = (R && R.respostas) || [];
       el('smIndCab').innerHTML = `<tr><th>#</th><th>Status</th><th>Data</th>${perguntas.map(q => `<th title="${esc(q.t)}">${esc(q.t)}${q.p ? `<span class="sm-cad-ic">${ICONE_CADEADO}</span>` : ''}</th>`).join('')}</tr>`;
       el('smIndContagem').textContent = `${num(respostas.length)} de ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · ${num(perguntas.length)} pergunta${perguntas.length === 1 ? '' : 's'}`;
-      el('smIndAviso').innerHTML = `${ICONE_CADEADO}<span>Respostas individuais entram com a sincronização ao vivo (protegidas por login). O retrato público traz só os números agregados (LGPD).</span>`;
+      el('smIndAviso').innerHTML = `${ICONE_CADEADO}<span>${fonte === 'vivo'
+        ? 'Respostas sincronizadas do Survey Monkey (acesso só com login). Perguntas de dado pessoal ficam ocultas (LGPD).'
+        : 'Respostas individuais entram com a sincronização ao vivo (protegidas por login). O retrato público traz só os números agregados (LGPD).'}</span>`;
+      el('smIndVazio').textContent = fonte === 'vivo' ? 'Nenhuma resposta sincronizada para este formulário (ou para o coletor escolhido).'
+        : 'Nenhuma resposta individual neste retrato. A tabela é preenchida linha a linha quando a sincronização ao vivo estiver ativa.';
       el('smIndCorpo').innerHTML = respostas.length ? respostas.map((r, i) => `<tr>
           <td class="wa-td-num">${i + 1}</td><td>${esc(r.status === 'partial' ? 'Parcial' : 'Completa')}</td><td>${r.data ? dataBR(r.data) : '—'}</td>
           ${perguntas.map((q, j) => `<td title="${esc(r.valores[j] || '')}">${q.p ? '•••' : esc(r.valores[j] || '—')}</td>`).join('')}</tr>`).join('') : '';
@@ -4702,15 +4831,19 @@
       if(!f) return;
       formAtual = f; visao = 'painel';
       el('smDashTitulo').textContent = f.title;
-      el('smDashMeta').innerHTML = `<span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · alterado em ${dataBR(f.date_modified)}`;
+      el('smDashMeta').innerHTML = `<span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · alterado em ${dataBR(f.date_modified)}${f.pendente ? ' · sincronização em andamento' : ''}`;
       el('smFiltros').hidden = el('smLista').hidden = true;
       el('smDash').hidden = false;
       mostrarVisao();
       el('smPainel').innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Carregando…</div></div>';
-      try { await carregarResumos(); }
-      catch(e){ el('smPainel').innerHTML = '<div class="cd-card sm-span"><div class="stk-vazio">Não foi possível carregar os dados do formulário (assets/data/surveymonkey_resumos.js).</div></div>'; return; }
+      try { if(fonte === 'vivo') await carregarFormVivo(f); else await carregarResumos(); }
+      catch(e){
+        console.warn('[Survey Monkey]', e);
+        el('smPainel').innerHTML = `<div class="cd-card sm-span"><div class="stk-vazio">Não foi possível carregar os dados do formulário${fonte === 'vivo' ? ' (Supabase)' : ' (assets/data/surveymonkey_resumos.js)'}. Tente de novo.</div></div>`;
+        return;
+      }
       if(formAtual !== f) return;
-      preencherColetores(window.SM_RESUMOS[f.id]);
+      preencherColetores(resumoDe(f.id));
       renderFormulario();
       document.querySelector('.main') && document.querySelector('.main').scrollTo({ top: 0 });
     }
@@ -4728,7 +4861,7 @@
       sel.value = '';
       sel.disabled = !lista.length;
       sel.title = lista.length ? 'Filtrar o painel e as respostas por coletor'
-        : 'Coletores ainda não disponíveis neste retrato: entram com a sincronização pela API do Survey Monkey';
+        : fonte === 'vivo' ? 'Este formulário tem um único coletor' : 'Coletores ainda não disponíveis neste retrato: entram com a sincronização pela API do Survey Monkey';
     }
     // Dados do formulário já filtrados pelo coletor escolhido (sem coletor = resumo geral).
     function dadosFiltrados(R){
@@ -4739,8 +4872,8 @@
         respostas: (R.respostas || []).filter(r => String(r.coletor_id) === cid), semResumoColetor: !P };
     }
     function renderFormulario(){
-      if(!formAtual || !window.SM_RESUMOS) return;
-      const D = dadosFiltrados(window.SM_RESUMOS[formAtual.id]);
+      if(!formAtual) return;
+      const D = dadosFiltrados(resumoDe(formAtual.id));
       renderPainel(formAtual, D);
       renderIndividual(formAtual, D);
     }
@@ -4770,7 +4903,7 @@
         .concat(filtrados().map(f => [f.id, f.title, pastaNome(f.folder_id), statusTxt[f.survey_state] || f.survey_state, f.response_count, dataBR(f.date_modified)]));
       const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
-      a.href = url; a.download = `survey_monkey_formularios_${SM_RETRATO.lido_em}.csv`;
+      a.href = url; a.download = `survey_monkey_formularios_${fonte === 'vivo' ? new Date().toISOString().slice(0, 10) : SM_RETRATO.lido_em}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
@@ -5212,6 +5345,7 @@
     const SB_CONFIG = window.SUPABASE_CONFIG || {};
     const supabaseReady = !!(SB_CONFIG.url && SB_CONFIG.anonKey && window.supabase);
     const supabaseClient = supabaseReady ? window.supabase.createClient(SB_CONFIG.url, SB_CONFIG.anonKey) : null;
+    window.CDL_SB = supabaseClient;   // Survey Monkey (dados ao vivo) lê pelo mesmo cliente/login
 
     const waSupabaseBanner = document.getElementById('waSupabaseBanner');
     if(waSupabaseBanner) waSupabaseBanner.hidden = supabaseReady;

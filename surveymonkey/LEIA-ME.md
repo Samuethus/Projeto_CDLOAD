@@ -1,6 +1,6 @@
 # Integração CDLoad × Survey Monkey
 
-> **Status:** sincronização ao vivo **escrita, aguardando publicação**: tabelas em [supabase/schema_surveymonkey.sql](../supabase/schema_surveymonkey.sql) e Edge Function em [supabase/functions/surveymonkey-sincronizar](../supabase/functions/surveymonkey-sincronizar/index.ts) (secret `SURVEYMONKEY_TOKEN` já gravado em 09/10/2026). Passo a passo de publicação em [supabase/LEIA-ME.md](../supabase/LEIA-ME.md#survey-monkey-ao-vivo-edge-function-surveymonkey-sincronizar). Enquanto isso, a seção **Survey Monkey** do app segue com o **retrato fixo** (lido pelo MCP em 09/10/2026).
+> **Status (09/10/2026):** sincronização ao vivo **publicada**: tabelas em [supabase/schema_surveymonkey.sql](../supabase/schema_surveymonkey.sql) (rodado) e Edge Function [supabase/functions/surveymonkey-sincronizar](../supabase/functions/surveymonkey-sincronizar/index.ts) (publicada, secret `SURVEYMONKEY_TOKEN` gravado), a cada 15 min. A seção **Survey Monkey** do app lê as tabelas `survey_*` com login (lista, painel por pergunta calculado das respostas, coletores e resposta individual); sem login ou sem dados sincronizados, usa o **retrato fixo** (lido pelo MCP em 09/10/2026). Passo a passo em [supabase/LEIA-ME.md](../supabase/LEIA-ME.md#survey-monkey-ao-vivo-edge-function-surveymonkey-sincronizar).
 >
 > **Decisões de 09/10/2026:** a sincronização lê **todas as pastas** da conta (o prefixo `CDLOAD · …` do item 3.1 não é usado: a permissão `surveys_read` vale para a conta inteira e nenhuma pasta seguia o padrão) e o período vem da **data de criação** do formulário (o padrão de título do item 3.2 é opcional). Agendamento a cada **15 min** (o plano dizia 1 h): cada execução sem mudanças gasta só ~2 chamadas da API.
 > Este documento define **como o CDLoad vai ler as pastas e os formulários do Survey Monkey** e o passo a passo para implementar.
@@ -290,8 +290,8 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [ ] Testar com os `curl` do item 6.
 
 **Desenvolvimento**
-- [x] `supabase/schema_surveymonkey.sql`: tabelas (`survey_pastas`, `survey_formularios`, `survey_perguntas`, `survey_coletores`, `survey_respostas`, `survey_sincronizacoes`), RLS e agendamento (pg_cron + pg_net a cada 15 min). **Falta rodar no Supabase.**
-- [x] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental, retomada de onde parou e controle de limite. **Falta publicar** (`npx supabase functions deploy surveymonkey-sincronizar --no-verify-jwt`).
+- [x] `supabase/schema_surveymonkey.sql`: tabelas (`survey_pastas`, `survey_formularios`, `survey_perguntas`, `survey_coletores`, `survey_respostas`, `survey_sincronizacoes`), RLS e agendamento (pg_cron + pg_net a cada 15 min). Rodado em 09/10/2026.
+- [x] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental, retomada de onde parou e controle de limite. Publicada em 09/10/2026 (sem verificação de JWT).
 - [x] Seção **Survey Monkey** criada no `index.html` (antiga "Templates", hoje só com o cabeçalho; os templates de WhatsApp continuam em WhatsApp › Templates).
 - [x] Retrato fixo na seção **Survey Monkey** (`SM_RETRATO` no `index.html`, lido pelo MCP em 07/10/2026): filtros (busca, pasta, status, ano), KPIs, respostas por pasta, tabela de formulários e exportação CSV. Nomes das pastas provisórios (o MCP não informa o nome da pasta).
 - [x] Seção **Survey Monkey** sem o gráfico "Respostas por pasta" e sem o texto do retrato; tabela de formulários no padrão da tabela de Movimentações do Estoque (largura total, sem quebra de linha, ordenação Mais respostas / Mais recente / A-Z).
@@ -300,7 +300,8 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [x] Resumos agregados dos 38 formulários com respostas em `assets/data/surveymonkey_resumos.js` (lidos com `get_response_summary` em 07/10/2026; somas conferidas).
 - [x] Atualizar o retrato: reler a lista (`search_surveys`) e o resumo (`get_response_summary`) só dos formulários que mudaram, gerar de novo `assets/data/surveymonkey_resumos.js` e **mudar `SM_RETRATO.versao`** no `index.html` (sem isso o navegador pode mostrar o resumo antigo por até 10 min, por causa do cache).
 - [x] Lista suspensa de **coletores** no dashboard do formulário, ao lado do switch. Lê `SM_RESUMOS[id].coletores` (`[{ id, nome, tipo, status, respostas }]`) e filtra o Painel por `SM_RESUMOS[id].porColetor[id].perguntas` e a Resposta individual por `respostas[i].coletor_id`. O MCP não lê coletores: no retrato atual a lista fica só com "Todos os coletores" (desabilitada) até a sincronização pela API (`GET /v3/surveys/{id}/collectors` e respostas com `collector_id`).
-- [ ] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout.
+- [x] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout. O retrato fica como reserva.
+- [ ] Depois de conferir os números ao vivo: remover o retrato (`SM_RETRATO` e `assets/data/surveymonkey_resumos.js`, que é público).
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
 - [x] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
 
