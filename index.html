@@ -1444,7 +1444,17 @@
   #empMapa{position:relative;min-height:380px;border:1px solid var(--cd-borda);border-radius:12px;overflow:hidden;background:#EEF2F7;}
   #empMapa > .emp-mapa-canvas{position:absolute;inset:0;}   /* id: vence o .mapboxgl-map{position:relative} do Mapbox */
   .emp-mapa-painel{position:absolute;top:12px;left:12px;z-index:2;width:270px;max-width:calc(100% - 24px);box-sizing:border-box;padding:12px 14px;border-radius:10px;
-    background:rgba(255,255,255,.95);box-shadow:0 2px 12px rgba(16,24,40,.14);font-size:12px;line-height:1.45;color:var(--cd-texto);}
+    background:rgba(255,255,255,.95);box-shadow:0 2px 12px rgba(16,24,40,.14);font-size:12px;line-height:1.45;color:var(--cd-texto);
+    transition:transform .3s ease, box-shadow .3s ease;}
+  /* Recolher/expandir: o painel desliza para fora pela esquerda e fica só a seta (sem fundo) na borda do mapa. */
+  .emp-mapa-painel.recolhido{transform:translateX(calc(-100% - 12px));box-shadow:none;}
+  .emp-mapa-tog{position:absolute;top:6px;right:-30px;width:26px;height:30px;padding:0;border:0;background:none;cursor:pointer;
+    color:var(--cd-texto);display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 1px rgba(255,255,255,.95));}
+  .emp-mapa-tog svg{width:20px;height:20px;transition:transform .3s ease;}
+  .emp-mapa-painel.recolhido .emp-mapa-tog svg{transform:rotate(180deg);}
+  .emp-mapa-tog:hover{color:#1D5FD3;}
+  .emp-mapa-tog:focus-visible{outline:2px solid #1D5FD3;outline-offset:1px;border-radius:4px;}
+  :root[data-theme="dark"] .emp-mapa-tog{filter:drop-shadow(0 0 2px rgba(15,23,41,.95));}
   .emp-mapa-painel h4{margin:0 0 2px;font-size:14px;font-weight:600;}
   .emp-mapa-painel .emp-mapa-sub{color:var(--cd-muted);margin-bottom:8px;}
   .emp-mapa-painel .emp-mapa-total{font-size:22px;font-weight:700;line-height:1.1;}
@@ -2509,7 +2519,7 @@
         <!-- EMPRESAS · Mapa (Mapbox): ocupa a área dos gráficos, da barra de filtros até o fim da página -->
         <div id="empMapa" hidden>
           <div class="emp-mapa-canvas" id="empMapaCanvas"></div>
-          <div class="emp-mapa-painel" id="empMapaPainel"></div>
+          <div class="emp-mapa-painel" id="empMapaPainel"><div id="empMapaPainelCorpo"></div><button type="button" class="emp-mapa-tog" id="empMapaTog" aria-expanded="true" aria-label="Recolher descritivo" title="Recolher descritivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button></div>
           <div class="emp-mapa-msg" id="empMapaMsg" hidden></div>
         </div>
         <div class="stk-tooltip" id="stkTooltip" role="tooltip" hidden></div>
@@ -11345,6 +11355,12 @@ ${clipPlayerPills(n)}
       if(empMapa) empMapa.resize();
     }
     window.addEventListener('resize', empMapaAjustar);
+    // Descritivo flutuante: seta "<" recolhe, ">" expande (o estado vale enquanto a página estiver aberta).
+    document.getElementById('empMapaTog').addEventListener('click', ev => {
+      const btn = ev.currentTarget, rec = document.getElementById('empMapaPainel').classList.toggle('recolhido');
+      const txt = rec ? 'Expandir descritivo' : 'Recolher descritivo';
+      btn.setAttribute('aria-expanded', !rec); btn.setAttribute('aria-label', txt); btn.title = txt;
+    });
 
     function empCepsPrep(C){
       if(C._prep) return C._prep;
@@ -11495,9 +11511,9 @@ ${clipPlayerPills(n)}
     }
     function empMapaAtualizar(D, J, iu, imun){
       empMapaD = D;
-      const painel = document.getElementById('empMapaPainel');
+      const painel = document.getElementById('empMapaPainel'), corpo = document.getElementById('empMapaPainelCorpo');
       const C = window.CNPJ_CEPS, ufCep = C ? C.uf : 'MT';
-      const vazio = txt => { empMapa.getSource('emp').setData({ type: 'FeatureCollection', features: [] }); painel.innerHTML = ''; painel.hidden = true; empMapaMsg(txt); };
+      const vazio = txt => { empMapa.getSource('emp').setData({ type: 'FeatureCollection', features: [] }); corpo.innerHTML = ''; painel.hidden = true; empMapaMsg(txt); };
       if(iu >= 0 && D.ufs[iu] !== ufCep)
         return vazio(`O endereço (CEP) dos CNPJs está disponível para ${PAN_UF_NOME[ufCep] || ufCep}, o estado detalhado na base da Receita processada pelo sistema. Escolha ${PAN_UF_NOME[ufCep] || ufCep} (ou nenhum estado) no filtro Estado.`);
       const R = empMapaDados(D, J, imun);
@@ -11522,7 +11538,7 @@ ${clipPlayerPills(n)}
       notas.push(empMapaProgresso());
       if(R.nAprox) notas.push(`${stkNum(R.nAprox)} de ${stkNum(R.feats.length)} CEPs ainda sem coordenada própria aparecem na sede do município (a geocodificação avança a cada dia).`);
       if(stkBuscaInput.value.trim()) notas.push('A busca por atividade (CNAE) não se aplica ao mapa.');
-      painel.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : 'Endereço dos CNPJs (CEP)'}</h4>
+      corpo.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : 'Endereço dos CNPJs (CEP)'}</h4>
         <div class="emp-mapa-sub">${esc(local)} · ${esc(R.baixadas ? 'baixados · ' + J.rotulo : 'ativos na edição ' + edicao)}${fReg ? ' · ' + esc(fReg) : ''}</div>
         <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} ${R.temp ? 'municípios' : 'CEPs'}</div>
         <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? 'Município (ponto na sede)' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
