@@ -1290,7 +1290,10 @@
   :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search,
   :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
   :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
-  #page-dashboard .wa-stock-filters #stkPainelFiltro{flex:0 0 auto;min-width:0;overflow:visible;}
+  /* Seletor de Painel: mesma largura em todos os painéis, calibrada no Panorama (o painel com mais
+     filtros): ~156px em 1366px, ~195px em 1600px, ~225px em 1920px de tela. Não estica nem encolhe
+     conforme a quantidade de filtros de cada visão; os demais filtros ocupam o espaço restante. */
+  #page-dashboard .wa-stock-filters #stkPainelFiltro{--stk-painel-w:clamp(150px, calc(12.45vw - 12px), 240px);flex:0 0 var(--stk-painel-w);width:var(--stk-painel-w);min-width:0;max-width:var(--stk-painel-w);overflow:visible;}
   /* Dashboard: busca 80% maior (260 → 468px); encolhe só quando fica sozinha na linha
      (telas estreitas), sem ultrapassar a barra. Limpar/Exportar viram só ícone (como no
      Clipping) para os demais filtros continuarem cabendo. */
@@ -1630,7 +1633,7 @@
     :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
     :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters .filter-select{min-width:80px;flex:1 1 80px;}
-    #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:120px;flex:1 1 120px;}
+    #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:0;flex:0 0 var(--stk-painel-w);}
     /* Dashboard: busca 80% maior (160 → 288px); selects um pouco mais estreitos compensam. */
     #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
@@ -2373,7 +2376,7 @@
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
             <option value="caged">CAGED</option>
-            <option value="sefaz">Sefaz MT (ICMS)</option>
+            <option value="sefaz">SEFAZ (ICMS)</option>
             <option value="ipca15">IBGE: IPCA-15</option>
             <option value="pmc">IBGE: PMC</option>
             <option value="pnad">IBGE: PNAD</option>
