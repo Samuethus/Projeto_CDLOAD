@@ -12410,7 +12410,21 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad' || stkPainel() === 'empresas'){
+      // EMPRESAS: amostra da base do CNPJ (até 10 estabelecimentos, todas as colunas do arquivo + descrições
+      // usadas no painel), só para entender os dados. E-mail e telefones já vêm mascarados do extrator.
+      if(stkPainel() === 'empresas'){
+        const A = window.CNPJ_EMPRESAS && window.CNPJ_EMPRESAS.amostra;
+        if(!A || !A.linhas.length) return;
+        // Códigos com zero à esquerda (CNAE, ordem, CEP…) como texto, para o Excel não cortar o zero.
+        const cel = v => { const t = String(v == null ? '' : v); if(/^0\d+$/.test(t)) return `="${t}"`; return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const url = URL.createObjectURL(new Blob(['﻿' + [A.colunas].concat(A.linhas).map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `cnpj_amostra_estabelecimentos_${window.CNPJ_EMPRESAS.edicao}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad'){
         if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };

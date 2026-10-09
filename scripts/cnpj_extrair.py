@@ -27,6 +27,9 @@ Formato:
   e0:  [[iUf, iCnae, estoque], ...]                  estoque no início da série
   fm:  [['aberturas', 'baixas'], ...]                série mensal por município (mesma ordem de mun)
   em0: [estoque por município no início da série]
+  amostra: { colunas: [...], linhas: [[...], ...] }  até AMOSTRA_MAX estabelecimentos abertos no último mês
+           (Mato Grosso primeiro), com as 30 colunas do arquivo Estabelecimentos e as descrições usadas
+           no painel — só para entender a base (botão Exportar). E-mail e telefones vão mascarados.
   Séries compactas: valores mensais separados por vírgula, zero = vazio, zeros finais cortados
   ('3,,1' = [3, 0, 1, 0, ...]). O arquivo fica ~3x menor (e ~4x menor com a compressão do servidor).
 """
@@ -48,6 +51,38 @@ TOKEN = 'YggdBLfdninEJX9'   # compartilhamento público "Dados Abertos CNPJ" (us
 UA = 'Mozilla/5.0 (CDLoad; Nucleo de Inteligencia CDL Cuiaba)'
 ANO_INICIAL = 2023          # base de comparação do primeiro ano exibido (2024), como no CAGED
 TMP = os.environ.get('CNPJ_TMP') or os.path.join(RAIZ, '.cnpj_tmp')
+AMOSTRA_MAX = 10
+AMOSTRA_UF = b'MT'
+# Leiaute do arquivo Estabelecimentos (metadados da Receita Federal), na ordem das colunas.
+COLUNAS_ESTAB = ['CNPJ básico', 'CNPJ ordem', 'CNPJ DV', 'Identificador matriz/filial', 'Nome fantasia', 'Situação cadastral',
+                 'Data da situação cadastral', 'Motivo da situação cadastral', 'Nome da cidade no exterior', 'País',
+                 'Data de início da atividade', 'CNAE fiscal principal', 'CNAE fiscal secundária', 'Tipo de logradouro',
+                 'Logradouro', 'Número', 'Complemento', 'Bairro', 'CEP', 'UF', 'Município (código Receita)', 'DDD 1',
+                 'Telefone 1', 'DDD 2', 'Telefone 2', 'DDD do fax', 'Fax', 'Correio eletrônico', 'Situação especial',
+                 'Data da situação especial']
+COLUNAS_EXTRA = ['Descrição matriz/filial', 'Descrição da situação cadastral', 'Descrição do CNAE principal',
+                 'Município', 'Evento no painel', 'Grande setor (painel)', 'Associação (painel)']
+SITUACAO = {'01': 'Nula', '1': 'Nula', '02': 'Ativa', '2': 'Ativa', '03': 'Suspensa', '3': 'Suspensa',
+            '04': 'Inapta', '4': 'Inapta', '08': 'Baixada', '8': 'Baixada'}
+CONTATO = {21, 22, 23, 24, 25, 26}   # DDDs e telefones/fax (índices na linha)
+
+
+def mascarar(i, v):
+    """Contatos de MEI costumam ser dados pessoais: e-mail e telefones saem mascarados na amostra."""
+    if not v:
+        return v
+    if i == 27 and '@' in v:
+        u, d = v.split('@', 1)
+        return u[:2] + '***@' + d
+    if i in CONTATO and i not in (21, 23, 25):   # telefones e fax (os DDDs ficam)
+        return '*' * max(0, len(v) - 2) + v[-2:]
+    return v
+
+
+def setor_painel(cnae):
+    d = int(cnae[:2]) if cnae[:2].isdigit() else 0
+    return ('Agropecuária' if 1 <= d <= 3 else 'Indústria' if 5 <= d <= 39 else 'Construção' if 41 <= d <= 43
+            else 'Comércio' if 45 <= d <= 47 else 'Serviços' if d >= 49 else '')
 
 
 def req(caminho, metodo='GET', cabecalhos=None):
@@ -131,6 +166,21 @@ def titulo(s):
     return ' '.join(w.lower() if i and w.lower() in pequenas else w.capitalize() for i, w in enumerate(s.split()))
 
 
+def montar_amostra(brutas, cnae_nome, mun_rfb, ibge, mes):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from caged_extrair import GRP_ASSOC, assoc   # mesmas regras de associação do CAGED/Sefaz
+    linhas = []
+    for c in brutas:
+        v = [x.decode('latin-1').strip().strip('"') for x in c]
+        v = (v + [''] * len(COLUNAS_ESTAB))[:len(COLUNAS_ESTAB)]
+        cnae = v[11].zfill(7)
+        mun = mun_rfb.get(v[20].encode(), v[20])
+        linhas.append([mascarar(i, x) for i, x in enumerate(v)] + [
+            {'1': 'Matriz', '2': 'Filial'}.get(v[3], v[3]), SITUACAO.get(v[5], v[5]), cnae_nome.get(cnae, ''),
+            ibge.get((v[19], norm(mun))) or titulo(mun), 'Abertura em ' + mes, setor_painel(cnae), GRP_ASSOC[assoc(cnae)]])
+    return {'colunas': COLUNAS_ESTAB + COLUNAS_EXTRA, 'linhas': linhas}
+
+
 def main():
     pastas = sorted(p.strip('/') for p in listar() if re.fullmatch(r'\d{4}-\d{2}/', p))
     if not pastas:
@@ -170,6 +220,8 @@ def main():
     ufs, cnaes, muns = {}, {}, {}
     mun_uf = {}
     f, e0, fm, em0 = {}, {}, {}, {}
+    amostra, reserva = [], []   # aberturas do último mês: Mato Grosso primeiro, outros estados completam
+    ultimo = meses[-1].replace('-', '').encode()
     def idx(d, k):
         i = d.get(k)
         if i is None:
@@ -210,6 +262,11 @@ def main():
             if estoque0:
                 e0[(iu, ic)] = e0.get((iu, ic), 0) + 1
                 em0[imn] = em0.get(imn, 0) + 1
+            if nova and dini[:6] == ultimo and len(amostra) < AMOSTRA_MAX:
+                if uf == AMOSTRA_UF:
+                    amostra.append(c)
+                elif len(reserva) < AMOSTRA_MAX:
+                    reserva.append(c)
             if nova:
                 k = im.get(dini[:6])
                 if k is not None:
@@ -260,6 +317,7 @@ def main():
         'e0': sorted([nu[u], nc[c], v] for (u, c), v in e0.items()),
         'fm': [[serie(v[0]), serie(v[1])] for v in porMun],
         'em0': [em0.get(muns[c], 0) for c in mn],
+        'amostra': montar_amostra((amostra + reserva)[:AMOSTRA_MAX], cnae_nome, mun_rfb, ibge, meses[-1]),
     }
     corpo = json.dumps(dados, ensure_ascii=False, separators=(',', ':'))
     js = ('// Gerado por scripts/cnpj_extrair.py - não editar à mão.\n'
