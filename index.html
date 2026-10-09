@@ -2352,7 +2352,6 @@
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
             <option value="panorama">Painel · Panorama Econômico</option>
-            <option value="ivs">Painel · Stone (IVS)</option>
             <option value="viabilidades">Painel · Viabilidade</option>
           </select>
           <select class="filter-select" id="stkLeadsFiltro" title="Simulação Leads: quantidade de leads (planos) captados pelo projeto" hidden>
@@ -2377,6 +2376,7 @@
             <option value="sefaz">Sefaz MT (ICMS)</option>
             <option value="ipca15">IBGE: IPCA-15</option>
             <option value="pmc">IBGE: PMC</option>
+            <option value="ivs">Stone (IVS)</option>
             <option value="icva">Cielo (ICVA)</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
@@ -9186,9 +9186,9 @@ ${clipPlayerPills(n)}
     // os dados já carregados pelo próprio módulo, sem fetch novo.
     // ==================================================================
     const stkPainelEl = document.getElementById('stkPainelFiltro');
-    // Painel efetivo: Sefaz MT, IPCA-15, PMC e Cielo (ICVA) ficam dentro do Panorama Econômico
+    // Painel efetivo: Sefaz MT, IPCA-15, PMC, Stone (IVS) e Cielo (ICVA) ficam dentro do Panorama Econômico
     // (filtro Indicador), mas continuam sendo painéis próprios no restante do código.
-    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc', 'icva'];
+    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc', 'ivs', 'icva'];
     const stkPainel = () => {
       const ind = document.getElementById('stkIndicadorFiltro').value;
       return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
@@ -11372,7 +11372,7 @@ ${clipPlayerPills(n)}
     // scripts/ibge_extrair.ps1 (assets/data/ibge_ipca15.js e ibge_pmc.js). Tudo é filtrado no
     // navegador: Local (área do IPCA-15 / estado da PMC), Mês/Ano e busca (grupo/item ou atividade).
     const stkIbgeLocalEl = document.getElementById('stkIbgeLocalFiltro');
-    // ivs = Painel · Stone (IVS): mesma infraestrutura (Estado, Mês/Ano e busca por setor), dados da Stone.
+    // ivs = Stone (IVS), indicador do Panorama: mesma infraestrutura (Estado, Mês/Ano e busca por setor), dados da Stone.
     // icva = Cielo (ICVA), indicador do Panorama: mesma infraestrutura (Região, Mês/Ano e busca por região).
     const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'], ivs: ['assets/data/stone_ivs.js', 'STONE_IVS'],
       icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'] };
@@ -11677,7 +11677,7 @@ ${clipPlayerPills(n)}
           .concat(atv.sort((a, b) => b.v - a.v).map(x => [x.nome, (x.v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
             x.rec == null ? '' : (x.rec * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }), x.est ? 'sim' : 'não'])) };
     }
-    // ---------------- Painel · Stone (IVS) — Índice do Varejo Stone ----------------
+    // ---------------- Stone (IVS) — indicador do Panorama — Índice do Varejo Stone ----------------
     // Dados: assets/data/stone_ivs.js (scripts/stone_ivs_extrair.py, CSV público de cada edição mensal).
     // Mesma estrutura da PMC: 5 KPIs + 2 linhas. A Stone detalha setores só para o Brasil; nos estados
     // há apenas o índice geral (varejo restrito). Séries: [índice, var. anual %, índice dessaz., var. mensal dessaz. %].
