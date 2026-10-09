@@ -47,11 +47,19 @@ jobs:
       - name: Extrair dados da Cielo (ICVA)
         continue-on-error: true
         run: python scripts/cielo_icva_extrair.py
+      # Receita Federal: dados abertos do CNPJ (~5 GB por edição mensal). Consulta só a lista de pastas e
+      # sai na hora quando a edição mais recente já foi processada; falha sem bloquear os demais.
+      - name: Extrair dados do CNPJ (Receita Federal)
+        continue-on-error: true
+        timeout-minutes: 120
+        env:
+          CNPJ_TMP: ${{ runner.temp }}/cnpj
+        run: python scripts/cnpj_extrair.py
       - name: Commit e deploy se houve mudança
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js"
+          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js"
           if [ -n "$(git status --porcelain $ARQS)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"

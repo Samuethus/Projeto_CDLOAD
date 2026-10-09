@@ -1307,8 +1307,8 @@
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
   .stk-segmented-inativo{opacity:.45;pointer-events:none;}
   /* Sefaz MT: Setor | Associação no card estreito da rosca — compacto para o título caber. */
-  #sefRoscaVisao .stk-seg-btn, #cagRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
-  .cd-card-head:has(#sefRoscaVisao) h3, .cd-card-head:has(#cagRoscaVisao) h3{white-space:normal;}
+  #sefRoscaVisao .stk-seg-btn, #cagRoscaVisao .stk-seg-btn, #empRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
+  .cd-card-head:has(#sefRoscaVisao) h3, .cd-card-head:has(#cagRoscaVisao) h3, .cd-card-head:has(#empRoscaVisao) h3{white-space:normal;}
   /* Clipping: Mês/Ano/Player ficam ignorados enquanto há notícias selecionadas na busca. */
   .stk-filtro-ignorado{opacity:.45;}
   .stk-tema-aviso{display:flex;align-items:center;gap:10px;background:#EAF3FF;color:#0B3C6D;border:1px solid #CFE2FF;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
@@ -2376,6 +2376,7 @@
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
             <option value="caged">CAGED</option>
+            <option value="empresas">EMPRESAS</option>
             <option value="sefaz">SEFAZ (ICMS)</option>
             <option value="ipca15">IBGE: IPCA-15</option>
             <option value="pmc">IBGE: PMC</option>
@@ -9190,9 +9191,9 @@ ${clipPlayerPills(n)}
     // os dados já carregados pelo próprio módulo, sem fetch novo.
     // ==================================================================
     const stkPainelEl = document.getElementById('stkPainelFiltro');
-    // Painel efetivo: Sefaz MT, IPCA-15, PMC, PNAD, Stone (IVS) e Cielo (ICVA) ficam dentro do Panorama Econômico
+    // Painel efetivo: EMPRESAS (CNPJ), Sefaz MT, IPCA-15, PMC, PNAD, Stone (IVS) e Cielo (ICVA) ficam dentro do Panorama Econômico
     // (filtro Indicador), mas continuam sendo painéis próprios no restante do código.
-    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc', 'pnad', 'ivs', 'icva'];
+    const STK_INDICADOR_PAINEL = ['empresas', 'sefaz', 'ipca15', 'pmc', 'pnad', 'ivs', 'icva'];
     const stkPainel = () => {
       const ind = document.getElementById('stkIndicadorFiltro').value;
       return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
@@ -9222,7 +9223,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), viabilidades: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -9430,12 +9431,13 @@ ${clipPlayerPills(n)}
       const sefaz = stkPainel() === 'sefaz';
       const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad';
       const viab = stkPainel() === 'viabilidades';
-      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab;
+      const emp = stkPainel() === 'empresas';
+      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
-      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab;
+      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp;
       stkMesEl.hidden = viab;
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
@@ -9443,18 +9445,19 @@ ${clipPlayerPills(n)}
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
-      stkUfEl.hidden = !panorama;
-      stkCidadeEl.hidden = !panorama;
+      // EMPRESAS (CNPJ) usa os mesmos filtros de Estado e Cidade do Panorama.
+      stkUfEl.hidden = !panorama && stkPainel() !== 'empresas';
+      stkCidadeEl.hidden = !panorama && stkPainel() !== 'empresas';
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
-        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade econômica (CNAE)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad'){
-        // IPCA-15, PNAD, Stone (IVS) e Cielo (ICVA): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad' || stkPainel() === 'empresas'){
+        // EMPRESAS, IPCA-15, PNAD, Stone (IVS) e Cielo (ICVA): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
         const D = ibgeDados(), base = stkPainel() === 'pmc' ? 2 : 1;
         const anosI = [...new Set((D ? D.meses : []).map(m => m.slice(0, 4)))].sort().slice(base).reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosI.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
@@ -9977,7 +9980,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -9989,6 +9992,7 @@ ${clipPlayerPills(n)}
       stkAtualizarContagem();
       if(stkPainel() === 'clipping') return stkRenderClipping();
       if(stkPainel() === 'panorama') return stkRenderPanorama();
+      if(stkPainel() === 'empresas') return empRender();
       if(stkPainel() === 'sefaz') return sefRender();
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad') return ibgeRender();
       if(stkPainel() === 'viabilidades') return viabRender();
@@ -10554,7 +10558,7 @@ ${clipPlayerPills(n)}
       stkCidadeEl.disabled = !uf;
       if(!uf){ stkCidadeEl.innerHTML = '<option value="">Cidade</option>'; return; }
       stkCidadeEl.innerHTML = '<option value="">Carregando…</option>';
-      const cidades = await (cagAtivo() ? cagCarregarCidades(uf) : panCarregarCidades(uf)).catch(() => []);
+      const cidades = await (stkPainel() === 'empresas' ? empCidades(uf) : cagAtivo() ? cagCarregarCidades(uf) : panCarregarCidades(uf)).catch(() => []);
       if(stkUfEl.value !== uf) return;
       stkCidadeEl.innerHTML = '<option value="">Cidade</option>' + cidades.map(c => `<option value="${esc(c.cod)}">${esc(c.nome)}</option>`).join('');
     }
@@ -10993,6 +10997,201 @@ ${clipPlayerPills(n)}
       if(cagUltimo && cagAtivo()) cagDesenhar(cagUltimo); else stkRender();
     });
 
+
+    // ===== EMPRESAS (CNPJ) — indicador do Panorama, mesma estrutura do CAGED =====
+    // Dados: assets/data/cnpj_empresas.js (scripts/cnpj_extrair.py, dados abertos do CNPJ da Receita Federal,
+    // arquivos Estabelecimentos — uma inscrição por matriz ou filial). Mesmo racional do CAGED:
+    //   aberturas = início de atividade no mês · baixas = situação BAIXADA com data no mês · saldo = diferença
+    //   estoque = inscrições abertas e não baixadas no fim do mês (estoque inicial + saldo acumulado).
+    // Filtros: Estado/Cidade, Mês/Ano e busca por atividade (código ou nome da subclasse CNAE).
+    // O arquivo traz atividade por estado; na cidade há só aberturas e baixas (a composição por atividade é a do estado).
+    let empRoscaVisao = 'setor'; // setor | assoc — mesmo switch e mesmas regras do CAGED/Sefaz
+    // Seções CNAE pela divisão (2 dígitos) e grandes setores como no CAGED.
+    const EMP_SECOES = [[1, 3, 'Agricultura, pecuária, produção florestal, pesca e aquicultura'], [5, 9, 'Indústrias extrativas'], [10, 33, 'Indústrias de transformação'],
+      [35, 35, 'Eletricidade e gás'], [36, 39, 'Água, esgoto, gestão de resíduos e descontaminação'], [41, 43, 'Construção'],
+      [45, 47, 'Comércio, reparação de veículos automotores e motocicletas'], [49, 53, 'Transporte, armazenagem e correio'], [55, 56, 'Alojamento e alimentação'],
+      [58, 63, 'Informação e comunicação'], [64, 66, 'Atividades financeiras, de seguros e serviços relacionados'], [68, 68, 'Atividades imobiliárias'],
+      [69, 75, 'Atividades profissionais, científicas e técnicas'], [77, 82, 'Atividades administrativas e serviços complementares'],
+      [84, 84, 'Administração pública, defesa e seguridade social'], [85, 85, 'Educação'], [86, 88, 'Saúde humana e serviços sociais'],
+      [90, 93, 'Artes, cultura, esporte e recreação'], [94, 96, 'Outras atividades de serviços'], [97, 97, 'Serviços domésticos'], [99, 99, 'Organismos internacionais']];
+    const empSecao = cod => { const d = Number(String(cod).slice(0, 2)); const x = EMP_SECOES.find(([a, b]) => d >= a && d <= b); return x ? x[2] : 'Não informada'; };
+    const empSetor = cod => { const d = Number(String(cod).slice(0, 2));
+      return d >= 1 && d <= 3 ? 'Agropecuária' : d >= 5 && d <= 39 ? 'Indústria' : d >= 41 && d <= 43 ? 'Construção' : d >= 45 && d <= 47 ? 'Comércio' : d >= 49 ? 'Serviços' : ''; };
+    function empCidades(uf){
+      return ibgeCarregar('empresas').then(() => { const D = window.CNPJ_EMPRESAS, iu = D.ufs.indexOf(uf);
+        return D.mun.nome.map((n, k) => ({ cod: String(k), nome: n, uf: D.mun.uf[k] })).filter(c => c.uf === iu).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')); });
+    }
+    // Pré-cálculo feito uma vez: séries compactas ('3,,1' = 3, 0, 1, 0…) viram vetores; setor, seção e associação por CNAE.
+    function empPreparar(D){
+      if(D._prep) return D._prep;
+      const cods = D.cnaes.cod, nM = D.meses.length;
+      const vet = t => { const v = new Int32Array(nM); if(t) t.split(',').forEach((x, i) => { if(x) v[i] = Number(x); }); return v; };
+      return (D._prep = { setor: cods.map(empSetor), secao: cods.map(empSecao), assoc: cods.map(c => CAG_ASSOC[cagAssoc(c)]),
+        busca: D.cnaes.nome.map((n, k) => stkNorm(`${cods[k]} ${n}`)),
+        pares: D.f.map(([u, c, a, b]) => ({ u, c, a: vet(a), b: vet(b) })),
+        mun: D.fm.map(([a, b]) => ({ a: vet(a), b: vet(b) })) });
+    }
+    function empRender(){
+      const D = window.CNPJ_EMPRESAS;
+      if(!D){
+        stkGrid.classList.add('cd-carregando');
+        ibgeCarregar('empresas').then(() => { if(stkPainel() === 'empresas'){ panPreencherCidades(); empRender(); } }).catch(() => {
+          stkGrid.classList.remove('cd-fit', 'cd-carregando');
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados do CNPJ (assets/data/cnpj_empresas.js).</div></div>`;
+        });
+        return;
+      }
+      stkPreencherFiltros();
+      panPreencherUfs();
+      const J = panJanela(D);
+      const uf = stkUfEl.value, iu = uf ? D.ufs.indexOf(uf) : -1;
+      const imun = uf && stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
+      empDesenhar(D, J, iu, imun);
+    }
+    function empDesenhar(D, J, iu, imun){
+      const P = empPreparar(D), anoAnt = J.anoAnt, nM = D.meses.length;
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      const okC = termos.length ? new Set(P.busca.map((t, k) => termos.every(x => t.includes(x)) ? k : -1).filter(k => k >= 0)) : null;
+      const cidade = imun >= 0 ? D.mun.nome[imun] : '';
+      const local = (cidade || (iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil')) + (busca ? ` · “${busca}”` : '');
+      const escopoAtv = iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil';   // composição por atividade (cidade → estado)
+      const avisoCidade = cidade ? ` (atividades: ${escopoAtv})` : '';
+      // ---- Séries mensais do recorte ----
+      const ab = new Array(nM).fill(0), bx = new Array(nM).fill(0);
+      let est0 = 0;
+      const porUf = new Map(), setor = new Map(), assoc = new Map(), secao = new Map(), sub = new Map();
+      const add = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
+      const noAtual = new Array(nM).fill(false); J.atual.forEach(i => { noAtual[i] = true; });
+      const atual = [...J.atual];
+      for(const { u, c, a, b } of P.pares){
+        if(okC && !okC.has(c)) continue;
+        let pa = 0, pb = 0;
+        for(const m of atual){ pa += a[m]; pb += b[m]; }
+        if(pa || pb) add(porUf, u, pa - pb);
+        if(iu >= 0 && u !== iu) continue;
+        if(imun < 0) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; }
+        if(pa || pb){
+          if(pa){ add(setor, P.setor[c], pa); add(assoc, P.assoc[c], pa); }
+          const sc = secao.get(P.secao[c]) || [0, 0]; sc[0] += pa; sc[1] += pb; secao.set(P.secao[c], sc);
+          add(sub, c, pa - pb);
+        }
+      }
+      if(imun >= 0){
+        const x = P.mun[imun]; for(let m = 0; m < nM; m++){ ab[m] += x.a[m]; bx[m] += x.b[m]; }
+        est0 = D.em0[imun] || 0;
+      } else for(const [u, c, v] of D.e0) if((iu < 0 || u === iu) && (!okC || okC.has(c))) est0 += v;
+      const vazio = okC && !okC.size;
+      const est = []; let acc = est0; for(let m = 0; m < nM; m++){ acc += ab[m] - bx[m]; est.push(acc); }
+      const soma = (arr, S) => { let t = 0; S.forEach(i => { t += arr[i] || 0; }); return t; };
+      const ultimo = S => S.size ? Math.max(...S) : -1;
+      const M = { adm: soma(ab, J.atual), admAnt: soma(ab, J.anterior), des: soma(bx, J.atual), desAnt: soma(bx, J.anterior) };
+      M.sal = M.adm - M.des; M.salAnt = M.admAnt - M.desAnt;
+      M.est = ultimo(J.atual) >= 0 ? est[ultimo(J.atual)] : 0; M.estAnt = ultimo(J.anterior) >= 0 ? est[ultimo(J.anterior)] : 0;
+      const sufixo = cidade && busca ? ' · a busca por atividade não se aplica à cidade (o arquivo não cruza cidade e CNAE)' : '';
+
+      // ---- KPIs (mesmos do CAGED) ----
+      const varRel = (sal, e) => e - sal > 0 ? sal / (e - sal) : 0;
+      const kSaldo = cdKpiCard('trendUp', 'azul', 'Saldo de empresas', cagSinal(M.sal), cagDif(M.sal, M.salAnt), `vs. ${anoAnt} (${cagSinal(M.salAnt)})`,
+        `Aberturas menos baixas de inscrições no CNPJ · ${local} · ${J.rotulo}${sufixo}`);
+      const kAb = cdKpiCard('arrowDownLeft', 'verde', 'Aberturas', stkNum(M.adm), cdDelta(M.adm, M.admAnt), `vs. ${anoAnt} (${stkNum(M.admAnt)})`, `Estabelecimentos (matrizes e filiais) com início de atividade no período · ${local}`);
+      const kBx = cdKpiCard('arrowUpRight', 'vermelho', 'Baixas', stkNum(M.des), cdDelta(M.des, M.desAnt, false, false, true), `vs. ${anoAnt} (${stkNum(M.desAnt)})`, `Inscrições baixadas no período (situação cadastral BAIXADA) · ${local}`);
+      const kEst = cdKpiCard('predio', 'azul', 'Estoque de empresas', stkNum(M.est), cdDelta(M.est, M.estAnt), `vs. ${anoAnt} (${stkNum(M.estAnt)})`,
+        `Inscrições abertas e não baixadas (ativas, suspensas ou inaptas) no último mês do período · ${local}`);
+      const vr = varRel(M.sal, M.est), vrAnt = varRel(M.salAnt, M.estAnt);
+      const kVar = cdKpiCard('percent', 'amarelo', 'Variação de empresas', stkPct(vr, 1), cdDelta(vr, vrAnt, true, !M.estAnt), `vs. ${anoAnt} (${M.estAnt ? stkPct(vrAnt, 1) : '—'})`,
+        'Crescimento do número de empresas no período: saldo ÷ estoque no início do período');
+
+      // ---- Evolução do saldo ----
+      const ult = D.meses[nM - 1], ultAno = Number(ult.slice(0, 4)), ultMes = Number(ult.slice(5, 7));
+      const nMeses = J.ano === ultAno ? ultMes : 12;
+      const saldoMes = a => Array.from({ length: nMeses }, (_, k) => { const i = D.meses.indexOf(`${a}-${String(k + 1).padStart(2, '0')}`); return i < 0 ? 0 : ab[i] - bx[i]; });
+      const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
+        { nome: String(J.ano), cor: CD_COR.azul, valores: saldoMes(J.ano) }, { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: saldoMes(anoAnt) }] };
+      const fonte = `Receita Federal · CNPJ (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
+      const wVolume = cdCard('Evolução do saldo', `${local} · ${fonte}`, '<div id="stkFluxoGraf"></div>', ibgeLegenda(V.series));
+
+      // ---- Saldo por estado ----
+      const ufSel = iu >= 0 ? iu : -1;
+      const ufs = [...porUf.entries()].sort((a, b) => b[1] - a[1]);
+      const topUfs = ufs.slice(0, 7);
+      if(ufSel >= 0 && !topUfs.some(([k]) => k === ufSel) && porUf.has(ufSel)) topUfs.splice(6, 1, [ufSel, porUf.get(ufSel)]);
+      const wEstados = cdCard('Saldo por estado', ufSel >= 0 ? `${PAN_UF_NOME[D.ufs[ufSel]]} em destaque` : 'Estados com maior saldo de empresas',
+        cdBarras(topUfs.map(([k, v], i) => ({ nome: PAN_UF_NOME[D.ufs[k]] || D.ufs[k], valor: Math.max(0, v), rotulo: cagSinal(v),
+          cor: ufSel >= 0 ? (k === ufSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUfs.length > 1 ? i / (topUfs.length - 1) : 0) })), 'Saldo por estado', 'Sem movimentação no período.'));
+
+      // ---- Aberturas por setor | por associação (rosca com switch, como no CAGED/Sefaz) ----
+      const visaoAssoc = empRoscaVisao === 'assoc';
+      const dadosSetor = visaoAssoc
+        ? CAG_ASSOC.map(n => ({ nome: n, sigla: n, cor: SEF_ROSCA.assoc.cores[n] || CD_COR.cinza, valor: assoc.get(n) || 0 })).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'))
+        : CAG_SETORES.map(x => ({ nome: x.nome, sigla: x.nome, cor: x.cor, valor: setor.get(x.nome) || 0 }));
+      const totSet = dadosSetor.reduce((t, d) => t + d.valor, 0);
+      const centro = totSet >= 1000000 ? [stkNum(Math.round(totSet / 100000) / 10), 'mi aberturas'] : totSet >= 10000 ? [stkNum(Math.round(totSet / 1000)), 'mil aberturas'] : [stkNum(totSet), 'aberturas'];
+      const switchRosca = `<div class="cd-head-acoes"><div class="stk-segmented" id="empRoscaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['setor', 'Setor'], ['assoc', 'Associação']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empRoscaVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wSetor = cdCard(visaoAssoc ? 'Aberturas por associação' : 'Aberturas por setor',
+        (visaoAssoc ? 'Atividades (CNAE) agrupadas por associação · ' : 'Grandes setores da economia · ') + escopoAtv, `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centro[0]}</strong><span>${centro[1]}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosSetor.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))} aberturas"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totSet ? d.valor / totSet : 0)}</strong></li>`).join('')}</ul>
+        </div>`, switchRosca);
+
+      // ---- Atividades (seção CNAE) que mais geraram empresas ----
+      const secoes = [...secao.entries()].map(([k, [a, b]]) => [k, a - b]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const wSecao = cdCard('Atividades que mais geraram empresas', `Saldo por atividade econômica (CNAE) · ${escopoAtv}${avisoCidade ? '' : ''}`,
+        cdBarras(secoes.map(([k, v]) => ({ nome: k, valor: v, rotulo: cagSinal(v), cor: CD_COR.verde })), 'Atividades que mais geraram empresas',
+          vazio ? `Nenhuma atividade com “${busca}”.` : 'Nenhuma atividade com saldo positivo no período.'));
+
+      // ---- Ranking: subclasses CNAE com maior saldo ----
+      const subs = [...sub.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const salPos = subs.reduce((t, [, v]) => t + v, 0) || 1;
+      const totPos = [...sub.values()].filter(v => v > 0).reduce((t, v) => t + v, 0) || salPos;
+      const wSub = cdCard('Atividades com maior saldo', `Subclasse CNAE · ${escopoAtv}`, subs.length ? `<ol class="cd-rank">${subs.map(([c, v], i) => {
+          const nome = D.cnaes.nome[c];
+          return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(D.cnaes.cod[c])} · ${esc(nome)}">${esc(nome)}</span><strong>${cagSinal(v)}</strong><span class="cd-rank-pct">${stkPct(v / totPos)}</span></li>`; }).join('')}</ol>`
+        : `<div class="stk-vazio">${esc(vazio ? `Nenhuma atividade com “${busca}”.` : 'Nenhuma atividade com saldo positivo no período.')}</div>`);
+
+      // ---- Destaques: municípios com maior saldo (Brasil ou estado; cidade filtrada marcada) ----
+      const munSal = new Map(), munAnt = new Map(), munAb = new Map();
+      const noAnt = new Array(nM).fill(false); J.anterior.forEach(i => { noAnt[i] = true; });
+      const anterior = [...J.anterior];
+      P.mun.forEach(({ a, b }, x) => {
+        if(iu >= 0 && D.mun.uf[x] !== iu) return;
+        let sa = 0, sb = 0, sant = 0;
+        for(const m of atual){ sa += a[m]; sb += b[m]; }
+        for(const m of anterior) sant += a[m] - b[m];
+        if(sa || sb){ munSal.set(x, sa - sb); munAb.set(x, sa); }
+        if(sant) munAnt.set(x, sant);
+      });
+      let muns = [...munSal.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if(imun >= 0 && !muns.some(([k]) => k === imun) && munSal.has(imun)) muns.splice(4, 1, [imun, munSal.get(imun)]);
+      const nomeMun = k => iu >= 0 ? D.mun.nome[k] : `${D.mun.nome[k]} (${D.ufs[D.mun.uf[k]]})`;
+      const wMun = cdCard(iu >= 0 ? `Destaques em ${PAN_UF_NOME[D.ufs[iu]]}` : 'Destaques no Brasil', 'Municípios com maior saldo de empresas', muns.length ? `<ul class="cd-dest">${muns.map(([k, v]) => {
+          const nome = nomeMun(k), ant = munAnt.get(k) || 0, d = cagDif(v, ant), a = munAb.get(k) || 0;
+          const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
+          return `<li${k === imun ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)} · saldo ${cagSinal(v)} · ${esc(d.txt)} vs. ${anoAnt} (${cagSinal(ant)}) · ${stkNum(a)} aberturas"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${cagSinal(v)} empresas</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${cagSinal(ant)}) · ${stkNum(a)} aberturas</span></span></span></div></li>`;
+        }).join('')}</ul>` : '<div class="stk-vazio">Sem movimentação no período.</div>');
+
+      ibgeTela([kSaldo, kAb, kBx, kEst, kVar], [wVolume, wEstados, wSetor], [wSecao, wSub, wMun]);
+      stkDesenharRoscaCd(dadosSetor, visaoAssoc ? 'Aberturas por associação' : 'Aberturas por setor', 196);
+      const graf = document.getElementById('stkFluxoGraf');
+      if(graf) stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200));
+      cdAjustarListas();
+      const mesesJ = [...J.atual].sort((a, b) => a - b);
+      ibgeUltimo = { painel: 'empresas',
+        arquivo: `cnpj_empresas_${stkNorm(local).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`,
+        linhas: [['Mês', 'Local', 'Aberturas', 'Baixas', 'Saldo', 'Estoque (fim do mês)']]
+          .concat(mesesJ.map(m => [D.meses[m], local, ab[m], bx[m], ab[m] - bx[m], est[m]]))
+          .concat([[], ['Estado', `Saldo ${J.rotulo}`]], ufs.map(([k, v]) => [PAN_UF_NOME[D.ufs[k]] || D.ufs[k], v]))
+          .concat([[], ['Subclasse CNAE', 'Atividade', `Saldo ${J.rotulo} (${escopoAtv})`]], [...sub.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => [D.cnaes.cod[c], D.cnaes.nome[c], v])) };
+    }
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#empRoscaVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === empRoscaVisao) return;
+      empRoscaVisao = btn.dataset.visao;
+      stkRender();
+    });
+
     // ===== Painel Viabilidade — mesma estrutura do CAGED =====
     // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x
     // captação via planos). Dados da planilha de viabilidade: assets/data/viabilidades.js.
@@ -11413,7 +11612,8 @@ ${clipPlayerPills(n)}
     // ivs = Stone (IVS), indicador do Panorama: mesma infraestrutura (Estado, Mês/Ano e busca por setor), dados da Stone.
     // icva = Cielo (ICVA), indicador do Panorama: mesma infraestrutura (Região, Mês/Ano e busca por região).
     const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'], ivs: ['assets/data/stone_ivs.js', 'STONE_IVS'],
-      icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'], pnad: ['assets/data/ibge_pnad.js', 'IBGE_PNAD'] };
+      icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'], pnad: ['assets/data/ibge_pnad.js', 'IBGE_PNAD'],
+      empresas: ['assets/data/cnpj_empresas.js', 'CNPJ_EMPRESAS'] };
     // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
     const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];
     const ibgeDados = () => { const a = IBGE_ARQ[stkPainel()]; return a ? window[a[1]] : null; };
@@ -12093,7 +12293,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -12124,7 +12324,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -12210,7 +12410,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad'){
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad' || stkPainel() === 'empresas'){
         if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
