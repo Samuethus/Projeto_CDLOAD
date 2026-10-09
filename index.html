@@ -1450,6 +1450,7 @@
   .emp-mapa-painel .emp-mapa-total{font-size:22px;font-weight:700;line-height:1.1;}
   .emp-mapa-painel .emp-mapa-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;}
   .emp-mapa-painel .emp-mapa-leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
+  .emp-mapa-painel .emp-mapa-temp{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;text-transform:uppercase;vertical-align:middle;}
   .emp-mapa-painel .emp-mapa-nota{margin-top:8px;padding-top:8px;border-top:1px solid var(--cd-borda);color:var(--cd-muted);font-size:11px;}
   .emp-mapa-msg{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--cd-muted);background:rgba(238,242,247,.92);font-size:14px;}
   .emp-mapa-pop{font-size:12px;line-height:1.5;color:#0F1E3D;min-width:190px;}
@@ -11351,12 +11352,31 @@ ${clipPlayerPills(n)}
       const vet = t => { const v = new Int32Array(nM); if(t) t.split(',').forEach((x, i) => { if(x) v[i] = Number(x); }); return v; };
       return (C._prep = C.d.map(([i, r, at, , b]) => ({ i, r, at, b: vet(b) })));
     }
+    // TEMPORÁRIO (só para testar o mapa enquanto cnpj_ceps.js não é gerado): um ponto por município de MT, na sede
+    // (municipios_geo.js), com os CNPJs ativos (D.atm) ou baixados no período (D.prm). Remover quando o detalhe por CEP existir.
+    const empMunChave = (uf, n) => uf + '|' + stkNorm(n).replace(/[^a-z0-9]/g, '');
+    function empMapaDadosTemp(D, J, imun, regOk, baixadas){
+      if(!window.MUNICIPIOS_GEO) return null;
+      if(!D._ll){
+        const idx = new Map();
+        window.MUNICIPIOS_GEO.linhas.forEach(([uf, nome, lon, lat]) => idx.set(empMunChave(uf, nome), [lon, lat]));
+        D._ll = D.mun.nome.map((n, k) => idx.get(empMunChave(D.ufs[D.mun.uf[k]], n)) || null);
+      }
+      const qtd = new Map(), soma = (x, n) => { if(n && (imun < 0 || x === imun)) qtd.set(x, (qtd.get(x) || 0) + n); };
+      if(baixadas) empPreparar(D).prm.forEach(o => { if(regOk[o.r]){ let n = 0; for(const m of J.atual) n += o.b[m]; soma(o.x, n); } });
+      else (D.atm || []).forEach(([x, , r, v]) => { if(regOk[r]) soma(x, v); });
+      const feats = [];
+      qtd.forEach((n, k) => {
+        if(D._ll[k]) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: D._ll[k] }, properties: { n, cep: '', end: '', mun: k, aprox: 0 } });
+      });
+      return { C: { edicao: D.edicao }, feats, baixadas, nAprox: 0, temp: true };
+    }
     // Um ponto por CEP com a quantidade de CNPJs registrados nele (ativos na edição ou baixados no período).
     function empMapaDados(D, J, imun){
       const C = window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao ? window.CNPJ_CEPS : null;
-      if(!C) return null;
       const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value, baixadas = stkEmpSituacaoEl.value === 'baixadas';
       const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
+      if(!C) return empMapaDadosTemp(D, J, imun, regOk, baixadas);
       const atual = [...J.atual], qtd = new Map();
       for(const o of empCepsPrep(C)){
         if(!regOk[o.r] || (imun >= 0 && C.mun[o.i] !== imun)) continue;
@@ -11431,6 +11451,9 @@ ${clipPlayerPills(n)}
     function empMapaPopup(p){
       const D = empMapaD, baixadas = stkEmpSituacaoEl.value === 'baixadas';
       const munNome = D && D.mun.nome[p.mun] ? `${D.mun.nome[p.mun]} (${D.ufs[D.mun.uf[p.mun]]})` : '';
+      if(!p.cep) return `<div class="emp-mapa-pop"><strong>${esc(munNome)}</strong>`   // TEMPORÁRIO: ponto por município
+        + `<div class="emp-mapa-pop-sub">Visualização temporária: ponto único na sede do município</div>`
+        + `<table><tr><td>${baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos'}</td><td>${esc(stkNum(p.n))}</td></tr></table></div>`;
       return `<div class="emp-mapa-pop"><strong>CEP ${esc(p.cep.slice(0, 5))}-${esc(p.cep.slice(5))}</strong>`
         + `<div class="emp-mapa-pop-sub">${esc([p.end, munNome].filter(Boolean).join(' · '))}</div>`
         + `<table><tr><td>${baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos registrados'}</td><td>${esc(stkNum(p.n))}</td></tr></table>`
@@ -11446,7 +11469,8 @@ ${clipPlayerPills(n)}
         return;
       }
       if(!empMapa) empMapaMsg('Carregando o mapa…');
-      Promise.all([ibgeCarregar('empCeps').catch(() => null), empMapaPronto || (empMapaPronto = empMapaCriar())])
+      Promise.all([ibgeCarregar('empCeps').catch(() => null)
+        .then(() => window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao ? null : ibgeCarregar('munGeo')).catch(() => null), empMapaPronto || (empMapaPronto = empMapaCriar())])
         .then(() => {
           if(seq !== empMapaSeq || empMapaEl.hidden) return;
           empMapaMsg('');
@@ -11482,13 +11506,15 @@ ${clipPlayerPills(n)}
       const local = imun >= 0 ? D.mun.nome[imun] : (PAN_UF_NOME[ufCep] || ufCep);
       const edicao = `${R.C.edicao.slice(5)}/${R.C.edicao.slice(0, 4)}`;
       const fReg = [stkEmpRegimeEl.value && stkEmpRegimeEl.selectedOptions[0].text, stkEmpSimeiEl.value && stkEmpSimeiEl.selectedOptions[0].text].filter(Boolean).join(' · ');
-      const notas = ['Cada ponto é o CEP registrado do CNPJ na Receita Federal; o número é a quantidade de CNPJs nesse CEP.'];
+      const notas = R.temp
+        ? ['VISUALIZAÇÃO TEMPORÁRIA, só para testar o mapa: os endereços (CEP) dos CNPJs ainda estão sendo gerados pela atualização automática da Receita Federal. Por enquanto, cada município aparece como um ponto único na sede, com a quantidade de CNPJs dele.']
+        : ['Cada ponto é o CEP registrado do CNPJ na Receita Federal; o número é a quantidade de CNPJs nesse CEP.'];
       if(R.nAprox) notas.push(`${stkNum(R.nAprox)} de ${stkNum(R.feats.length)} CEPs ainda sem coordenada própria aparecem na sede do município (a geocodificação avança a cada dia).`);
       if(stkBuscaInput.value.trim()) notas.push('A busca por atividade (CNAE) não se aplica ao mapa.');
-      painel.innerHTML = `<h4>Endereço dos CNPJs (CEP)</h4>
+      painel.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : 'Endereço dos CNPJs (CEP)'}</h4>
         <div class="emp-mapa-sub">${esc(local)} · ${esc(R.baixadas ? 'baixados · ' + J.rotulo : 'ativos na edição ' + edicao)}${fReg ? ' · ' + esc(fReg) : ''}</div>
-        <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} CEPs</div>
-        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>CEP com CNPJs registrados</span><span>Clique nos grupos para aproximar</span></div>
+        <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} ${R.temp ? 'municípios' : 'CEPs'}</div>
+        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? 'Município (ponto na sede)' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
         <div class="emp-mapa-nota">${notas.map(esc).join('<br>')}</div>`;
       if(!R.feats.length) empMapaMsg('Nenhum CNPJ no recorte escolhido.');
 
@@ -11926,7 +11952,8 @@ ${clipPlayerPills(n)}
       icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'], pnad: ['assets/data/ibge_pnad.js', 'IBGE_PNAD'],
       empresas: ['assets/data/cnpj_empresas.js', 'CNPJ_EMPRESAS'],
       // EMPRESAS · Mapa: CNPJs de MT pelo CEP registrado.
-      empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'] };
+      empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'],
+      munGeo: ['assets/data/municipios_geo.js', 'MUNICIPIOS_GEO'] };   // TEMPORÁRIO: sede dos municípios enquanto não há CEP
     // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
     const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];
     const ibgeDados = () => { const a = IBGE_ARQ[stkPainel()]; return a ? window[a[1]] : null; };
