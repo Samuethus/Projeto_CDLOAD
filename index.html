@@ -1304,8 +1304,8 @@
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
   .stk-segmented-inativo{opacity:.45;pointer-events:none;}
   /* Sefaz MT: Setor | Associação no card estreito da rosca — compacto para o título caber. */
-  #sefRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
-  .cd-card-head:has(#sefRoscaVisao) h3{white-space:normal;}
+  #sefRoscaVisao .stk-seg-btn, #cagRoscaVisao .stk-seg-btn{font-size:12px;padding:5px 9px;}
+  .cd-card-head:has(#sefRoscaVisao) h3, .cd-card-head:has(#cagRoscaVisao) h3{white-space:normal;}
   /* Clipping: Mês/Ano/Player ficam ignorados enquanto há notícias selecionadas na busca. */
   .stk-filtro-ignorado{opacity:.45;}
   .stk-tema-aviso{display:flex;align-items:center;gap:10px;background:#EAF3FF;color:#0B3C6D;border:1px solid #CFE2FF;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
@@ -10751,6 +10751,22 @@ ${clipPlayerPills(n)}
       { nome: 'Comércio', cor: CD_COR.azul }, { nome: 'Serviços', cor: CD_COR.azulClaro }, { nome: 'Indústria', cor: CD_COR.cinza },
       { nome: 'Construção', cor: '#64748B' }, { nome: 'Agropecuária', cor: CD_COR.verde }
     ];
+    // Rosca: Setor (Grande Grupamento do CAGED) | Associação — mesmo racional da rosca da Sefaz MT:
+    // subclasses CNAE agrupadas pelas associações com que a CDL interage (regras em scripts/sefaz_extrair.ps1;
+    // a visão Brasil vem pronta do extrator, dims.assoc; com filtro, a consulta por subclasse é agrupada aqui).
+    let cagRoscaVisao = 'setor'; // setor | assoc
+    const CAG_ASSOC = ['CDL Cuiabá', 'Sindipetróleo', 'Abrasel', 'Fenabrave', 'Outros'];
+    const CAG_ASSOC_PREFIXOS = [
+      [1, ['06', '19', '4681', '4682', '4731', '4732', '4784', '4729602', '4520005', '3520']],                  // Sindipetróleo
+      [2, ['561', '562', '11', '4635', '4723', '105', '108', '109', '4721102', '4721104', '4637', '4639']],         // Abrasel
+      [3, ['4511', '4512', '4541', '4542', '4661', '2910', '2920', '2930', '3091', '2831', '2832', '2833']]        // Fenabrave
+    ];
+    function cagAssoc(cod){
+      const c = String(cod).split('.')[0].padStart(7, '0');   // a fonte omite o zero inicial (115600 → 0115600)
+      for(const [g, pref] of CAG_ASSOC_PREFIXOS) if(pref.some(x => c.startsWith(x))) return g;
+      const d = Number(c.slice(0, 2));
+      return (d >= 45 && d <= 47) || (d >= 49 && d <= 99) ? 0 : 4;   // CDL Cuiabá: demais comércio e serviços
+    }
     const stkIndicadorEl = document.getElementById('stkIndicadorFiltro');
     const cagAtivo = () => stkPainel() === 'panorama' && stkIndicadorEl.value === 'caged';
     const cagSinal = v => (v > 0 ? '+' : v < 0 ? '−' : '') + stkNum(Math.abs(v));
@@ -10799,6 +10815,7 @@ ${clipPlayerPills(n)}
         mensal: { [J.ano]: saldoMes(J.ano), [J.anoAnt]: saldoMes(J.anoAnt) },
         ufs: cagSomar(D.dims.uf, J.atual, CAG_SAL), ufSel: '',
         setor: cagSomar(D.dims.setor, J.atual, CAG_ADM),
+        assoc: D.dims.assoc ? cagSomar(D.dims.assoc, J.atual, CAG_ADM) : null,
         secao: { sal: cagSomar(D.dims.secao, J.atual, CAG_SAL), adm: cagSomar(D.dims.secao, J.atual, CAG_ADM), des: cagSomar(D.dims.secao, J.atual, CAG_DES) },
         ocup: cagSomar(D.dims.ocup, J.atual, CAG_SAL),
         mun: { uf: '', sal: cagSomar(D.dims.mun, J.atual, CAG_SAL), salAnt: cagSomar(D.dims.mun, J.anterior, CAG_SAL), adm: cagSomar(D.dims.mun, J.atual, CAG_ADM), nomes: n => n, sel: '' } };
@@ -10818,11 +10835,12 @@ ${clipPlayerPills(n)}
         cagConsulta([A, ['mes', panCol('d', 'Mês')], ...cagMed, ['est', panMed('m', 'Estoque Mensal')]], [anos, ...geo, ...busca]),
         cagConsulta([['k', panCol('g', 'UF Sigla')], ['sal', panMed('m', 'Saldo')]], [atual, meses, ...busca]),
         cagConsulta([['k', panCol('e', 'Grande Grupamento')], ['adm', panMed('m', 'Admitidos')]], [atual, meses, ...geo, ...busca]),
+        cagConsulta([['c', panCol('e', 'Código CNAE 2.0 Subclasse')], ['adm', panMed('m', 'Admitidos')]], [atual, meses, ...geo, ...busca]),
         cagConsulta([['k', panCol('e', 'CNAE 2.0 Seção')], ...cagMed], [atual, meses, ...geo, ...busca]),
         cagConsulta([['k', panCol('o', 'Ocupação')], ['sal', panMed('m', 'Saldo')]], [atual, meses, ...geo, ...busca]),
         cagConsulta([A, ['cod', panCol('g', 'Código Município')], ['k', panCol('g', 'Município')], ['uf', panCol('g', 'UF Sigla')], ['adm', panMed('m', 'Admitidos')], ['sal', panMed('m', 'Saldo')]],
           [anos, meses, ...(uf ? [panIn('g', 'UF Sigla', [uf])] : []), ...busca])
-      ]).then(([mensal, ufs, setor, secao, ocup, mun]) => ({ mensal, ufs, setor, secao, ocup, mun }))
+      ]).then(([mensal, ufs, setor, sub, secao, ocup, mun]) => ({ mensal, ufs, setor, sub, secao, ocup, mun }))
         .catch(e => { cagRecortes.delete(chave); throw e; });
       cagRecortes.set(chave, pr);
       return pr;
@@ -10845,6 +10863,7 @@ ${clipPlayerPills(n)}
         sal: somaJ(J.ano, 'sal'), salAnt: somaJ(J.anoAnt, 'sal'), est: estFim(J.ano), estAnt: estFim(J.anoAnt),
         mensal: { [J.ano]: saldoMes(J.ano), [J.anoAnt]: saldoMes(J.anoAnt) },
         ufs: mapa(R.ufs, 'sal'), ufSel: uf, setor: mapa(R.setor, 'adm'),
+        assoc: R.sub.reduce((m, r) => { if(r.c != null){ const n = CAG_ASSOC[cagAssoc(r.c)]; m.set(n, (m.get(n) || 0) + (Number(r.adm) || 0)); } return m; }, new Map()),
         secao: { sal: mapa(R.secao, 'sal'), adm: mapa(R.secao, 'adm'), des: mapa(R.secao, 'des') },
         ocup: mapa(R.ocup, 'sal'),
         mun: { uf, sal: col(mA, 'sal'), salAnt: col(mB, 'sal'), adm: col(mA, 'adm'), nomes: k => nomes.get(k) || k, sel: cod } };
@@ -10912,14 +10931,22 @@ ${clipPlayerPills(n)}
         cdBarras(topUfs.map(([k, v], i) => ({ nome: PAN_UF_NOME[k], valor: v, rotulo: cagSinal(v),
           cor: M.ufSel ? (k === M.ufSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUfs.length > 1 ? i / (topUfs.length - 1) : 0) })), 'Saldo por estado', 'Sem movimentação no período.'));
 
-      // ---- Admissões por setor (rosca) ----
-      const dadosSetor = CAG_SETORES.map(s => ({ nome: s.nome, sigla: s.nome, cor: s.cor, valor: M.setor.get(s.nome) || 0 }));
+      // ---- Admissões por setor | por associação (rosca com switch, como a da Sefaz MT) ----
+      const visaoAssoc = cagRoscaVisao === 'assoc' && !!M.assoc;
+      const dadosSetor = visaoAssoc
+        ? CAG_ASSOC.map(n => ({ nome: n, sigla: n, cor: SEF_ROSCA.assoc.cores[n] || CD_COR.cinza, valor: M.assoc.get(n) || 0 }))
+            .sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'))
+        : CAG_SETORES.map(s => ({ nome: s.nome, sigla: s.nome, cor: s.cor, valor: M.setor.get(s.nome) || 0 }));
       const totSet = dadosSetor.reduce((s, d) => s + d.valor, 0);
       const centro = totSet >= 1000000 ? [stkNum(Math.round(totSet / 100000) / 10), 'mi admissões'] : totSet >= 10000 ? [stkNum(Math.round(totSet / 1000)), 'mil admissões'] : [stkNum(totSet), 'admissões'];
-      const wSetor = cdCard('Admissões por setor', M.filtrado ? M.local : '', `<div class="cd-rosca-wrap">
+      const switchRosca = `<div class="cd-head-acoes"><div class="stk-segmented" id="cagRoscaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['setor', 'Setor'], ['assoc', 'Associação']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${(visaoAssoc ? 'assoc' : 'setor') === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${(visaoAssoc ? 'assoc' : 'setor') === k}"${k === 'assoc' && !M.assoc ? ' disabled title="Disponível após a próxima atualização dos dados"' : ''}>${rot}</button>`).join('')}
+        </div></div>`;
+      const subRosca = visaoAssoc ? `Atividades (CNAE) agrupadas por associação${M.filtrado ? ` · ${M.local}` : ''}` : M.filtrado ? M.local : 'Grandes setores da economia';
+      const wSetor = cdCard(visaoAssoc ? 'Admissões por associação' : 'Admissões por setor', subRosca, `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centro[0]}</strong><span>${centro[1]}</span></div></div>
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosSetor.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))} admissões"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totSet ? d.valor / totSet : 0)}</strong></li>`).join('')}</ul>
-        </div>`);
+        </div>`, switchRosca);
 
       // ---- Atividades (CNAE seção) que mais geraram empregos ----
       const secoes = [...M.secao.sal.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -10949,12 +10976,19 @@ ${clipPlayerPills(n)}
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kSaldo}${kAdm}${kDes}${kEst}${kVar}</div>`
         + `<div class="cd-row cd-row-a">${wVolume}${wEstados}${wSetor}</div>`
         + `<div class="cd-row cd-row-b">${wSecao}${wOcup}${wMun}</div></div>`;
-      stkDesenharRoscaCd(dadosSetor, 'Admissões por setor', 196);
+      stkDesenharRoscaCd(dadosSetor, visaoAssoc ? 'Admissões por associação' : 'Admissões por setor', 196);
       const grafFluxo = document.getElementById('stkFluxoGraf');
       if(grafFluxo) stkDesenharLinhasFluxo(grafFluxo, V.categorias, V.series, cdAlturaLivre(grafFluxo, 200));
       cdAjustarListas();
       cagUltimo = M;
     }
+
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#cagRoscaVisao .stk-seg-btn');
+      if(!btn || btn.disabled || btn.dataset.visao === cagRoscaVisao) return;
+      cagRoscaVisao = btn.dataset.visao;
+      if(cagUltimo && cagAtivo()) cagDesenhar(cagUltimo); else stkRender();
+    });
 
     // ===== Painel Viabilidade — mesma estrutura do CAGED =====
     // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x

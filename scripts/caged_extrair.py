@@ -8,8 +8,10 @@ junto com a extração da ABVE; só regrava o arquivo se os dados mudaram.
 Formato (compacto, mensal, a partir de ANO_INICIAL):
   meses: ['2023-01', ...]
   total: { adm, des, sal, est } por mês (Brasil)
-  dims: { uf|setor|secao|ocup|mun: { nomes: [...], linhas: [[iMes, iNome, adm, des, sal(, est)], ...] } }
+  dims: { uf|setor|secao|ocup|mun|assoc: { nomes: [...], linhas: [[iMes, iNome, adm, des, sal(, est)], ...] } }
     uf: com estoque; ocup/mun: só os TOP_MAX com mais admissões no período.
+    assoc: subclasses CNAE agrupadas pelas associações com que a CDL interage — mesmas regras da
+           rosca da Sefaz MT (scripts/sefaz_extrair.ps1); o painel usa no switch Setor | Associação.
 
 Também gera assets/data/caged_relatorio.js (window.CAGED_RELATORIO), usado pelo
 relatório em PDF "CAGED - Empregos Formais" (Relatórios > Gerar relatório):
@@ -43,6 +45,31 @@ DIMS_REL = {'sexo': ('s', 'Sexo.1'), 'faixa': ('f', 'Faixa Etária'), 'escol': (
 ORDEM_ESCOL = ['Analfabeto', 'Até 5ª Incompleto', '5ª Completo Fundamental', '6ª a 9ª Fundamental', 'Fundamental Incompleto',
                'Fundamental Completo', 'Médio Incompleto', 'Médio Completo', 'Superior Incompleto', 'Superior Completo',
                'Pós-Graduação completa', 'Mestrado', 'Doutorado']
+
+
+# Associações (mesmo racional e mesmos prefixos de CNAE da rosca da Sefaz MT, em scripts/sefaz_extrair.ps1;
+# o painel repete as regras em CAG_ASSOC_PREFIXOS para as consultas filtradas). Vale o primeiro grupo que casar.
+GRP_ASSOC = ['CDL Cuiabá', 'Sindipetróleo', 'Abrasel', 'Fenabrave', 'Outros']
+ASSOC_PREFIXOS = [
+    # Sindipetróleo: petróleo e gás, refino e biocombustíveis, distribuidoras e TRR, GLP, postos,
+    # lubrificantes, lojas de conveniência, troca de óleo/lavagem, gás canalizado.
+    (1, ('06', '19', '4681', '4682', '4731', '4732', '4784', '4729602', '4520005', '3520')),
+    # Abrasel: restaurantes, bares, lanchonetes, ambulantes, delivery/catering; bebidas; laticínios,
+    # sorvetes, café, panificação, confeitaria e demais alimentos de consumo; padarias; distribuidores.
+    (2, ('561', '562', '11', '4635', '4723', '105', '108', '109', '4721102', '4721104', '4637', '4639')),
+    # Fenabrave: concessionárias e revendas de veículos e motos, máquinas e implementos agrícolas, montadoras.
+    (3, ('4511', '4512', '4541', '4542', '4661', '2910', '2920', '2930', '3091', '2831', '2832', '2833')),
+]
+
+
+def assoc(cod):
+    c = str(cod).split('.')[0].zfill(7)   # a fonte omite o zero inicial (115600 -> 0115600)
+    for g, pref in ASSOC_PREFIXOS:
+        if c.startswith(pref):
+            return g
+    d = int(c[:2])
+    # CDL Cuiabá: o restante do comércio e dos serviços.
+    return 0 if 45 <= d <= 47 or 49 <= d <= 99 else 4
 
 
 def relatorio(F_ANOS, meses, im, chave):
@@ -125,6 +152,18 @@ def main():
         rs = p.consultar(E, [('k', p.col(prop_src, prop)), ('adm', p.medida('m', 'Admitidos'))], [F_ANOS])
         return [r['k'] for r in sorted((r for r in rs if r['k'] is not None), key=lambda r: -(r['adm'] or 0))[:TOP_MAX]]
 
+    def dim_assoc():
+        # Por ano: ~1.300 subclasses x 12 meses cabe no limite de linhas da consulta.
+        ag = {}
+        for a in anos:
+            for r in p.consultar(E, BASE + [('c', p.col('e', 'Código CNAE 2.0 Subclasse'))] + MED, [p.filtro_in('d', 'Ano', [a])]):
+                if not (r['ano'] and r['mes'] and r['c'] is not None and chave(r) in im):
+                    continue
+                v = ag.setdefault((im[chave(r)], assoc(r['c'])), [0, 0, 0])
+                for j, c in enumerate(('adm', 'des', 'sal')):
+                    v[j] += int(r.get(c) or 0)
+        return {'nomes': GRP_ASSOC, 'linhas': sorted([k[0], k[1]] + v for k, v in ag.items())}
+
     ocups = top('o', 'Ocupação')
     muns = top('g', 'Código Município')
     dados = {
@@ -139,6 +178,7 @@ def main():
             'ocup': dim(p.col('o', 'Ocupação'), [p.filtro_in('o', 'Ocupação', ocups)]),
             'mun': dim(p.col('g', 'Município'), [p.filtro_in('g', 'Código Município', muns)],
                        nome=lambda r: f"{str(r['k']).strip()} ({r['uf']})"),
+            'assoc': dim_assoc(),
         },
     }
 
