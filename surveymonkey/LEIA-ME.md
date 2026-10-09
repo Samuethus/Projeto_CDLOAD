@@ -1,6 +1,8 @@
 # Integração CDLoad × Survey Monkey
 
-> **Status:** etapa 1 em andamento — **MCP Server oficial do Survey Monkey** configurado no projeto para uso no Claude Code (item 5) e seção **Survey Monkey** no app com um **retrato fixo** dos formulários (lido em 07/10/2026). A sincronização ao vivo (Edge Function + tabelas) ainda não está implementada.
+> **Status:** sincronização ao vivo **escrita, aguardando publicação**: tabelas em [supabase/schema_surveymonkey.sql](../supabase/schema_surveymonkey.sql) e Edge Function em [supabase/functions/surveymonkey-sincronizar](../supabase/functions/surveymonkey-sincronizar/index.ts) (secret `SURVEYMONKEY_TOKEN` já gravado em 09/10/2026). Passo a passo de publicação em [supabase/LEIA-ME.md](../supabase/LEIA-ME.md#survey-monkey-ao-vivo-edge-function-surveymonkey-sincronizar). Enquanto isso, a seção **Survey Monkey** do app segue com o **retrato fixo** (lido pelo MCP em 09/10/2026).
+>
+> **Decisões de 09/10/2026:** a sincronização lê **todas as pastas** da conta (o prefixo `CDLOAD · …` do item 3.1 não é usado: a permissão `surveys_read` vale para a conta inteira e nenhuma pasta seguia o padrão) e o período vem da **data de criação** do formulário (o padrão de título do item 3.2 é opcional). Agendamento a cada **15 min** (o plano dizia 1 h): cada execução sem mudanças gasta só ~2 chamadas da API.
 > Este documento define **como o CDLoad vai ler as pastas e os formulários do Survey Monkey** e o passo a passo para implementar.
 
 ---
@@ -284,12 +286,12 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 **Acesso para a sincronização (administrador da conta)**
 - [ ] Confirmar no plano que a API e as respostas estão liberadas.
 - [ ] Criar o app privado com os 4 escopos de leitura (item 6).
-- [ ] Gerar o token e gravar em `SURVEYMONKEY_TOKEN` (secret do Supabase).
+- [x] Gerar o token e gravar em `SURVEYMONKEY_TOKEN` (secret do Supabase) — 09/10/2026.
 - [ ] Testar com os `curl` do item 6.
 
 **Desenvolvimento**
-- [ ] `supabase/schema_surveymonkey.sql`: tabelas, RLS, seção `surveymonkey` e agendamento (pg_cron + pg_net a cada 1 h).
-- [ ] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental e controle de limite.
+- [x] `supabase/schema_surveymonkey.sql`: tabelas (`survey_pastas`, `survey_formularios`, `survey_perguntas`, `survey_coletores`, `survey_respostas`, `survey_sincronizacoes`), RLS e agendamento (pg_cron + pg_net a cada 15 min). **Falta rodar no Supabase.**
+- [x] `supabase/functions/surveymonkey-sincronizar/index.ts`: passos 1 a 6 do item 7, com paginação, leitura incremental, retomada de onde parou e controle de limite. **Falta publicar** (`npx supabase functions deploy surveymonkey-sincronizar --no-verify-jwt`).
 - [x] Seção **Survey Monkey** criada no `index.html` (antiga "Templates", hoje só com o cabeçalho; os templates de WhatsApp continuam em WhatsApp › Templates).
 - [x] Retrato fixo na seção **Survey Monkey** (`SM_RETRATO` no `index.html`, lido pelo MCP em 07/10/2026): filtros (busca, pasta, status, ano), KPIs, respostas por pasta, tabela de formulários e exportação CSV. Nomes das pastas provisórios (o MCP não informa o nome da pasta).
 - [x] Seção **Survey Monkey** sem o gráfico "Respostas por pasta" e sem o texto do retrato; tabela de formulários no padrão da tabela de Movimentações do Estoque (largura total, sem quebra de linha, ordenação Mais respostas / Mais recente / A-Z).
@@ -300,7 +302,7 @@ Filtros previstos no Painel · Pesquisas (mesma barra de filtros do Dashboard): 
 - [x] Lista suspensa de **coletores** no dashboard do formulário, ao lado do switch. Lê `SM_RESUMOS[id].coletores` (`[{ id, nome, tipo, status, respostas }]`) e filtra o Painel por `SM_RESUMOS[id].porColetor[id].perguntas` e a Resposta individual por `respostas[i].coletor_id`. O MCP não lê coletores: no retrato atual a lista fica só com "Todos os coletores" (desabilitada) até a sincronização pela API (`GET /v3/surveys/{id}/collectors` e respostas com `collector_id`).
 - [ ] Trocar o retrato pelos dados ao vivo (tabelas `survey_*` sincronizadas), mantendo o mesmo layout.
 - [ ] **Painel · Pesquisas** no Dashboard (fase 2).
-- [ ] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
+- [x] Atualizar o [supabase/LEIA-ME.md](../supabase/LEIA-ME.md) com a ordem de execução do novo SQL e o deploy da função.
 
 ---
 

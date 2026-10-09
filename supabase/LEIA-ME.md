@@ -106,6 +106,20 @@ npx supabase functions deploy sincronizar-agenda
 ```
 Os segredos ficam só no Supabase (nunca no `config.js` nem no GitHub). A função usa o login de quem salvou a campanha e só aceita quem tem a seção **Campanhas** liberada. Logs: Supabase > Edge Functions > sincronizar-agenda > Logs.
 
+## Survey Monkey ao vivo (Edge Function `surveymonkey-sincronizar`)
+
+Copia pastas, formulários, perguntas, coletores e respostas do Survey Monkey para as tabelas `survey_*`, a cada 15 minutos. Planejamento completo em [../surveymonkey/LEIA-ME.md](../surveymonkey/LEIA-ME.md).
+
+1. **Secret:** `SURVEYMONKEY_TOKEN` (Access Token do app privado do Survey Monkey) em **Edge Functions > Secrets**.
+2. **Publicar a função** (sem JWT: quem chama é o pg_cron; a função ignora chamadas a menos de 5 min da anterior):
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref SEU_PROJECT_REF
+   npx supabase functions deploy surveymonkey-sincronizar --no-verify-jwt
+   ```
+3. **SQL:** em [schema_surveymonkey.sql](schema_surveymonkey.sql), troque as duas ocorrências de `SEU_PROJECT_REF` pelo id do projeto (Project Settings > General > Project ID) > cole no SQL Editor > **Run**. Rode **depois** do `schema_seguranca_rls.sql`.
+4. **Conferir:** depois de alguns minutos, rode as consultas comentadas no fim do arquivo. A primeira carga traz todo o histórico e pode levar algumas execuções (cada uma tem ~2 min e respeita o limite de chamadas da API); `pendentes` chega a 0 quando terminar. Erros: coluna `erros` de `survey_sincronizacoes` e **Edge Functions > surveymonkey-sincronizar > Logs**.
+
 ## 3. Primeiro acesso do administrador
 
 1. Abra o site, digite o e-mail do admin e uma **nova senha** (8+ caracteres) e clique em **Primeiro acesso**.
