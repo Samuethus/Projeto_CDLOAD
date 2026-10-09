@@ -11421,16 +11421,17 @@ ${clipPlayerPills(n)}
     function empMapaCamadas(){
       empMapa.addSource('emp', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 13, clusterRadius: 44,
         clusterProperties: { n: ['+', ['get', 'n']] } });
-      const fonte = ['DIN Pro Medium', 'Arial Unicode MS Regular'];
+      // Rótulos: branco 100% sólido, em negrito, com borda (halo) da mesma cor; nos pontos, dentro do círculo.
+      const fonte = ['DIN Pro Bold', 'Arial Unicode MS Bold'];
+      const rotPaint = { 'text-color': '#fff', 'text-opacity': 1, 'text-halo-color': '#fff', 'text-halo-width': 0.4 };
       empMapa.addLayer({ id: 'emp-grupos', type: 'circle', source: 'emp', filter: ['has', 'point_count'],
         paint: { 'circle-color': CD_COR.azul, 'circle-opacity': .8, 'circle-radius': 16, 'circle-stroke-width': 2, 'circle-stroke-color': 'rgba(255,255,255,.9)' } });
       empMapa.addLayer({ id: 'emp-grupos-rot', type: 'symbol', source: 'emp', filter: ['has', 'point_count'],
-        layout: { 'text-field': EMP_MAPA_ROT, 'text-font': fonte, 'text-size': 11, 'text-allow-overlap': true }, paint: { 'text-color': '#fff' } });
+        layout: { 'text-field': EMP_MAPA_ROT, 'text-font': fonte, 'text-size': 11, 'text-allow-overlap': true }, paint: rotPaint });
       empMapa.addLayer({ id: 'emp-pontos', type: 'circle', source: 'emp', filter: ['!', ['has', 'point_count']],
         paint: { 'circle-color': CD_COR.azul, 'circle-opacity': .8, 'circle-radius': 6, 'circle-stroke-width': 1, 'circle-stroke-color': 'rgba(255,255,255,.9)' } });
-      empMapa.addLayer({ id: 'emp-pontos-rot', type: 'symbol', source: 'emp', filter: ['!', ['has', 'point_count']], minzoom: 13,
-        layout: { 'text-field': EMP_MAPA_ROT, 'text-font': fonte, 'text-size': 10, 'text-offset': [0, 1.4], 'text-allow-overlap': false },
-        paint: { 'text-color': '#334155', 'text-halo-color': '#fff', 'text-halo-width': 1.2 } });
+      empMapa.addLayer({ id: 'emp-pontos-rot', type: 'symbol', source: 'emp', filter: ['!', ['has', 'point_count']],
+        layout: { 'text-field': EMP_MAPA_ROT, 'text-font': fonte, 'text-size': 10, 'text-allow-overlap': true }, paint: rotPaint });
       // Grupo: aproxima até separar os CEPs.
       empMapa.on('click', 'emp-grupos', ev => {
         const f = ev.features[0];
@@ -11461,6 +11462,15 @@ ${clipPlayerPills(n)}
         + '</div>';
     }
 
+    // Progresso da geração dos endereços: % dos CNPJs ativos de MT cujo CEP já tem coordenada própria.
+    function empMapaProgresso(){
+      const C = window.CNPJ_CEPS;
+      if(!C || !C.aprox) return 'Progresso: 0% · 0 CNPJs com coordenada (aguardando a extração dos dados da Receita Federal).';
+      let tot = 0, ok = 0;
+      for(const [i, , at] of C.d){ tot += at; if(!C.aprox[i]) ok += at; }
+      const pct = tot ? ok / tot * 100 : 0;
+      return `Progresso: ${pct.toLocaleString('pt-BR', { maximumFractionDigits: pct < 100 ? 1 : 0 })}% · ${stkNum(ok)} de ${stkNum(tot)} CNPJs com coordenada.`;
+    }
     function empMapaRender(D, J, iu, imun){
       const seq = ++empMapaSeq;
       empMapaAjustar();
@@ -11498,7 +11508,7 @@ ${clipPlayerPills(n)}
       const maxPt = Math.max(1, ...R.feats.map(f => f.properties.n)), tot = Math.max(maxPt + 1, R.feats.reduce((t, f) => t + f.properties.n, 0));
       empMapa.setPaintProperty('emp-pontos', 'circle-color', cor);
       empMapa.setPaintProperty('emp-grupos', 'circle-color', cor);
-      empMapa.setPaintProperty('emp-pontos', 'circle-radius', ['interpolate', ['linear'], ['sqrt', ['get', 'n']], 1, 4, Math.sqrt(maxPt) + 1, 20]);
+      empMapa.setPaintProperty('emp-pontos', 'circle-radius', ['interpolate', ['linear'], ['sqrt', ['get', 'n']], 1, 11, Math.sqrt(maxPt) + 1, 24]);
       empMapa.setPaintProperty('emp-grupos', 'circle-radius', ['interpolate', ['linear'], ['sqrt', ['get', 'n']], 1, 14, Math.sqrt(tot) + 1, 44]);
 
       // ---- Painel: quantos CNPJs e CEPs estão plotados ----
@@ -11507,8 +11517,9 @@ ${clipPlayerPills(n)}
       const edicao = `${R.C.edicao.slice(5)}/${R.C.edicao.slice(0, 4)}`;
       const fReg = [stkEmpRegimeEl.value && stkEmpRegimeEl.selectedOptions[0].text, stkEmpSimeiEl.value && stkEmpSimeiEl.selectedOptions[0].text].filter(Boolean).join(' · ');
       const notas = R.temp
-        ? ['VISUALIZAÇÃO TEMPORÁRIA, só para testar o mapa: os endereços (CEP) dos CNPJs ainda estão sendo gerados pela atualização automática da Receita Federal. Por enquanto, cada município aparece como um ponto único na sede, com a quantidade de CNPJs dele.']
+        ? ['Endereços (CEP) dos CNPJs ainda estão sendo gerados, cada município aparece como um ponto único na sede, com a quantidade de CNPJs dele.']
         : ['Cada ponto é o CEP registrado do CNPJ na Receita Federal; o número é a quantidade de CNPJs nesse CEP.'];
+      notas.push(empMapaProgresso());
       if(R.nAprox) notas.push(`${stkNum(R.nAprox)} de ${stkNum(R.feats.length)} CEPs ainda sem coordenada própria aparecem na sede do município (a geocodificação avança a cada dia).`);
       if(stkBuscaInput.value.trim()) notas.push('A busca por atividade (CNAE) não se aplica ao mapa.');
       painel.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : 'Endereço dos CNPJs (CEP)'}</h4>
