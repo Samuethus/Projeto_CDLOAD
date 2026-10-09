@@ -43,6 +43,12 @@ Formato (séries compactas: valores mensais separados por vírgula, zero = vazio
   atm: [[iMun, iPorte, iRegime, ativas], ...]                idem, por município de Mato Grosso
   amostra: { colunas, linhas }  até AMOSTRA_MAX aberturas do último mês (Mato Grosso primeiro), com todas
            as colunas das três bases + descrições do painel — botão Exportar. Contatos e CPF mascarados.
+
+Gera também assets/data/cnpj_ceps.js (window.CNPJ_CEPS), o mapa por CEP de Mato Grosso (EMPRESAS > Mapa):
+  ceps: ['78005000', ...] · mun: [índice em mun] · munCod: [código do município na Receita]
+  d:    [[iCep, iRegime, ativas, 'aberturas', 'baixas'], ...]  (séries mensais como acima)
+  ll / aprox / end: coordenadas, 1 = sede do município (CEP sem coordenada) e 'logradouro · bairro'
+  — preenchidos por scripts/cnpj_ceps_geo.py (cache em scripts/cache/ceps_geo.csv).
 """
 import base64
 import datetime
@@ -258,12 +264,13 @@ def mes_idx(d):
 
 
 def main():
+    import cnpj_ceps_geo as ceps_geo   # mapa por CEP: cache de coordenadas e gravação de cnpj_ceps.js
     pastas = sorted(p.strip('/') for p, _ in listar() if re.fullmatch(r'\d{4}-\d{2}/', p))
     if not pastas:
         sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
     edicao = pastas[-1]
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
-            and not os.environ.get('CNPJ_FORCAR'):
+            and os.path.exists(ceps_geo.SAIDA) and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
         return
     tam = {p.split('/')[-1]: t for p, t in listar(edicao + '/')}
@@ -333,6 +340,7 @@ def main():
     ufs, cnaes, muns = {}, {}, {}
     mun_uf = {}
     f, e0, fm, em0, pr, at, prm, atm = {}, {}, {}, {}, {}, {}, {}, {}
+    cf, cat, cep_mun = {}, {}, {}   # mapa de Mato Grosso: (mês, CEP, regime) → [aberturas, baixas] · (CEP, regime) → ativas
     amostra, reserva = [], []
 
     def idx(d, k):
@@ -375,6 +383,9 @@ def main():
             imn = idx(muns, c[20])
             mun_uf[imn] = iu
             det = uf == UF_DETALHE
+            cep = c[18] if det and len(c[18]) == 8 and c[18].isdigit() else None
+            if cep:
+                cep_mun[cep] = (imn, c[20])
             if ativa:
                 r = 2 - reg_atual[cb] if reg_atual[cb] else 2   # 2 MEI → 0 · 1 Simples → 1 · 0 → 2
                 k3 = (iu, p, r)
@@ -382,6 +393,8 @@ def main():
                 if det:
                     k3 = (imn, p, r)
                     atm[k3] = atm.get(k3, 0) + 1
+                    if cep:
+                        cat[(cep, r)] = cat.get((cep, r), 0) + 1
             if estoque0:
                 e0[(iu, ic)] = e0.get((iu, ic), 0) + 1
                 em0[imn] = em0.get(imn, 0) + 1
@@ -392,6 +405,8 @@ def main():
                     soma(f, (k, iu, ic), 0); soma(fm, (k, imn), 0); soma(pr, (k, iu, p, r), 0)
                     if det:
                         soma(prm, (k, imn, p, r), 0)
+                        if cep:
+                            soma(cf, (k, cep, r), 0)
                     if dini[:6] == ultimo and len(amostra) < AMOSTRA_MAX:
                         if det:
                             amostra.append(l)
@@ -404,6 +419,8 @@ def main():
                     soma(f, (k, iu, ic), 1); soma(fm, (k, imn), 1); soma(pr, (k, iu, p, r), 1)
                     if det:
                         soma(prm, (k, imn, p, r), 1)
+                        if cep:
+                            soma(cf, (k, cep, r), 1)
         total += n
         print('  %s: %d linhas (%.0fs)' % (arq, n, time.time() - t0), flush=True)
         if not os.environ.get('CNPJ_MANTER'):
@@ -502,6 +519,24 @@ def main():
     open(SAIDA, 'w', encoding='utf-8').write(js)
     print('Gravado %s: %d KB · %d linhas · %s..%s · %.0fs' % (os.path.relpath(SAIDA, RAIZ), len(js) // 1024, total,
                                                              meses[0], meses[-1], time.time() - t0))
+
+    # ---- Mapa por CEP (Mato Grosso): coordenadas do cache; as que faltam saem em scripts/cnpj_ceps_geo.py ----
+    cep_ord = sorted({c for c, _ in cat} | {k[1] for k in cf})   # CEPs com ativas ou movimento no período
+    icep = {c: i for i, c in enumerate(cep_ord)}
+    porCep = dict(series(cf, lambda k: (icep[k[1]], k[2])))
+    chaves = sorted(set(porCep) | {(icep[c], r) for c, r in cat})
+    mapa = {
+        'fonte': dados['fonte'], 'edicao': edicao, 'meses': meses, 'regimes': REGIMES, 'uf': UF_DETALHE.decode(),
+        'ceps': [c.decode() for c in cep_ord],
+        'mun': [nm[cep_mun[c][0]] for c in cep_ord],
+        'munCod': [cep_mun[c][1].decode() for c in cep_ord],
+        'd': [[i, r, cat.get((cep_ord[i], r), 0), serie(porCep.get((i, r), vazio)[0]), serie(porCep.get((i, r), vazio)[1])]
+              for i, r in chaves],
+    }
+    ceps_geo.aplicar(mapa, ceps_geo.cache_ler(), ceps_geo.sedes())
+    tam = ceps_geo.gravar(mapa)
+    print('Gravado %s: %d KB · %d CEPs (%d com coordenada própria)' % (os.path.relpath(ceps_geo.SAIDA, RAIZ), tam // 1024,
+                                                                     len(cep_ord), len(cep_ord) - sum(mapa['aprox'])))
 
 
 if __name__ == '__main__':

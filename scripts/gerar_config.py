@@ -14,7 +14,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 ENV = RAIZ / ".env"
-CHAVES = ("SUPABASE_URL", "SUPABASE_ANON_KEY", "ADMIN_EMAIL")
+CHAVES = ("SUPABASE_URL", "SUPABASE_ANON_KEY", "ADMIN_EMAIL", "MAPBOX_TOKEN")
 OBRIGATORIAS = ("SUPABASE_URL", "SUPABASE_ANON_KEY")
 # Uma chave "service_role"/"secret" jamais pode ir para o navegador.
 PROIBIDOS = ("service_role", "sb_secret_")
@@ -65,9 +65,15 @@ def main():
     if any(p in chave for p in PROIBIDOS) or jwt_role(chave) == "service_role":
         sys.exit("SUPABASE_ANON_KEY parece uma chave secreta/service_role. Use apenas a chave anon/publishable.")
 
+    # Mapbox (mapa de empresas): só o token público "pk."; um "sk." (secreto) jamais vai para o navegador.
+    mapbox = env.get("MAPBOX_TOKEN", "")
+    if mapbox and not mapbox.startswith("pk."):
+        sys.exit("MAPBOX_TOKEN deve ser o token público (pk.…), nunca um token secreto (sk.…).")
+
     config = {
         "supabase": {"url": env["SUPABASE_URL"], "anonKey": chave},
         "adminEmail": env.get("ADMIN_EMAIL", ""),
+        "mapboxToken": mapbox,
     }
     js = (
         "// GERADO por scripts/gerar_config.py — NÃO edite nem faça commit.\n"

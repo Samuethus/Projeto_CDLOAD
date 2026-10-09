@@ -56,15 +56,21 @@ jobs:
         env:
           CNPJ_TMP: ${{ runner.temp }}/cnpj
         run: python scripts/cnpj_extrair.py
+      # Mapa de empresas (EMPRESAS > Mapa): coordenadas dos CEPs de Mato Grosso que ainda faltam no cache
+      # (AwesomeAPI/BrasilAPI), um lote por dia; sem coordenada, o CEP fica na sede do município.
+      - name: Coordenadas dos CEPs (mapa de empresas)
+        continue-on-error: true
+        timeout-minutes: 60
+        run: python scripts/cnpj_ceps_geo.py
       - name: Commit e deploy se houve mudança
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js"
+          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js assets/data/cnpj_ceps.js scripts/cache/ceps_geo.csv"
           if [ -n "$(git status --porcelain $ARQS)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"
-            git add $ARQS
+            git add $(ls $ARQS 2>/dev/null)   # só os que existem (cnpj_ceps.js e o cache surgem na 1ª extração)
             git commit -m "Dados ABVE/CAGED/Sefaz/IBGE/Stone: atualização diária"
             git push
             # Commits feitos pelo GITHUB_TOKEN não disparam o deploy sozinhos.
