@@ -1302,6 +1302,9 @@
     #page-dashboard .wa-stock-filters .btn-label{display:none;}
     #page-dashboard .wa-stock-filters .btn{padding:10px 12px;}
   }
+  /* EMPRESAS: Limpar/Exportar sempre só com o ícone (botão quadrado), liberando espaço para os demais filtros. */
+  #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar) .btn-label{display:none;}
+  #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar){padding:10px;gap:0;}
   .stk-segmented{display:inline-flex;gap:2px;background:var(--stk-neutral-bg);border-radius:10px;padding:3px;flex:0 0 auto;}
   .stk-seg-btn{border:none;background:transparent;color:var(--stk-secondary-dark);font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
   .stk-seg-btn.active{background:var(--stk-white);color:var(--stk-primary-dark);box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
@@ -9518,6 +9521,7 @@ ${clipPlayerPills(n)}
       stkCidadeEl.hidden = !panorama && stkPainel() !== 'empresas';
       stkEmpFiltros.forEach(el => { el.hidden = !emp; });
       stkVisaoEmpEl.hidden = !emp;
+      document.getElementById('page-dashboard').classList.toggle('stk-emp', emp);   // Limpar/Exportar só com ícone
       const mapa = emp && empVisao === 'mapa';
       stkGrid.hidden = mapa;
       document.getElementById('empMapa').hidden = !mapa;
