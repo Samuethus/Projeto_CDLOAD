@@ -40,11 +40,14 @@ jobs:
       - name: Extrair dados da Stone (Índice do Varejo Stone)
         continue-on-error: true
         run: python scripts/stone_ivs_extrair.py
+      - name: Extrair dados da Cielo (ICVA)
+        continue-on-error: true
+        run: python scripts/cielo_icva_extrair.py
       - name: Commit e deploy se houve mudança
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js"
+          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js"
           if [ -n "$(git status --porcelain $ARQS)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"

@@ -2377,6 +2377,7 @@
             <option value="sefaz">Sefaz MT (ICMS)</option>
             <option value="ipca15">IBGE: IPCA-15</option>
             <option value="pmc">IBGE: PMC</option>
+            <option value="icva">Cielo (ICVA)</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
@@ -9185,9 +9186,9 @@ ${clipPlayerPills(n)}
     // os dados já carregados pelo próprio módulo, sem fetch novo.
     // ==================================================================
     const stkPainelEl = document.getElementById('stkPainelFiltro');
-    // Painel efetivo: Sefaz MT, IPCA-15 e PMC ficam dentro do Panorama Econômico
+    // Painel efetivo: Sefaz MT, IPCA-15, PMC e Cielo (ICVA) ficam dentro do Panorama Econômico
     // (filtro Indicador), mas continuam sendo painéis próprios no restante do código.
-    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc'];
+    const STK_INDICADOR_PAINEL = ['sefaz', 'ipca15', 'pmc', 'icva'];
     const stkPainel = () => {
       const ind = document.getElementById('stkIndicadorFiltro').value;
       return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
@@ -9217,7 +9218,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), viabilidades: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), viabilidades: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -9423,7 +9424,7 @@ ${clipPlayerPills(n)}
       const clipping = stkPainel() === 'clipping';
       const panorama = stkPainel() === 'panorama';
       const sefaz = stkPainel() === 'sefaz';
-      const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs';
+      const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva';
       const viab = stkPainel() === 'viabilidades';
       stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab;
       stkPlayerEl.hidden = !clipping;
@@ -9443,13 +9444,13 @@ ${clipPlayerPills(n)}
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
-        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs'){
-        // IPCA-15 e Stone (IVS): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva'){
+        // IPCA-15, Stone (IVS) e Cielo (ICVA): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
         const D = ibgeDados(), base = stkPainel() === 'pmc' ? 2 : 1;
         const anosI = [...new Set((D ? D.meses : []).map(m => m.slice(0, 4)))].sort().slice(base).reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosI.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
@@ -9972,7 +9973,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -9985,7 +9986,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'clipping') return stkRenderClipping();
       if(stkPainel() === 'panorama') return stkRenderPanorama();
       if(stkPainel() === 'sefaz') return sefRender();
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs') return ibgeRender();
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva') return ibgeRender();
       if(stkPainel() === 'viabilidades') return viabRender();
       return stkRenderEstoque();
     }
@@ -11372,7 +11373,11 @@ ${clipPlayerPills(n)}
     // navegador: Local (área do IPCA-15 / estado da PMC), Mês/Ano e busca (grupo/item ou atividade).
     const stkIbgeLocalEl = document.getElementById('stkIbgeLocalFiltro');
     // ivs = Painel · Stone (IVS): mesma infraestrutura (Estado, Mês/Ano e busca por setor), dados da Stone.
-    const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'], ivs: ['assets/data/stone_ivs.js', 'STONE_IVS'] };
+    // icva = Cielo (ICVA), indicador do Panorama: mesma infraestrutura (Região, Mês/Ano e busca por região).
+    const IBGE_ARQ = { ipca15: ['assets/data/ibge_ipca15.js', 'IBGE_IPCA15'], pmc: ['assets/data/ibge_pmc.js', 'IBGE_PMC'], ivs: ['assets/data/stone_ivs.js', 'STONE_IVS'],
+      icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'] };
+    // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
+    const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];
     const ibgeDados = () => { const a = IBGE_ARQ[stkPainel()]; return a ? window[a[1]] : null; };
     const ibgeProm = {};
     function ibgeCarregar(painel){
@@ -11403,7 +11408,7 @@ ${clipPlayerPills(n)}
       if(stkIbgeLocalEl.dataset.painel !== stkPainel()){
         stkIbgeLocalEl.dataset.painel = stkPainel();
         stkIbgeLocalEl.innerHTML = `<option value="">${rotulo}</option>` + D.locais.nomes.map((n, i) => i ? `<option value="${i}">${esc(n)}</option>` : '').join('');
-        stkIbgeLocalEl.title = stkPainel() === 'ivs' ? 'Estado (Índice do Varejo Stone)' : pmc ? 'Estado (PMC)' : 'Região metropolitana pesquisada no IPCA-15';
+        stkIbgeLocalEl.title = stkPainel() === 'ivs' ? 'Estado (Índice do Varejo Stone)' : stkPainel() === 'icva' ? 'Região (ICVA · Cielo)' : pmc ? 'Estado (PMC)' : 'Região metropolitana pesquisada no IPCA-15';
       }
     }
     // Janela comum: mês de referência = último mês da janela; comparação com o mesmo mês do ano anterior.
@@ -11419,7 +11424,7 @@ ${clipPlayerPills(n)}
         stkGrid.classList.add('cd-carregando');
         ibgeCarregar(painel).then(() => { if(stkPainel() === painel) ibgeRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
-          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados ${painel === 'ivs' ? 'da Stone' : 'do IBGE'} (${esc(IBGE_ARQ[painel][0])}).</div></div>`;
+          stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados ${ibgeFonte(painel)[0]} (${esc(IBGE_ARQ[painel][0])}).</div></div>`;
         });
         return;
       }
@@ -11428,10 +11433,10 @@ ${clipPlayerPills(n)}
       const J = panJanela(D);
       if(!J.atual.size){
         stkGrid.classList.remove('cd-fit', 'cd-carregando');
-        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">${painel === 'ivs' ? 'A Stone' : 'O IBGE'} ainda não publicou dados para ${esc(J.rotulo)}.</div></div>`;
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">${ibgeFonte(painel)[1]} ainda não publicou dados para ${esc(J.rotulo)}.</div></div>`;
         return;
       }
-      return painel === 'pmc' ? pmcDesenhar(D, J) : painel === 'ivs' ? ivsDesenhar(D, J) : ipcaDesenhar(D, J);
+      return painel === 'pmc' ? pmcDesenhar(D, J) : painel === 'ivs' ? ivsDesenhar(D, J) : painel === 'icva' ? icvaDesenhar(D, J) : ipcaDesenhar(D, J);
     }
 
     function ibgeTela(kpis, linhaA, linhaB){
@@ -11773,6 +11778,96 @@ ${clipPlayerPills(n)}
           .concat(porUf.map(([k, v]) => ['Estado', D.locais.nomes[k], (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
             (() => { const m = pctOf(S(G, k)[1], r); return m == null ? '' : (m * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }); })()])) };
     }
+
+    // ---------------- Cielo (ICVA) — Índice Cielo do Varejo Ampliado (indicador do Panorama) ----------------
+    // Dados: assets/data/cielo_icva.js (scripts/cielo_icva_extrair.py, planilha da base histórica no RI da Cielo).
+    // Mesma estrutura do CAGED: 5 KPIs + 2 linhas. A Cielo publica só o Varejo Total, em variação da receita
+    // de vendas contra o mesmo mês do ano anterior, para o Brasil e as 5 regiões (sem setores nem estados).
+    // Número de manchete = deflacionado (real), sem ajuste calendário — o divulgado pela Cielo.
+    function icvaDesenhar(D, J){
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      // Região: filtro Região ou busca pelo nome ("centro", "nordeste").
+      const achado = termos.length ? D.locais.nomes.findIndex(n => ibgeCasa(n, termos)) : -1;
+      const vazio = termos.length > 0 && achado < 0;
+      const l = achado >= 0 ? achado : stkIbgeLocalEl.value === '' ? 0 : Number(stkIbgeLocalEl.value);
+      const nomeL = D.locais.nomes[l], regioes = D.locais.nomes.map((n, k) => k).filter(k => k > 0);
+      const { r, rA } = ibgeRef(D, J);
+      const M = (v, loc) => D.mensal[v + ',' + loc] || [];
+      const em = (v, loc, m) => { const x = m < 0 ? null : M(v, loc)[m]; return x == null ? null : x / 100; };   // % da Cielo → fração
+      const pctS = v => ibgePct(v == null ? null : Math.round(v * 1000) / 10 || 0, 1, true);   // −0,03% → 0,0% (sem "−0,0%")
+      const rotR = ibgeRot(D, r), rotA = ibgeRot(D, rA);
+      const kp = (icone, tom, label, v, vA, ref, dica) => cdKpiCard(icone, tom, label, vazio ? '—' : pctS(v), cdDelta(v || 0, vA || 0, true, vazio || v == null || vA == null), `vs. ${ref} (${pctS(vA)})`, dica);
+      const ultimo = D.meses[D.meses.length - 1], ultAno = Number(ultimo.slice(0, 4)), ultMes = Number(ultimo.slice(5, 7));
+      // Ano: valor oficial da Cielo (ano corrente = acumulado até o último mês publicado).
+      const anoV = (v, loc, ano) => { const i = D.anual.anos.indexOf(ano), x = i < 0 ? null : (D.anual.series[v + ',' + loc] || [])[i]; return x == null ? null : x / 100; };
+      const rotAno = ano => ano === ultAno && ultMes < 12 ? `jan–${PAN_MES_CURTO[ultMes - 1].toLowerCase()}/${String(ano).slice(2)}` : String(ano);
+
+      // ---- KPIs ----
+      const kMes = kp('carrinho', 'azul', 'Vendas no mês', em('def', l, r), em('def', l, rA), rotA,
+        `Receita de vendas do varejo em ${rotR} contra ${rotA}, descontada a inflação (deflacionado, sem ajuste calendário — número divulgado pela Cielo) · ${nomeL}`);
+      const kNom = kp('percent', 'amarelo', 'Vendas nominais', em('nom', l, r), em('nom', l, rA), rotA,
+        `Receita de vendas em ${rotR} contra ${rotA}, sem descontar a inflação · ${nomeL}`);
+      const kAj = kp('barras', 'verde', 'Com ajuste calendário', em('def_aj', l, r), em('def_aj', l, rA), rotA,
+        `Deflacionado, sem o efeito de dias úteis e feriados (calendário igual ao do ano anterior) · ${rotR} · ${nomeL}`);
+      const kAno = kp('trendUp', 'azul', 'Acumulado no ano', anoV('def', l, J.ano), anoV('def', l, J.anoAnt), String(J.anoAnt),
+        `Variação real acumulada em ${rotAno(J.ano)} contra o mesmo período do ano anterior (dado anual da Cielo); comparação com o ano de ${J.anoAnt} · ${nomeL}`);
+      const lCmp = l === 0 ? 1 : 0;
+      const kCmp = kp(l === 0 ? 'mapa' : 'banco', 'verde', `${D.locais.nomes[lCmp]} no mês`, em('def', lCmp, r), em('def', lCmp, rA), rotA,
+        l === 0 ? `Região de Mato Grosso, para comparar · ${rotR} · deflacionado` : `Brasil, para comparar · ${rotR} · deflacionado`);
+
+      // ---- Evolução (variação real mês a mês, ano escolhido × anterior) ----
+      const E = ibgeEvolucao(D, J, m => M('def', l)[m]);
+      const wVolume = cdCard('Evolução das vendas', `Variação real ano contra ano (%) · ${nomeL} · Cielo (até ${ibgeRot(D, D.meses.length - 1)})`, '<div id="stkFluxoGraf"></div>', ibgeLegenda(E.V.series));
+
+      // ---- Vendas por região no mês de referência (verde = alta, vermelho = queda) ----
+      const cor = (v, k) => { const c = v < 0 ? CD_COR.vermelho : CD_COR.verde; return l && k !== l ? stkMisturarCor(c, '#FFFFFF', .55) : c; };
+      const porReg = regioes.map(k => [k, em('def', k, r)]).filter(([, v]) => v != null).sort((a, b) => b[1] - a[1]);
+      const wRegioes = cdCard('Vendas por região', `${l ? `${nomeL} em destaque · ` : ''}${rotR} · variação real`,
+        cdBarras(porReg.map(([k, v]) => ({ nome: D.locais.nomes[k], valor: Math.abs(v) * 100, rotulo: pctS(v), cor: cor(v, k),
+          dica: `${pctS(v)} · nominal ${pctS(em('nom', k, r))}` })), 'Vendas por região', 'Sem dados no mês.'));
+
+      // ---- Desempenho das regiões (rosca) ----
+      const faixas = [['alta', 'Em alta', v => v > 0.005], ['estavel', 'Estáveis', v => Math.abs(v) <= 0.005], ['queda', 'Em queda', v => v < -0.005]]
+        .map(([k, nome, f]) => { const its = porReg.filter(([, v]) => f(v)); return { nome, sigla: nome, cor: PMC_COR[k], valor: its.length, dica: `${nome}: ${its.map(([x]) => D.locais.nomes[x]).join('; ') || 'nenhuma'}` }; })
+        .filter(d => d.valor > 0).sort((a, b) => b.valor - a.valor);
+      const wRosca = ibgeRosca('Desempenho das regiões', `${rotR} · variação real (alta ou queda acima de 0,5%)`, faixas, [String(porReg.length), porReg.length === 1 ? 'região' : 'regiões']);
+
+      // ---- Trimestres (dado trimestral da Cielo, até o mês de referência) ----
+      const T = D.trimestral, tSer = T.series['def,' + l] || [];
+      const tFim = r < 0 ? '' : `${Math.ceil(Number(D.meses[r].slice(5, 7)) / 3)}T${D.meses[r].slice(2, 4)}`;
+      const tChave = p => Number(p.slice(-2)) * 10 + Number(p[0]);
+      const tNom = T.series['nom,' + l] || [];
+      const tris = T.periodos.map((p, i) => [p, tSer[i], tNom[i]]).filter(([p, v]) => v != null && (!tFim || tChave(p) <= tChave(tFim))).slice(-6);
+      const wTrim = cdCard('Vendas por trimestre', `Variação real ano contra ano · ${nomeL}`,
+        cdBarras(tris.map(([p, v, vn]) => ({ nome: `${p[0]}º tri/${p.slice(-2)}`, valor: Math.abs(v), rotulo: pctS(v / 100), cor: v < 0 ? CD_COR.vermelho : CD_COR.verde,
+          dica: `${pctS(v / 100)} · nominal ${pctS(vn == null ? null : vn / 100)}` })),
+          'Vendas por trimestre', 'Sem dados trimestrais.'));
+
+      // ---- Anos (ranking: real e nominal) ----
+      const anos = D.anual.anos.filter(a => a <= J.ano).slice(-5).reverse();
+      const wAnos = cdCard('Vendas por ano', `${nomeL} · real e nominal (à direita)`, anos.length ? `<ol class="cd-rank">${anos.map((a, k) => `
+          <li><span class="cd-rank-pos">${k + 1}</span><span class="cd-rank-nome" title="${esc(rotAno(a))}">${esc(rotAno(a))}</span><strong>${pctS(anoV('def', l, a))}</strong><span class="cd-rank-pct" title="Nominal (sem descontar a inflação)">${pctS(anoV('nom', l, a))}</span></li>`).join('')}</ol>`
+        : '<div class="stk-vazio">Sem dados anuais.</div>');
+
+      // ---- Destaques no mês: regiões com variação e comparação com o mesmo mês do ano anterior ----
+      const wDest = cdCard(`Destaques em ${rotR}`, 'Regiões com maior alta nas vendas no mês · variação real', porReg.length ? `<ul class="cd-dest">${porReg.slice(0, 5).map(([k, v]) => {
+          const vA = em('def', k, rA), d = cdDelta(v, vA || 0, true, vA == null);
+          const [ic, tom] = v > 0 ? ['setaCima', 'verde'] : v < 0 ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
+          return `<li${k === l ? ' class="cd-dest-sel"' : ''}><div title="${esc(D.locais.nomes[k])} · ${pctS(v)} · ${esc(d.txt)} vs. ${rotA} (${pctS(vA)})"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(D.locais.nomes[k])} · ${pctS(v)}</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${esc(rotA)} (${pctS(vA)})</span></span></span></div></li>`;
+        }).join('')}</ul>` : `<div class="stk-vazio">${vazio ? esc(`Nenhuma região com “${busca}”.`) : 'Sem dados no mês.'}</div>`);
+
+      ibgeTela([kMes, kNom, kAj, kAno, kCmp], [wVolume, wRegioes, wRosca], [wTrim, wAnos, wDest]);
+      stkDesenharRoscaCd(faixas, 'Desempenho das regiões', 196);
+      ibgeDesenharEvolucao(E.nMeses, E.V);
+      cdAjustarListas();
+      const n2 = v => v == null ? '' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const mesesJ = [...J.atual].sort((a, b) => a - b);
+      ibgeUltimo = { painel: 'icva',
+        arquivo: `cielo_icva_${J.ano}${stkMesEl.value ? '_' + stkMesEl.value : ''}.csv`,
+        linhas: [['Mês', 'Local', 'Deflacionado (%)', 'Deflacionado com ajuste calendário (%)', 'Nominal (%)', 'Nominal com ajuste calendário (%)']]
+          .concat(mesesJ.flatMap(m => D.locais.nomes.map((n, k) => [D.meses[m], n, ...D.visoes.map(v => n2(M(v, k)[m]))]))) };
+    }
     stkIbgeLocalEl.addEventListener('change', stkRender);
 
     stkPeriodoEstEl.addEventListener('change', () => {
@@ -11853,7 +11948,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -11884,7 +11979,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -11970,7 +12065,7 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs'){
+      if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva'){
         if(!ibgeUltimo || ibgeUltimo.painel !== stkPainel()) return;
         const { linhas, arquivo } = ibgeUltimo;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
