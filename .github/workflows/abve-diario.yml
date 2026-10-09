@@ -8,6 +8,15 @@ on:
   schedule:
     - cron: '0 9 * * *'   # 09:00 UTC (06:00 em Cuiabá), uma vez por dia
   workflow_dispatch:       # também dá para rodar manualmente na aba Actions
+  push:                    # e quando os scripts do CNPJ mudam (regera a base e o mapa por CEP na hora)
+    branches: [main]
+    paths:
+      - scripts/cnpj_extrair.py
+      - scripts/cnpj_ceps_geo.py
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
 
 permissions:
   contents: write

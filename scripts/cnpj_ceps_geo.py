@@ -1,5 +1,8 @@
 """Coordenadas dos CEPs do mapa de empresas (Dashboard > Panorama > EMPRESAS > Mapa).
 
+O mapa só plota o endereço registrado de cada CNPJ (o CEP do estabelecimento na Receita): um ponto por CEP,
+com a quantidade de CNPJs registrados nele — sem saldo nem outro cálculo.
+
 scripts/cnpj_extrair.py agrega os estabelecimentos de Mato Grosso por CEP e grava assets/data/cnpj_ceps.js.
 Este módulo põe latitude/longitude em cada CEP:
   1. cache scripts/cache/ceps_geo.csv (CEPs já consultados — inclusive os não encontrados, para não repetir);
