@@ -1436,6 +1436,7 @@
   .cd-row{display:grid;gap:16px;margin-bottom:16px;}
   .cd-row-a{grid-template-columns:1.5fr 1fr 1.05fr;}
   .cd-row-b{grid-template-columns:1.15fr 1fr 1.4fr;}
+  .cd-row-b4{grid-template-columns:1.15fr .95fr 1fr 1.25fr;}   /* EMPRESAS: + rosca Quantidade de empresas */
   @media (max-width:1200px){ .cd-row-a,.cd-row-b{grid-template-columns:repeat(2,minmax(0,1fr));} .cd-row > :first-child{grid-column:1 / -1;} }
   @media (max-width:700px){ .cd-row-a,.cd-row-b{grid-template-columns:1fr;} }
   .cd-card{background:#fff;border:1px solid var(--cd-borda);border-radius:12px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;min-width:0;}
@@ -2421,6 +2422,21 @@
           </select>
           <select class="filter-select" id="stkCidadeFiltro" title="Cidade (escolha um estado)" hidden disabled>
             <option value="">Cidade</option>
+          </select>
+          <select class="filter-select" id="stkEmpRegimeFiltro" title="Regime tributário (Perfil das empresas e Quantidade de empresas)" hidden>
+            <option value="">Regime</option>
+            <option value="simples">Simples Nacional</option>
+            <option value="nao">Não optante (Presumido/Real)</option>
+          </select>
+          <select class="filter-select" id="stkEmpSimeiFiltro" title="Optante pelo SIMEI — MEI (Perfil das empresas e Quantidade de empresas)" hidden>
+            <option value="">SIMEI</option>
+            <option value="sim">SIMEI · Sim</option>
+            <option value="nao">SIMEI · Não</option>
+          </select>
+          <select class="filter-select" id="stkEmpSituacaoFiltro" title="Situação cadastral (Perfil das empresas e Quantidade de empresas)" hidden>
+            <option value="">Situação</option>
+            <option value="ativas">Ativas</option>
+            <option value="baixadas">Baixadas</option>
           </select>
           <select class="filter-select" id="stkRegiaoFiltro" title="Região fiscal de Mato Grosso" hidden>
             <option value="">Região</option>
@@ -9227,6 +9243,11 @@ ${clipPlayerPills(n)}
     const stkLeadsEl = document.getElementById('stkLeadsFiltro');
     // Viabilidade: licenças de Power BI — multiplicam o custo da ferramenta; padrão 1.
     const stkLicencasEl = document.getElementById('stkLicencasFiltro');
+    // EMPRESAS (CNPJ): Regime (Simples Nacional | Não optante), SIMEI (Sim | Não) e Situação (Ativas | Baixadas).
+    const stkEmpRegimeEl = document.getElementById('stkEmpRegimeFiltro');
+    const stkEmpSimeiEl = document.getElementById('stkEmpSimeiFiltro');
+    const stkEmpSituacaoEl = document.getElementById('stkEmpSituacaoFiltro');
+    const stkEmpFiltros = [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl];
     let stkPeriodoAtual = '';
     let stkPlayerPadrao = true; // Clipping abre filtrado por CDL Cuiabá
     let stkFluxoModo = 'semanal';
@@ -9462,6 +9483,7 @@ ${clipPlayerPills(n)}
       // EMPRESAS (CNPJ) usa os mesmos filtros de Estado e Cidade do Panorama.
       stkUfEl.hidden = !panorama && stkPainel() !== 'empresas';
       stkCidadeEl.hidden = !panorama && stkPainel() !== 'empresas';
+      stkEmpFiltros.forEach(el => { el.hidden = !emp; });
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
@@ -10240,8 +10262,8 @@ ${clipPlayerPills(n)}
         while(l.children.length > 1 && l.scrollHeight > l.clientHeight + 1) l.lastElementChild.remove();
       });
     }
-    function stkDesenharRoscaCd(dados, titulo, maximo){
-      const el = document.getElementById('stkDistribGraf');
+    function stkDesenharRoscaCd(dados, titulo, maximo, id){
+      const el = document.getElementById(id || 'stkDistribGraf');
       if(!el) return;
       const wrap = el.closest('.cd-rosca-wrap'), leg = wrap.querySelector('.cd-rosca-legenda');
       const gap = parseFloat(getComputedStyle(wrap).columnGap) || 16;
@@ -11167,25 +11189,57 @@ ${clipPlayerPills(n)}
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosSetor.map(d => `<li title="${esc(d.nome)}: ${esc(stkNum(d.valor))} aberturas"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totSet ? d.valor / totSet : 0)}</strong></li>`).join('')}</ul>
         </div>`, switchRosca);
 
+      // ---- Filtros Regime, SIMEI e Situação: valem para o Perfil das empresas e a Quantidade de empresas ----
+      // (as únicas análises com o regime no arquivo). Regimes: 0 MEI (SIMEI, dentro do Simples) · 1 Simples Nacional · 2 Não optante.
+      const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value, fSit = stkEmpSituacaoEl.value;
+      const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
+      const regIdx = D.regimes.map((_, r) => r).filter(r => regOk[r]);
+      const rotFiltroReg = [fReg && stkEmpRegimeEl.selectedOptions[0].text, fSimei && stkEmpSimeiEl.selectedOptions[0].text].filter(Boolean).join(' · ');
+      const sufReg = rotFiltroReg ? ` · ${rotFiltroReg}` : '';
+      const rotAtivas = `Ativas na edição de ${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}`;
+
       // ---- Perfil das empresas: quantidade de CNPJs por porte × regime tributário (MEI, Simples, não optante) ----
-      const MZ = empMatriz(D, P, iu, imun, atual, empMatrizVisao);
-      const totReg = D.regimes.map((_, r) => MZ.M.reduce((t, l) => t + l[r], 0)), totGeral = totReg.reduce((t, v) => t + v, 0);
-      const maxCel = Math.max(1, ...MZ.M.flat());
+      // Situação Ativas/Baixadas fixa a visão da matriz (o switch fica travado nela).
+      const visaoMatriz = fSit === 'ativas' ? 'at' : fSit === 'baixadas' ? 'bx' : empMatrizVisao;
+      const MZ = empMatriz(D, P, iu, imun, atual, visaoMatriz);
+      const MZv = MZ.M.map(l => regIdx.map(r => l[r]));
+      const totReg = regIdx.map((_, j) => MZv.reduce((t, l) => t + l[j], 0)), totGeral = totReg.reduce((t, v) => t + v, 0);
+      const maxCel = Math.max(1, ...MZv.flat());
       const curtoPorte = ['ME', 'EPP', 'Demais', 'N/I'];
       const dicaPorte = ['Microempresa (ME), inclui o MEI', 'Empresa de Pequeno Porte (EPP)', 'Demais portes (médias e grandes)', 'Porte não informado na base'];
-      const rotMatriz = { ab: `Aberturas · ${J.rotulo}`, bx: `Baixas · ${J.rotulo}`, at: `Ativas na edição de ${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}` }[empMatrizVisao];
+      const rotMatriz = { ab: `Aberturas · ${J.rotulo}`, bx: `Baixas · ${J.rotulo}`, at: rotAtivas }[visaoMatriz];
       const escopoMatriz = MZ.cidadeMT ? cidade : escopoAtv;
       // Milhões abreviados (3,08 mi) para a tabela caber no card; o número exato fica na dica.
-      const nCel = v => v >= 1e6 ? `${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi` : stkNum(v);
+      const nCel = v => Math.abs(v) >= 1e6 ? `${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi` : stkNum(v);
       const celula = (v, tot) => `<td title="${esc(stkNum(v))} · ${esc(stkPct(tot ? v / tot : 0))} do total" style="background:rgba(29,95,211,${(0.04 + 0.26 * v / maxCel).toFixed(3)})">${nCel(v)}</td>`;
       const switchMatriz = `<div class="cd-head-acoes"><div class="stk-segmented" id="empMatrizVisao" role="tablist" aria-label="Quantidade exibida">
-          ${[['ab', 'Aberturas'], ['bx', 'Baixas'], ['at', 'Ativas']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empMatrizVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empMatrizVisao === k}">${rot}</button>`).join('')}
+          ${[['ab', 'Aberturas'], ['bx', 'Baixas'], ['at', 'Ativas']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${visaoMatriz === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${visaoMatriz === k}"${fSit && visaoMatriz !== k ? ' disabled title="Definido pelo filtro Situação"' : ''}>${rot}</button>`).join('')}
         </div></div>`;
-      const wSecao = cdCard('Perfil das empresas', `CNPJs por porte e regime tributário · ${rotMatriz} · ${escopoMatriz}${busca ? ' (sem a busca)' : ''}`,
-        totGeral ? `<div class="emp-matriz-wrap"><table class="emp-matriz"><thead><tr><th>Porte</th>${D.regimes.map(r => `<th title="${esc(r === 'Não optante' ? 'Fora do Simples e do MEI (Lucro Presumido ou Real — a base aberta não separa)' : r)}">${esc(r)}</th>`).join('')}<th>Total</th></tr></thead><tbody>
-          ${MZ.M.map((linha, pI) => { const t = linha.reduce((a, b) => a + b, 0); if(!t) return ''; return `<tr><td title="${esc(dicaPorte[pI])}">${esc(curtoPorte[pI])}</td>${linha.map(v => celula(v, totGeral)).join('')}<td class="total" title="${esc(stkNum(t))}">${nCel(t)}</td></tr>`; }).join('')}
+      const wSecao = cdCard('Perfil das empresas', `CNPJs por porte e regime tributário · ${rotMatriz} · ${escopoMatriz}${sufReg}${busca ? ' (sem a busca)' : ''}`,
+        totGeral ? `<div class="emp-matriz-wrap"><table class="emp-matriz"><thead><tr><th>Porte</th>${regIdx.map(r => D.regimes[r]).map(r => `<th title="${esc(r === 'Não optante' ? 'Fora do Simples e do MEI (Lucro Presumido ou Real — a base aberta não separa)' : r)}">${esc(r)}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+          ${MZv.map((linha, pI) => { const t = linha.reduce((a, b) => a + b, 0); if(!t) return ''; return `<tr><td title="${esc(dicaPorte[pI])}">${esc(curtoPorte[pI])}</td>${linha.map(v => celula(v, totGeral)).join('')}<td class="total" title="${esc(stkNum(t))}">${nCel(t)}</td></tr>`; }).join('')}
           <tr class="total"><td>Total</td>${totReg.map(v => `<td title="${esc(stkNum(v))} · ${esc(stkPct(v / totGeral))} do total">${nCel(v)}</td>`).join('')}<td title="${esc(stkNum(totGeral))}">${nCel(totGeral)}</td></tr>
-        </tbody></table></div>` : '<div class="stk-vazio">Sem dados de porte e regime no período.</div>', switchMatriz);
+        </tbody></table></div>` : `<div class="stk-vazio">${regIdx.length ? 'Sem dados de porte e regime no período.' : 'Nenhum regime atende à combinação de Regime e SIMEI.'}</div>`, switchMatriz);
+
+      // ---- Quantidade de empresas (rosca por porte, MEI separado) ----
+      // Sem Situação: saldo (aberturas − baixas no período); Ativas: retrato da edição; Baixadas: baixas no período.
+      const qtdM = fSit === 'ativas' ? empMatriz(D, P, iu, imun, atual, 'at').M
+        : fSit === 'baixadas' ? empMatriz(D, P, iu, imun, atual, 'bx').M
+        : (() => { const A = empMatriz(D, P, iu, imun, atual, 'ab').M, B = empMatriz(D, P, iu, imun, atual, 'bx').M; return A.map((l, p) => l.map((v, r) => v - B[p][r])); })();
+      const qtdPorte = EMP_PORTE_ROSCA.map(([n, cor]) => ({ nome: n, sigla: n, cor, valor: 0 }));
+      qtdM.forEach((linha, pI) => linha.forEach((v, r) => { if(regOk[r]) qtdPorte[empPorteRosca(pI, r)].valor += v; }));
+      const saldoQtd = !fSit, fmtQtd = v => (v > 0 ? '+' : v < 0 ? '−' : '') + nCel(Math.abs(v));
+      const dadosQtd = qtdPorte.filter(d => d.valor !== 0).map(d => ({ ...d, rotuloValor: (saldoQtd ? cagSinal(d.valor) : stkNum(d.valor)) + ' empresas' }));
+      const totQtd = dadosQtd.reduce((t, d) => t + d.valor, 0), totPosQtd = dadosQtd.reduce((t, d) => t + Math.max(0, d.valor), 0);
+      const absQ = Math.abs(totQtd), sinalQ = saldoQtd && totQtd > 0 ? '+' : totQtd < 0 ? '−' : '';
+      const rotCentroQtd = saldoQtd ? 'saldo' : fSit === 'ativas' ? 'ativas' : 'baixadas';
+      const centroQtd = absQ >= 1000000 ? [sinalQ + stkNum(Math.round(absQ / 100000) / 10), `mi · ${rotCentroQtd}`] : absQ >= 10000 ? [sinalQ + stkNum(Math.round(absQ / 1000)), `mil · ${rotCentroQtd}`] : [sinalQ + stkNum(absQ), rotCentroQtd];
+      const escopoQtd = MZ.cidadeMT ? cidade : escopoAtv;
+      const rotQtd = saldoQtd ? `Saldo (aberturas − baixas) · ${J.rotulo}` : fSit === 'ativas' ? rotAtivas : `Baixadas · ${J.rotulo}`;
+      const wQtd = cdCard('Quantidade de empresas', `${rotQtd} · ${escopoQtd}${sufReg}${busca ? ' (sem a busca)' : ''}`, totPosQtd > 0 ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="empQtdGraf"></div><div class="cd-rosca-centro"><strong>${centroQtd[0]}</strong><span>${esc(centroQtd[1])}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosQtd.map(d => `<li title="${esc(d.nome)}: ${esc(d.rotuloValor)}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${saldoQtd ? fmtQtd(d.valor) : stkPct(totPosQtd ? d.valor / totPosQtd : 0)}</strong></li>`).join('')}</ul>
+        </div>` : `<div class="stk-vazio">${!regIdx.length ? 'Nenhum regime atende à combinação de Regime e SIMEI.' : saldoQtd && dadosQtd.length ? 'Saldo negativo no período (mais baixas que aberturas).' : 'Sem empresas no recorte.'}</div>`);
 
       // ---- Ranking: subclasses CNAE com maior saldo ----
       const subs = [...sub.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -11218,8 +11272,9 @@ ${clipPlayerPills(n)}
             <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${cagSinal(v)} empresas</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${cagSinal(ant)}) · ${stkNum(a)} aberturas</span></span></span></div></li>`;
         }).join('')}</ul>` : '<div class="stk-vazio">Sem movimentação no período.</div>');
 
-      ibgeTela([kSaldo, kAb, kBx, kEst, kVar], [wVolume, wEstados, wSetor], [wSecao, wSub, wMun]);
+      ibgeTela([kSaldo, kAb, kBx, kEst, kVar], [wVolume, wEstados, wSetor], [wSecao, wQtd, wSub, wMun]);
       stkDesenharRoscaCd(dadosSetor, tituloRosca, 196);
+      if(totPosQtd > 0) stkDesenharRoscaCd(dadosQtd, 'Quantidade de empresas', 170, 'empQtdGraf');
       const graf = document.getElementById('stkFluxoGraf');
       if(graf) stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200));
       cdAjustarListas();
@@ -11721,7 +11776,7 @@ ${clipPlayerPills(n)}
       stkGrid.classList.add('cd-fit');
       stkGrid.classList.remove('cd-carregando');
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kpis.join('')}</div>`
-        + `<div class="cd-row cd-row-a">${linhaA.join('')}</div><div class="cd-row cd-row-b">${linhaB.join('')}</div></div>`;
+        + `<div class="cd-row cd-row-a">${linhaA.join('')}</div><div class="cd-row cd-row-b${linhaB.length === 4 ? ' cd-row-b4' : ''}">${linhaB.join('')}</div></div>`;
     }
     // Evolução mensal: ano escolhido × ano anterior (até o último mês publicado).
     function ibgeEvolucao(D, J, valorMes){
@@ -12290,6 +12345,7 @@ ${clipPlayerPills(n)}
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
+      stkEmpFiltros.forEach(el => { el.value = ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
@@ -12297,10 +12353,12 @@ ${clipPlayerPills(n)}
     stkPainelEl.addEventListener('change', () => stkResetarPainel('abve'));
     stkLeadsEl.addEventListener('change', stkRender);
     stkLicencasEl.addEventListener('change', stkRender);
+    stkEmpFiltros.forEach(el => el.addEventListener('change', stkRender));
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
+      stkEmpFiltros.forEach(el => { el.value = ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
