@@ -1,143 +1,365 @@
 cep;lon;lat;logradouro;bairro
 78005000;-56.09667;-15.59611;Rua Engenheiro Ricardo Franco;Centro-Norte
+78005010;-56.09667;-15.59611;Rua Pedro Celestino;Centro-Norte
+78005020;-56.09667;-15.59611;Rua Galdino Pimentel;Centro-Norte
+78005030;-56.09667;-15.59611;Avenida Mato Grosso;Centro-Norte
 78005100;-56.09667;-15.59611;Avenida Marechal Deodoro;Centro-Norte
 78005150;-56.09667;-15.59611;Rua Candido Mariano;Centro-Norte
+78005190;-56.09667;-15.59611;Rua Batista das Neves;Centro-Norte
 78005250;-56.09667;-15.59611;Rua Treze de Junho;Centro-Norte
+78005290;-56.09667;-15.59611;Rua Joaquim Murtinho;Centro-Norte
 78005300;-56.09667;-15.59611;Rua Barão de Melgaço;Centro-Norte
+78005330;-56.09667;-15.59611;Rua Vinte e Quatro de Outubro;Centro-Norte
 78005340;-56.09667;-15.59611;Avenida Isaac Póvoas;Centro-Norte
+78005370;-56.09667;-15.59611;Avenida Presidente Getúlio Vargas;Centro-Norte
+78005400;-56.09667;-15.59611;Rua Comandante Costa;Centro-Norte
 78005500;-56.09667;-15.59611;Avenida Tenente-Coronel Duarte;Centro-Norte
 78005505;-56.09667;-15.59611;Avenida Marechal Deodoro;Araés
 78005510;-56.09667;-15.59611;Rua Tenente Eulálio Guerra;Araés
+78005550;-56.09667;-15.59611;Rua Manoel Leopoldino;Araés
+78005560;-56.09667;-15.59611;Rua Desembargador José de Mesquita;Araés
+78005570;-56.09667;-15.59611;Rua João Carlos Pereira Leite;Araés
+78005580;-56.09667;-15.59611;Rua Ministro João Alberto;Araés
+78005600;-56.09667;-15.59611;Rua General João Severiano da Fonseca;Araés
 78008000;-56.09667;-15.59611;Avenida Historiador Rubens de Mendonça;Baú
+78008100;-56.09667;-15.59611;Rua Corumbá;Baú
+78008405;-56.09667;-15.59611;Rua São Benedito;Lixeira
+78008435;-56.09667;-15.59611;Rua Professor João Félix;Lixeira
 78008800;-56.09667;-15.59611;Avenida Professor João Gomes Monteiro Sobrinho;Lixeira
 78010000;-56.09667;-15.59611;Avenida General Vale;Bandeirantes
+78010020;-56.09667;-15.59611;Rua Baltazar Navarros;Bandeirantes
 78010200;-56.09667;-15.59611;Avenida Coronel Escolástico;Bandeirantes
+78010260;-56.09667;-15.59611;Rua Castro Alves;Areão
+78010500;-56.09667;-15.59611;Avenida Miguel Sutil;Areão
+78010715;-56.09667;-15.59611;Rua Doutor Euricles Mota;Areão
+78010900;-56.09667;-15.59611;Rua Vereador João Barbosa Caramuru 184;Bandeirantes
 78015000;-56.09667;-15.59611;Avenida Manoel José de Arruda;Terceiro
 78015020;-56.09667;-15.59611;Avenida Carmindo de Campos;Terceiro
+78015021;-56.09667;-15.59611;Avenida Carmindo de Campos;Dom Aquino
 78015050;-56.09667;-15.59611;Rua Comendador Henrique;Dom Aquino
+78015090;-56.09667;-15.59611;Rua Fenelon Müller;Dom Aquino
+78015100;-56.09667;-15.59611;Avenida Miguel Sutil;Dom Aquino
+78015140;-56.09667;-15.59611;Rua Santa Terezinha;Dom Aquino
+78015150;-56.09667;-15.59611;Rua São Cristóvão;Dom Aquino
 78015190;-56.09667;-15.59611;Rua Pimenta Bueno;Dom Aquino
 78015285;-56.09667;-15.59611;Rua do Cajá;Dom Aquino
+78015290;-56.09667;-15.59611;Rua Teles Pires;Dom Aquino
 78015300;-56.09667;-15.59611;Avenida General Melo;Dom Aquino
 78015500;-56.09667;-15.59611;Avenida Tenente-Coronel Duarte;Dom Aquino
+78015580;-56.09667;-15.59611;Avenida Desembargador Antônio Quirino de Araújo;Poção
 78015600;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Poção
+78015640;-56.09667;-15.59611;Rua Miranda Reis;Poção
 78015800;-56.09667;-15.59611;Avenida Amarílio de Almeida;Poção
+78015900;-56.09667;-15.59611;Avenida Carmindo de Campos;Terceiro
 78020000;-56.09667;-15.59611;Rua Treze de Junho;Centro-Sul
+78020170;-56.09667;-15.59611;Rua Major Gama;Centro-Sul
+78020200;-56.09667;-15.59611;Rua Desembargador Ferreira Mendes;Centro-Sul
 78020290;-56.09667;-15.59611;Rua Joaquim Murtinho;Centro-Sul
+78020301;-56.09667;-15.59611;Avenida Quinze de Novembro;Centro-Sul
 78020400;-56.09667;-15.59611;Rua Comandante Costa;Centro-Sul
+78020500;-56.09667;-15.59611;Rua Tenente-Coronel Thogo da Silva Pereira;Centro-Sul
+78020600;-56.09667;-15.59611;Avenida Senador Metello;Centro-Sul
 78020800;-56.09667;-15.59611;Rua Barão de Melgaço;Centro-Sul
 78025000;-56.09667;-15.59611;Rua Treze de Junho;Porto
+78025031;-56.09667;-15.59611;Avenida Quinze de Novembro;Porto
 78025190;-56.09667;-15.59611;Avenida Manoel José de Arruda;Porto
 78025300;-56.09667;-15.59611;Rua Barão de Melgaço;Porto
 78025340;-56.09667;-15.59611;Avenida Oito de Abril;Porto
 78025360;-56.09667;-15.59611;Avenida Doutor José Feliciano Figueiredo;Porto
+78028080;-56.09667;-15.59611;Rua Florentino Leite da Silva;Coophamil
+78028315;-56.09667;-15.59611;Rua Adavilson da Cruz;Novo Terceiro
+78030000;-56.09667;-15.59611;Avenida Miguel Sutil;Cidade Alta
+78030090;-56.09667;-15.59611;Rua da Fé;Cidade Alta
 78030110;-56.09667;-15.59611;Rua Antônio Caetano;Cidade Alta
+78030210;-56.09667;-15.59611;Avenida Agrícola Paes de Barros;Cidade Alta
+78030430;-56.09667;-15.59611;Rua Professor João Nunes Ribeiro;Cidade Alta
+78030435;-56.09667;-15.59611;Rua Custódio de Mello;Cidade Alta
+78030445;-56.09667;-15.59611;Avenida Jornalista Alves de Oliveira;Cidade Alta
+78030485;-56.09667;-15.59611;Avenida Miguel Sutil;Cidade Alta
+78030500;-56.09667;-15.59611;Avenida Ipiranga;Cidade Alta
 78032035;-56.09667;-15.59611;Avenida Ipiranga;Goiabeiras
+78032110;-56.09667;-15.59611;Rua Coronel Neto;Goiabeiras
+78032160;-56.09667;-15.59611;Avenida São Sebastião;Goiabeira
+78032175;-56.09667;-15.59611;Avenida Senador Metello;Goiabeiras
+78035005;-56.09667;-15.59611;Avenida Daliberto Ferreira Costa;Jardim Santa Isabel
+78035010;-56.09667;-15.59611;Rua Antônio Antero Paes de Barros;Jardim Santa Isabel
+78035100;-56.09667;-15.59611;Avenida Deputado Gilson Duarte de Barros;Jardim Santa Isabel
 78035150;-56.09667;-15.59611;Rua Dom Carlos Luiz D' Amour;Jardim Santa Isabel
+78035160;-56.09667;-15.59611;Avenida Agrícola Paes de Barros;Jardim Santa Isabel
 78035600;-56.09667;-15.59611;Rua Professora Neuza Lula Rodrigues;Barra do Pari
 78040000;-56.09667;-15.59611;Avenida José Rodrigues do Prado;Santa Rosa
 78040365;-56.09667;-15.59611;Avenida Miguel Sutil;Santa Rosa
 78040400;-56.12397;-15.59821;Avenida Miguel Sutil;Ribeirão da Ponte
 78040500;-56.09667;-15.59611;Avenida Antártica;Ribeirão da Ponte
+78040600;-56.09667;-15.59611;Rua Alfenas;Jardim Mariana
+78040640;-56.09667;-15.59611;Avenida Mário Palma;Jardim Mariana
+78040660;-56.09667;-15.59611;Rua Patos de Minas;Jardim Mariana
 78040790;-56.09667;-15.59611;Avenida Miguel Sutil;Jardim Mariana
+78043105;-56.09667;-15.59611;Rua das Camélias;Jardim Cuiabá
+78043132;-56.09667;-15.59611;Rua dos Girassóis;Jardim Cuiabá
+78043148;-56.09667;-15.59611;Rua das Orquídeas;Jardim Cuiabá
+78043152;-56.09667;-15.59611;Rua das Dálias;Jardim Cuiabá
 78043172;-56.09667;-15.59611;Avenida das Flores;Jardim Cuiabá
+78043180;-56.09667;-15.59611;Avenida General Ramiro de Noronha;Jardim Cuiabá
+78043272;-56.09667;-15.59611;Avenida General Ramiro de Noronha;Duque de Caxias
 78043300;-56.09667;-15.59611;Avenida José Monteiro de Figueiredo;Duque de Caxias
 78043305;-56.09667;-15.59611;Avenida Miguel Sutil;Duque de Caxias
+78043306;-56.09667;-15.59611;Rua Almirante Henrique Pinheiro Guedes;Duque de Caxias
+78043370;-56.09667;-15.59611;Rua General Teófilo Ribeiro de Arruda;Duque de Caxias
 78043375;-56.09667;-15.59611;Avenida Miguel Sutil;Duque de Caxias
 78043395;-56.09667;-15.59611;Rua Marechal Floriano Peixoto;Duque de Caxias
 78043405;-56.09667;-15.59611;Rua Estevão de Mendonça;Quilombo
 78043409;-56.09667;-15.59611;Avenida Senador Filinto Müller;Quilombo
+78043435;-56.09667;-15.59611;Rua Corsino do Amarante;Quilombo
 78043500;-56.09667;-15.59611;Avenida Senador Filinto Müller;Quilombo
+78043505;-56.09667;-15.59611;Rua Presidente Afonso Pena;Quilombo
+78043605;-56.09667;-15.59611;Rua Nossa Senhora da Guia;Jardim Santa Marta
+78043695;-56.09667;-15.59611;Avenida Miguel Sutil;Jardim Santa Marta
 78043900;-56.09667;-15.59611;Avenida José Monteiro de Figueiredo 500;Duque de Caxias
 78045000;-56.09667;-15.59611;Avenida São Sebastião;Quilombo
 78045008;-56.09667;-15.59611;Avenida Presidente Joaquim Augusto da Costa Marques;Quilombo
+78045175;-56.09667;-15.59611;Avenida Presidente Joaquim Augusto da Costa Marques;Quilombo
+78045305;-56.09667;-15.59611;Avenida São Sebastião;Quilombo
+78045350;-56.09667;-15.59611;Rua Brigadeiro Eduardo Gomes;Popular
+78045400;-56.09667;-15.59611;Avenida São Sebastião;Popular
+78045420;-56.09667;-15.59611;Rua Estevão de Mendonça;Popular
 78045440;-56.09667;-15.59611;Avenida Isaac Póvoas;Popular
 78048000;-56.09667;-15.59611;Avenida Miguel Sutil;Alvorada
 78048004;-56.09667;-15.59611;Rua Clarindo Epifânio da Silva;Despraiado
 78048005;-56.09667;-15.59611;Rua Osvaldo da Silva Correa;Despraiado
 78048076;-56.09667;-15.59611;Avenida Madrid;Despraiado
+78048135;-56.08778;-15.57997;Avenida República do Líbano;Despraiado
 78048145;-56.09667;-15.59611;Avenida Mário Palma;Ribeirão do Lipa
 78048150;-56.09667;-15.59611;Rodovia Arquiteto Hélder Cândia;Ribeirão do Lipa
+78048160;-56.09667;-15.59611;Rua Raul Santos Costa;Ribeirão do Lipa
+78048178;-56.09667;-15.59611;Rua Joaquim Gomes Moreno;Ribeirão do Lipa
+78048200;-56.09667;-15.59611;Avenida República do Líbano;Alvorada
 78048222;-56.09667;-15.59611;Rua Mistral;Despraiado
+78048223;-56.09667;-15.59611;Rua Minuano;Despraiado
+78048240;-56.09667;-15.59611;Avenida Kaytto Guilherme do Nascimento Pinto;Residencial Paiaguás
+78048242;-56.09667;-15.59611;Rua B;Residencial Paiaguás
+78048248;-56.09667;-15.59611;Rua E;Residencial Paiaguás
 78048250;-56.09667;-15.59611;Avenida Doutor Hélio Ribeiro;Residencial Paiaguás
+78048258;-56.09667;-15.59611;Rua A;Residencial Paiaguás
 78048340;-56.09667;-15.59611;Avenida Historiador Rubens de Mendonça;Alvorada
+78048450;-56.09667;-15.59611;Rua Oriente Tenuta;Alvorada
+78048455;-56.09667;-15.59611;Rua Desembargador Trigo de Loureiro;Alvorada
+78048485;-56.09667;-15.59611;Rua Duque de Caxias;Alvorada
 78048487;-56.09667;-15.59611;Rua I;Alvorada
+78048600;-56.09667;-15.59611;Rua Poxoréu;Alvorada
+78048610;-56.09667;-15.59611;Rua Doutor Cássio Veiga de Sá;Alvorada
+78048670;-56.09667;-15.59611;Rua Professora Tereza Lobo;Alvorada
+78048700;-56.09667;-15.59611;Avenida Miguel Sutil;Despraiado
+78048847;-56.09667;-15.59611;Avenida André Antônio Maggi;Alvorada
+78048848;-56.09667;-15.59611;Avenida Doutor Hélio Ribeiro;Alvorada
+78049080;-56.09667;-15.59611;Avenida André Antônio Maggi;Centro Político Administrativo
+78049502;-56.09667;-15.59611;Rua Albano Martins;Jardim Ubirajara
+78049520;-56.09667;-15.59611;Avenida dos Florais;Ribeirão do Lipa
 78050000;-56.09667;-15.59611;Avenida Historiador Rubens de Mendonça;Bosque da Saúde
+78050010;-56.09667;-15.59611;Rua das Orquídeas;Bosque da Saúde
 78050020;-56.09667;-15.59611;Rua da Cereja;Bosque da Saúde
+78050030;-56.09667;-15.59611;Rua Primavera;Bosque da Saúde
 78050040;-56.09667;-15.59611;Avenida Aclimação;Bosque da Saúde
 78050070;-56.09667;-15.59611;Avenida Bosque da Saúde;Bosque da Saúde
+78050090;-56.09667;-15.59611;Rua das Pérolas;Bosque da Saúde
+78050170;-56.09667;-15.59611;Rua Professor Rafael Rueda;Bosque da Saúde
 78050253;-56.09667;-15.59611;Avenida Vereador Juliano da Costa Marques;Jardim Aclimação
 78050267;-56.09667;-15.59611;Avenida Nigéria;Jardim Aclimação
 78050280;-56.09667;-15.59611;Avenida Historiador Rubens de Mendonça;Jardim Aclimação
+78050322;-56.09667;-15.59611;Rua C;Canjica
+78050392;-56.09667;-15.59611;Avenida A;Terra Nova
 78050400;-56.09667;-15.59611;Rua A;Terra Nova
 78050568;-56.09667;-15.59611;Avenida Oátomo Canavarros;Bela Vista
+78050600;-56.09667;-15.59611;Avenida Gonçalo Antunes de Barros;Bela Vista
+78050667;-56.09667;-15.59611;Avenida Gonçalo Antunes de Barros;Carumbé
 78050700;-56.09667;-15.59611;Avenida Governador Dante Martins de Oliveira;Carumbé
+78053000;-56.09667;-15.59611;Avenida Djalma Ferreira de Souza;Morada do Ouro
+78053489;-56.09667;-15.59611;Rua Quatro;Morada do Ouro
+78053500;-56.09667;-15.59611;Avenida Deputado Milton Teixeira de Figueredo;Morada do Ouro
+78053648;-56.09667;-15.59611;Avenida Doutor Vicente Emílio Vuolo;Tancredo Neves
 78053734;-56.09667;-15.59611;Avenida Mário Augusto Vieira;Morada do Ouro
 78055000;-56.09667;-15.59611;Avenida Historiador Rubens de Mendonça;Morada da Serra
+78055125;-56.05268;-15.55967;Rua Jornalista Amaro de Figueiredo Falcão;Morada da Serra
 78055428;-56.09667;-15.59611;Avenida Pernambuco;Morada da Serra
+78055488;-56.09667;-15.59611;Rua Benjamim Pedroso da Silva;Morada da Serra
 78055508;-56.09667;-15.59611;Avenida Brasil;Morada da Serra
+78055676;-56.09667;-15.59611;Avenida Ouro Preto;Morada da Serra
 78055714;-56.09667;-15.59611;Avenida José Torquato da Silva;Novo Paraíso
 78055731;-56.09667;-15.59611;Avenida José Torquato da Silva;Jardim Vitória
+78055733;-56.09667;-15.59611;Rodovia Emanuel Pinheiro;Jardim Vitória
+78055738;-56.09667;-15.59611;Rua Dez;Jardim Vitória
 78055799;-56.09667;-15.59611;Rodovia Emanuel Pinheiro;Jardim Florianópolis
+78055802;-56.09667;-15.59611;Rua Dezenove;Jardim Florianópolis
+78055834;-56.09667;-15.59611;Rua Vinte;Jardim Florianópolis
+78055838;-56.09667;-15.59611;Rua Vinte e Cinco;Jardim Florianópolis
+78055840;-56.09667;-15.59611;Rua Vinte e Dois;Jardim Florianópolis
+78055842;-56.09667;-15.59611;Rua Vinte e Quatro;Jardim Florianópolis
+78055844;-56.09667;-15.59611;Rua Vinte e Três;Jardim Florianópolis
+78055848;-56.09667;-15.59611;Rua Vinte e Um;Jardim Florianópolis
+78056023;-56.09667;-15.59611;Rua J;Nova Conquista
+78056071;-56.09667;-15.59611;Rua Jacarandá;Nova Conquista
+78056851;-56.09667;-15.59611;Rua Seis;Parque Residencial das Nações Indígenas
+78056909;-56.09667;-15.59611;Avenida A;Parque Residencial das Nações Indígenas
 78058000;-56.09667;-15.59611;Avenida Tuiuiú;Morada da Serra
+78058513;-56.09667;-15.59611;Avenida A;Três Barras
 78058688;-56.09667;-15.59611;Avenida Governador Dante Martins de Oliveira;Novo Horizonte
+78058720;-56.09667;-15.59611;Avenida Governador Dante Martins de Oliveira;Novo Mato Grosso
+78058753;-56.09667;-15.59611;Rua Córdova;Planalto
+78060000;-56.09667;-15.59611;Avenida Miguel Sutil;Jardim Leblon
 78060040;-56.09667;-15.59611;Avenida Archimedes Pereira Lima;Jardim Leblon
+78060094;-56.09667;-15.59611;Rua Benedito Camargo;Jardim Leblon
+78060600;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Jardim das Américas
 78060601;-56.09667;-15.59611;Avenida Brasília;Jardim das Américas
 78060618;-56.09667;-15.59611;Avenida Haiti;Jardim das Américas
 78060634;-56.09667;-15.59611;Rua Buenos Aires;Jardim das Américas
 78060758;-56.09667;-15.59611;Avenida Érico Gonçalves Preza Filho;Jardim Itália
+78061362;-56.09667;-15.59611;Rua Guarantã do Norte;Renascer
+78065000;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Pico do Amor
 78065075;-56.09667;-15.59611;Rua Tiradentes;Pico do Amor
+78065198;-56.09667;-15.59611;Rua República da Argentina;Jardim Tropical
+78065250;-56.09667;-15.59611;Avenida Presidente Médici;Campo Velho
 78065290;-56.09667;-15.59611;Avenida General Melo;Campo Velho
 78065310;-56.09667;-15.59611;Avenida Carmindo de Campos;Jardim Paulista
+78065345;-56.09667;-15.59611;Avenida Governador José Fragelli;Jardim Paulista
 78065700;-56.09667;-15.59611;Avenida Manoel José de Arruda;Grande Terceiro
 78065769;-56.09667;-15.59611;Avenida Tancredo de Almeida Neves;Jardim Campus Elizius
 78068401;-56.09667;-15.59611;Avenida Edgar Vieira;Boa Esperança
+78068600;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Boa Esperança
+78070000;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Jardim Petrópolis
+78070090;-56.09667;-15.59611;Rua Luiz Antônio de Figueiredo;Jardim Petrópolis
 78070100;-56.09667;-15.59611;Avenida Carmindo de Campos;Jardim Petrópolis
+78070122;-56.09667;-15.59611;Avenida Tancredo de Almeida Neves;Jardim Petrópolis
+78070300;-56.09667;-15.59611;Avenida Tenente Praeiro;Jardim Califórnia
+78070305;-56.09667;-15.59611;Avenida Manoel José de Arruda;Jardim Califórnia
+78070370;-56.09667;-15.59611;Rua San Francisco;Jardim Califórnia
+78070500;-56.09667;-15.59611;Avenida Manoel José de Arruda;Praeiro
 78070720;-56.09667;-15.59611;Avenida Manoel José de Arruda;Bela Marina
+78075202;-56.09667;-15.59611;Avenida Rui Barbosa;Jardim Universitário
 78075290;-56.09667;-15.59611;Rua João de Barro;Recanto dos Pássaros
 78075685;-56.09667;-15.59611;Rua Vereador Juca do Guaraná;Jardim Imperial
 78075850;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
+78075900;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
+78075902;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
+78075903;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
+78075905;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
+78075906;-56.09667;-15.59611;Avenida das Palmeiras;Jardim Imperial
 78076001;-56.09667;-15.59611;Avenida Professora Edna Maria de Albuquerque Affi;Jardim Imperial
+78077000;-56.09667;-15.59611;Avenida Santa Cruz;Santa Cruz
+78077100;-56.09667;-15.59611;Avenida Professora Edna Maria de Albuquerque Affi;Santa Cruz
+78077232;-56.09667;-15.59611;Rua Salah Soleimam Ayoub;Cachoeira das Garças
 78080030;-56.09667;-15.59611;Rua Alexandre de Barros;Chácara dos Pinheiros
 78080250;-56.09667;-15.59611;Avenida das Seringueiras;Jardim das Palmeiras
+78080300;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Parque Ohara
 78080340;-56.09667;-15.59611;Rua dos Bem-te-vis;Parque Ohara
+78080480;-56.09667;-15.59611;Rua dos Curiós;Parque Ohara
+78080535;-56.09667;-15.59611;Avenida Fernando Correa da Costa;São José
+78085000;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Coxipó
 78085100;-56.09667;-15.59611;Avenida Itaparica;Coophema
 78085230;-56.09667;-15.59611;Rua Antônio Dorileo;Coophema
 78085400;-56.09667;-15.59611;Avenida Camboriú;Parque Geórgia
+78085417;-56.09667;-15.59611;Rodovia Palmiro Paes de Barros;Parque Geórgia
 78085630;-56.09667;-15.59611;Avenida Santo Antônio;Coxipó
+78085700;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Vista Alegre
+78085712;-56.09667;-15.59611;Rua João Batista S de Oliveira;Vista Alegre
 78088000;-56.09667;-15.59611;Avenida Radialista Edson Luis da Silva;Tijucal
 78088010;-56.09667;-15.59611;Avenida Doutor Meirelles;Tijucal
+78088500;-56.09667;-15.59611;Avenida Doutor Meirelles;Altos do Coxipó
+78088600;-56.09667;-15.59611;Rua Oitis Silvestres;Jardim dos Ipês
 78088800;-56.09667;-15.59611;Avenida Fernando Correa da Costa;São Francisco
+78089612;-56.09667;-15.59611;Rua 19;Residencial Coxipó
+78090000;-56.09667;-15.59611;Avenida Fernando Correa da Costa;Jardim Presidente
 78090290;-56.09667;-15.59611;Avenida C;Residencial Coxipó
+78090305;-56.09667;-15.59611;Avenida D;Residencial Coxipó
 78090700;-56.09667;-15.59611;Rodovia Palmiro Paes de Barros;Nossa Senhora Aparecida
+78090850;-56.09667;-15.59611;Avenida A;Jardim Mossoró
+78090852;-56.09667;-15.59611;Avenida Dometildes Rocha Lima;Jardim Mossoró
 78093000;-56.09667;-15.59611;Avenida Carlos Addor de Souza;São João del Rei
+78093680;-56.09667;-15.59611;Avenida Carlos Addor de Souza;Osmar Cabral
 78095100;-56.09667;-15.59611;Rua J;Parque Atalaia
+78095160;-56.09667;-15.59611;Avenida P;Parque Atalaia
+78095170;-56.09667;-15.59611;Rua Q;Parque Atalaia
+78095329;-56.09667;-15.59611;Avenida Professor Altamiro Ari Rutz;Parque Cuiabá
 78095336;-56.09667;-15.59611;Avenida Cinco;Parque Cuiabá
 78096440;-56.09667;-15.59611;Avenida D;Residencial Altos do Parque II
 78098000;-56.09667;-15.59611;Avenida Ayrton Senna da Silva;Pascoal Ramos
+78098019;-56.09667;-15.59611;Rua Fernando Bazan;Pascoal Ramos
 78098270;-56.09667;-15.59611;Avenida Pedro Paulo de Faria Junior;Distrito Industrial
 78098282;-56.09667;-15.59611;Avenida Ayrton Senna da Silva;Distrito Industrial
 78098325;-56.09667;-15.59611;Rodovia dos Imigrantes;Distrito Industrial
+78098370;-56.09667;-15.59611;Rua K;Distrito Industrial
+78098563;-56.09667;-15.59611;Avenida V-2;Nova Esperança
+78098570;-56.09667;-15.59611;Avenida A;Nova Esperança
 78098666;-56.09667;-15.59611;Rua Trinta;Jardim Industriário
 78098900;-56.09667;-15.59611;Rua Z;Distrito Industrial
 78098970;-56.09667;-15.59611;Avenida Pedro Paulo de Faria Junior 1934;Distrito Industrial
+78099000;-56.09667;-15.59611;Rua Um;Pedra 90
 78099005;-56.09667;-15.59611;Avenida Newton Rabello de Castro;Pedra 90
+78099025;-56.09667;-15.59611;Rua Cinco;Pedra 90
+78099030;-56.09667;-15.59611;Rua Seis;Pedra 90
+78099035;-56.09667;-15.59611;Rua Sete;Pedra 90
+78099060;-56.09667;-15.59611;Rua Doze;Pedra 90
+78099075;-56.09667;-15.59611;Rua Quinze;Pedra 90
+78099080;-56.09667;-15.59611;Rua Dezesseis;Pedra 90
+78099085;-56.09667;-15.59611;Rua Dezessete;Pedra 90
+78099499;-56.09667;-15.59611;Avenida Ayrton Senna da Silva;Jardim Industriário
 78099899;-56.09667;-15.59611;Área Rural;Área Rural de Cuiabá
+78102000;-56.09667;-15.59611;;Coxipó do Ouro
 78104000;-56.09667;-15.59611;;Nossa Senhora da Guia
 78110002;-56.13250;-15.64667;Avenida Castelo Branco;Centro-Sul
+78110035;-56.13250;-15.64667;Rua Capitão Costa;Centro-Sul
+78110056;-56.13250;-15.64667;Avenida Filinto Müller;Centro-Sul
+78110117;-56.13250;-15.64667;Rua Santo Antônio;Centro-Sul
+78110133;-56.13250;-15.64667;Rua do Livramento;Centro-Sul
 78110302;-56.13250;-15.64667;Avenida Filinto Müller;Centro-Norte
 78110400;-56.13250;-15.64667;Avenida Couto Magalhães;Centro-Norte
 78110500;-56.13250;-15.64667;Rua Salim Nadaf;Centro-Norte
+78110600;-56.13250;-15.64667;Avenida Ulisses Pompeu de Campos;Centro-Norte
 78110798;-56.13250;-15.64667;Rua Acre;23 de Setembro
 78110903;-56.13250;-15.64667;Avenida Aleixo Ramos da Conceição;23 de Setembro
+78110971;-56.13250;-15.64667;Rua Miguel Leite;Centro-Sul
 78115200;-56.13250;-15.64667;Alameda Júlio Muller;Ponte Nova
+78115250;-56.13250;-15.64667;Rua Vereador Abelardo de Azevedo;Ponte Nova
+78115865;-56.13250;-15.64667;Avenida da FEB;Ponte Nova
+78115907;-56.13250;-15.64667;Alameda Júlio Muller;Ponte Nova
+78118060;-56.13250;-15.64667;Rua Vereador Jorge Witzak;Cristo Rei
+78118071;-56.13250;-15.64667;Avenida Gonçalo Botelho de Campos;Cristo Rei
+78118076;-56.13250;-15.64667;Rua Deputado Miguel Marcondes;Cristo Rei
+78118081;-56.13250;-15.64667;Rua Alves de Oliveira;Cristo Rei
 78118091;-56.13250;-15.64667;Rua Ary Paes Barreto;Cristo Rei
+78120400;-56.13250;-15.64667;Rua Julião de Brito;Parque do Lago
 78120404;-56.13250;-15.64667;Rua Tricolor;Parque do Lago
+78125044;-56.13250;-15.64667;Avenida Filinto Müller;Centro-Sul
 78125070;-56.13250;-15.64667;Rua Santa Genoveva;Centro-Sul
+78125075;-56.13250;-15.64667;Rua Itapuã;Centro-Sul
 78125100;-56.13250;-15.64667;Avenida Presidente Arthur Bernardes;Centro-Sul
+78125185;-56.13250;-15.64667;Avenida Presidente Arthur Bernardes;Centro-Sul
+78125700;-56.13250;-15.64667;Avenida Castelo Branco;Centro-Sul
+78128000;-56.13250;-15.64667;Rua Brigadeiro Eduardo Gomes;Costa Verde
+78128247;-56.13250;-15.64667;Rua Escolástica Pinto;Costa Verde
+78128252;-56.13250;-15.64667;Rua Benedito Curvo;Costa Verde
+78131196;-56.13250;-15.64667;Avenida Leoncio Lopes de Miranda;Vitória Régia
+78132400;-56.13250;-15.64667;Rodovia dos Imigrantes;Primavera
+78134272;-56.13250;-15.64667;Rua Poconé;Capão do Pequi
+78135603;-56.13250;-15.64667;Rua Goiás;Centro-Sul
+78135616;-56.13250;-15.64667;Rua Rio de Janeiro;Centro-Sul
 78135626;-56.13250;-15.64667;Avenida Alzira Santana;Centro-Sul
+78135901;-56.13250;-15.64667;Rua Rio Grande do Norte;Centro-Sul
+78135902;-56.13250;-15.64667;Rua Rio Grande do Norte;Centro-Sul
 78140340;-56.13250;-15.64667;Avenida Júlio Domingos de Campos;Glória
+78142275;-56.13250;-15.64667;Rua do DNER;Mapim
+78144498;-56.13250;-15.64667;Rua Tiradentes;Petrópolis
 78144901;-56.13250;-15.64667;Rodovia Mário Andreazza;Petrópolis
 78144902;-56.13250;-15.64667;Rodovia Mário Andreazza;Petrópolis
+78148560;-56.13250;-15.64667;Rua Antônio Saleno;Paiaguás
+78148572;-56.13250;-15.64667;Rua Isaías;Paiaguás
+78148580;-56.13250;-15.64667;Rua Emília Jacinta Neto;Paiaguás
+78148596;-56.13250;-15.64667;Rua Álvaro de Azevedo;Paiaguás
+78149498;-56.13250;-15.64667;Avenida dos Bandeirantes;Novo Mundo
+78150716;-56.13250;-15.64667;Avenida Anísio Haddad;Santa Isabel
+78152010;-56.13250;-15.64667;Rua Dante Martins de Oliveira;São Matheus
+78152135;-56.13250;-15.64667;Rodovia dos Imigrantes;São Matheus
+78152141;-56.13250;-15.64667;Avenida Filinto Müller;São Matheus
+78163899;-56.13250;-15.64667;Área Rural;Área Rural de Várzea Grande
 78164000;-56.13250;-15.64667;;Capão Grande
 78170000;-56.34556;-15.77500;;
 78175000;-56.62278;-16.25667;;
@@ -166,9 +388,23 @@ cep;lon;lat;logradouro;bairro
 78293000;-58.31013;-15.76852;;
 78295000;-58.57278;-15.49444;;
 78300000;-57.48583;-14.61944;;
+78300001;-57.48583;-14.61944;Avenida Ismael José do Nascimento;Jardim Acácia
+78300011;-57.48583;-14.61944;Avenida Brasil;Jardim Acácia
+78300070;-57.48583;-14.61944;Rua Sebastião Barreto;Centro
+78300072;-57.48583;-14.61944;Rua Deputado Hitler Sansão;Centro
+78300076;-57.48583;-14.61944;Rua João do Prado Arantes;Centro
+78300093;-57.48583;-14.61944;Rua Júlio Martinez Benevides;Centro
+78300095;-57.48583;-14.61944;Avenida Brasil;Centro
+78300096;-57.48583;-14.61944;Avenida Brasil;Centro
 78300098;-57.48583;-14.61944;Rua Antônio Hortolani;Centro
+78300100;-57.48583;-14.61944;Rua Antônio José da Silva;Centro
+78300110;-57.48583;-14.61944;Rua José Alves de Souza;Centro
+78300120;-57.48583;-14.61944;Rua Celso Rosa Lima;Centro
+78302078;-57.48583;-14.61944;Rua Celso Rosa Lima;Jardim Tanaka
+78304000;-57.48583;-14.61944;Avenida Vereador Nilo Torres;Jardim Santa Lúcia
 78307000;-59.26034;-13.72454;;
 78307899;-57.48583;-14.61944;Área Rural;Área Rural de Tangará da Serra
+78308000;-57.48583;-14.61944;;Progresso
 78310000;-59.78583;-13.66306;;
 78319000;-59.26034;-13.72454;;
 78320000;-58.75488;-11.42047;;
@@ -182,6 +418,7 @@ cep;lon;lat;logradouro;bairro
 78350000;-58.00274;-12.12010;;
 78360000;-57.89897;-13.65110;;
 78365000;-58.82011;-13.54209;;
+78366092;-58.82011;-13.54209;Rua dos Girassóis;Cidezal II
 78368899;-58.82011;-13.54209;Área Rural;Área Rural de Sapezal
 78370000;-57.28806;-14.79722;;
 78380000;-57.05389;-14.74000;;
@@ -199,13 +436,31 @@ cep;lon;lat;logradouro;bairro
 78444000;-57.07389;-13.02583;;Brianorte
 78445000;-55.27561;-13.81506;;
 78450000;-56.08222;-13.82889;;
+78450080;-56.08222;-13.82889;Rua dos Flamboyants;Centro
+78450084;-56.08222;-13.82889;Rua das Primaveras;Centro
 78450086;-56.08222;-13.82889;Rua dos Cedros;Centro
+78450088;-56.08222;-13.82889;Avenida dos Uirapurus;Centro
+78452061;-56.08222;-13.82889;Rua das Sucupiras;Bela Vista
+78453000;-55.27561;-13.81506;;
 78455000;-55.91479;-13.07127;;
 78457899;-56.08222;-13.82889;Área Rural;Área Rural de Nova Mutum
 78460000;-56.32750;-14.72028;;
+78460004;-55.91479;-13.07127;Avenida Rio Grande do Sul;Centro
+78460005;-55.91479;-13.07127;Avenida Rio Grande do Sul;Centro
+78460022;-55.91479;-13.07127;Avenida Paraná;Centro
+78460027;-55.91479;-13.07127;Avenida Paraná;Centro
+78460517;-55.91479;-13.07127;Avenida das Acácias;Bandeirantes
+78460534;-55.91479;-13.07127;Avenida Vitória-régia;Bandeirantes
+78460541;-55.91479;-13.07127;Rua das Azaleias;Bandeirantes
+78466000;-55.91479;-13.07127;Avenida Mato Grosso;Alvorada
 78466020;-55.91479;-13.07127;Avenida São Paulo;Alvorada
+78466044;-55.91479;-13.07127;Avenida Brasil;Alvorada
+78466098;-55.91479;-13.07127;Rua Itanhangá;Veneza
+78466501;-55.91479;-13.07127;Avenida Amazonas;Menino Deus
+78466523;-55.93709;-13.08371;Avenida Paraná;Menino Deus
 78467899;-55.91479;-13.07127;Área Rural;Área Rural de Lucas do Rio Verde
 78470000;-56.32750;-14.72028;;
+78479000;-56.32750;-14.72028;;Coqueiral
 78480000;-56.42750;-14.83611;;
 78485000;-56.36583;-15.20472;;
 78490000;-56.48917;-15.23556;;
@@ -219,14 +474,33 @@ cep;lon;lat;logradouro;bairro
 78525000;-54.93439;-10.16931;;
 78528000;-55.17757;-9.97571;;
 78530000;-54.99178;-10.24391;;
+78533000;-54.99178;-10.24391;;União do Norte
 78535000;-54.51776;-11.08239;;
 78540000;-54.89139;-11.51528;;
 78543000;-54.35333;-11.53306;;
 78545000;-55.27881;-11.97457;;
 78548000;-55.18274;-10.84927;;
 78550001;-55.50250;-11.86417;Avenida dos Tarumãs;Setor Residencial Sul
+78550098;-55.50250;-11.86417;Rua das Caviúnas;Setor Comercial
+78550100;-55.50250;-11.86417;Rua das Hortências;Setor Comercial
+78550108;-55.50250;-11.86417;Avenida das Embaúbas;Setor Comercial
+78550120;-55.50250;-11.86417;Rua das Helicônias;Setor Comercial
+78550206;-55.50250;-11.86417;Avenida das Embaúbas;Setor Comercial
+78550226;-55.50250;-11.86417;Rua das Nogueiras;Setor Comercial
+78550228;-55.50250;-11.86417;Avenida Governador Júlio Campos;Setor Comercial
+78550290;-55.50250;-11.86417;Rua das Castanheiras;Setor Comercial
+78550306;-55.50250;-11.86417;Avenida das Acácias;Setor Residencial Norte
 78550340;-55.50250;-11.86417;Avenida das Sibipirunas;Setor Residencial Norte
+78550412;-55.50250;-11.86417;Rua das Primaveras;Jardim Primavera
+78550538;-55.50250;-11.86417;Rua das Colombinas;Setor Industrial Norte
 78550970;-55.50250;-11.86417;Avenida das Embaúbas 567;Setor Residencial Sul
+78551900;-55.50250;-11.86417;Rua Matrinchã;Camping Club
+78552271;-55.50250;-11.86417;Avenida André Antônio Maggi;Jardim das Violetas
+78553261;-55.50250;-11.86417;Avenida André Antônio Maggi;Residencial das Acácias
+78555398;-55.50250;-11.86417;Rua Carini;Residencial Florença
+78555677;-55.50250;-11.86417;Avenida Notre Dame;Residencial Paris
+78556064;-55.50250;-11.86417;Rua das Tamareiras;Jardim Botânico
+78556258;-55.50250;-11.86417;Avenida dos Guarantãs;Jardim Maringá
 78557247;-55.50250;-11.86417;Avenida Alexandre Ferronato;Setor Industrial
 78559899;-55.50250;-11.86417;Área Rural;Área Rural de Sinop
 78560000;-57.41444;-11.53528;;
@@ -243,6 +517,8 @@ cep;lon;lat;logradouro;bairro
 78593000;-57.46739;-9.97969;;
 78595000;-57.39011;-9.56220;;
 78600000;;;;
+78600019;-52.25667;-15.89000;Rua Goiás;Centro
+78600023;-52.25667;-15.89000;Rua Mato Grosso;Centro
 78600025;-52.25667;-15.89000;Avenida Ministro João Alberto;Centro
 78607899;-52.25667;-15.89000;Área Rural;Área Rural de Barra do Garças
 78610000;-52.83333;-16.76417;;
@@ -267,6 +543,7 @@ cep;lon;lat;logradouro;bairro
 78665000;-51.37859;-11.67376;;
 78668000;-51.40021;-12.09075;;
 78670000;-50.66944;-11.61722;;
+78673000;-50.66944;-11.61722;;Espigão do Leste
 78674000;-50.96819;-12.29126;;
 78675000;-51.82417;-12.94167;;
 78678000;-51.50763;-12.17425;;
@@ -275,21 +552,52 @@ cep;lon;lat;logradouro;bairro
 78690000;-52.35859;-14.66429;;
 78695000;-52.55556;-16.19944;;
 78698000;-52.25696;-15.90737;;
+78700002;-54.63556;-16.47083;Travessa Um;Vila Canaã
 78700028;-54.63556;-16.47083;Avenida Tiradentes;Centro
+78700040;-54.63556;-16.47083;Rua Floriano Peixoto;Centro
 78700050;-54.63556;-16.47083;Avenida Amazonas;Centro
+78700070;-54.63556;-16.47083;Rua Afonso Pena;Centro
 78700075;-54.63556;-16.47083;Avenida Marechal Rondon;Centro
+78700082;-54.63556;-16.47083;Rua João Pessoa;Centro
 78700090;-54.63556;-16.47083;Avenida Cuiabá;Centro
+78700100;-54.63556;-16.47083;Rua Fernando Corrêa da Costa;Centro
 78700110;-54.63556;-16.47083;Avenida Marechal Dutra;Centro
 78700130;-54.63556;-16.47083;Avenida Rui Barbosa;Centro
+78700150;-54.63556;-16.47083;Rua Arnaldo Estevan de Figueiredo;Centro
+78700160;-54.63556;-16.47083;Rua Treze de Maio;Centro
 78700170;-54.63556;-16.47083;Rua Otávio Pitaluga;Centro
 78700180;-54.63556;-16.47083;Rua Barão do Rio Branco;Centro
 78700200;-54.63556;-16.47083;Avenida Bandeirantes;Centro
+78700220;-54.63556;-16.47083;Rua Dom Pedro II;Centro
 78700260;-54.63556;-16.47083;Avenida João Ponce de Arruda;Centro
+78700300;-54.63556;-16.47083;Avenida Presidente Kennedy;Centro
+78700400;-54.63556;-16.47083;Rua José Barriga;Centro
+78705609;-54.63556;-16.47083;Rua Piauí;Jardim Belo Horizonte
+78710100;-54.63556;-16.47083;Rua Barão do Rio Branco;La Salle II
+78710129;-54.63556;-16.47083;Avenida Ademar Cândido Costa;La Salle II
 78710265;-54.63556;-16.47083;Rua Barão do Rio Branco;Loteamento Monte Líbano
+78710750;-54.63556;-16.47083;Avenida Frei Servácio;Santa Cruz
+78716730;-54.63556;-16.47083;Avenida Ostemar Alves de Oliveira;Condomínio Residencial Melchíades Figueiredo Miranda - III
+78720630;-54.63556;-16.47083;Rua Presidente Castelo Branco;Vila Operária
+78725300;-54.63556;-16.47083;Avenida William Morais Filho;Jardim Primavera II
+78735002;-54.63556;-16.47083;Rua Antônio Francisco Buosi;Parque Sagrada Família
+78735219;-54.63556;-16.47083;Avenida Rotary Internacional;Parque Sagrada Família
 78735330;-54.63556;-16.47083;Avenida Governador Júlio José de Campos;Parque Sagrada Família
+78735814;;;Rua São Sebastião;Parque São Jorge
 78740000;-54.63556;-16.47083;Rua Fernando Correa da Costa;Vila Aurora I
+78740011;-54.63556;-16.47083;Rua Otávio Pitaluga;Vila Aurora I
+78740018;-54.63556;-16.47083;Avenida Sothero Silva;Vila Aurora I
 78740024;-54.63556;-16.47083;Rua Dom Pedro II;Vila Aurora I
+78740026;-54.63556;-16.47083;Rua Domingos de Lima;Vila Aurora I
+78740031;-54.63556;-16.47083;Avenida Padre Anchieta;Vila Aurora I
+78740032;-54.63556;-16.47083;Avenida Sagrada Família;Vila Aurora I
+78740034;-54.63556;-16.47083;Rua Presidente João Goulart;Vila Aurora I
+78740114;-54.63556;-16.47083;Rua Ariadne Feltrin Campos;Vila Aurora II
+78740138;-54.63556;-16.47083;Avenida Rotary Internacional;Vila Aurora II
 78740620;-54.63556;-16.47083;Alameda das Rosas;Vila Aurora
+78746035;-54.63556;-16.47083;Avenida dos Transportes;Parque Industrial Vetorasso
+78746055;-54.63556;-16.47083;Rodovia BR-163;Parque Industrial Vetorasso
+78750215;-54.63556;-16.47083;Avenida Arapongas;Parque Residencial Universitário
 78750650;-54.63556;-16.47083;Avenida Juscelino Ferreira de Farias;Vila Rica
 78750899;-54.63556;-16.47083;Área Rural;Área Rural de Rondonópolis
 78760000;-53.76177;-16.34534;;
@@ -306,6 +614,8 @@ cep;lon;lat;logradouro;bairro
 78830000;-54.92058;-15.81023;;
 78835000;-54.92139;-16.00056;;
 78840000;-55.16889;-15.54667;;
+78840015;-55.16889;-15.54667;Rua Belém;Centro
+78840022;-55.16889;-15.54667;Avenida Brasil;Centro
 78846899;-55.16889;-15.54667;Área Rural;Área Rural de Campo Verde
 78850000;-54.30173;-15.55158;;
 78855000;-54.77561;-14.66281;;
@@ -317,5 +627,15 @@ cep;lon;lat;logradouro;bairro
 78887000;-55.15235;-13.50829;;
 78888000;-55.25487;-13.03287;;
 78890000;-55.71139;-12.54528;;
+78890001;-55.71139;-12.54528;Avenida Blumenau;Bela Vista
+78890126;-55.71139;-12.54528;Avenida Brasil;Centro-Norte
+78894132;-55.71139;-12.54528;Avenida Adolino Bedin;Jardim das Américas
+78895040;-55.71139;-12.54528;Rua Caminho do Sol;Rota do Sol
+78895082;-55.71139;-12.54528;Rua Vale Dourado;Rota do Sol
+78896005;-55.71139;-12.54528;Avenida Tancredo Neves;Centro-Sul
+78896062;-55.71139;-12.54528;Avenida Tancredo Neves;Centro-Sul
+78896134;-55.71139;-12.54528;Avenida Brasil;Bom Jesus
+78898080;-55.71139;-12.54528;Rua Tangará;Industrial - 1ª Etapa
 78898899;-55.71139;-12.54528;Área Rural;Área Rural de Sorriso
+78899200;-55.71139;-12.54528;;Boa Esperança
 78899500;-55.71139;-12.54528;;Primavera
