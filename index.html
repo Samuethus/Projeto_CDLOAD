@@ -9818,7 +9818,8 @@ ${clipPlayerPills(n)}
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
       // EMPRESAS (CNPJ) usa os mesmos filtros de Estado e Cidade do Panorama.
-      stkUfEl.hidden = !panorama && stkPainel() !== 'empresas';
+      // EMPRESAS (CNPJ) só tem Mato Grosso: sem filtro de Estado; a Cidade lista os municípios de MT.
+      stkUfEl.hidden = !panorama;
       stkCidadeEl.hidden = !panorama && stkPainel() !== 'empresas';
       stkEmpFiltros.forEach(el => { el.hidden = !emp; });
       stkVisaoEmpEl.hidden = !emp;
@@ -11422,6 +11423,7 @@ ${clipPlayerPills(n)}
       }
       return { M, cidadeMT };
     }
+    const EMP_UF = 'MT';   // único estado do indicador EMPRESAS (scripts/cnpj_extrair.py descarta os demais)
     function empRender(){
       const D = window.CNPJ_EMPRESAS;
       if(!D){
@@ -11434,9 +11436,11 @@ ${clipPlayerPills(n)}
       }
       stkPreencherFiltros();
       panPreencherUfs();
+      // Só Mato Grosso (a base é limpa na extração): o Estado fica fixo em MT e o filtro não aparece.
+      if(stkUfEl.value !== EMP_UF){ stkUfEl.value = EMP_UF; stkCidadeEl.value = ''; panPreencherCidades(); }
       const J = panJanela(D);
-      const uf = stkUfEl.value, iu = uf ? D.ufs.indexOf(uf) : -1;
-      const imun = uf && stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
+      const iu = D.ufs.indexOf(EMP_UF);
+      const imun = stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
       if(empVisao === 'mapa') empMapaRender(D, J, iu, imun);
       else empDesenhar(D, J, iu, imun);
     }
@@ -11450,16 +11454,15 @@ ${clipPlayerPills(n)}
       // ---- Séries mensais do recorte ----
       const ab = new Array(nM).fill(0), bx = new Array(nM).fill(0);
       let est0 = 0;
-      const porUf = new Map(), sub = new Map();
+      const sub = new Map();
       const add = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
       const noAtual = new Array(nM).fill(false); J.atual.forEach(i => { noAtual[i] = true; });
       const atual = [...J.atual];
       for(const { u, c, a, b } of P.pares){
         if(okC && !okC.has(c)) continue;
+        if(iu >= 0 && u !== iu) continue;   // arquivos antigos (com todos os estados): só MT
         let pa = 0, pb = 0;
         for(const m of atual){ pa += a[m]; pb += b[m]; }
-        if(pa || pb) add(porUf, u, pa - pb);
-        if(iu >= 0 && u !== iu) continue;
         if(imun < 0) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; }
         if(pa || pb) add(sub, c, pa - pb);
       }
@@ -11497,14 +11500,13 @@ ${clipPlayerPills(n)}
       const fonte = `Receita Federal · CNPJ (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
       const wVolume = cdCard('Evolução do saldo', `${local} · ${fonte}`, '<div id="stkFluxoGraf"></div>', ibgeLegenda(V.series));
 
-      // ---- Saldo por estado ----
-      const ufSel = iu >= 0 ? iu : -1;
-      const ufs = [...porUf.entries()].sort((a, b) => b[1] - a[1]);
-      const topUfs = ufs.slice(0, 7);
-      if(ufSel >= 0 && !topUfs.some(([k]) => k === ufSel) && porUf.has(ufSel)) topUfs.splice(6, 1, [ufSel, porUf.get(ufSel)]);
-      const wEstados = cdCard('Saldo por estado', ufSel >= 0 ? `${PAN_UF_NOME[D.ufs[ufSel]]} em destaque` : 'Estados com maior saldo de empresas',
-        cdBarras(topUfs.map(([k, v], i) => ({ nome: PAN_UF_NOME[D.ufs[k]] || D.ufs[k], valor: Math.max(0, v), rotulo: cagSinal(v),
-          cor: ufSel >= 0 ? (k === ufSel ? CD_COR.azul : '#C9DDF8') : stkMisturarCor(CD_COR.azul, '#C9DDF8', topUfs.length > 1 ? i / (topUfs.length - 1) : 0) })), 'Saldo por estado', 'Sem movimentação no período.'));
+      // ---- Saldo por setor (grandes setores da economia; no lugar do antigo "Saldo por estado": a base só tem MT) ----
+      const porSetor = new Map();
+      sub.forEach((v, c) => { if(P.setor[c]) add(porSetor, P.setor[c], v); });
+      const setores = CAG_SETORES.map(x => [x.nome, porSetor.get(x.nome) || 0]).sort((a, b) => b[1] - a[1]);
+      const wEstados = cdCard('Saldo por setor', `Grandes setores da economia · ${escopoAtv}${cidade ? ' (composição do estado)' : ''}`,
+        cdBarras(setores.filter(([, v]) => v).map(([n, v], i) => ({ nome: n, valor: Math.max(0, v), rotulo: cagSinal(v),
+          cor: v < 0 ? CD_COR.vermelho : stkMisturarCor(CD_COR.azul, '#C9DDF8', setores.length > 1 ? i / (setores.length - 1) : 0) })), 'Saldo por setor', 'Sem movimentação no período.'));
 
       // ---- Filtros Regime, SIMEI e Situação: valem para o Perfil das empresas e a Quantidade de empresas ----
       // (as únicas análises com o regime no arquivo). Regimes: 0 MEI (SIMEI, dentro do Simples) · 1 Simples Nacional · 2 Não optante.
@@ -13076,8 +13078,11 @@ ${clipPlayerPills(n)}
       // EMPRESAS: amostra da base consolidada do CNPJ (até 10 estabelecimentos; todas as colunas de Estabelecimentos,
       // Empresas e Simples + descrições usadas no painel), só para entender os dados. Contatos e CPF já vêm mascarados.
       if(stkPainel() === 'empresas'){
-        const A = window.CNPJ_EMPRESAS && window.CNPJ_EMPRESAS.amostra;
-        if(!A || !A.linhas.length) return;
+        const A0 = window.CNPJ_EMPRESAS && window.CNPJ_EMPRESAS.amostra;
+        if(!A0 || !A0.linhas.length) return;
+        // Só Mato Grosso (arquivos antigos traziam outros estados na amostra).
+        const iUf = A0.colunas.indexOf('UF'), A = { colunas: A0.colunas, linhas: iUf < 0 ? A0.linhas : A0.linhas.filter(l => l[iUf] === EMP_UF) };
+        if(!A.linhas.length) return;
         // Códigos com zero à esquerda (CNAE, ordem, CEP…) como texto, para o Excel não cortar o zero.
         const cel = v => { const t = String(v == null ? '' : v); if(/^0\d+$/.test(t)) return `="${t}"`; return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
         const url = URL.createObjectURL(new Blob(['﻿' + [A.colunas].concat(A.linhas).map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));

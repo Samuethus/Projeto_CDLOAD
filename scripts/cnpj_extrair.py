@@ -11,6 +11,8 @@ Bases cruzadas pelo CNPJ básico (8 primeiros dígitos):
   Municipios / Cnaes / Naturezas.zip  tabelas de códigos
 Cada arquivo é baixado em partes paralelas, lido em fluxo e apagado.
 
+Abrangência: SÓ MATO GROSSO (UF_DETALHE) — os estabelecimentos dos demais estados são descartados na leitura;
+o indicador inteiro (dashboard, mapa e exportação) trabalha só com MT.
 Período: só o ano atual e o anterior (ex.: 2025 e 2026) — o painel compara o ano atual com o anterior.
 
 Mesmo racional do Novo CAGED, com estabelecimentos no lugar de vínculos:
@@ -73,7 +75,7 @@ TOKEN = 'YggdBLfdninEJX9'   # compartilhamento público "Dados Abertos CNPJ" (us
 UA = 'Mozilla/5.0 (CDLoad; Nucleo de Inteligencia CDL Cuiaba)'
 TMP = os.environ.get('CNPJ_TMP') or os.path.join(RAIZ, '.cnpj_tmp')
 PARTES = 8                  # downloads em partes paralelas (o servidor limita a velocidade por conexão)
-UF_DETALHE = b'MT'          # municípios com porte × regime (Mato Grosso, foco da CDL Cuiabá)
+UF_DETALHE = b'MT'          # único estado processado (Mato Grosso, foco da CDL Cuiabá)
 AMOSTRA_MAX = 10
 MAX_CNPJ = 100_000_000      # CNPJ básico tem 8 dígitos: vetores indexados por ele
 
@@ -314,6 +316,7 @@ def main():
         sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
     edicao = pastas[-1]
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
+            and '"ufs":["%s"]' % UF_DETALHE.decode() in open(SAIDA, encoding='utf-8').read() \
             and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
@@ -410,7 +413,7 @@ def main():
             if len(c) < 21:
                 continue
             uf = c[19]
-            if len(uf) != 2 or uf == b'EX':
+            if uf != UF_DETALHE:   # limpeza: o indicador (dashboard, mapa e exportação) trabalha só com Mato Grosso
                 continue
             sit, dsit, dini = c[5], c[6], c[10]
             baixada = sit == b'08'
