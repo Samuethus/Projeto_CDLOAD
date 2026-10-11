@@ -60,6 +60,7 @@ import re
 import sys
 import time
 import unicodedata
+import urllib.error
 import urllib.request
 import zipfile
 from array import array
@@ -105,15 +106,57 @@ def req(caminho, metodo='GET', cabecalhos=None):
 
 
 def listar(caminho=''):
-    """[(nome, tamanho)] de uma pasta do compartilhamento."""
-    with urllib.request.urlopen(req(caminho, 'PROPFIND', {'Depth': '1'}), timeout=120) as r:
-        xml = r.read().decode('utf-8', 'ignore')
+    """[(nome, tamanho)] de uma pasta do compartilhamento.
+    Desde 10/2026 o servidor da Receita devolve a listagem (PROPFIND) vazia, mas o download continua
+    funcionando: nesse caso a pasta é "listada" testando os arquivos conhecidos (listar_por_teste)."""
+    try:
+        with urllib.request.urlopen(req(caminho, 'PROPFIND', {'Depth': '1'}), timeout=120) as r:
+            xml = r.read().decode('utf-8', 'ignore')
+    except Exception:
+        xml = ''
     out = []
     for bloco in re.findall(r'<d:response>(.*?)</d:response>', xml, re.S):
         h = re.search(r'<d:href>/public\.php/webdav/([^<]*)</d:href>', bloco)
         t = re.search(r'<d:getcontentlength>(\d+)</d:getcontentlength>', bloco)
         if h:
             out.append((h.group(1), int(t.group(1)) if t else 0))
+    return out or listar_por_teste(caminho)
+
+
+def tamanho(caminho):
+    """Tamanho do arquivo pelo Content-Range de um GET dos 2 primeiros bytes (None se não existir)."""
+    try:
+        with urllib.request.urlopen(req(caminho, cabecalhos={'Range': 'bytes=0-1'}), timeout=60) as r:
+            cr = r.headers.get('Content-Range') or ''
+            m = re.search(r'/(\d+)$', cr)
+            return int(m.group(1)) if m else int(r.headers.get('Content-Length') or 0) or None
+    except urllib.error.HTTPError:
+        return None
+
+
+ARQUIVOS = (['Estabelecimentos%d.zip' % i for i in range(10)] + ['Empresas%d.zip' % i for i in range(10)]
+            + ['Municipios.zip', 'Cnaes.zip', 'Naturezas.zip', 'Simples.zip'])
+
+
+def listar_por_teste(caminho):
+    """Sem listagem: raiz = pastas AAAA-MM dos últimos 6 meses que têm Cnaes.zip; pasta = arquivos conhecidos com tamanho."""
+    if not caminho:
+        hoje = datetime.date.today()
+        out = []
+        for k in range(6):
+            a, m = hoje.year, hoje.month - k
+            while m < 1:
+                a, m = a - 1, m + 12
+            pasta = '%04d-%02d/' % (a, m)
+            if tamanho(pasta + 'Cnaes.zip'):
+                out.append((pasta, 0))
+        print('Listagem da Receita indisponível; pastas encontradas por teste: %s' % ', '.join(p for p, _ in out), flush=True)
+        return out
+    out = []
+    for nome in ARQUIVOS:
+        t = tamanho(caminho + nome)
+        if t:
+            out.append((caminho + nome, t))
     return out
 
 
