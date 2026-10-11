@@ -70,7 +70,9 @@ jobs:
       # (AwesomeAPI/BrasilAPI), um lote por dia; sem coordenada, o CEP fica na sede do município.
       - name: Coordenadas dos CEPs (mapa de empresas)
         continue-on-error: true
-        timeout-minutes: 60
+        timeout-minutes: 70
+        env:
+          AWESOMEAPI_KEY: ${{ secrets.AWESOMEAPI_KEY }}   # cadastro gratuito em awesomeapi.com.br (100 mil consultas/mês)
         run: python scripts/cnpj_ceps_geo.py
       - name: Commit e deploy se houve mudança
         env:

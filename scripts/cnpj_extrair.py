@@ -46,6 +46,7 @@ Formato (séries compactas: valores mensais separados por vírgula, zero = vazio
 
 Gera também assets/data/cnpj_ceps.js (window.CNPJ_CEPS), o mapa por CEP de Mato Grosso (EMPRESAS > Mapa):
   ceps: ['78005000', ...] · mun: [índice em mun] · munCod: [código do município na Receita]
+  bairro: ['', 'Centro', ...] — preenchido só no CEP geral do município (termina em 000): um ponto por bairro
   d:    [[iCep, iRegime, ativas, 'aberturas', 'baixas'], ...]  (séries mensais como acima)
   ll / aprox / end: coordenadas, 1 = sede do município (CEP sem coordenada) e 'logradouro · bairro'
   — preenchidos por scripts/cnpj_ceps_geo.py (cache em scripts/cache/ceps_geo.csv).
@@ -270,7 +271,8 @@ def main():
         sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
     edicao = pastas[-1]
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
-            and os.path.exists(ceps_geo.SAIDA) and not os.environ.get('CNPJ_FORCAR'):
+            and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
+            and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
         return
     tam = {p.split('/')[-1]: t for p, t in listar(edicao + '/')}
@@ -384,6 +386,12 @@ def main():
             mun_uf[imn] = iu
             det = uf == UF_DETALHE
             cep = c[18] if det and len(c[18]) == 8 and c[18].isdigit() else None
+            # CEP geral do município (termina em 000): quase todos os CNPJs da cidade usam o mesmo CEP, então
+            # o ponto é separado pelo bairro registrado na Receita ("78850000|CENTRO"), para não empilhar a cidade.
+            if cep and cep.endswith(b'000'):
+                br = norm(c[17].decode('latin-1'))
+                if br:
+                    cep = cep + b'|' + br.encode()
             if cep:
                 cep_mun[cep] = (imn, c[20])
             if ativa:
@@ -527,13 +535,16 @@ def main():
     chaves = sorted(set(porCep) | {(icep[c], r) for c, r in cat})
     mapa = {
         'fonte': dados['fonte'], 'edicao': edicao, 'meses': meses, 'regimes': REGIMES, 'uf': UF_DETALHE.decode(),
-        'ceps': [c.decode() for c in cep_ord],
+        'ceps': [c.split(b'|')[0].decode() for c in cep_ord],
+        'bairro': [titulo(c.split(b'|')[1].decode().lower()) if b'|' in c else '' for c in cep_ord],
         'mun': [nm[cep_mun[c][0]] for c in cep_ord],
         'munCod': [cep_mun[c][1].decode() for c in cep_ord],
         'd': [[i, r, cat.get((cep_ord[i], r), 0), serie(porCep.get((i, r), vazio)[0]), serie(porCep.get((i, r), vazio)[1])]
               for i, r in chaves],
     }
-    ceps_geo.aplicar(mapa, ceps_geo.cache_ler(), ceps_geo.sedes())
+    cache = ceps_geo.cache_ler()
+    ceps_geo.cache_limpar(cache)   # coordenada "de cidade" repetida em vários CEPs não vale como posição do CEP
+    ceps_geo.aplicar(mapa, cache, ceps_geo.sedes())
     tam = ceps_geo.gravar(mapa)
     print('Gravado %s: %d KB · %d CEPs (%d com coordenada própria)' % (os.path.relpath(ceps_geo.SAIDA, RAIZ), tam // 1024,
                                                                      len(cep_ord), len(cep_ord) - sum(mapa['aprox'])))
