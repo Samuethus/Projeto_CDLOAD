@@ -11,9 +11,11 @@
 //                          cobrindo todos os formulários (só com o secret SURVEYMONKEY_WEBHOOK_CHAVE).
 //   4. Para cada pendente, até acabar o tempo ou o limite de chamadas:
 //        estrutura ...... GET /surveys/{id}/details (só se o formulário foi alterado)
-//        coletores ...... GET /surveys/{id}/collectors (status Aberto/Encerrado do formulário)
+//        coletores ...... GET /surveys/{id}/collectors (status Aberto/Encerrado e link de resposta "url")
 //        respostas ...... GET /surveys/{id}/responses/bulk, INCREMENTAL a partir da última lida
-//   5. Registra a execução em survey_sincronizacoes.
+//   5. Coletores dos formulários abertos, 1x por hora (link de um coletor novo aparece sem esperar resposta).
+//   6. Registra a execução em survey_sincronizacoes.
+//   Requer supabase/schema_surveymonkey_link_coletor.sql (colunas url e coletores_lidos_em).
 //   O que não coube no tempo continua na execução seguinte, do ponto onde parou.
 //
 // B. Tempo real (webhook do Survey Monkey a cada resposta enviada, ?chave=SURVEYMONKEY_WEBHOOK_CHAVE):
@@ -129,6 +131,16 @@ Deno.serve(async (req) => {
       const { error } = await db.from(tabela).upsert(linhas.slice(i, i + 500), { onConflict: conflito });
       if (error) throw new Error(`gravar ${tabela}: ${error.message}`);
     }
+  }
+  // Coletores do formulário (canal + link de resposta "url"); o formulário fica "OPEN" se algum coletor estiver aberto.
+  async function lerColetores(formularioId: string) {
+    const coletores = await todos(`/surveys/${formularioId}/collectors?per_page=100&include=type,status,response_count,date_created,url`);
+    await gravar('survey_coletores', coletores.map((c) => ({
+      id: String(c.id), formulario_id: formularioId, nome: c.name ?? null, tipo: c.type ?? null, status: c.status ?? null,
+      qtd_respostas: c.response_count ?? null, criado_em: utc(c.date_created), url: c.url ?? null,
+    })));
+    await db.from('survey_formularios').update({ status: coletores.some((c) => c.status === 'open') ? 'OPEN' : 'CLOSED',
+      coletores_lidos_em: new Date().toISOString() }).eq('id', formularioId);
   }
   // Contagem do formulário = respostas gravadas (o app mostra na lista; a sincronização confere com a API).
   async function recontar(formularioId: string) {
@@ -284,13 +296,8 @@ Deno.serve(async (req) => {
         const { data: qs } = await db.from('survey_perguntas').select('id,dado_pessoal').eq('formulario_id', f.id);
         const pessoais = new Set((qs ?? []).filter((q) => q.dado_pessoal).map((q) => q.id));
 
-        // 4b. Coletores: o formulário está "OPEN" se algum coletor estiver aberto.
-        const coletores = await todos(`/surveys/${f.id}/collectors?per_page=100&include=type,status,response_count,date_created`);
-        await gravar('survey_coletores', coletores.map((c) => ({
-          id: String(c.id), formulario_id: f.id, nome: c.name ?? null, tipo: c.type ?? null, status: c.status ?? null,
-          qtd_respostas: c.response_count ?? null, criado_em: utc(c.date_created),
-        })));
-        await db.from('survey_formularios').update({ status: coletores.some((c) => c.status === 'open') ? 'OPEN' : 'CLOSED' }).eq('id', f.id);
+        // 4b. Coletores (status Aberto/Encerrado e link de resposta).
+        await lerColetores(f.id);
 
         // 4c. Respostas, incrementais (a partir da última lida), 100 por chamada, gravando a cada página.
         let cursor: string | null = utc(f.respostas_lidas_ate);
@@ -314,6 +321,17 @@ Deno.serve(async (req) => {
         erros.push(`${f.id}: ${(e as Error).message}`);
         console.error('[surveymonkey-sincronizar]', f.id, e);
       }
+    }
+
+    // ---------------- 5. Coletores dos formulários abertos (1x por hora) ----------------
+    // Coletor novo (link novo) não muda o formulário nem o nº de respostas: sem esta releitura, o link
+    // só apareceria quando chegasse a primeira resposta por ele.
+    const umaHora = new Date(Date.now() - 3600_000).toISOString();
+    const { data: abertos } = await db.from('survey_formularios').select('id').eq('ativo', true).eq('pendente', false).eq('status', 'OPEN')
+      .or(`coletores_lidos_em.is.null,coletores_lidos_em.lt."${umaHora}"`);
+    for (const f of abertos ?? []) {
+      try { await lerColetores(f.id); }
+      catch (e) { if (e instanceof Parar) throw e; erros.push(`${f.id} (coletores): ${(e as Error).message}`); }
     }
   } catch (e) {
     if (e instanceof Parar) parada = e.message;

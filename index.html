@@ -1523,6 +1523,16 @@
   @keyframes sm-nova{from{background:#EAF6E6;}to{background:transparent;}}
   .sm-tabela-ind tr.sm-nova td{animation:sm-nova 6s ease-out;}
   .sm-tempo-real{color:#3D8B37;font-weight:600;}
+  /* Survey: coluna "Link de resposta" (abrir em nova aba + copiar). */
+  .sm-td-link{max-width:240px;}
+  .sm-link{display:inline-flex;align-items:center;gap:4px;max-width:100%;}
+  .sm-link a{color:var(--cd-azul, #1D5FD3);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .sm-link a:hover{text-decoration:underline;}
+  .sm-link-encerrado a{color:var(--cd-muted, #64748B);}
+  .sm-link .sm-copiar{flex:0 0 auto;width:26px;height:26px;padding:4px;}
+  .sm-link .sm-copiar svg{width:14px;height:14px;stroke-width:2;}
+  .sm-link .sm-copiar.sm-copiado{color:#3D8B37;}
+  .sm-link-vazio{color:var(--cd-muted, #64748B);}
   .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   /* Tabelas sem quebra de linha em nenhuma célula: rolam na horizontal quando não cabem. */
   .sm-tabela th, .sm-tabela td{white-space:nowrap;}
@@ -3004,6 +3014,7 @@
                     <th>Status</th>
                     <th style="text-align:right;">Respostas</th>
                     <th>Última alteração</th>
+                    <th>Link de resposta</th>
                     <th class="wa-table-actions">Ações</th>
                   </tr>
                 </thead>
@@ -4543,6 +4554,15 @@
         <div class="cd-kpi-rodape"><span class="cd-kpi-ref">${esc(ref)}</span></div>
       </div></div>`;
 
+    // Link de resposta (coletor aberto ou o último criado): abre em nova aba ou copia. Encerrado = cinza (link não recebe mais respostas).
+    const ICONE_COPIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    function celulaLink(f){
+      if(!f.link) return `<span class="sm-link-vazio" title="${fonte === 'vivo' ? 'Link ainda não sincronizado' : 'Links entram com a sincronização ao vivo'}">—</span>`;
+      const curto = f.link.url.replace(/^https?:\/\/(www\.)?/, '');
+      return `<span class="sm-link${f.link.aberto ? '' : ' sm-link-encerrado'}">
+          <a href="${esc(f.link.url)}" target="_blank" rel="noopener" title="${esc(f.link.aberto ? 'Abrir o formulário (coletor aberto)' : 'Coletor encerrado: o link não recebe mais respostas')}">${esc(curto)}</a>
+          <button type="button" class="wa-icon-btn sm-copiar" data-url="${esc(f.link.url)}" title="Copiar link" aria-label="Copiar link">${ICONE_COPIAR}</button></span>`;
+    }
     function render(){
       const lista = filtrados();
       const total = lista.reduce((s, f) => s + f.response_count, 0);
@@ -4574,8 +4594,9 @@
             <td><span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span></td>
             <td class="wa-td-num">${num(f.response_count)}</td>
             <td>${dataBR(f.date_modified)}</td>
+            <td class="sm-td-link">${celulaLink(f)}</td>
             <td class="wa-table-actions"><button type="button" class="wa-icon-btn" title="Abrir dashboard">${ICONE_PAINEL}</button></td>
-          </tr>`).join('') : '<tr class="wa-empty-row"><td colspan="6">Nenhum formulário encontrado com esses filtros.</td></tr>';
+          </tr>`).join('') : '<tr class="wa-empty-row"><td colspan="7">Nenhum formulário encontrado com esses filtros.</td></tr>';
     }
 
     // ================= Dados ao vivo (tabelas survey_*) =================
@@ -4588,17 +4609,27 @@
     async function carregarListaVivo(){
       const sb = window.CDL_SB;
       if(!sb) return;
-      const [fr, pr, sr] = await Promise.all([
+      const [fr, pr, sr, cr] = await Promise.all([
         sb.from('survey_formularios').select('id,pasta_id,titulo,status,qtd_respostas,criado_em,modificado_em,pendente').eq('ativo', true),
         sb.from('survey_pastas').select('id,titulo'),
-        sb.from('survey_sincronizacoes').select('finalizado_em').not('finalizado_em', 'is', null).order('id', { ascending: false }).limit(1)
+        sb.from('survey_sincronizacoes').select('finalizado_em').not('finalizado_em', 'is', null).order('id', { ascending: false }).limit(1),
+        // Link de resposta: coletor aberto (o que está recebendo respostas) ou, sem nenhum aberto, o último criado.
+        // Sem a coluna url (schema_surveymonkey_link_coletor.sql ainda não rodado) a consulta falha e a coluna fica "—".
+        sb.from('survey_coletores').select('formulario_id,url,status,criado_em').not('url', 'is', null)
       ]);
       if(fr.error || !fr.data || !fr.data.length) return;   // tabelas ainda vazias ou sem acesso: segue o retrato
+      const linkDe = new Map();
+      (cr.error ? [] : cr.data || []).forEach(c => {
+        const atual = linkDe.get(c.formulario_id), aberto = c.status === 'open';
+        if(!atual || (aberto && !atual.aberto) || (aberto === atual.aberto && (c.criado_em || '') > (atual.criado_em || '')))
+          linkDe.set(c.formulario_id, { url: c.url, aberto, criado_em: c.criado_em });
+      });
       const retrato = new Map(SM_RETRATO.formularios.map(f => [f.id, f]));
       forms = fr.data.map(f => ({
         id: f.id, title: f.titulo, folder_id: f.pasta_id || '0',
         survey_state: f.status || (retrato.get(f.id) || {}).survey_state || 'CLOSED',
-        response_count: f.qtd_respostas || 0, date_modified: f.modificado_em || f.criado_em || '', pendente: f.pendente
+        response_count: f.qtd_respostas || 0, date_modified: f.modificado_em || f.criado_em || '', pendente: f.pendente,
+        link: linkDe.get(f.id) || null
       }));
       pastas = { '0': 'Sem pasta' };
       (pr.data || []).forEach(p => { if(p.id !== '0') pastas[p.id] = p.titulo; });
@@ -4933,8 +4964,19 @@
       el('smDash').hidden = true;
       el('smFiltros').hidden = el('smLista').hidden = false;
     }
-    el('smTabela').addEventListener('click', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr) abrirFormulario(tr.dataset.id); });
-    el('smTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrirFormulario(tr.dataset.id); } });
+    el('smTabela').addEventListener('click', ev => {
+      // Link de resposta: abrir/copiar sem abrir o dashboard do formulário.
+      const cp = ev.target.closest('.sm-copiar');
+      if(cp){
+        ev.stopPropagation();
+        const ok = () => { cp.classList.add('sm-copiado'); cp.title = 'Link copiado!'; setTimeout(() => { cp.classList.remove('sm-copiado'); cp.title = 'Copiar link'; }, 1600); };
+        (navigator.clipboard ? navigator.clipboard.writeText(cp.dataset.url) : Promise.reject()).then(ok, () => window.prompt('Copie o link:', cp.dataset.url));
+        return;
+      }
+      if(ev.target.closest('.sm-link a')) return;
+      const tr = ev.target.closest('tr.sm-linha'); if(tr) abrirFormulario(tr.dataset.id);
+    });
+    el('smTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && !ev.target.closest('.sm-link') && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrirFormulario(tr.dataset.id); } });
     el('smVoltar').addEventListener('click', fecharFormulario);
     el('smVisao').addEventListener('click', ev => { const b = ev.target.closest('.wa-view-toggle-btn'); if(b){ visao = b.dataset.visao; mostrarVisao(); } });
     el('smOrdem').addEventListener('click', ev => {
@@ -4949,8 +4991,8 @@
     el('smLimpar').addEventListener('click', () => { busca.value = ''; fPasta.value = fStatus.value = fAno.value = ''; render(); });
     el('smExportar').addEventListener('click', () => {
       const cel = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-      const rows = [['ID', 'Formulário', 'Pasta', 'Status', 'Respostas', 'Última alteração']]
-        .concat(filtrados().map(f => [f.id, f.title, pastaNome(f.folder_id), statusTxt[f.survey_state] || f.survey_state, f.response_count, dataBR(f.date_modified)]));
+      const rows = [['ID', 'Formulário', 'Pasta', 'Status', 'Respostas', 'Última alteração', 'Link de resposta']]
+        .concat(filtrados().map(f => [f.id, f.title, pastaNome(f.folder_id), statusTxt[f.survey_state] || f.survey_state, f.response_count, dataBR(f.date_modified), f.link ? f.link.url : '']));
       const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
       a.href = url; a.download = `survey_monkey_formularios_${fonte === 'vivo' ? new Date().toISOString().slice(0, 10) : SM_RETRATO.lido_em}.csv`;
