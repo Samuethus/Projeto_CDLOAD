@@ -1524,9 +1524,9 @@
   .sm-tabela-ind tr.sm-nova td{animation:sm-nova 6s ease-out;}
   .sm-tempo-real{color:#3D8B37;font-weight:600;}
   /* Survey: coluna "Link de resposta" (abrir em nova aba + copiar). */
-  .sm-td-link{max-width:240px;}
-  .sm-link{display:inline-flex;align-items:center;gap:4px;max-width:100%;}
-  .sm-link a{color:var(--cd-azul, #1D5FD3);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .sm-td-link{width:1%;white-space:nowrap;}   /* largura do próprio link: o texto aparece inteiro */
+  .sm-link{display:inline-flex;align-items:center;gap:4px;}
+  .sm-link a{color:var(--cd-azul, #1D5FD3);text-decoration:none;white-space:nowrap;flex:0 0 auto;}
   .sm-link a:hover{text-decoration:underline;}
   .sm-link-encerrado a{color:var(--cd-muted, #64748B);}
   .sm-link .sm-copiar{flex:0 0 auto;width:26px;height:26px;padding:4px;}
@@ -1555,7 +1555,7 @@
   .sm-tabela-ind th{position:sticky;top:0;z-index:1;}
   /* Lista de formulários integrada à página: sem rolagem própria (só a da seção); o título longo vira reticências. */
   #smLista .wa-table-wrap{overflow:visible;}
-  #smLista .sm-tabela td.wa-td-name{width:45%;max-width:0;overflow:hidden;text-overflow:ellipsis;}
+  #smLista .sm-tabela td.wa-td-name{width:32%;max-width:0;overflow:hidden;text-overflow:ellipsis;}
   .sm-tabela tbody tr.sm-linha{cursor:pointer;}
   .sm-tabela tbody tr.sm-linha:focus-visible{outline:2px solid var(--wa-primary);outline-offset:-2px;}
   .sm-tabela .wa-td-num{font-weight:600;}
