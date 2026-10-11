@@ -1,23 +1,32 @@
 // CDLoad · Edge Function "surveymonkey-sincronizar"
 //
-// Copia a conta do Survey Monkey (API v3, somente leitura) para as tabelas survey_* do Supabase
-// (supabase/schema_surveymonkey.sql). Chamada pelo pg_cron a cada 15 minutos.
+// Copia a conta do Survey Monkey (API v3) para as tabelas survey_* do Supabase (supabase/schema_surveymonkey.sql).
+// Dois modos, no mesmo endereço:
 //
-// Cada execução:
+// A. Sincronização (pg_cron a cada 15 min, corpo vazio):
 //   1. Pastas ............ GET /survey_folders
 //   2. Formulários ....... GET /surveys (nº de respostas e data de alteração); o que mudou fica "pendente".
 //                          A pasta de cada formulário é relida 1x por dia ou quando aparece formulário novo.
-//   3. Para cada pendente, até acabar o tempo ou o limite de chamadas:
+//   3. Webhook ........... garante o webhook "response_completed" apontando para esta função (modo B),
+//                          cobrindo todos os formulários (só com o secret SURVEYMONKEY_WEBHOOK_CHAVE).
+//   4. Para cada pendente, até acabar o tempo ou o limite de chamadas:
 //        estrutura ...... GET /surveys/{id}/details (só se o formulário foi alterado)
 //        coletores ...... GET /surveys/{id}/collectors (status Aberto/Encerrado do formulário)
 //        respostas ...... GET /surveys/{id}/responses/bulk, INCREMENTAL a partir da última lida
-//   4. Registra a execução em survey_sincronizacoes.
-// O que não coube no tempo continua na execução seguinte, do ponto onde parou.
+//   5. Registra a execução em survey_sincronizacoes.
+//   O que não coube no tempo continua na execução seguinte, do ponto onde parou.
 //
-// Secrets: SURVEYMONKEY_TOKEN (Access Token do app privado, 4 escopos de leitura).
+// B. Tempo real (webhook do Survey Monkey a cada resposta enviada, ?chave=SURVEYMONKEY_WEBHOOK_CHAVE):
+//   lê só aquela resposta (GET /surveys/{s}/responses/{r}/details), grava em survey_respostas e atualiza a
+//   contagem do formulário. O app recebe a linha nova pelo Supabase Realtime e atualiza a tela na hora.
+//   O Survey Monkey confere o endereço com um HEAD ao criar o webhook (respondido com 200).
+//
+// Secrets: SURVEYMONKEY_TOKEN (Access Token do app privado: escopos de leitura + "View/Create webhooks").
+//          SURVEYMONKEY_WEBHOOK_CHAVE (texto aleatório; sem ele o modo B fica desligado).
 //          SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já vêm do próprio Supabase.
 // Publicação: npx supabase functions deploy surveymonkey-sincronizar --no-verify-jwt
-//   (sem JWT porque quem chama é o pg_cron; a função ignora chamadas a menos de 5 min da anterior).
+//   (sem JWT porque quem chama é o pg_cron e o Survey Monkey; a sincronização ignora chamadas a menos de
+//   5 min da anterior e o webhook exige a chave).
 //
 // LGPD: pergunta de contato (nome, e-mail, telefone, CPF, endereço...) fica marcada como dado_pessoal
 // e a resposta dela não é gravada (só "respondida"). O IP do respondente nunca é lido.
@@ -29,6 +38,7 @@ const TEMPO_MAX_MS = 110_000;         // a Edge Function tem ~150 s; sobra marge
 const INTERVALO_MIN_MS = 5 * 60_000;  // proteção contra chamadas repetidas
 const DIA_MIN = 25;                   // para quando restarem menos chamadas que isso no dia
 const MINUTO_MIN = 5;
+const WEBHOOK_NOME = 'CDLoad · respostas em tempo real';
 
 const env = (k: string) => (Deno.env.get(k) ?? '').trim();
 const json = (body: unknown, status = 200) =>
@@ -46,43 +56,60 @@ const semHtml = (s: unknown) => String(s ?? '').replace(/<[^>]*>/g, ' ').replace
 const utc = (s: unknown) => (s ? new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(String(s)) ? String(s) : String(s) + 'Z').toISOString() : null);
 const paraApi = (iso: string) => new Date(iso).toISOString().slice(0, 19);
 
+// Uma resposta da API → linha de survey_respostas (perguntas de dado pessoal só como "respondida").
+// deno-lint-ignore no-explicit-any
+function linhaResposta(r: any, formularioId: string, pessoais: Set<string>) {
+  const resp: Record<string, unknown[]> = {};
+  for (const pg of r.pages ?? []) for (const q of pg.questions ?? []) {
+    const qid = String(q.id);
+    // deno-lint-ignore no-explicit-any
+    resp[qid] = pessoais.has(qid) ? [{ p: 1 }] : (q.answers ?? []).map((a: any) => {
+      const o: Record<string, string> = {};
+      if (a.choice_id) o.c = String(a.choice_id);
+      if (a.row_id) o.r = String(a.row_id);
+      if (a.col_id) o.k = String(a.col_id);
+      if (a.other_id) o.o = String(a.other_id);
+      if (a.text != null && a.text !== '') o.t = String(a.text).slice(0, 2000);
+      return o;
+    });
+  }
+  return { id: String(r.id), formulario_id: formularioId, coletor_id: r.collector_id ? String(r.collector_id) : null,
+    status: r.response_status ?? null, iniciada_em: utc(r.date_created), modificada_em: utc(r.date_modified), respostas: resp };
+}
+
 Deno.serve(async (req) => {
+  // O Survey Monkey confere o endereço do webhook com um HEAD antes de criá-lo.
+  if (req.method === 'HEAD') return new Response(null, { status: 200 });
   if (req.method !== 'POST') return json({ ok: false, erro: 'Use POST.' }, 405);
   const token = env('SURVEYMONKEY_TOKEN');
   if (!token) return json({ ok: false, erro: 'Falta o secret SURVEYMONKEY_TOKEN no Supabase.' }, 503);
 
   const db = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } });
   const inicio = Date.now();
-
-  // Proteção: uma execução por vez e no máximo uma a cada 5 minutos.
-  const { data: ultima } = await db.from('survey_sincronizacoes').select('iniciado_em').order('id', { ascending: false }).limit(1).maybeSingle();
-  if (ultima && inicio - new Date(ultima.iniciado_em).getTime() < INTERVALO_MIN_MS) {
-    return json({ ok: true, ignorado: 'Última sincronização há menos de 5 minutos.' });
-  }
-  const { data: reg, error: erroReg } = await db.from('survey_sincronizacoes').insert({}).select('id').single();
-  if (erroReg) return json({ ok: false, erro: 'Rode supabase/schema_surveymonkey.sql: ' + erroReg.message }, 500);
-
-  let chamadas = 0, atualizados = 0, respostasNovas = 0, total = 0;
-  const erros: string[] = [];
+  let chamadas = 0;
 
   // ---------------- API do Survey Monkey ----------------
   // deno-lint-ignore no-explicit-any
-  async function api(caminho: string): Promise<any> {
+  async function api(caminho: string, metodo = 'GET', corpo?: unknown): Promise<any> {
     if (Date.now() - inicio > TEMPO_MAX_MS) throw new Parar('tempo');
     const url = caminho.startsWith('http') ? caminho : API + caminho;
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
+    const res = await fetch(url, {
+      method: metodo,
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json', ...(corpo ? { 'Content-Type': 'application/json' } : {}) },
+      ...(corpo ? { body: JSON.stringify(corpo) } : {}),
+    });
     chamadas++;
     const dia = Number(res.headers.get('X-Ratelimit-App-Global-Day-Remaining') ?? 'NaN');
     const minuto = Number(res.headers.get('X-Ratelimit-App-Global-Minute-Remaining') ?? 'NaN');
     if (res.status === 429) throw new Parar('limite de chamadas da API (429)');
     if (!res.ok) {
       const txt = (await res.text()).slice(0, 300);
-      throw new Error(`${res.status} em ${url.replace(API, '')}: ${txt}`);
+      throw new Error(`${res.status} em ${metodo} ${url.replace(API, '')}: ${txt}`);
     }
-    const corpo = await res.json();
+    const resposta = await res.json();
     if (dia < DIA_MIN) throw new Parar(`limite diário quase no fim (${dia} chamadas restantes)`);
     if (minuto < MINUTO_MIN) await new Promise((r) => setTimeout(r, 15_000));
-    return corpo;
+    return resposta;
   }
   // Lista paginada (segue links.next).
   // deno-lint-ignore no-explicit-any
@@ -103,13 +130,66 @@ Deno.serve(async (req) => {
       if (error) throw new Error(`gravar ${tabela}: ${error.message}`);
     }
   }
+  // Contagem do formulário = respostas gravadas (o app mostra na lista; a sincronização confere com a API).
+  async function recontar(formularioId: string) {
+    const { count } = await db.from('survey_respostas').select('id', { count: 'exact', head: true }).eq('formulario_id', formularioId);
+    await db.from('survey_formularios').update({ qtd_respostas: count ?? 0 }).eq('id', formularioId);
+  }
+
+  // =============== B. Webhook: uma resposta nova, gravada na hora ===============
+  let corpo: Record<string, unknown> = {};
+  try { corpo = await req.json(); } catch { /* corpo vazio: sincronização */ }
+  if (corpo && corpo.event_type) {
+    const chave = env('SURVEYMONKEY_WEBHOOK_CHAVE');
+    if (!chave || new URL(req.url).searchParams.get('chave') !== chave) return json({ ok: false, erro: 'Chave do webhook inválida.' }, 403);
+    // deno-lint-ignore no-explicit-any
+    const rec = (corpo.resources ?? {}) as any;
+    const sid = String(rec.survey_id ?? ''), rid = String(corpo.object_id ?? '');
+    if (corpo.object_type !== 'response' || !sid || !rid) return json({ ok: true, ignorado: 'Evento sem resposta.' });
+    try {
+      const { data: f } = await db.from('survey_formularios').select('id').eq('id', sid).maybeSingle();
+      const { data: qs } = await db.from('survey_perguntas').select('id,dado_pessoal').eq('formulario_id', sid);
+      // Formulário novo ou estrutura ainda não lida: a sincronização seguinte traz tudo (não dá para saber quais perguntas são pessoais).
+      if (!f || !qs?.length) {
+        if (f) await db.from('survey_formularios').update({ pendente: true }).eq('id', sid);
+        return json({ ok: true, adiado: 'Formulário ainda não sincronizado: entra na próxima sincronização.' });
+      }
+      if (corpo.event_type === 'response_deleted') {
+        await db.from('survey_respostas').delete().eq('id', rid);
+      } else {
+        const r = await api(`/surveys/${sid}/responses/${rid}/details`);
+        const pessoais = new Set((qs ?? []).filter((q) => q.dado_pessoal).map((q) => q.id));
+        await gravar('survey_respostas', [linhaResposta(r, sid, pessoais)]);
+      }
+      await recontar(sid);
+      return json({ ok: true, formulario: sid, resposta: rid, chamadas_api: chamadas });
+    } catch (e) {
+      console.error('[surveymonkey-sincronizar] webhook', sid, rid, e);
+      // Marca o formulário para a sincronização seguinte reler o que faltou.
+      await db.from('survey_formularios').update({ pendente: true }).eq('id', sid);
+      return json({ ok: false, erro: (e as Error).message }, 500);
+    }
+  }
+
+  // =============== A. Sincronização completa (pg_cron) ===============
+  // Proteção: uma execução por vez e no máximo uma a cada 5 minutos.
+  const { data: ultima } = await db.from('survey_sincronizacoes').select('iniciado_em').order('id', { ascending: false }).limit(1).maybeSingle();
+  if (ultima && inicio - new Date(ultima.iniciado_em).getTime() < INTERVALO_MIN_MS) {
+    return json({ ok: true, ignorado: 'Última sincronização há menos de 5 minutos.' });
+  }
+  const { data: reg, error: erroReg } = await db.from('survey_sincronizacoes').insert({}).select('id').single();
+  if (erroReg) return json({ ok: false, erro: 'Rode supabase/schema_surveymonkey.sql: ' + erroReg.message }, 500);
+
+  let atualizados = 0, respostasNovas = 0, total = 0;
+  const erros: string[] = [];
 
   let parada = '';
   try {
     // ---------------- 1. Pastas ----------------
     const pastas = await todos('/survey_folders?per_page=100');
     const agora = new Date().toISOString();
-    await gravar('survey_pastas', [{ id: '0', titulo: 'Sem pasta', atualizado_em: agora },
+    // Todas as linhas com as mesmas colunas: no upsert em lote, coluna ausente vira null (e qtd_formularios é not null).
+    await gravar('survey_pastas', [{ id: '0', titulo: 'Sem pasta', qtd_formularios: 0, atualizado_em: agora },
       // deno-lint-ignore no-explicit-any
       ...pastas.map((p: any) => ({ id: String(p.id), titulo: p.title ?? '', qtd_formularios: p.num_surveys ?? 0, atualizado_em: agora }))]);
 
@@ -143,6 +223,7 @@ Deno.serve(async (req) => {
         link_preview: s.preview ?? null, criado_em: utc(s.date_created), modificado_em: modificado, ativo: true,
         pasta_id: relerPastas ? (pastaDe.get(id) ?? '0') : (ant?.pasta_id ?? '0'),
         pendente: !!(ant?.pendente || mudou),
+        // Todas as linhas com ou todas sem atualizado_em (formulário novo sempre força relerPastas).
         ...(relerPastas || !ant ? { atualizado_em: agora } : {}),
       };
     });
@@ -152,7 +233,24 @@ Deno.serve(async (req) => {
     const sumiram = (atuais ?? []).filter((f) => !ids.has(f.id)).map((f) => f.id);
     if (sumiram.length) await db.from('survey_formularios').update({ ativo: false, pendente: false }).in('id', sumiram);
 
-    // ---------------- 3. Formulários pendentes ----------------
+    // ---------------- 3. Webhook de tempo real ----------------
+    // Criado na primeira execução; atualizado quando aparece formulário novo (o webhook lista os formulários).
+    const chaveWh = env('SURVEYMONKEY_WEBHOOK_CHAVE');
+    if (chaveWh) {
+      try {
+        const destino = `${env('SUPABASE_URL')}/functions/v1/surveymonkey-sincronizar?chave=${encodeURIComponent(chaveWh)}`;
+        // deno-lint-ignore no-explicit-any
+        const existente = (await todos('/webhooks?per_page=100')).find((w: any) => w.name === WEBHOOK_NOME);
+        const config = { name: WEBHOOK_NOME, event_type: 'response_completed', object_type: 'survey', object_ids: [...ids], subscription_url: destino };
+        if (!existente) await api('/webhooks', 'POST', config);
+        else if (temNovo) await api(`/webhooks/${existente.id}`, 'PATCH', { object_ids: [...ids], subscription_url: destino });
+      } catch (e) {
+        if (e instanceof Parar) throw e;
+        erros.push('webhook: ' + (e as Error).message);
+      }
+    }
+
+    // ---------------- 4. Formulários pendentes ----------------
     // Menores primeiro: mais formulários ficam completos em cada execução.
     const { data: pendentes } = await db.from('survey_formularios')
       .select('id,modificado_em,estrutura_lida_em,respostas_lidas_ate,qtd_respostas')
@@ -160,8 +258,7 @@ Deno.serve(async (req) => {
 
     for (const f of pendentes ?? []) {
       try {
-        // 3a. Estrutura (páginas → perguntas → opções), só se o formulário foi alterado.
-        const pessoais = new Set<string>();
+        // 4a. Estrutura (páginas → perguntas → opções), só se o formulário foi alterado.
         if (!f.estrutura_lida_em || f.estrutura_lida_em !== f.modificado_em) {
           const det = await api(`/surveys/${f.id}/details`);
           const perguntas: Record<string, unknown>[] = [];
@@ -185,9 +282,9 @@ Deno.serve(async (req) => {
           await db.from('survey_formularios').update({ estrutura_lida_em: f.modificado_em }).eq('id', f.id);
         }
         const { data: qs } = await db.from('survey_perguntas').select('id,dado_pessoal').eq('formulario_id', f.id);
-        (qs ?? []).forEach((q) => { if (q.dado_pessoal) pessoais.add(q.id); });
+        const pessoais = new Set((qs ?? []).filter((q) => q.dado_pessoal).map((q) => q.id));
 
-        // 3b. Coletores: o formulário está "OPEN" se algum coletor estiver aberto.
+        // 4b. Coletores: o formulário está "OPEN" se algum coletor estiver aberto.
         const coletores = await todos(`/surveys/${f.id}/collectors?per_page=100&include=type,status,response_count,date_created`);
         await gravar('survey_coletores', coletores.map((c) => ({
           id: String(c.id), formulario_id: f.id, nome: c.name ?? null, tipo: c.type ?? null, status: c.status ?? null,
@@ -195,34 +292,15 @@ Deno.serve(async (req) => {
         })));
         await db.from('survey_formularios').update({ status: coletores.some((c) => c.status === 'open') ? 'OPEN' : 'CLOSED' }).eq('id', f.id);
 
-        // 3c. Respostas, incrementais (a partir da última lida), 100 por chamada, gravando a cada página.
+        // 4c. Respostas, incrementais (a partir da última lida), 100 por chamada, gravando a cada página.
         let cursor: string | null = utc(f.respostas_lidas_ate);
         let prox: string | null = `/surveys/${f.id}/responses/bulk?per_page=100&sort_by=date_modified&sort_order=ASC`
           + (cursor ? `&start_modified_at=${encodeURIComponent(paraApi(cursor))}` : '');
         while (prox) {
           const pag = await api(prox);
           // deno-lint-ignore no-explicit-any
-          const linhasR = (pag.data ?? []).map((r: any) => {
-            const resp: Record<string, unknown[]> = {};
-            // deno-lint-ignore no-explicit-any
-            for (const pg of r.pages ?? []) for (const q of pg.questions ?? []) {
-              const qid = String(q.id);
-              // deno-lint-ignore no-explicit-any
-              resp[qid] = pessoais.has(qid) ? [{ p: 1 }] : (q.answers ?? []).map((a: any) => {
-                const o: Record<string, string> = {};
-                if (a.choice_id) o.c = String(a.choice_id);
-                if (a.row_id) o.r = String(a.row_id);
-                if (a.col_id) o.k = String(a.col_id);
-                if (a.other_id) o.o = String(a.other_id);
-                if (a.text != null && a.text !== '') o.t = String(a.text).slice(0, 2000);
-                return o;
-              });
-            }
-            const mod = utc(r.date_modified);
-            if (mod && (!cursor || mod > cursor)) cursor = mod;
-            return { id: String(r.id), formulario_id: f.id, coletor_id: r.collector_id ? String(r.collector_id) : null,
-              status: r.response_status ?? null, iniciada_em: utc(r.date_created), modificada_em: mod, respostas: resp };
-          });
+          const linhasR = (pag.data ?? []).map((r: any) => linhaResposta(r, f.id, pessoais));
+          for (const l of linhasR) if (l.modificada_em && (!cursor || l.modificada_em > cursor)) cursor = l.modificada_em;
           await gravar('survey_respostas', linhasR);
           respostasNovas += linhasR.length;
           await db.from('survey_formularios').update({ respostas_lidas_ate: cursor }).eq('id', f.id);

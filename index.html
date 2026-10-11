@@ -1519,6 +1519,10 @@
 
   /* ===== Survey Monkey: lista de formulários (tabela no padrão do Estoque) e dashboard por formulário ===== */
   #page-surveymonkey [hidden]{display:none !important;}
+  /* Survey: resposta que chegou em tempo real fica destacada por alguns segundos; indicador "● tempo real". */
+  @keyframes sm-nova{from{background:#EAF6E6;}to{background:transparent;}}
+  .sm-tabela-ind tr.sm-nova td{animation:sm-nova 6s ease-out;}
+  .sm-tempo-real{color:#3D8B37;font-weight:600;}
   .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   /* Tabelas sem quebra de linha em nenhuma célula: rolam na horizontal quando não cabem. */
   .sm-tabela th, .sm-tabela td{white-space:nowrap;}
@@ -4560,7 +4564,7 @@
       };
       const linhas = [...lista].sort(ordenar[ordem]);
       const quando = fonte === 'vivo'
-        ? (ultimaSync ? ' · ao vivo, sincronizado em ' + new Date(ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ' · ao vivo')
+        ? (tempoReal ? ' · em tempo real (atualiza sozinho)' : ultimaSync ? ' · ao vivo, sincronizado em ' + new Date(ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ' · ao vivo')
         : ' · retrato de ' + dataBR(SM_RETRATO.lido_em);
       el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas${quando}`;
       el('smTabela').innerHTML = linhas.length ? linhas.map(f => `
@@ -4602,6 +4606,44 @@
       fonte = 'vivo'; vivoEm = Date.now();
       montarFiltros();
       render();
+      assinarTempoReal();
+    }
+
+    // ================= Tempo real (Supabase Realtime) =================
+    // Cada resposta enviada no Survey Monkey chega pela Edge Function (webhook) em survey_respostas; o
+    // Realtime avisa o app, que relê a lista e o formulário aberto (a tela atualiza sozinha, sem recarregar).
+    // Fora da seção, só invalida o cache: os dados são relidos ao voltar.
+    let canalVivo = null, tempoReal = false, mudouTimer = null;
+    const mudados = new Set();
+    function assinarTempoReal(){
+      const sb = window.CDL_SB;
+      if(!sb || canalVivo || !sb.channel) return;
+      const aoMudar = fid => { mudados.add(fid || '*'); clearTimeout(mudouTimer); mudouTimer = setTimeout(aplicarMudancas, 1200); };
+      canalVivo = sb.channel('cdload-survey')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_respostas' }, ev => aoMudar((ev.new && ev.new.formulario_id) || (ev.old && ev.old.formulario_id)))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_formularios' }, ev => aoMudar((ev.new && ev.new.id) || null))
+        .subscribe(st => {
+          tempoReal = st === 'SUBSCRIBED';
+          if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED'){ sb.removeChannel(canalVivo); canalVivo = null; }
+          render();
+        });
+    }
+    async function aplicarMudancas(){
+      const ids = new Set(mudados); mudados.clear();
+      ids.forEach(id => id === '*' ? vivoCache.clear() : vivoCache.delete(id));
+      if(!el('page-surveymonkey').classList.contains('active')){ vivoEm = 0; return; }
+      try {
+        await carregarListaVivo();
+        if(formAtual && (ids.has('*') || ids.has(formAtual.id))){
+          const f = forms.find(x => x.id === formAtual.id) || formAtual;
+          formAtual = f;
+          await carregarFormVivo(f);
+          if(formAtual !== f) return;
+          el('smDashMeta').innerHTML = metaFormulario(f);
+          preencherColetores(resumoDe(f.id), true);
+          renderFormulario();
+        }
+      } catch(e){ console.warn('[Survey Monkey] atualização em tempo real:', e); }
     }
     document.addEventListener('cdload:pagechange', ev => {
       if(ev.detail.page !== 'surveymonkey' || vivoProm || Date.now() - vivoEm < VIVO_TTL) return;
@@ -4678,7 +4720,7 @@
         const porColetor = {};
         coletores.forEach(c => { porColetor[c.id] = { perguntas: resumir(defs, resps.filter(r => r.coletor_id === c.id)) }; });
         R = { total: resps.length, perguntas: resumir(defs, resps), coletores: coletores.length > 1 ? coletores : [], porColetor,
-          respostas: resps.map(r => ({ coletor_id: r.coletor_id, status: r.status, data: r.iniciada_em,
+          respostas: resps.map(r => ({ id: r.id, coletor_id: r.coletor_id, status: r.status, data: r.iniciada_em,
             valores: defs.map(d => textoResposta(d, r.respostas[d.id])) })) };
       }
       vivoCache.set(f.id, { em: Date.now(), R });
@@ -4816,22 +4858,30 @@
         : 'Respostas individuais entram com a sincronização ao vivo (protegidas por login). O retrato público traz só os números agregados (LGPD).'}</span>`;
       el('smIndVazio').textContent = fonte === 'vivo' ? 'Nenhuma resposta sincronizada para este formulário (ou para o coletor escolhido).'
         : 'Nenhuma resposta individual neste retrato. A tabela é preenchida linha a linha quando a sincronização ao vivo estiver ativa.';
-      el('smIndCorpo').innerHTML = respostas.length ? respostas.map((r, i) => `<tr>
-          <td class="wa-td-num">${i + 1}</td><td>${esc(r.status === 'partial' ? 'Parcial' : 'Completa')}</td><td>${r.data ? dataBR(r.data) : '—'}</td>
+      // Uma linha por resposta, a mais recente no topo (# = ordem de chegada). As que chegaram em tempo real
+      // desde a última vez que a tabela foi mostrada ficam destacadas por alguns segundos.
+      const vistas = respostasVistas.get(f.id), novas = new Set();
+      if(vistas) respostas.forEach(r => { if(r.id && !vistas.has(r.id)) novas.add(r.id); });
+      respostasVistas.set(f.id, new Set(respostas.map(r => r.id)));
+      const dataHora = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      el('smIndCorpo').innerHTML = respostas.length ? respostas.map((r, i) => [r, i]).reverse().map(([r, i]) => `<tr${novas.has(r.id) ? ' class="sm-nova"' : ''}>
+          <td class="wa-td-num">${i + 1}</td><td>${esc(r.status === 'partial' ? 'Parcial' : 'Completa')}</td><td>${r.data ? dataHora(r.data) : '—'}</td>
           ${perguntas.map((q, j) => `<td title="${esc(r.valores[j] || '')}">${q.p ? '•••' : esc(r.valores[j] || '—')}</td>`).join('')}</tr>`).join('') : '';
       el('smIndVazio').hidden = respostas.length > 0;
     }
+    const respostasVistas = new Map();   // id do formulário → ids de resposta já mostrados (destaque das novas)
     function mostrarVisao(){
       el('smVisao').querySelectorAll('.wa-view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.visao === visao));
       el('smPainel').hidden = visao !== 'painel';
       el('smIndividual').hidden = visao !== 'individual';
     }
+    const metaFormulario = f => `<span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · alterado em ${dataBR(f.date_modified)}${f.pendente ? ' · sincronização em andamento' : ''}${tempoReal ? ' · <span class="sm-tempo-real">● tempo real</span>' : ''}`;
     async function abrirFormulario(id){
       const f = forms.find(x => x.id === id);
       if(!f) return;
       formAtual = f; visao = 'painel';
       el('smDashTitulo').textContent = f.title;
-      el('smDashMeta').innerHTML = `<span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} resposta${f.response_count === 1 ? '' : 's'} · alterado em ${dataBR(f.date_modified)}${f.pendente ? ' · sincronização em andamento' : ''}`;
+      el('smDashMeta').innerHTML = metaFormulario(f);
       el('smFiltros').hidden = el('smLista').hidden = true;
       el('smDash').hidden = false;
       mostrarVisao();
@@ -4854,11 +4904,11 @@
     // As respostas individuais já trazem o coletor em respostas[i].coletor_id.
     // O MCP do Survey Monkey não lê coletores, então o retrato atual só tem "Todos os coletores".
     const tipoColetor = { weblink: 'Link', email: 'E-mail', sms: 'SMS', popup: 'Pop-up', qr: 'QR code', embedded: 'Incorporado' };
-    function preencherColetores(R){
-      const sel = el('smColetor'), lista = (R && R.coletores) || [];
+    function preencherColetores(R, manter){
+      const sel = el('smColetor'), lista = (R && R.coletores) || [], antes = sel.value;
       sel.innerHTML = '<option value="">Todos os coletores</option>' + lista.map(c =>
         `<option value="${esc(c.id)}">${esc(c.nome || 'Coletor ' + c.id)}${c.tipo ? ' · ' + esc(tipoColetor[c.tipo] || c.tipo) : ''}${c.respostas != null ? ' (' + num(c.respostas) + ')' : ''}</option>`).join('');
-      sel.value = '';
+      sel.value = manter && lista.some(c => String(c.id) === antes) ? antes : '';
       sel.disabled = !lista.length;
       sel.title = lista.length ? 'Filtrar o painel e as respostas por coletor'
         : fonte === 'vivo' ? 'Este formulário tem um único coletor' : 'Coletores ainda não disponíveis neste retrato: entram com a sincronização pela API do Survey Monkey';
