@@ -1533,6 +1533,22 @@
   .sm-link .sm-copiar svg{width:14px;height:14px;stroke-width:2;}
   .sm-link .sm-copiar.sm-copiado{color:#3D8B37;}
   .sm-link-vazio{color:var(--cd-muted, #64748B);}
+  /* Survey: paginação da Resposta individual — por página à esquerda, passagem de página à direita. */
+  .sm-pag{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--cd-borda);}
+  .sm-pag-qtd{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--cd-muted);}
+  .sm-pag-qtd .filter-select{padding:7px 28px 7px 12px;}
+  .sm-pag-dir{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .sm-pag-info{font-size:13px;color:var(--cd-muted);font-variant-numeric:tabular-nums;}
+  .sm-pag-nav{display:flex;align-items:center;gap:4px;}
+  .sm-pag-btn{min-width:32px;height:32px;padding:0 9px;border:1px solid var(--cd-borda);border-radius:8px;background:transparent;color:var(--cd-texto);
+    font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;}
+  .sm-pag-btn:hover:not(:disabled):not(.active){border-color:var(--cd-azul);color:var(--cd-azul);background:var(--cd-azul-bg);}
+  .sm-pag-btn.active{background:var(--cd-azul);border-color:var(--cd-azul);color:#fff;cursor:default;}
+  .sm-pag-btn:disabled{opacity:.4;cursor:default;}
+  .sm-pag-btn svg{width:14px;height:14px;stroke-width:2.2;}
+  .sm-pag-seta{padding:0 6px;}
+  .sm-pag-reticencias{min-width:20px;text-align:center;color:var(--cd-muted);}
+  @media (max-width:700px){ .sm-pag{justify-content:center;} .sm-pag-dir{justify-content:center;} }
   .sm-badge-encerrado{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   /* Tabelas sem quebra de linha em nenhuma célula: rolam na horizontal quando não cabem. */
   .sm-tabela th, .sm-tabela td{white-space:nowrap;}
@@ -3063,6 +3079,21 @@
                   <thead id="smIndCab"></thead>
                   <tbody id="smIndCorpo"></tbody>
                 </table>
+              </div>
+              <!-- Paginação: respostas por página (esquerda) e passagem de página (direita) -->
+              <div class="sm-pag" id="smIndPag" hidden>
+                <label class="sm-pag-qtd">Respostas por página
+                  <select class="filter-select" id="smIndPorPag" aria-label="Respostas por página">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </label>
+                <div class="sm-pag-dir">
+                  <span class="sm-pag-info" id="smIndPagInfo"></span>
+                  <nav class="sm-pag-nav" id="smIndPagNav" aria-label="Páginas de respostas"></nav>
+                </div>
               </div>
               <div class="wa-empty-row sm-ind-vazio" id="smIndVazio" hidden>Nenhuma resposta individual neste retrato. A tabela é preenchida linha a linha quando a sincronização ao vivo estiver ativa.</div>
             </div>
@@ -4895,12 +4926,45 @@
       if(vistas) respostas.forEach(r => { if(r.id && !vistas.has(r.id)) novas.add(r.id); });
       respostasVistas.set(f.id, new Set(respostas.map(r => r.id)));
       const dataHora = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      el('smIndCorpo').innerHTML = respostas.length ? respostas.map((r, i) => [r, i]).reverse().map(([r, i]) => `<tr${novas.has(r.id) ? ' class="sm-nova"' : ''}>
+      // Paginação: só as linhas da página atual vão para a tela (padrão 20; 10/20/50/100 na lista suspensa).
+      indUltimo = { f, R };
+      const ordem = respostas.map((r, i) => [r, i]).reverse();
+      const paginas = Math.max(1, Math.ceil(ordem.length / indPorPagina));
+      indPagina = Math.min(Math.max(1, indPagina), paginas);
+      const ini = (indPagina - 1) * indPorPagina, pagina = ordem.slice(ini, ini + indPorPagina);
+      el('smIndCorpo').innerHTML = pagina.map(([r, i]) => `<tr${novas.has(r.id) ? ' class="sm-nova"' : ''}>
           <td class="wa-td-num">${i + 1}</td><td>${esc(r.status === 'partial' ? 'Parcial' : 'Completa')}</td><td>${r.data ? dataHora(r.data) : '—'}</td>
-          ${perguntas.map((q, j) => `<td title="${esc(r.valores[j] || '')}">${q.p ? '•••' : esc(r.valores[j] || '—')}</td>`).join('')}</tr>`).join('') : '';
+          ${perguntas.map((q, j) => `<td title="${esc(r.valores[j] || '')}">${q.p ? '•••' : esc(r.valores[j] || '—')}</td>`).join('')}</tr>`).join('');
       el('smIndVazio').hidden = respostas.length > 0;
+      el('smIndPag').hidden = !respostas.length;
+      el('smIndPorPag').value = String(indPorPagina);
+      el('smIndPagInfo').textContent = respostas.length ? `${num(ini + 1)}–${num(ini + pagina.length)} de ${num(respostas.length)}` : '';
+      el('smIndPagNav').innerHTML = navPaginas(indPagina, paginas);
     }
     const respostasVistas = new Map();   // id do formulário → ids de resposta já mostrados (destaque das novas)
+    let indPagina = 1, indPorPagina = 20, indUltimo = null;
+    // Botões: « ‹ 1 … 4 5 6 … 12 › » — primeira, anterior, páginas vizinhas da atual, próxima e última.
+    function navPaginas(atual, total){
+      const btn = (p, rot, dica, cls, desligado) => `<button type="button" class="sm-pag-btn${cls}" data-pag="${p}" title="${esc(dica)}" aria-label="${esc(dica)}"${cls.includes('active') ? ' aria-current="page"' : ''}${desligado ? ' disabled' : ''}>${rot}</button>`;
+      const seta = (...ds) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ds.map(d => `<polyline points="${d}"></polyline>`).join('')}</svg>`;
+      const nums = new Set([1, total, atual - 1, atual, atual + 1].filter(p => p >= 1 && p <= total));
+      let h = btn(1, seta('11 17 6 12 11 7', '18 17 13 12 18 7'), 'Primeira página', ' sm-pag-seta', atual === 1)
+        + btn(atual - 1, seta('15 18 9 12 15 6'), 'Página anterior', ' sm-pag-seta', atual === 1);
+      let ant = 0;
+      [...nums].sort((a, b) => a - b).forEach(p => {
+        if(p - ant > 1) h += '<span class="sm-pag-reticencias">…</span>';
+        h += btn(p, num(p), `Página ${p}`, p === atual ? ' active' : '', false);
+        ant = p;
+      });
+      return h + btn(atual + 1, seta('9 18 15 12 9 6'), 'Próxima página', ' sm-pag-seta', atual === total)
+        + btn(total, seta('13 17 18 12 13 7', '6 17 11 12 6 7'), 'Última página', ' sm-pag-seta', atual === total);
+    }
+    const irParaPagina = p => { indPagina = p; if(indUltimo) renderIndividual(indUltimo.f, indUltimo.R); el('smIndividual').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+    el('smIndPagNav').addEventListener('click', ev => {
+      const b = ev.target.closest('.sm-pag-btn');
+      if(b && !b.disabled && !b.classList.contains('active')) irParaPagina(Number(b.dataset.pag));
+    });
+    el('smIndPorPag').addEventListener('change', ev => { indPorPagina = Number(ev.target.value) || 20; irParaPagina(1); });
     function mostrarVisao(){
       el('smVisao').querySelectorAll('.wa-view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.visao === visao));
       el('smPainel').hidden = visao !== 'painel';
@@ -4910,7 +4974,7 @@
     async function abrirFormulario(id){
       const f = forms.find(x => x.id === id);
       if(!f) return;
-      formAtual = f; visao = 'painel';
+      formAtual = f; visao = 'painel'; indPagina = 1;
       el('smDashTitulo').textContent = f.title;
       el('smDashMeta').innerHTML = metaFormulario(f);
       el('smFiltros').hidden = el('smLista').hidden = true;
@@ -4958,7 +5022,7 @@
       renderPainel(formAtual, D);
       renderIndividual(formAtual, D);
     }
-    el('smColetor').addEventListener('change', renderFormulario);
+    el('smColetor').addEventListener('change', () => { indPagina = 1; renderFormulario(); });
     function fecharFormulario(){
       formAtual = null;
       el('smDash').hidden = true;
