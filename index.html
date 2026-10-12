@@ -1334,10 +1334,17 @@
   /* EMPRESAS: Subclasse (nomes longos da CNAE) com largura limitada, sem empurrar os demais filtros. */
   #page-dashboard .wa-stock-filters #stkEmpSubclasseFiltro{max-width:220px;text-overflow:ellipsis;}
   /* EMPRESAS: muitos filtros na barra — busca mais estreita para os rótulos dos selects caberem. */
-  /* Busca encolhe primeiro (200 → 120px) e os selects até 64px: barra numa linha só sem esconder os botões. */
-  #page-dashboard.stk-emp .wa-stock-filters .wa-clip-search{width:auto;min-width:110px;max-width:200px;flex:1 1 200px;}
+  /* EMPRESAS: busca no mesmo tamanho dos outros painéis (padrão ABVE: 288px, até 220px); para caber em telas
+     menores, o switch Dashboard/Mapa vira só ícones abaixo de 1500px e o espaçamento/selects ficam mais justos. */
+  #stkVisaoEmp .stk-seg-btn{display:inline-flex;align-items:center;gap:6px;}
+  #stkVisaoEmp .stk-seg-ic{width:15px;height:15px;stroke-width:2;flex:0 0 auto;}
   .content > #page-dashboard.stk-emp > .filter-bar{column-gap:8px;}
-  .content > #page-dashboard.stk-emp > .filter-bar .filter-select{min-width:60px;}
+  .content > #page-dashboard.stk-emp > .filter-bar .filter-select{min-width:56px;}
+  @media (max-width:1500px){
+    #stkVisaoEmp .stk-seg-rot{display:none;}
+    #stkVisaoEmp .stk-seg-btn{padding-left:10px;padding-right:10px;}
+    .content > #page-dashboard.stk-emp > .filter-bar{column-gap:6px;}
+  }
   .content > #page-dashboard.stk-emp > .filter-bar :is(#stkVisaoEmp, .stk-filtros-btn, #stkLimpar, #stkExportar){flex:0 0 auto;}
   /* EMPRESAS: Limpar/Exportar sempre só com o ícone (botão quadrado), liberando espaço para os demais filtros. */
   #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar) .btn-label{display:none;}
@@ -2570,8 +2577,8 @@
             <option value="">Entidade</option>
           </select>
           <div class="stk-segmented" id="stkVisaoEmp" role="tablist" aria-label="Visualização" hidden>
-            <button type="button" class="stk-seg-btn active" data-visao="dash" role="tab" aria-selected="true">Dashboard</button>
-            <button type="button" class="stk-seg-btn" data-visao="mapa" role="tab" aria-selected="false">Mapa</button>
+            <button type="button" class="stk-seg-btn active" data-visao="dash" role="tab" aria-selected="true" title="Dashboard"><svg class="stk-seg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg><span class="stk-seg-rot">Dashboard</span></button>
+            <button type="button" class="stk-seg-btn" data-visao="mapa" role="tab" aria-selected="false" title="Mapa"><svg class="stk-seg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg><span class="stk-seg-rot">Mapa</span></button>
           </div>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
