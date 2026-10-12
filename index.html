@@ -11537,20 +11537,21 @@ ${clipPlayerPills(n)}
       // ---- KPIs: quantidade de empresas em primeiro lugar ----
       const kEst = baixadas
         ? cdKpiCard('arrowUpRight', 'vermelho', 'Empresas baixadas', stkNum(bxAt), cdDelta(bxAt, bxAnt, false, false, true), `vs. ${anoAnt} (${stkNum(bxAnt)})`, `CNPJs baixados no período (situação cadastral BAIXADA) · ${local} · ${J.rotulo}`)
-        : cdKpiCard('predio', 'azul', 'Estoque de empresas', atNow == null ? '—' : stkNum(qtdAt), qtdAnt != null ? cdDelta(qtdAt, qtdAnt) : { cls: 'neu', txt: `edição ${edicao}` },
+        : cdKpiCard('predio', 'azul', 'Quantidade de Empresas', atNow == null ? '—' : stkNum(qtdAt), qtdAnt != null ? cdDelta(qtdAt, qtdAnt) : { cls: 'neu', txt: `edição ${edicao}` },
             qtdAnt != null ? `vs. ${anoAnt} (${stkNum(qtdAnt)})` : 'retrato da Receita', `Quantidade de empresas ativas (CNPJ ativo) no fim do período · ${local}${notaAc && okC ? notaAc : ''}${sufAviso}`);
       const kAb = cdKpiCard('arrowDownLeft', 'verde', 'Aberturas', temSerie ? stkNum(abAt) : '—', temSerie ? cdDelta(abAt, abAnt) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${stkNum(abAnt)})` : 'cidade + atividade',
         `Empresas (matrizes e filiais) com início de atividade no período · ${local}`);
-      const kBx = cdKpiCard('arrowUpRight', 'vermelho', 'Baixas', temSerie ? stkNum(bxAt) : '—', temSerie ? cdDelta(bxAt, bxAnt, false, false, true) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${stkNum(bxAnt)})` : 'cidade + atividade',
-        `Empresas baixadas no período (situação cadastral BAIXADA) · ${local}`);
+      const kBx = cdKpiCard('arrowUpRight', 'vermelho', 'Fechamentos', temSerie ? stkNum(bxAt) : '—', temSerie ? cdDelta(bxAt, bxAnt, false, false, true) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${stkNum(bxAnt)})` : 'cidade + atividade',
+        `Empresas fechadas no período (situação cadastral BAIXADA) · ${local}`);
       let mei = 0, todasR = 0;
       (imun >= 0 ? (D.atm || []).filter(([x]) => x === imun) : (D.at || []).filter(([u]) => u === iu)).forEach(([, , r, v]) => { if(regOk[r]){ todasR += v; if(r === 0) mei += v; } });
-      const kMei = cdKpiCard('pessoas', 'verde', 'Empresas MEI', stkNum(mei), { cls: 'neu', txt: stkPct(todasR ? mei / todasR : 0) + ' das ativas' }, `edição ${edicao}`,
+      const kMei = cdKpiCard('pessoas', 'azul', 'Empresas MEI', stkNum(mei), { cls: 'neu', txt: stkPct(todasR ? mei / todasR : 0) + ' das ativas' }, `edição ${edicao}`,
         `Microempreendedores individuais (SIMEI) ativos · ${cidade || escopoUf}${sufReg}${okC ? ' (sem a atividade: o arquivo não cruza MEI e CNAE)' : ''}`);
-      const vr = baixadas ? (bxAnt ? bxAt / bxAnt - 1 : 0) : (qtdAnt ? qtdAt / qtdAnt - 1 : 0);
-      const kVar = cdKpiCard('percent', 'amarelo', baixadas ? 'Variação das baixas' : 'Variação de empresas', (baixadas ? bxAnt : qtdAnt) ? stkPct(vr, 1) : '—',
-        { cls: (baixadas ? -vr : vr) > 0 ? 'up' : (baixadas ? -vr : vr) < 0 ? 'down' : 'neu', txt: `vs. ${anoAnt}` }, baixadas ? `baixas no período vs. ${anoAnt}` : `ativas no fim do período vs. ${anoAnt}`,
-        baixadas ? 'Variação da quantidade de empresas baixadas em relação ao mesmo período do ano anterior' : 'Crescimento da quantidade de empresas ativas em relação ao mesmo mês do ano anterior');
+      // Saldo do período = aberturas − fechamentos, comparado com o mesmo período do ano anterior.
+      const salAt = abAt - bxAt, salAnt = abAnt - bxAnt;
+      const kVar = cdKpiCard(salAt < 0 ? 'trendDown' : 'trendUp', 'azul', 'Saldo do período', temSerie ? cagSinal(salAt) : '—',
+        temSerie ? cagDif(salAt, salAnt) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${cagSinal(salAnt)})` : 'cidade + atividade',
+        `Aberturas menos fechamentos no período (${stkNum(abAt)} − ${stkNum(bxAt)}) · ${local} · ${J.rotulo}`);
 
       // ---- Evolução da quantidade de empresas: Mensal (linhas, ano × ano anterior) | Anual (barras, como no Clipping) ----
       const ult = D.meses[nM - 1], ultAno = Number(ult.slice(0, 4)), ultMes = Number(ult.slice(5, 7));
