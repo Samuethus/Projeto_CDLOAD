@@ -1334,7 +1334,11 @@
   /* EMPRESAS: Subclasse (nomes longos da CNAE) com largura limitada, sem empurrar os demais filtros. */
   #page-dashboard .wa-stock-filters #stkEmpSubclasseFiltro{max-width:220px;text-overflow:ellipsis;}
   /* EMPRESAS: muitos filtros na barra — busca mais estreita para os rótulos dos selects caberem. */
-  #page-dashboard.stk-emp .wa-stock-filters .wa-clip-search{width:200px;max-width:200px;flex:0 1 200px;}
+  /* Busca encolhe primeiro (200 → 120px) e os selects até 64px: barra numa linha só sem esconder os botões. */
+  #page-dashboard.stk-emp .wa-stock-filters .wa-clip-search{width:auto;min-width:110px;max-width:200px;flex:1 1 200px;}
+  .content > #page-dashboard.stk-emp > .filter-bar{column-gap:8px;}
+  .content > #page-dashboard.stk-emp > .filter-bar .filter-select{min-width:60px;}
+  .content > #page-dashboard.stk-emp > .filter-bar :is(#stkVisaoEmp, .stk-filtros-btn, #stkLimpar, #stkExportar){flex:0 0 auto;}
   /* EMPRESAS: Limpar/Exportar sempre só com o ícone (botão quadrado), liberando espaço para os demais filtros. */
   #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar) .btn-label{display:none;}
   #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar){padding:10px;gap:0;}
@@ -9885,9 +9889,9 @@ ${clipPlayerPills(n)}
       stkEmpFiltros.forEach(el => { el.hidden = !emp; });
       stkVisaoEmpEl.hidden = !emp;
       document.getElementById('page-dashboard').classList.toggle('stk-emp', emp);   // Limpar/Exportar só com ícone
-      // EMPRESAS: barra com no máximo 7 filtros (Painel, Indicador, Mês, Ano, Cidade, Regime, SIMEI) + switch + filtro + Limpar + Exportar;
-      // Busca, Situação e Subclasse ficam só no menu flutuante (selo "+3").
-      [stkBuscaInput.closest('.wa-clip-search'), stkEmpSituacaoEl, stkEmpSubclasseEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
+      // EMPRESAS: barra com Busca + 7 filtros (Painel, Indicador, Mês, Ano, Cidade, Regime, SIMEI) + switch + filtro + Limpar + Exportar;
+      // Situação e Subclasse ficam só no menu flutuante (selo "+2").
+      [stkEmpSituacaoEl, stkEmpSubclasseEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
       stkFiltrosBtn.hidden = !emp;
       stkFiltrosAtualizar();
       if(!emp) stkFiltrosFechar();
