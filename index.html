@@ -498,7 +498,7 @@
     .content{padding:18px 16px 40px;}
     /* As seções (fundo próprio) compensam o espaçamento menor do celular; com a margem do
        desktop (-34px) elas ficavam 36px mais largas que a tela e cortavam o lado direito. */
-    .content > :is(#page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
       margin:-18px -16px -40px;
       padding:18px 16px 40px;
     }
@@ -631,25 +631,6 @@
   .wa-stock-filters .wa-btn,
   .wa-stock-filters .filter-divider{flex:0 0 auto;white-space:nowrap;}
 
-  .instances-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
-    gap:18px;
-  }
-  .instance-card{
-    background:var(--bg-card);
-    border:1px solid #e4e4e4;
-    border-radius:12px;
-    padding:18px;
-  }
-  .instance-card-top{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    margin-bottom:10px;
-  }
-  .instance-name{font-size:15px; font-weight:700; color:var(--text-dark);}
-  .instance-id{font-size:12px; color:var(--text-muted); margin-top:2px; font-family:monospace;}
   .badge{
     font-size:11px;
     font-weight:700;
@@ -657,16 +638,6 @@
     border-radius:20px;
     text-transform:lowercase;
     letter-spacing:.2px;
-  }
-  .badge-connecting{background:var(--amber-bg); color:var(--amber-text);}
-  .badge-connected{background:var(--green-bg); color:var(--branco);}
-  .instance-card-actions{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-top:14px;
-    padding-top:12px;
-    border-top:1px solid #eaeaea;
   }
 
   /* ---------- Empty state ---------- */
@@ -702,7 +673,7 @@
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
+  #page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -1264,7 +1235,7 @@
      entrada/sucesso = verde, saída = vermelho, em progresso = azul claro,
      alerta = laranja.
   =================================================================== */
-  #page-dashboard, #page-whatsapp, #page-surveymonkey{
+  #page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias{
     --stk-primary-dark:#002B54;
     --stk-primary:#0056D2;
     --stk-primary-light:#0099FF;
@@ -1285,11 +1256,11 @@
   /* Mais itens que as demais páginas (painel + busca + período + mês/ano/setor
      ou player) — quebra em linha ao invés de rolagem horizontal, para nenhum
      filtro (em especial o seletor de Painel) ficar fora da área visível. */
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar{margin-bottom:20px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search,
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar{margin-bottom:20px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .wa-clip-search,
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
   /* Seletor de Painel: mesma largura em todos os painéis, calibrada no Panorama (o painel com mais
      filtros): ~156px em 1366px, ~195px em 1600px, ~225px em 1920px de tela. Não estica nem encolhe
      conforme a quantidade de filtros de cada visão; os demais filtros ocupam o espaço restante. */
@@ -1395,18 +1366,18 @@
   /* ===== Barra de filtros: padrão único em todas as seções (igual à do Dashboard) =====
      Mesmo lugar (topo da seção), mesma altura, espaçamento, cantos e sombra: ao trocar de
      seção o box parece "fixo". O conteúdo de cada barra muda; o box não. */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
     box-sizing:border-box;min-height:58px;margin-bottom:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);
   }
   /* Uma linha só e altura fixa (58px) em qualquer largura de tela: o box nunca muda de tamanho.
      Os campos encolhem por igual; o que não couber rola para o lado (sem barra visível). */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
     flex-wrap:nowrap !important;height:58px;min-height:58px;padding:10px 14px;column-gap:10px;row-gap:0;
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
   }
   .content > .page > .filter-bar::-webkit-scrollbar{display:none;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
   .content > .page > .filter-bar .wa-view-toggle{padding:2px;}
   .content > .page > .filter-bar .wa-view-toggle-btn{padding:6px 12px;}
   @media (max-width:1800px){
@@ -1445,7 +1416,7 @@
 
   /* ===== Clipping (layout "cd") — KPIs com acento lateral, cards com título +
      subtítulo, barras com trilho, ranking e destaques ===== */
-  #page-dashboard, #page-surveymonkey{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
+  #page-dashboard, #page-surveymonkey, #page-instancias{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
     --cd-texto:#0F1E3D;--cd-muted:#64748B;--cd-borda:#E6EBF2;--cd-trilho:#EEF2F7;}
   .cd-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:16px;}
   @media (max-width:1200px){ .cd-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
@@ -1563,6 +1534,21 @@
 
   /* ===== Survey Monkey: lista de formulários (tabela no padrão do Estoque) e dashboard por formulário ===== */
   #page-surveymonkey [hidden]{display:none !important;}
+  /* ---- Seção Supabase (visualização das tabelas do banco) ---- */
+  #page-instancias [hidden]{display:none !important;}
+  .sb-tabela td.sb-nome{font-weight:600;color:var(--wa-text);font-family:ui-monospace, SFMono-Regular, Consolas, monospace;font-size:12.5px;}
+  .sb-tabela td.sb-desc{width:38%;max-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .sb-rls{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;}
+  .sb-rls svg{width:13px;height:13px;stroke-width:2.2;}
+  .sb-rls.sim{color:#3D8B37;}
+  .sb-rls.nao{color:#B45309;}
+  #sbKpis .sb-kpi-texto{font-size:17px;font-family:ui-monospace, SFMono-Regular, Consolas, monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  #sbKpis .cd-kpi-txt{min-width:0;}
+  #sbDetCab th small{display:block;font-size:10px;font-weight:500;text-transform:none;letter-spacing:0;color:#94A3B8;margin-top:1px;}
+  #sbDetCorpo td.sb-nulo{color:#CBD5E1;font-style:italic;}
+  #sbDetCorpo td.sb-json{font-family:ui-monospace, SFMono-Regular, Consolas, monospace;font-size:11.5px;color:#475569;}
+  #sbDetCorpo td.sb-num{text-align:right;font-variant-numeric:tabular-nums;}
+  #sbDetCorpo td.sb-bool{text-align:center;}
   /* Survey: resposta que chegou em tempo real fica destacada por alguns segundos; indicador "● tempo real". */
   @keyframes sm-nova{from{background:#EAF6E6;}to{background:transparent;}}
   .sm-tabela-ind tr.sm-nova td{animation:sm-nova 6s ease-out;}
@@ -1753,20 +1739,20 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters .filter-select{min-width:80px;flex:1 1 80px;}
     #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:0;flex:0 0 var(--stk-painel-w);}
     /* Dashboard: busca 80% maior (160 → 288px); selects um pouco mais estreitos compensam. */
     #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
-    .content > :is(#page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-whatsapp){padding-top:18px;}
-    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-whatsapp){padding-top:18px;}
+    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
       margin-bottom:14px;padding:10px 14px;column-gap:10px;
     }
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .stk-segmented{padding:2px;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey) .stk-seg-btn{padding:6px 9px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .stk-segmented{padding:2px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .stk-seg-btn{padding:6px 9px;}
     #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
     /* Barra de rolagem invisível (a rolagem pela roda do mouse/toque continua). */
     #stkGrid.cd-fit::-webkit-scrollbar{display:none;}
@@ -2189,7 +2175,7 @@
     --bg-panel:#1A2436;
     --bg-card:#172033;
   }
-  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
     --wa-bg:#0B1220;
     --wa-card:#131C2E;
     --wa-border:#243047;
@@ -2208,7 +2194,7 @@
     --wa-slate-bg:#1E293B;
     --wa-slate-text:#CBD5E1;
   }
-  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp, #page-surveymonkey){
+  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias){
     --stk-primary-dark:#E2E8F0;
     --stk-secondary-dark:#CBD5E1;
     --stk-neutral-bg:#243047;
@@ -2369,9 +2355,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         <span>Relatórios</span>
       </button>
-      <button class="nav-item" data-page="instancias" data-title="Instâncias" data-desc="Conecte e gerencie os chips de WhatsApp integrados ao sistema.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
-        <span>Instâncias</span>
+      <!-- Seção Supabase (chave interna "instancias", mantida para as permissões de seção já cadastradas) -->
+      <button class="nav-item" data-page="instancias" data-title="Supabase" data-desc="Visualize as tabelas e os dados do banco de dados da plataforma (somente leitura).">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <span>Supabase</span>
       </button>
       <button class="nav-item" data-page="surveymonkey" data-title="Survey Monkey" data-desc="Formulários e respostas das pesquisas do Survey Monkey.">
         <svg class="nav-ic-preenchido" viewBox="-8 -154 974 974" aria-hidden="true"><!-- ícone do Survey Monkey (cabeça do macaco), desenhado a partir da logo --><path d="M190 665C150 590 128 500 135 420C150 250 300 125 480 125C660 125 810 250 825 420C832 500 810 590 770 665L672 605C700 560 715 500 715 450C715 360 680 315 610 312C560 312 515 335 485 368L470 368C440 335 395 312 345 312C275 315 243 360 243 450C243 500 258 560 285 605Z"/><path d="M380 72L392 55C428 72 452 92 462 112L418 130C412 105 400 86 380 72Z"/><path d="M458 118C466 60 510 22 563 0L573 20C538 40 522 78 522 128Z"/><path fill-rule="evenodd" d="M128 378A116 114 0 1 0 128 606A116 114 0 1 0 128 378ZM106 462A30 30 0 1 0 106 522A30 30 0 1 0 106 462Z"/><path fill-rule="evenodd" d="M830 378A116 114 0 1 1 830 606A116 114 0 1 1 830 378ZM852 462A30 30 0 1 1 852 522A30 30 0 1 1 852 462Z"/></svg>
@@ -2627,26 +2614,120 @@
 
       <!-- INSTÂNCIAS -->
       <section class="page" id="page-instancias">
-        <div class="filter-bar">
-          <select class="filter-select"><option>Período</option></select>
-          <select class="filter-select"><option>Ano</option></select>
-          <select class="filter-select"><option>Mês</option></select>
-          <select class="filter-select"><option>Competidor</option></select>
-          <select class="filter-select"><option>Categoria</option></select>
-          <select class="filter-select"><option>Plataforma</option></select>
+        <!-- SUPABASE: visualização (somente leitura) das tabelas do banco de dados da plataforma.
+             Lista: função cdl_tabelas() (supabase/schema_supabase_visualizador.sql) — nome, colunas, linhas, tamanho e RLS.
+             Dados: lidos pela API do Supabase com o login do usuário, respeitando as regras de acesso (RLS) de cada tabela. -->
+        <div class="filter-bar wa-stock-filters" id="sbFiltros">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="sbBusca" placeholder="Buscar tabela ou coluna..." autocomplete="off">
+          </div>
+          <select class="filter-select" id="sbRlsFiltro" title="Segurança (RLS: regras de acesso por linha)">
+            <option value="">Segurança</option>
+            <option value="sim">Com RLS</option>
+            <option value="nao">Sem RLS</option>
+          </select>
+          <select class="filter-select" id="sbConteudoFiltro" title="Conteúdo da tabela">
+            <option value="">Conteúdo</option>
+            <option value="com">Com registros</option>
+            <option value="vazia">Vazias</option>
+          </select>
           <div class="filter-spacer"></div>
           <div class="filter-divider"></div>
-          <button class="btn btn-clear">
+          <button class="btn btn-clear" id="sbAtualizar" title="Atualizar a lista de tabelas" aria-label="Atualizar a lista de tabelas">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <span class="btn-label">Atualizar</span>
+          </button>
+          <button class="btn btn-clear" id="sbLimpar" title="Limpar filtros" aria-label="Limpar filtros">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             <span class="btn-label">Limpar</span>
           </button>
-          <button class="btn btn-export">
+          <button class="btn btn-export" id="sbExportar" title="Exportar a lista de tabelas (CSV)" aria-label="Exportar a lista de tabelas (CSV)">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
             <span class="btn-label">Exportar</span>
           </button>
         </div>
 
-        <div class="instances-grid" id="instancesGrid"></div>
+        <!-- Lista de tabelas (mesmo layout da lista de formulários do Survey): clique na linha abre os dados -->
+        <div id="sbLista">
+          <div class="cd-kpis sm-kpis" id="sbKpis"></div>
+          <div class="wa-sort-row">
+            <div class="wa-sort-group">
+              <span class="wa-sort-label">Ordenar por</span>
+              <div class="wa-sort-pills" id="sbOrdem">
+                <button type="button" class="wa-sort-pill active" data-sort="linhas">Mais registros</button>
+                <button type="button" class="wa-sort-pill" data-sort="colunas">Mais colunas</button>
+                <button type="button" class="wa-sort-pill" data-sort="az">A-Z</button>
+              </div>
+            </div>
+            <div class="wa-clip-count" id="sbContagem">0 tabelas</div>
+          </div>
+          <div class="wa-card">
+            <div class="wa-table-wrap">
+              <table class="wa-table sm-tabela sb-tabela">
+                <thead>
+                  <tr>
+                    <th>Tabela</th>
+                    <th>Descrição</th>
+                    <th style="text-align:right;">Colunas</th>
+                    <th style="text-align:right;">Registros</th>
+                    <th style="text-align:right;">Tamanho</th>
+                    <th>Segurança</th>
+                    <th class="wa-table-actions">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="sbTabela"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dados de uma tabela (somente leitura), paginados -->
+        <div id="sbDetalhe" hidden>
+          <div class="sm-dash-topo">
+            <button type="button" class="wa-btn wa-btn-outline sm-voltar" id="sbVoltar">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Tabelas
+            </button>
+            <div class="sm-dash-tits">
+              <h2 id="sbDetTitulo"></h2>
+              <div class="sm-dash-meta" id="sbDetMeta"></div>
+            </div>
+            <div class="sm-dash-acoes">
+              <button class="btn btn-export" id="sbDetExportar" title="Exportar os registros desta tabela (CSV)" aria-label="Exportar os registros desta tabela (CSV)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                <span class="btn-label">Exportar</span>
+              </button>
+            </div>
+          </div>
+          <div class="wa-sort-row">
+            <div class="sm-aviso" id="sbDetAviso"></div>
+            <div class="wa-clip-count" id="sbDetContagem"></div>
+          </div>
+          <div class="wa-card">
+            <div class="wa-table-wrap">
+              <table class="wa-table sm-tabela sm-tabela-ind">
+                <thead id="sbDetCab"></thead>
+                <tbody id="sbDetCorpo"></tbody>
+              </table>
+            </div>
+            <div class="wa-empty-row sm-ind-vazio" id="sbDetVazio" hidden></div>
+            <div class="sm-pag" id="sbPag" hidden>
+              <label class="sm-pag-qtd">Registros por página
+                <select class="filter-select" id="sbPorPag" aria-label="Registros por página">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <div class="sm-pag-dir">
+                <span class="sm-pag-info" id="sbPagInfo"></span>
+                <nav class="sm-pag-nav" id="sbPagNav" aria-label="Páginas de registros"></nav>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- OUTRAS PÁGINAS (empty state) -->
@@ -4408,38 +4489,6 @@
 <script src="config.js"></script>
 
 <script>
-  // ---------- Dados mockados das instâncias ----------
-  const instances = [
-    { name: "joao-lovable", id: "8f2a1c9e-44db", status: "connected" },
-    { name: "atendimento-01", id: "b710e3a2-91fc", status: "connected" },
-    { name: "comercial-cuiaba", id: "3d4f7b0a-2210", status: "connecting" },
-    { name: "suporte-nim", id: "a58c9d11-e007", status: "connecting" }
-  ];
-
-  const grid = document.getElementById('instancesGrid');
-  instances.forEach(inst => {
-    const card = document.createElement('div');
-    card.className = 'instance-card';
-    const badgeClass = inst.status === 'connected' ? 'badge-connected' : 'badge-connecting';
-    const actionBtn = inst.status === 'connected'
-      ? ''
-      : `<button class="btn btn-orange">Conectar</button>`;
-    card.innerHTML = `
-      <div class="instance-card-top">
-        <div>
-          <div class="instance-name">${inst.name}</div>
-          <div class="instance-id">${inst.id}</div>
-        </div>
-        <span class="badge ${badgeClass}">${inst.status}</span>
-      </div>
-      <div class="instance-card-actions">
-        ${actionBtn}
-        <button class="btn btn-ghost" style="margin-left:auto;">Remover</button>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-
   // ---------- Usuários & Permissões de seção ----------
   const ADMIN_EMAIL = (window.APP_CONFIG && window.APP_CONFIG.adminEmail) || 'admin@example.com';
   // Escapa texto vindo do banco antes de inseri-lo em innerHTML (evita XSS armazenado).
@@ -4449,7 +4498,7 @@
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'clipping', label: 'Clipping News' },
     { key: 'relatorios', label: 'Relatórios' },
-    { key: 'instancias', label: 'Instâncias' },
+    { key: 'instancias', label: 'Supabase' },
     { key: 'surveymonkey', label: 'Survey Monkey' },
     { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'campanhas', label: 'Campanhas' },
@@ -5136,6 +5185,225 @@
     render();
   })();
 
+  // ---- Seção SUPABASE: visualização das tabelas do banco (somente leitura) ----
+  // Lista: função public.cdl_tabelas() (supabase/schema_supabase_visualizador.sql) — nome, descrição, registros,
+  // colunas (nome e tipo), tamanho e RLS; só responde para quem tem a seção liberada (chave interna "instancias").
+  // Dados de uma tabela: lidos pela API do Supabase com o login do usuário (as regras de acesso/RLS continuam
+  // valendo), paginados no servidor (10/20/50/100 por página), mais recentes primeiro quando há data de criação.
+  (function(){
+    const el = id => document.getElementById(id);
+    const num = n => Number(n || 0).toLocaleString('pt-BR');
+    const semAcento = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const bytes = b => { b = Number(b || 0); const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while(b >= 1024 && i < u.length - 1){ b /= 1024; i++; } return b.toLocaleString('pt-BR', { maximumFractionDigits: i ? 1 : 0 }) + ' ' + u[i]; };
+    const ICONE_CADEADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+    const ICONE_ABERTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+    const ICONE_ABRIR = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>';
+    const ICONES = {
+      tab: '<ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>',
+      reg: '<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>',
+      col: '<rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line>',
+      rls: '<rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>',
+      disco: '<path d="M22 12H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>'
+    };
+    const kpi = (ic, tom, label, valor, ref) => `<div class="cd-kpi ${tom}"><div class="cd-kpi-in">
+        <span class="cd-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICONES[ic]}</svg></span>
+        <div class="cd-kpi-txt"><div class="cd-kpi-label">${esc(label)}</div><div class="cd-kpi-valor">${valor}</div></div>
+        <div class="cd-kpi-rodape"><span class="cd-kpi-ref">${esc(ref)}</span></div>
+      </div></div>`;
+
+    let tabelas = [], carregadoEm = 0, carregando = null, ordem = 'linhas', erroLista = '';
+    const busca = el('sbBusca'), fRls = el('sbRlsFiltro'), fCont = el('sbConteudoFiltro');
+
+    // ================= Lista de tabelas =================
+    async function carregar(forcar){
+      const sb = window.CDL_SB;
+      if(!sb){ erroLista = 'Entre com o seu login para ver as tabelas do banco (o Supabase não está configurado neste acesso).'; render(); return; }
+      if(carregando) return carregando;
+      if(!forcar && carregadoEm && Date.now() - carregadoEm < 5 * 60000) return;
+      el('sbTabela').innerHTML = '<tr class="wa-empty-row"><td colspan="7">Carregando as tabelas…</td></tr>';
+      carregando = (async () => {
+        const { data, error } = await sb.rpc('cdl_tabelas');
+        if(error){
+          erroLista = error.code === '42501' ? 'Seu usuário não tem acesso à seção Supabase. Peça a liberação a um Administrador.'
+            : /cdl_tabelas|PGRST202|404/.test(error.message + error.code) ? 'Falta a função de listagem no banco: rode supabase/schema_supabase_visualizador.sql no SQL Editor do Supabase.'
+            : 'Não foi possível listar as tabelas: ' + error.message;
+          tabelas = [];
+        } else {
+          erroLista = '';
+          tabelas = (data || []).map(t => ({ nome: t.nome, descricao: t.descricao || '', registros: Number(t.registros) || 0,
+            colunas: Array.isArray(t.colunas) ? t.colunas : [], tamanho: Number(t.tamanho) || 0, rls: !!t.rls }));
+          carregadoEm = Date.now();
+        }
+        render();
+      })().finally(() => { carregando = null; });
+      return carregando;
+    }
+    function filtrados(){
+      const q = semAcento(busca.value.trim());
+      return tabelas.filter(t =>
+        (!q || semAcento(t.nome + ' ' + t.descricao + ' ' + t.colunas.map(c => c.nome).join(' ')).includes(q)) &&
+        (!fRls.value || (fRls.value === 'sim') === t.rls) &&
+        (!fCont.value || (fCont.value === 'com') === (t.registros > 0)));
+    }
+    function render(){
+      const lista = filtrados();
+      const ordenar = { linhas: (a, b) => b.registros - a.registros || a.nome.localeCompare(b.nome), colunas: (a, b) => b.colunas.length - a.colunas.length || a.nome.localeCompare(b.nome), az: (a, b) => a.nome.localeCompare(b.nome) };
+      const linhas = [...lista].sort(ordenar[ordem]);
+      const regs = lista.reduce((s, t) => s + t.registros, 0), cols = lista.reduce((s, t) => s + t.colunas.length, 0);
+      const comRls = lista.filter(t => t.rls).length, maior = [...lista].sort(ordenar.linhas)[0];
+      el('sbKpis').innerHTML =
+        kpi('tab', '', 'Tabelas', num(lista.length), `de ${num(tabelas.length)} no banco`) +
+        kpi('reg', 'verde', 'Registros', num(regs), 'soma das tabelas') +
+        kpi('col', '', 'Colunas', num(cols), 'soma das tabelas') +
+        kpi('rls', comRls === lista.length ? 'verde' : 'amarelo', 'Com RLS', num(comRls), comRls === lista.length ? 'todas protegidas' : `${num(lista.length - comRls)} sem regras de acesso`) +
+        kpi('disco', '', 'Maior tabela', maior ? `<span class="sb-kpi-texto" title="${esc(maior.nome)}">${esc(maior.nome)}</span>` : '—', maior ? `${num(maior.registros)} registros · ${bytes(maior.tamanho)}` : '');
+      el('sbContagem').textContent = `${num(lista.length)} tabela${lista.length === 1 ? '' : 's'} · ${num(regs)} registros`;
+      el('sbTabela').innerHTML = erroLista ? `<tr class="wa-empty-row"><td colspan="7">${esc(erroLista)}</td></tr>`
+        : linhas.length ? linhas.map(t => `
+          <tr class="sm-linha" data-tabela="${esc(t.nome)}" tabindex="0" title="Abrir os registros de ${esc(t.nome)}">
+            <td class="sb-nome">${esc(t.nome)}</td>
+            <td class="sb-desc" title="${esc(t.descricao)}">${t.descricao ? esc(t.descricao) : '<span style="color:#CBD5E1">—</span>'}</td>
+            <td class="wa-td-num">${num(t.colunas.length)}</td>
+            <td class="wa-td-num">${num(t.registros)}</td>
+            <td style="text-align:right;">${bytes(t.tamanho)}</td>
+            <td>${t.rls ? `<span class="sb-rls sim" title="RLS ligado: cada usuário só lê o que as regras permitem">${ICONE_CADEADO}RLS ligado</span>`
+              : `<span class="sb-rls nao" title="RLS desligado: a tabela não tem regras de acesso por linha">${ICONE_ABERTO}Sem RLS</span>`}</td>
+            <td class="wa-table-actions"><button type="button" class="wa-icon-btn" title="Abrir registros">${ICONE_ABRIR}</button></td>
+          </tr>`).join('') : `<tr class="wa-empty-row"><td colspan="7">${tabelas.length || carregadoEm ? 'Nenhuma tabela encontrada com esses filtros.' : 'Carregando…'}</td></tr>`;
+    }
+
+    // ================= Registros de uma tabela =================
+    let atual = null, pagina = 1, porPag = 20, seqDet = 0;
+    const tipoDe = c => String(c.tipo || '').toLowerCase();
+    // Ordem: mais recentes primeiro se houver data de criação/atualização; senão pela chave "id"; senão sem ordem.
+    function colunaOrdem(t){
+      const nomes = t.colunas.map(c => c.nome);
+      const data = ['criado_em', 'created_at', 'inserted_at', 'iniciada_em', 'data', 'atualizado_em', 'updated_at', 'modificada_em'].find(n => nomes.includes(n));
+      if(data) return { coluna: data, asc: false };
+      if(nomes.includes('id')) return { coluna: 'id', asc: false };
+      return null;
+    }
+    function celula(c, v){
+      const tp = tipoDe(c);
+      if(v === null || v === undefined) return '<td class="sb-nulo">null</td>';
+      if(typeof v === 'object'){ const s = JSON.stringify(v); return `<td class="sb-json" title="${esc(s.slice(0, 2000))}">${esc(s.length > 140 ? s.slice(0, 140) + '…' : s)}</td>`; }
+      if(typeof v === 'boolean') return `<td class="sb-bool" title="${v}">${v ? '✓' : '✗'}</td>`;
+      if(/^(integer|bigint|smallint|numeric|real|double)/.test(tp)) return `<td class="sb-num">${esc(Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 6 }))}</td>`;
+      if(/^timestamp/.test(tp)){ const d = new Date(v); return `<td title="${esc(v)}">${isNaN(d) ? esc(v) : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>`; }
+      if(tp === 'date'){ const [a, m, d] = String(v).split('-'); return `<td>${d ? `${d}/${m}/${a}` : esc(v)}</td>`; }
+      const s = String(v);
+      return `<td title="${esc(s.slice(0, 2000))}">${esc(s.length > 200 ? s.slice(0, 200) + '…' : s)}</td>`;
+    }
+    function navPaginas(at, total){
+      const seta = (...ds) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ds.map(d => `<polyline points="${d}"></polyline>`).join('')}</svg>`;
+      const btn = (p, rot, dica, cls, off) => `<button type="button" class="sm-pag-btn${cls}" data-pag="${p}" title="${esc(dica)}" aria-label="${esc(dica)}"${cls.includes('active') ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}>${rot}</button>`;
+      let h = btn(1, seta('11 17 6 12 11 7', '18 17 13 12 18 7'), 'Primeira página', ' sm-pag-seta', at === 1) + btn(at - 1, seta('15 18 9 12 15 6'), 'Página anterior', ' sm-pag-seta', at === 1);
+      let ant = 0;
+      [...new Set([1, total, at - 1, at, at + 1].filter(p => p >= 1 && p <= total))].sort((a, b) => a - b).forEach(p => {
+        if(p - ant > 1) h += '<span class="sm-pag-reticencias">…</span>';
+        h += btn(p, num(p), `Página ${p}`, p === at ? ' active' : '', false); ant = p;
+      });
+      return h + btn(at + 1, seta('9 18 15 12 9 6'), 'Próxima página', ' sm-pag-seta', at === total) + btn(total, seta('13 17 18 12 13 7', '6 17 11 12 6 7'), 'Última página', ' sm-pag-seta', at === total);
+    }
+    async function carregarPagina(){
+      const t = atual, seq = ++seqDet, sb = window.CDL_SB;
+      el('sbDetCorpo').innerHTML = `<tr class="wa-empty-row"><td colspan="${Math.max(1, t.colunas.length)}">Carregando…</td></tr>`;
+      const ini = (pagina - 1) * porPag;
+      let q = sb.from(t.nome).select('*', { count: 'exact' });
+      const ord = colunaOrdem(t);
+      if(ord) q = q.order(ord.coluna, { ascending: ord.asc, nullsFirst: false });
+      const { data, count, error } = await q.range(ini, ini + porPag - 1);
+      if(seq !== seqDet || atual !== t) return;
+      const vazio = el('sbDetVazio');
+      if(error){
+        el('sbDetCorpo').innerHTML = ''; el('sbPag').hidden = true;
+        vazio.hidden = false;
+        vazio.textContent = /permission|42501|denied/i.test(error.message + error.code)
+          ? 'Sem permissão de leitura nesta tabela: as regras de acesso (RLS) do banco não liberam o seu usuário.' : 'Não foi possível ler os registros: ' + error.message;
+        return;
+      }
+      const total = count == null ? (data || []).length : count;
+      const paginas = Math.max(1, Math.ceil(total / porPag));
+      if(pagina > paginas && total){ pagina = paginas; return carregarPagina(); }
+      el('sbDetContagem').textContent = `${num(total)} registro${total === 1 ? '' : 's'} visíveis · ${num(t.colunas.length)} colunas`;
+      el('sbDetAviso').innerHTML = `${ICONE_CADEADO}<span>${total < t.registros
+        ? `Somente leitura. As regras de acesso (RLS) mostram ${num(total)} de ${num(t.registros)} registros para o seu usuário.`
+        : 'Somente leitura: os dados não podem ser alterados por aqui.'}${ord ? ` Ordem: ${esc(ord.coluna)} (mais recentes primeiro).` : ''}</span>`;
+      el('sbDetCorpo').innerHTML = (data || []).map(r => `<tr>${t.colunas.map(c => celula(c, r[c.nome])).join('')}</tr>`).join('');
+      vazio.hidden = (data || []).length > 0;
+      vazio.textContent = t.registros ? 'Nenhum registro visível para o seu usuário (regras de acesso / RLS).' : 'Esta tabela não tem registros.';
+      el('sbPag').hidden = !total;
+      el('sbPorPag').value = String(porPag);
+      el('sbPagInfo').textContent = total ? `${num(ini + 1)}–${num(ini + (data || []).length)} de ${num(total)}` : '';
+      el('sbPagNav').innerHTML = navPaginas(pagina, paginas);
+    }
+    function abrir(nome){
+      const t = tabelas.find(x => x.nome === nome);
+      if(!t) return;
+      atual = t; pagina = 1;
+      el('sbDetTitulo').textContent = t.nome;
+      el('sbDetMeta').innerHTML = `${t.rls ? '<span class="wa-badge wa-badge-approved">RLS ligado</span>' : '<span class="wa-badge wa-badge-pending">Sem RLS</span>'}`
+        + `${num(t.registros)} registros · ${num(t.colunas.length)} colunas · ${bytes(t.tamanho)}${t.descricao ? ' · ' + esc(t.descricao) : ''}`;
+      el('sbDetCab').innerHTML = `<tr>${t.colunas.map(c => `<th title="${esc(c.nome)} · ${esc(c.tipo)}${c.nulo ? '' : ' · obrigatório'}">${esc(c.nome)}<small>${esc(c.tipo)}</small></th>`).join('')}</tr>`;
+      el('sbFiltros').hidden = el('sbLista').hidden = true;
+      el('sbDetalhe').hidden = false;
+      document.querySelector('.main') && document.querySelector('.main').scrollTo({ top: 0 });
+      carregarPagina();
+    }
+    function fechar(){
+      atual = null; seqDet++;
+      el('sbDetalhe').hidden = true;
+      el('sbFiltros').hidden = el('sbLista').hidden = false;
+    }
+    const csv = (rows, arquivo) => {
+      const cel = v => { const s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a'); a.href = url; a.download = arquivo;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    };
+
+    // ================= Eventos =================
+    el('sbTabela').addEventListener('click', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr) abrir(tr.dataset.tabela); });
+    el('sbTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrir(tr.dataset.tabela); } });
+    el('sbVoltar').addEventListener('click', fechar);
+    el('sbOrdem').addEventListener('click', ev => {
+      const b = ev.target.closest('.wa-sort-pill'); if(!b) return;
+      ordem = b.dataset.sort;
+      el('sbOrdem').querySelectorAll('.wa-sort-pill').forEach(x => x.classList.toggle('active', x === b));
+      render();
+    });
+    busca.addEventListener('input', render);
+    [fRls, fCont].forEach(s => s.addEventListener('change', render));
+    el('sbLimpar').addEventListener('click', () => { busca.value = ''; fRls.value = fCont.value = ''; render(); });
+    el('sbAtualizar').addEventListener('click', () => carregar(true));
+    el('sbPagNav').addEventListener('click', ev => { const b = ev.target.closest('.sm-pag-btn'); if(b && !b.disabled && !b.classList.contains('active')){ pagina = Number(b.dataset.pag); carregarPagina(); } });
+    el('sbPorPag').addEventListener('change', ev => { porPag = Number(ev.target.value) || 20; pagina = 1; carregarPagina(); });
+    el('sbExportar').addEventListener('click', () => {
+      csv([['Tabela', 'Descrição', 'Colunas', 'Registros', 'Tamanho (bytes)', 'RLS', 'Lista de colunas']]
+        .concat(filtrados().map(t => [t.nome, t.descricao, t.colunas.length, t.registros, t.tamanho, t.rls ? 'Sim' : 'Não', t.colunas.map(c => `${c.nome} (${c.tipo})`).join(', ')])),
+        `supabase_tabelas_${new Date().toISOString().slice(0, 10)}.csv`);
+    });
+    // Exporta todos os registros visíveis da tabela aberta (até 50 mil, em lotes de 1.000).
+    el('sbDetExportar').addEventListener('click', async () => {
+      if(!atual) return;
+      const t = atual, sb = window.CDL_SB, btn = el('sbDetExportar'), linhas = [], ord = colunaOrdem(t);
+      btn.disabled = true;
+      try {
+        for(let i = 0; i < 50000; i += 1000){
+          let q = sb.from(t.nome).select('*');
+          if(ord) q = q.order(ord.coluna, { ascending: ord.asc, nullsFirst: false });
+          const { data, error } = await q.range(i, i + 999);
+          if(error) throw error;
+          linhas.push(...data);
+          if(data.length < 1000) break;
+        }
+        csv([t.colunas.map(c => c.nome)].concat(linhas.map(r => t.colunas.map(c => r[c.nome]))), `supabase_${t.nome}_${new Date().toISOString().slice(0, 10)}.csv`);
+      } catch(e){ alert('Não foi possível exportar: ' + (e.message || e)); }
+      finally { btn.disabled = false; }
+    });
+    document.addEventListener('cdload:pagechange', ev => { if(ev.detail.page === 'instancias') carregar(false); });
+  })();
+
   // ---- WhatsApp: switch Instâncias / Templates / Disparos e filtros (ainda sem dados) ----
   (function(){
     const visoes = {
@@ -5206,15 +5474,6 @@
     headerDesc.style.display = active.dataset.desc ? 'block' : 'none';
 
     headerActions.innerHTML = '';
-    if(pageId === 'instancias'){
-      headerActions.innerHTML = `
-        <button class="btn btn-secondary-dark" id="syncBtn">Sincronizar</button>
-        <button class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Nova instância
-        </button>
-      `;
-    }
 
     lembrarSecao(pageId);
     document.dispatchEvent(new CustomEvent('cdload:pagechange', { detail: { page: pageId } }));
