@@ -43,6 +43,8 @@ Formato (séries compactas: valores mensais separados por vírgula, zero = vazio
   at:  [[iUf, iPorte, iRegime, ativas], ...]                 estabelecimentos ativos na edição
   prm: [[iMun, iPorte, iRegime, 'aberturas', 'baixas'], ...] idem, por município de Mato Grosso
   atm: [[iMun, iPorte, iRegime, ativas], ...]                idem, por município de Mato Grosso
+  ac:  [[iCnae, ativas], ...]                                ativas na edição por subclasse CNAE
+  acm: [[iMun, iCnae, ativas], ...]                          ativas na edição por município × subclasse
   amostra: { colunas, linhas }  até AMOSTRA_MAX aberturas do último mês (Mato Grosso primeiro), com todas
            as colunas das três bases + descrições do painel — botão Exportar. Contatos e CPF mascarados.
 
@@ -317,6 +319,7 @@ def main():
     edicao = pastas[-1]
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
             and '"ufs":["%s"]' % UF_DETALHE.decode() in open(SAIDA, encoding='utf-8').read() \
+            and '"acm":' in open(SAIDA, encoding='utf-8').read() \
             and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
@@ -388,6 +391,7 @@ def main():
     ufs, cnaes, muns = {}, {}, {}
     mun_uf = {}
     f, e0, fm, em0, pr, at, prm, atm = {}, {}, {}, {}, {}, {}, {}, {}
+    ac, acm = {}, {}   # empresas ativas na edição por subclasse CNAE e por município × subclasse
     cf, cat, cep_mun = {}, {}, {}   # mapa de Mato Grosso: (mês, CEP, regime) → [aberturas, baixas] · (CEP, regime) → ativas
     amostra, reserva = [], []
 
@@ -444,6 +448,8 @@ def main():
                 r = 2 - reg_atual[cb] if reg_atual[cb] else 2   # 2 MEI → 0 · 1 Simples → 1 · 0 → 2
                 k3 = (iu, p, r)
                 at[k3] = at.get(k3, 0) + 1
+                ac[ic] = ac.get(ic, 0) + 1                     # ativas por subclasse CNAE
+                acm[(imn, ic)] = acm.get((imn, ic), 0) + 1     # ativas por município × subclasse
                 if det:
                     k3 = (imn, p, r)
                     atm[k3] = atm.get(k3, 0) + 1
@@ -564,6 +570,8 @@ def main():
         'at': sorted([nu[u], p, r, v] for (u, p, r), v in at.items()),
         'prm': [[x, p, r, serie(v[0]), serie(v[1])] for (x, p, r), v in series(prm, lambda k: (nm[k[1]], k[2], k[3]))],
         'atm': sorted([nm[x], p, r, v] for (x, p, r), v in atm.items()),
+        'ac': sorted([nc[c], v] for c, v in ac.items()),
+        'acm': sorted([nm[x], nc[c], v] for (x, c), v in acm.items()),
         'amostra': {'colunas': COLUNAS_ESTAB + COLUNAS_EMPRESA + COLUNAS_SIMPLES + COLUNAS_EXTRA, 'linhas': linhas_am},
     }
     corpo = json.dumps(dados, ensure_ascii=False, separators=(',', ':'))

@@ -1302,6 +1302,10 @@
     #page-dashboard .wa-stock-filters .btn-label{display:none;}
     #page-dashboard .wa-stock-filters .btn{padding:10px 12px;}
   }
+  /* EMPRESAS: Subclasse (nomes longos da CNAE) com largura limitada, sem empurrar os demais filtros. */
+  #page-dashboard .wa-stock-filters #stkEmpSubclasseFiltro{max-width:220px;text-overflow:ellipsis;}
+  /* EMPRESAS: muitos filtros na barra — busca mais estreita para os rótulos dos selects caberem. */
+  #page-dashboard.stk-emp .wa-stock-filters .wa-clip-search{width:200px;max-width:200px;flex:0 1 200px;}
   /* EMPRESAS: Limpar/Exportar sempre só com o ícone (botão quadrado), liberando espaço para os demais filtros. */
   #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar) .btn-label{display:none;}
   #page-dashboard.stk-emp .wa-stock-filters :is(#stkLimpar, #stkExportar){padding:10px;gap:0;}
@@ -2497,10 +2501,12 @@
             <option value="sim">SIMEI · Sim</option>
             <option value="nao">SIMEI · Não</option>
           </select>
-          <select class="filter-select" id="stkEmpSituacaoFiltro" title="Situação cadastral (Perfil das empresas e Quantidade de empresas)" hidden>
-            <option value="">Situação</option>
-            <option value="ativas">Ativas</option>
-            <option value="baixadas">Baixadas</option>
+          <select class="filter-select" id="stkEmpSituacaoFiltro" title="Situação cadastral: Ativas (padrão) ou Baixadas no período" data-padrao="ativas" hidden>
+            <option value="ativas" selected>Situação · Ativas</option>
+            <option value="baixadas">Situação · Baixadas</option>
+          </select>
+          <select class="filter-select" id="stkEmpSubclasseFiltro" title="Subclasse da atividade econômica (CNAE)" hidden>
+            <option value="">Subclasse</option>
           </select>
           <select class="filter-select" id="stkRegiaoFiltro" title="Região fiscal de Mato Grosso" hidden>
             <option value="">Região</option>
@@ -9581,7 +9587,9 @@ ${clipPlayerPills(n)}
     const stkEmpRegimeEl = document.getElementById('stkEmpRegimeFiltro');
     const stkEmpSimeiEl = document.getElementById('stkEmpSimeiFiltro');
     const stkEmpSituacaoEl = document.getElementById('stkEmpSituacaoFiltro');
-    const stkEmpFiltros = [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl];
+    const stkEmpSubclasseEl = document.getElementById('stkEmpSubclasseFiltro');
+    // Limpar volta cada um ao padrão (data-padrao: Situação = Ativas; os demais vazios).
+    const stkEmpFiltros = [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl];
     // EMPRESAS: switch Dashboard | Mapa (o mapa ocupa a área dos gráficos).
     const stkVisaoEmpEl = document.getElementById('stkVisaoEmp');
     let empVisao = 'dash';
@@ -9932,13 +9940,15 @@ ${clipPlayerPills(n)}
     // Gráfico "Fluxo de estoque": linhas suaves com área semitransparente,
     // uma para Entradas e uma para Saídas (ambas preenchidas).
     // fmt (opcional): formata o valor da dica ao passar o mouse (ex.: stkMoeda para R$).
-    function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt){
+    // eixo = 'auto': eixo Y começa perto do menor valor (séries de estoque, sempre altas), em vez de 0.
+    function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt, eixo){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const maxSerie = Math.max(1, ...series.flatMap(s => s.valores.map(Math.abs))), temNeg = series.some(s => s.valores.some(v => v < 0));
       const m = { t: 10, r: 10, b: 26, l: Math.max(36, stkNum(Math.ceil(maxSerie / stkPasso(maxSerie)) * stkPasso(maxSerie)).length * 6.6 + 12 + (temNeg ? 7 : 0)) };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
       const max = Math.max(1, ...series.flatMap(s => s.valores));
-      const min = Math.min(0, ...series.flatMap(s => s.valores));
+      const minDados = Math.min(...series.flatMap(s => s.valores));
+      const min = eixo === 'auto' && minDados > 0 ? minDados - (max - minDados) * 0.15 : Math.min(0, minDados);
       const passo = stkPasso(max - min);
       const topo = Math.ceil(max / passo) * passo, piso = Math.floor(min / passo) * passo;
       const x = i => m.l + (n <= 1 ? iw / 2 : i * iw / (n - 1));
@@ -10251,7 +10261,8 @@ ${clipPlayerPills(n)}
       for(let a = primeiro; a <= anoAtual; a++) anos.push(a);
       return { anos, valores: anos.map(a => cont.get(a) || 0), anoAtual };
     }
-    function stkDesenharBarrasAno(el, anos, valores, cores, altura, dicaAno){
+    function stkDesenharBarrasAno(el, anos, valores, cores, altura, dicaAno, rotulo){
+      rotulo = rotulo || 'Notícias';
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const max = Math.max(1, ...valores);
       const passo = Math.max(1, stkPasso(max));
@@ -10261,14 +10272,14 @@ ${clipPlayerPills(n)}
       const y = v => m.t + ih - (v / topo) * ih;
       const grupoL = iw / n, base = m.t + ih;
       const barraL = Math.min(64, grupoL * 0.55);
-      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Notícias por ano">`;
+      let svg = `<svg class="stk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(rotulo)} por ano">`;
       for(let v = 0; v <= topo + 1e-9; v += passo){
         svg += `<line class="stk-grade" x1="${m.l}" x2="${W - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"></line>`;
         svg += `<text class="stk-eixo" x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${stkNum(v)}</text>`;
       }
       anos.forEach((ano, i) => {
         const cx = m.l + grupoL * i + grupoL / 2, v = valores[i], yy = y(v);
-        svg += `<rect x="${(cx - barraL / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${cores[i]}" tabindex="0" data-stk-dica="${esc(dicaAno(ano))}|Notícias|${esc(stkNum(v))}|${cores[i]}"></rect>`;
+        svg += `<rect x="${(cx - barraL / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${barraL.toFixed(1)}" height="${Math.max(0, base - yy).toFixed(1)}" rx="4" fill="${cores[i]}" tabindex="0" data-stk-dica="${esc(dicaAno(ano))}|${esc(rotulo)}|${esc(stkNum(v))}|${cores[i]}"></rect>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${(yy - 6).toFixed(1)}" text-anchor="middle" style="font-weight:600;fill:var(--cd-texto, #1F2937)">${stkNum(v)}</text>`;
         svg += `<text class="stk-eixo" x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${ano}</text>`;
       });
@@ -11387,7 +11398,8 @@ ${clipPlayerPills(n)}
     // Filtros: Estado/Cidade, Mês/Ano e busca por atividade (código ou nome da subclasse CNAE).
     // O arquivo traz atividade por estado; na cidade há só aberturas e baixas (a composição por atividade é a do estado).
     // Porte × regime: por estado e, em Mato Grosso, também por município.
-    let empMatrizVisao = 'ab';     // ab (aberturas) | bx (baixas) | at (ativas na edição)
+    let empMatrizVisao = 'at';     // at (ativas na edição, padrão) | ab (aberturas) | bx (baixas)
+    let empEvolVisao = 'mensal';   // Evolução da quantidade de empresas: mensal (linhas) | anual (barras, como no Clipping)
     // Rosca por porte: MEI separado da microempresa (a Receita classifica o MEI como ME).
     const EMP_PORTE_ROSCA = [['MEI', CD_COR.verde], ['ME', CD_COR.azul], ['EPP', CD_COR.azulClaro], ['Demais', '#64748B'], ['Não informado', '#CBD5E1']];
     const empPorteRosca = (p, r) => r === 0 ? 0 : p + 1;   // p: 0 ME, 1 EPP, 2 Demais, 3 Não informado · r: 0 MEI
@@ -11436,6 +11448,14 @@ ${clipPlayerPills(n)}
       }
       stkPreencherFiltros();
       panPreencherUfs();
+      // Subclasses CNAE com empresas em MT (ordem alfabética), preenchidas uma vez.
+      if(stkEmpSubclasseEl.options.length <= 1){
+        const tem = new Set(D.ac ? D.ac.filter(([, v]) => v > 0).map(([c]) => c) : D.f.map(([, c]) => c));
+        const cod = c => String(c).replace(/^(\d{4})(\d)(\d{2})$/, '$1-$2/$3');
+        stkEmpSubclasseEl.innerHTML = '<option value="">Subclasse</option>' + [...tem].sort((a, b) => D.cnaes.nome[a].localeCompare(D.cnaes.nome[b], 'pt-BR'))
+          .map(c => `<option value="${c}" title="${esc(cod(D.cnaes.cod[c]))} · ${esc(D.cnaes.nome[c])}">${esc(D.cnaes.nome[c])} (${esc(cod(D.cnaes.cod[c]))})</option>`).join('');
+      }
+      if(!stkEmpSituacaoEl.value) stkEmpSituacaoEl.value = 'ativas';
       // Só Mato Grosso (a base é limpa na extração): o Estado fica fixo em MT e o filtro não aparece.
       if(stkUfEl.value !== EMP_UF){ stkUfEl.value = EMP_UF; stkCidadeEl.value = ''; panPreencherCidades(); }
       const J = panJanela(D);
@@ -11444,163 +11464,218 @@ ${clipPlayerPills(n)}
       if(empVisao === 'mapa') empMapaRender(D, J, iu, imun);
       else empDesenhar(D, J, iu, imun);
     }
+    // Painel focado na QUANTIDADE DE EMPRESAS (não em saldo). Situação (padrão Ativas) define a medida de todos os cards:
+    //   Ativas  = CNPJs ativos (retrato da edição da Receita); mês a mês, reconstruído de trás para frente com as
+    //             aberturas e baixas (ativas no fim do mês m = ativas na edição − aberturas + baixas dos meses seguintes);
+    //   Baixadas = CNPJs baixados no período (Mês/Ano).
+    // Filtros: Cidade, Subclasse (lista) + busca por atividade, Regime/SIMEI (porte × regime) e Mês/Ano.
+    // Combinações que o arquivo não cruza (atividade × regime; cidade × atividade mês a mês) ficam indicadas nos cards.
     function empDesenhar(D, J, iu, imun){
       const P = empPreparar(D), anoAnt = J.anoAnt, nM = D.meses.length;
-      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
-      const okC = termos.length ? new Set(P.busca.map((t, k) => termos.every(x => t.includes(x)) ? k : -1).filter(k => k >= 0)) : null;
+      const baixadas = stkEmpSituacaoEl.value === 'baixadas';
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim(), subSel = stkEmpSubclasseEl.value;
+      let okC = termos.length ? new Set(P.busca.map((t, k) => termos.every(x => t.includes(x)) ? k : -1).filter(k => k >= 0)) : null;
+      if(subSel !== '') okC = new Set([Number(subSel)].filter(k => !okC || okC.has(k)));
       const cidade = imun >= 0 ? D.mun.nome[imun] : '';
-      const local = (cidade || (iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil')) + (busca ? ` · “${busca}”` : '');
-      const escopoAtv = iu >= 0 ? PAN_UF_NOME[D.ufs[iu]] : 'Brasil';   // composição por atividade (cidade → estado)
-      // ---- Séries mensais do recorte ----
-      const ab = new Array(nM).fill(0), bx = new Array(nM).fill(0);
-      let est0 = 0;
-      const sub = new Map();
+      const nomeSub = subSel !== '' ? D.cnaes.nome[Number(subSel)] : '';
+      const local = (cidade || PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso') + (nomeSub ? ` · ${nomeSub}` : busca ? ` · “${busca}”` : '');
+      const escopoUf = PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso';
+      const edicao = `${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}`;
+      const atual = [...J.atual], anterior = [...J.anterior];
+      const fimA = atual.length ? Math.max(...atual) : -1, fimB = anterior.length ? Math.max(...anterior) : -1;
+      const soma = (arr, idx) => { let t = 0; idx.forEach(i => { t += arr[i] || 0; }); return t; };
       const add = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
-      const noAtual = new Array(nM).fill(false); J.atual.forEach(i => { noAtual[i] = true; });
-      const atual = [...J.atual];
-      for(const { u, c, a, b } of P.pares){
-        if(okC && !okC.has(c)) continue;
-        if(iu >= 0 && u !== iu) continue;   // arquivos antigos (com todos os estados): só MT
-        let pa = 0, pb = 0;
-        for(const m of atual){ pa += a[m]; pb += b[m]; }
-        if(imun < 0) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; }
-        if(pa || pb) add(sub, c, pa - pb);
-      }
-      if(imun >= 0){
-        const x = P.mun[imun]; for(let m = 0; m < nM; m++){ ab[m] += x.a[m]; bx[m] += x.b[m]; }
-        est0 = D.em0[imun] || 0;
-      } else for(const [u, c, v] of D.e0) if((iu < 0 || u === iu) && (!okC || okC.has(c))) est0 += v;
-      const vazio = okC && !okC.size;
-      const est = []; let acc = est0; for(let m = 0; m < nM; m++){ acc += ab[m] - bx[m]; est.push(acc); }
-      const soma = (arr, S) => { let t = 0; S.forEach(i => { t += arr[i] || 0; }); return t; };
-      const ultimo = S => S.size ? Math.max(...S) : -1;
-      const M = { adm: soma(ab, J.atual), admAnt: soma(ab, J.anterior), des: soma(bx, J.atual), desAnt: soma(bx, J.anterior) };
-      M.sal = M.adm - M.des; M.salAnt = M.admAnt - M.desAnt;
-      M.est = ultimo(J.atual) >= 0 ? est[ultimo(J.atual)] : 0; M.estAnt = ultimo(J.anterior) >= 0 ? est[ultimo(J.anterior)] : 0;
-      const sufixo = cidade && busca ? ' · a busca por atividade não se aplica à cidade (o arquivo não cruza cidade e CNAE)' : '';
+      const nCel = v => Math.abs(v) >= 1e6 ? `${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi` : stkNum(v);
 
-      // ---- KPIs (mesmos do CAGED) ----
-      const varRel = (sal, e) => e - sal > 0 ? sal / (e - sal) : 0;
-      const kSaldo = cdKpiCard('trendUp', 'azul', 'Saldo de empresas', cagSinal(M.sal), cagDif(M.sal, M.salAnt), `vs. ${anoAnt} (${cagSinal(M.salAnt)})`,
-        `Aberturas menos baixas de inscrições no CNPJ · ${local} · ${J.rotulo}${sufixo}`);
-      const kAb = cdKpiCard('arrowDownLeft', 'verde', 'Aberturas', stkNum(M.adm), cdDelta(M.adm, M.admAnt), `vs. ${anoAnt} (${stkNum(M.admAnt)})`, `Estabelecimentos (matrizes e filiais) com início de atividade no período · ${local}`);
-      const kBx = cdKpiCard('arrowUpRight', 'vermelho', 'Baixas', stkNum(M.des), cdDelta(M.des, M.desAnt, false, false, true), `vs. ${anoAnt} (${stkNum(M.desAnt)})`, `Inscrições baixadas no período (situação cadastral BAIXADA) · ${local}`);
-      const kEst = cdKpiCard('predio', 'azul', 'Estoque de empresas', stkNum(M.est), cdDelta(M.est, M.estAnt), `vs. ${anoAnt} (${stkNum(M.estAnt)})`,
-        `Inscrições abertas e não baixadas (ativas, suspensas ou inaptas) no último mês do período · ${local}`);
-      const vr = varRel(M.sal, M.est), vrAnt = varRel(M.salAnt, M.estAnt);
-      const kVar = cdKpiCard('percent', 'amarelo', 'Variação de empresas', stkPct(vr, 1), cdDelta(vr, vrAnt, true, !M.estAnt), `vs. ${anoAnt} (${M.estAnt ? stkPct(vrAnt, 1) : '—'})`,
-        'Crescimento do número de empresas no período: saldo ÷ estoque no início do período');
-
-      // ---- Evolução do saldo ----
-      const ult = D.meses[nM - 1], ultAno = Number(ult.slice(0, 4)), ultMes = Number(ult.slice(5, 7));
-      const nMeses = J.ano === ultAno ? ultMes : 12;
-      const saldoMes = a => Array.from({ length: nMeses }, (_, k) => { const i = D.meses.indexOf(`${a}-${String(k + 1).padStart(2, '0')}`); return i < 0 ? 0 : ab[i] - bx[i]; });
-      const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
-        { nome: String(J.ano), cor: CD_COR.azul, valores: saldoMes(J.ano) }, { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: saldoMes(anoAnt) }] };
-      const fonte = `Receita Federal · CNPJ (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
-      const wVolume = cdCard('Evolução do saldo', `${local} · ${fonte}`, '<div id="stkFluxoGraf"></div>', ibgeLegenda(V.series));
-
-      // ---- Saldo por setor (grandes setores da economia; no lugar do antigo "Saldo por estado": a base só tem MT) ----
-      const porSetor = new Map();
-      sub.forEach((v, c) => { if(P.setor[c]) add(porSetor, P.setor[c], v); });
-      const setores = CAG_SETORES.map(x => [x.nome, porSetor.get(x.nome) || 0]).sort((a, b) => b[1] - a[1]);
-      const wEstados = cdCard('Saldo por setor', `Grandes setores da economia · ${escopoAtv}${cidade ? ' (composição do estado)' : ''}`,
-        cdBarras(setores.filter(([, v]) => v).map(([n, v], i) => ({ nome: n, valor: Math.max(0, v), rotulo: cagSinal(v),
-          cor: v < 0 ? CD_COR.vermelho : stkMisturarCor(CD_COR.azul, '#C9DDF8', setores.length > 1 ? i / (setores.length - 1) : 0) })), 'Saldo por setor', 'Sem movimentação no período.'));
-
-      // ---- Filtros Regime, SIMEI e Situação: valem para o Perfil das empresas e a Quantidade de empresas ----
-      // (as únicas análises com o regime no arquivo). Regimes: 0 MEI (SIMEI, dentro do Simples) · 1 Simples Nacional · 2 Não optante.
-      const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value, fSit = stkEmpSituacaoEl.value;
+      // ---- Regime / SIMEI ----
+      const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value;
       const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
       const regIdx = D.regimes.map((_, r) => r).filter(r => regOk[r]);
+      const temReg = regIdx.length < D.regimes.length;
       const rotFiltroReg = [fReg && stkEmpRegimeEl.selectedOptions[0].text, fSimei && stkEmpSimeiEl.selectedOptions[0].text].filter(Boolean).join(' · ');
       const sufReg = rotFiltroReg ? ` · ${rotFiltroReg}` : '';
-      const rotAtivas = `Ativas na edição de ${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}`;
 
-      // ---- Perfil das empresas: quantidade de CNPJs por porte × regime tributário (MEI, Simples, não optante) ----
-      // Situação Ativas/Baixadas fixa a visão da matriz (o switch fica travado nela).
-      const visaoMatriz = fSit === 'ativas' ? 'at' : fSit === 'baixadas' ? 'bx' : empMatrizVisao;
-      const MZ = empMatriz(D, P, iu, imun, atual, visaoMatriz);
+      // ---- Ativas por subclasse (edição). Arquivo sem "ac" (gerado antes de 12/10/2026): inscrições abertas no último mês. ----
+      const ativasC = new Map(), ativasCM = new Map();
+      if(D.ac) D.ac.forEach(([c, v]) => ativasC.set(c, v));
+      else {
+        D.e0.forEach(([u, c, v]) => { if(u === iu) add(ativasC, c, v); });
+        P.pares.forEach(({ u, c, a, b }) => { if(u === iu){ let t = 0; for(let m = 0; m < nM; m++) t += a[m] - b[m]; add(ativasC, c, t); } });
+      }
+      if(D.acm) D.acm.forEach(([x, c, v]) => { if(x === imun) ativasCM.set(c, v); });
+      const notaAc = D.ac ? '' : ' (aproximado: inscrições abertas até a próxima atualização dos dados)';
+
+      // ---- Motor: ativas na edição + aberturas/baixas mês a mês do recorte ----
+      const ab = new Array(nM).fill(0), bx = new Array(nM).fill(0);
+      let atNow = 0, temSerie = true;
+      const avisos = [];
+      if(okC){
+        if(imun >= 0){
+          if(D.acm) okC.forEach(c => { atNow += ativasCM.get(c) || 0; }); else atNow = null;
+          temSerie = false;   // o arquivo não cruza cidade × atividade mês a mês
+          avisos.push('cidade + atividade: só a quantidade atual (sem evolução mensal)');
+        } else {
+          okC.forEach(c => { atNow += ativasC.get(c) || 0; });
+          P.pares.forEach(({ u, c, a, b }) => { if(u === iu && okC.has(c)) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; } });
+        }
+        if(temReg) avisos.push('Regime/SIMEI não se combina com a atividade');
+      } else if(temReg){
+        (imun >= 0 ? (D.atm || []).filter(([x]) => x === imun) : (D.at || []).filter(([u]) => u === iu)).forEach(([, , r, v]) => { if(regOk[r]) atNow += v; });
+        (imun >= 0 ? P.prm.filter(o => o.x === imun) : P.pr.filter(o => o.u === iu)).forEach(o => { if(regOk[o.r]) for(let m = 0; m < nM; m++){ ab[m] += o.a[m]; bx[m] += o.b[m]; } });
+      } else {
+        (imun >= 0 ? (D.atm || []).filter(([x]) => x === imun) : (D.at || []).filter(([u]) => u === iu)).forEach(([, , , v]) => { atNow += v; });
+        if(imun >= 0){ const x = P.mun[imun]; for(let m = 0; m < nM; m++){ ab[m] += x.a[m]; bx[m] += x.b[m]; } }
+        else P.pares.forEach(({ u, a, b }) => { if(u === iu) for(let m = 0; m < nM; m++){ ab[m] += a[m]; bx[m] += b[m]; } });
+      }
+      // Ativas no fim de cada mês (de trás para frente a partir da edição).
+      const q = temSerie && atNow != null ? new Array(nM) : null;
+      if(q){ q[nM - 1] = atNow; for(let m = nM - 1; m > 0; m--) q[m - 1] = q[m] - (ab[m] - bx[m]); }
+      const qtdAt = q ? (fimA >= 0 ? q[fimA] : atNow) : atNow, qtdAnt = q && fimB >= 0 ? q[fimB] : null;
+      const bxAt = soma(bx, atual), bxAnt = soma(bx, anterior), abAt = soma(ab, atual), abAnt = soma(ab, anterior);
+      const sufAviso = avisos.length ? ` · ${avisos.join(' · ')}` : '';
+
+      // ---- KPIs: quantidade de empresas em primeiro lugar ----
+      const kEst = baixadas
+        ? cdKpiCard('arrowUpRight', 'vermelho', 'Empresas baixadas', stkNum(bxAt), cdDelta(bxAt, bxAnt, false, false, true), `vs. ${anoAnt} (${stkNum(bxAnt)})`, `CNPJs baixados no período (situação cadastral BAIXADA) · ${local} · ${J.rotulo}`)
+        : cdKpiCard('predio', 'azul', 'Estoque de empresas', atNow == null ? '—' : stkNum(qtdAt), qtdAnt != null ? cdDelta(qtdAt, qtdAnt) : { cls: 'neu', txt: `edição ${edicao}` },
+            qtdAnt != null ? `vs. ${anoAnt} (${stkNum(qtdAnt)})` : 'retrato da Receita', `Quantidade de empresas ativas (CNPJ ativo) no fim do período · ${local}${notaAc && okC ? notaAc : ''}${sufAviso}`);
+      const kAb = cdKpiCard('arrowDownLeft', 'verde', 'Aberturas', temSerie ? stkNum(abAt) : '—', temSerie ? cdDelta(abAt, abAnt) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${stkNum(abAnt)})` : 'cidade + atividade',
+        `Empresas (matrizes e filiais) com início de atividade no período · ${local}`);
+      const kBx = cdKpiCard('arrowUpRight', 'vermelho', 'Baixas', temSerie ? stkNum(bxAt) : '—', temSerie ? cdDelta(bxAt, bxAnt, false, false, true) : { cls: 'neu', txt: '—' }, temSerie ? `vs. ${anoAnt} (${stkNum(bxAnt)})` : 'cidade + atividade',
+        `Empresas baixadas no período (situação cadastral BAIXADA) · ${local}`);
+      let mei = 0, todasR = 0;
+      (imun >= 0 ? (D.atm || []).filter(([x]) => x === imun) : (D.at || []).filter(([u]) => u === iu)).forEach(([, , r, v]) => { if(regOk[r]){ todasR += v; if(r === 0) mei += v; } });
+      const kMei = cdKpiCard('pessoas', 'verde', 'Empresas MEI', stkNum(mei), { cls: 'neu', txt: stkPct(todasR ? mei / todasR : 0) + ' das ativas' }, `edição ${edicao}`,
+        `Microempreendedores individuais (SIMEI) ativos · ${cidade || escopoUf}${sufReg}${okC ? ' (sem a atividade: o arquivo não cruza MEI e CNAE)' : ''}`);
+      const vr = baixadas ? (bxAnt ? bxAt / bxAnt - 1 : 0) : (qtdAnt ? qtdAt / qtdAnt - 1 : 0);
+      const kVar = cdKpiCard('percent', 'amarelo', baixadas ? 'Variação das baixas' : 'Variação de empresas', (baixadas ? bxAnt : qtdAnt) ? stkPct(vr, 1) : '—',
+        { cls: (baixadas ? -vr : vr) > 0 ? 'up' : (baixadas ? -vr : vr) < 0 ? 'down' : 'neu', txt: `vs. ${anoAnt}` }, baixadas ? `baixas no período vs. ${anoAnt}` : `ativas no fim do período vs. ${anoAnt}`,
+        baixadas ? 'Variação da quantidade de empresas baixadas em relação ao mesmo período do ano anterior' : 'Crescimento da quantidade de empresas ativas em relação ao mesmo mês do ano anterior');
+
+      // ---- Evolução da quantidade de empresas: Mensal (linhas, ano × ano anterior) | Anual (barras, como no Clipping) ----
+      const ult = D.meses[nM - 1], ultAno = Number(ult.slice(0, 4)), ultMes = Number(ult.slice(5, 7));
+      const fonte = `Receita Federal · CNPJ (até ${PAN_MES_CURTO[ultMes - 1]}/${ultAno})`;
+      const serieM = baixadas ? bx : q;
+      const nMeses = J.ano === ultAno ? ultMes : 12;
+      const valorMes = a => Array.from({ length: nMeses }, (_, k) => { const i = D.meses.indexOf(`${a}-${String(k + 1).padStart(2, '0')}`); return i < 0 || !serieM ? 0 : serieM[i]; });
+      const V = { categorias: PAN_MES_CURTO.slice(0, nMeses), series: [
+        { nome: String(J.ano), cor: CD_COR.azul, valores: valorMes(J.ano) }, { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: valorMes(anoAnt) }] };
+      const visaoAnual = empEvolVisao === 'anual';
+      const anos = [...new Set(D.meses.map(m => Number(m.slice(0, 4))))].sort();
+      const A = anos.map(a => {
+        const idx = D.meses.map((m, i) => [m, i]).filter(([m]) => Number(m.slice(0, 4)) === a).map(([, i]) => i);
+        return !serieM ? 0 : baixadas ? soma(bx, idx) : serieM[Math.max(...idx)];
+      });
+      const coresAno = anos.map(a => a === ultAno ? CD_COR.azul : CD_COR.azulClaro);
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const switchEvol = `<div class="stk-segmented" id="empEvolVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['mensal', 'Mensal'], ['anual', 'Anual']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empEvolVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empEvolVisao === k}">${rot}</button>`).join('')}
+        </div>`;
+      const legendaEvol = visaoAnual ? legendaDots([{ nome: `${ultAno} (até ${PAN_MES_CURTO[ultMes - 1]})`, cor: CD_COR.azul }, { nome: 'Anos anteriores', cor: CD_COR.azulClaro }]) : legendaDots(V.series);
+      const subEvol = (visaoAnual ? (baixadas ? 'Empresas baixadas por ano' : 'Empresas ativas no fim de cada ano') : (baixadas ? 'Empresas baixadas por mês' : 'Empresas ativas no fim de cada mês')) + ` · ${local} · ${fonte}`;
+      const wVolume = cdCard(baixadas ? 'Evolução das baixas' : 'Evolução de empresas', subEvol,
+        serieM ? '<div id="stkFluxoGraf"></div>' : '<div class="stk-vazio">Cidade + atividade: o arquivo não traz a evolução mês a mês desse cruzamento (só a quantidade atual).</div>',
+        `<div class="cd-head-acoes">${legendaEvol}${switchEvol}</div>`);
+
+      // ---- Empresas por setor (grandes setores da economia) ----
+      const porSetor = new Map();
+      if(baixadas) P.pares.forEach(({ u, c, b }) => { if(u === iu && (!okC || okC.has(c)) && P.setor[c]){ let t = 0; for(const m of atual) t += b[m]; add(porSetor, P.setor[c], t); } });
+      else (imun >= 0 && D.acm ? ativasCM : ativasC).forEach((v, c) => { if((!okC || okC.has(c)) && P.setor[c]) add(porSetor, P.setor[c], v); });
+      const setores = CAG_SETORES.map(x => [x.nome, porSetor.get(x.nome) || 0]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+      const escopoSetor = baixadas ? escopoUf + (cidade ? ' (composição do estado)' : '') : (imun >= 0 && D.acm ? cidade : escopoUf + (cidade ? ' (composição do estado)' : ''));
+      const wSetor = cdCard('Empresas por setor', `${baixadas ? 'Baixadas no período' : 'Empresas ativas'} · grandes setores da economia · ${escopoSetor}${baixadas ? '' : notaAc}`,
+        cdBarras(setores.map(([n, v], i) => ({ nome: n, valor: v, rotulo: stkNum(v), dica: `${stkNum(v)} empresas`,
+          cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', setores.length > 1 ? i / (setores.length - 1) : 0) })), 'Empresas por setor', 'Sem empresas no recorte.'));
+
+      // ---- Quantidade de empresas por porte (rosca; MEI separado) ----
+      const qtdM = empMatriz(D, P, iu, imun, atual, baixadas ? 'bx' : 'at').M;
+      const qtdPorte = EMP_PORTE_ROSCA.map(([n, cor]) => ({ nome: n, sigla: n, cor, valor: 0 }));
+      qtdM.forEach((linha, pI) => linha.forEach((v, r) => { if(regOk[r]) qtdPorte[empPorteRosca(pI, r)].valor += v; }));
+      const dadosQtd = qtdPorte.filter(d => d.valor > 0).map(d => ({ ...d, rotuloValor: stkNum(d.valor) + ' empresas' }));
+      const totQtd = dadosQtd.reduce((t, d) => t + d.valor, 0);
+      const rotC = baixadas ? 'baixadas' : 'ativas';
+      const centroQtd = totQtd >= 1000000 ? [stkNum(Math.round(totQtd / 100000) / 10), `mi · ${rotC}`] : totQtd >= 10000 ? [stkNum(Math.round(totQtd / 1000)), `mil · ${rotC}`] : [stkNum(totQtd), rotC];
+      const wQtd = cdCard('Quantidade de empresas', `Por porte · ${baixadas ? 'baixadas · ' + J.rotulo : 'ativas na edição ' + edicao} · ${cidade || escopoUf}${sufReg}${okC ? ' (sem a atividade)' : ''}`, totQtd > 0 ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centroQtd[0]}</strong><span>${esc(centroQtd[1])}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosQtd.map(d => `<li title="${esc(d.nome)}: ${esc(d.rotuloValor)}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(d.valor / totQtd)}</strong></li>`).join('')}</ul>
+        </div>` : `<div class="stk-vazio">${!regIdx.length ? 'Nenhum regime atende à combinação de Regime e SIMEI.' : 'Sem empresas no recorte.'}</div>`);
+
+      // ---- Perfil das empresas: CNPJs por porte × regime (Ativas primeiro e selecionado por padrão) ----
+      const MZ = empMatriz(D, P, iu, imun, atual, empMatrizVisao);
       const MZv = MZ.M.map(l => regIdx.map(r => l[r]));
       const totReg = regIdx.map((_, j) => MZv.reduce((t, l) => t + l[j], 0)), totGeral = totReg.reduce((t, v) => t + v, 0);
       const maxCel = Math.max(1, ...MZv.flat());
       const curtoPorte = ['ME', 'EPP', 'Demais', 'N/I'];
       const dicaPorte = ['Microempresa (ME), inclui o MEI', 'Empresa de Pequeno Porte (EPP)', 'Demais portes (médias e grandes)', 'Porte não informado na base'];
-      const rotMatriz = { ab: `Aberturas · ${J.rotulo}`, bx: `Baixas · ${J.rotulo}`, at: rotAtivas }[visaoMatriz];
-      const escopoMatriz = MZ.cidadeMT ? cidade : escopoAtv;
-      // Milhões abreviados (3,08 mi) para a tabela caber no card; o número exato fica na dica.
-      const nCel = v => Math.abs(v) >= 1e6 ? `${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi` : stkNum(v);
+      const rotMatriz = { ab: `Aberturas · ${J.rotulo}`, bx: `Baixas · ${J.rotulo}`, at: `Ativas na edição de ${edicao}` }[empMatrizVisao];
       const celula = (v, tot) => `<td title="${esc(stkNum(v))} · ${esc(stkPct(tot ? v / tot : 0))} do total" style="background:rgba(29,95,211,${(0.04 + 0.26 * v / maxCel).toFixed(3)})">${nCel(v)}</td>`;
       const switchMatriz = `<div class="cd-head-acoes"><div class="stk-segmented" id="empMatrizVisao" role="tablist" aria-label="Quantidade exibida">
-          ${[['ab', 'Aberturas'], ['bx', 'Baixas'], ['at', 'Ativas']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${visaoMatriz === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${visaoMatriz === k}"${fSit && visaoMatriz !== k ? ' disabled title="Definido pelo filtro Situação"' : ''}>${rot}</button>`).join('')}
+          ${[['at', 'Ativas'], ['ab', 'Aberturas'], ['bx', 'Baixas']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${empMatrizVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${empMatrizVisao === k}">${rot}</button>`).join('')}
         </div></div>`;
-      const wSecao = cdCard('Perfil das empresas', `CNPJs por porte e regime tributário · ${rotMatriz} · ${escopoMatriz}${sufReg}${busca ? ' (sem a busca)' : ''}`,
+      const wSecao = cdCard('Perfil das empresas', `CNPJs por porte e regime tributário · ${rotMatriz} · ${MZ.cidadeMT ? cidade : escopoUf}${sufReg}${okC ? ' (sem a atividade)' : ''}`,
         totGeral ? `<div class="emp-matriz-wrap"><table class="emp-matriz"><thead><tr><th>Porte</th>${regIdx.map(r => D.regimes[r]).map(r => `<th title="${esc(r === 'Não optante' ? 'Fora do Simples e do MEI (Lucro Presumido ou Real — a base aberta não separa)' : r)}">${esc(r)}</th>`).join('')}<th>Total</th></tr></thead><tbody>
           ${MZv.map((linha, pI) => { const t = linha.reduce((a, b) => a + b, 0); if(!t) return ''; return `<tr><td title="${esc(dicaPorte[pI])}">${esc(curtoPorte[pI])}</td>${linha.map(v => celula(v, totGeral)).join('')}<td class="total" title="${esc(stkNum(t))}">${nCel(t)}</td></tr>`; }).join('')}
           <tr class="total"><td>Total</td>${totReg.map(v => `<td title="${esc(stkNum(v))} · ${esc(stkPct(v / totGeral))} do total">${nCel(v)}</td>`).join('')}<td title="${esc(stkNum(totGeral))}">${nCel(totGeral)}</td></tr>
         </tbody></table></div>` : `<div class="stk-vazio">${regIdx.length ? 'Sem dados de porte e regime no período.' : 'Nenhum regime atende à combinação de Regime e SIMEI.'}</div>`, switchMatriz);
 
-      // ---- Quantidade de empresas (rosca por porte, MEI separado) ----
-      // Sem Situação: saldo (aberturas − baixas no período); Ativas: retrato da edição; Baixadas: baixas no período.
-      const qtdM = fSit === 'ativas' ? empMatriz(D, P, iu, imun, atual, 'at').M
-        : fSit === 'baixadas' ? empMatriz(D, P, iu, imun, atual, 'bx').M
-        : (() => { const A = empMatriz(D, P, iu, imun, atual, 'ab').M, B = empMatriz(D, P, iu, imun, atual, 'bx').M; return A.map((l, p) => l.map((v, r) => v - B[p][r])); })();
-      const qtdPorte = EMP_PORTE_ROSCA.map(([n, cor]) => ({ nome: n, sigla: n, cor, valor: 0 }));
-      qtdM.forEach((linha, pI) => linha.forEach((v, r) => { if(regOk[r]) qtdPorte[empPorteRosca(pI, r)].valor += v; }));
-      const saldoQtd = !fSit, fmtQtd = v => (v > 0 ? '+' : v < 0 ? '−' : '') + nCel(Math.abs(v));
-      const dadosQtd = qtdPorte.filter(d => d.valor !== 0).map(d => ({ ...d, rotuloValor: (saldoQtd ? cagSinal(d.valor) : stkNum(d.valor)) + ' empresas' }));
-      const totQtd = dadosQtd.reduce((t, d) => t + d.valor, 0), totPosQtd = dadosQtd.reduce((t, d) => t + Math.max(0, d.valor), 0);
-      const absQ = Math.abs(totQtd), sinalQ = saldoQtd && totQtd > 0 ? '+' : totQtd < 0 ? '−' : '';
-      const rotCentroQtd = saldoQtd ? 'saldo' : fSit === 'ativas' ? 'ativas' : 'baixadas';
-      const centroQtd = absQ >= 1000000 ? [sinalQ + stkNum(Math.round(absQ / 100000) / 10), `mi · ${rotCentroQtd}`] : absQ >= 10000 ? [sinalQ + stkNum(Math.round(absQ / 1000)), `mil · ${rotCentroQtd}`] : [sinalQ + stkNum(absQ), rotCentroQtd];
-      const escopoQtd = MZ.cidadeMT ? cidade : escopoAtv;
-      const rotQtd = saldoQtd ? `Saldo (aberturas − baixas) · ${J.rotulo}` : fSit === 'ativas' ? rotAtivas : `Baixadas · ${J.rotulo}`;
-      const wQtd = cdCard('Quantidade de empresas', `${rotQtd} · ${escopoQtd}${sufReg}${busca ? ' (sem a busca)' : ''}`, totPosQtd > 0 ? `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centroQtd[0]}</strong><span>${esc(centroQtd[1])}</span></div></div>
-          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosQtd.map(d => `<li title="${esc(d.nome)}: ${esc(d.rotuloValor)}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${saldoQtd ? fmtQtd(d.valor) : stkPct(totPosQtd ? d.valor / totPosQtd : 0)}</strong></li>`).join('')}</ul>
-        </div>` : `<div class="stk-vazio">${!regIdx.length ? 'Nenhum regime atende à combinação de Regime e SIMEI.' : saldoQtd && dadosQtd.length ? 'Saldo negativo no período (mais baixas que aberturas).' : 'Sem empresas no recorte.'}</div>`);
-
-      // ---- Ranking: subclasses CNAE com maior saldo ----
-      const subs = [...sub.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const salPos = subs.reduce((t, [, v]) => t + v, 0) || 1;
-      const totPos = [...sub.values()].filter(v => v > 0).reduce((t, v) => t + v, 0) || salPos;
-      const wSub = cdCard('Atividades com maior saldo', `Subclasse CNAE · ${escopoAtv}`, subs.length ? `<ol class="cd-rank">${subs.map(([c, v], i) => {
+      // ---- Atividades com mais empresas (subclasse CNAE) ----
+      const porSub = new Map();
+      if(baixadas) P.pares.forEach(({ u, c, b }) => { if(u === iu && (!okC || okC.has(c))){ let t = 0; for(const m of atual) t += b[m]; if(t) add(porSub, c, t); } });
+      else (imun >= 0 && D.acm ? ativasCM : ativasC).forEach((v, c) => { if(v > 0 && (!okC || okC.has(c))) porSub.set(c, v); });
+      const totSub = [...porSub.values()].reduce((t, v) => t + v, 0) || 1;
+      const subs = [...porSub.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const escopoSub = baixadas ? escopoUf + (cidade ? ' (composição do estado)' : '') : (imun >= 0 && D.acm ? cidade : escopoUf + (cidade ? ' (composição do estado)' : ''));
+      const wSub = cdCard('Atividades com mais empresas', `Subclasse CNAE · ${baixadas ? 'baixadas no período' : 'empresas ativas'} · ${escopoSub}`, subs.length ? `<ol class="cd-rank">${subs.map(([c, v], i) => {
           const nome = D.cnaes.nome[c];
-          return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(D.cnaes.cod[c])} · ${esc(nome)}">${esc(nome)}</span><strong>${cagSinal(v)}</strong><span class="cd-rank-pct">${stkPct(v / totPos)}</span></li>`; }).join('')}</ol>`
-        : `<div class="stk-vazio">${esc(vazio ? `Nenhuma atividade com “${busca}”.` : 'Nenhuma atividade com saldo positivo no período.')}</div>`);
+          return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(D.cnaes.cod[c])} · ${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(v / totSub)}</span></li>`; }).join('')}</ol>`
+        : `<div class="stk-vazio">${esc(okC && !okC.size ? `Nenhuma atividade com “${busca}”.` : 'Sem empresas no recorte.')}</div>`);
 
-      // ---- Destaques: municípios com maior saldo (Brasil ou estado; cidade filtrada marcada) ----
-      const munSal = new Map(), munAnt = new Map(), munAb = new Map();
-      const noAnt = new Array(nM).fill(false); J.anterior.forEach(i => { noAnt[i] = true; });
-      const anterior = [...J.anterior];
-      P.mun.forEach(({ a, b }, x) => {
-        if(iu >= 0 && D.mun.uf[x] !== iu) return;
-        let sa = 0, sb = 0, sant = 0;
-        for(const m of atual){ sa += a[m]; sb += b[m]; }
-        for(const m of anterior) sant += a[m] - b[m];
-        if(sa || sb){ munSal.set(x, sa - sb); munAb.set(x, sa); }
-        if(sant) munAnt.set(x, sant);
-      });
-      let muns = [...munSal.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-      if(imun >= 0 && !muns.some(([k]) => k === imun) && munSal.has(imun)) muns.splice(4, 1, [imun, munSal.get(imun)]);
-      const nomeMun = k => iu >= 0 ? D.mun.nome[k] : `${D.mun.nome[k]} (${D.ufs[D.mun.uf[k]]})`;
-      const wMun = cdCard(iu >= 0 ? `Destaques em ${PAN_UF_NOME[D.ufs[iu]]}` : 'Destaques no Brasil', 'Municípios com maior saldo de empresas', muns.length ? `<ul class="cd-dest">${muns.map(([k, v]) => {
-          const nome = nomeMun(k), ant = munAnt.get(k) || 0, d = cagDif(v, ant), a = munAb.get(k) || 0;
+      // ---- Municípios com mais empresas (cidade filtrada em destaque) ----
+      const munQ = new Map(), munAnt = new Map();
+      if(baixadas){
+        P.mun.forEach(({ b }, x) => { if(D.mun.uf[x] !== iu) return; const v = soma(b, atual); if(v){ munQ.set(x, v); munAnt.set(x, soma(b, anterior)); } });
+      } else if(okC){
+        if(D.acm) D.acm.forEach(([x, c, v]) => { if(okC.has(c)) add(munQ, x, v); });   // sem acm (arquivo antigo): lista vazia + aviso
+      } else {
+        (D.atm || []).forEach(([x, , r, v]) => { if(regOk[r]) add(munQ, x, v); });
+        if(!temReg) munQ.forEach((v, x) => {   // ativas no fim do período e no mesmo mês do ano anterior (série do município)
+          const s = P.mun[x]; let qa = v; for(let m = nM - 1; m > fimA; m--) qa -= s.a[m] - s.b[m];
+          let qb = qa; for(let m = fimA; m > fimB && fimB >= 0; m--) qb -= s.a[m] - s.b[m];
+          munQ.set(x, qa); if(fimB >= 0) munAnt.set(x, qb);
+        });
+      }
+      let muns = [...munQ.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if(imun >= 0 && !muns.some(([k]) => k === imun) && munQ.has(imun)) muns.splice(4, 1, [imun, munQ.get(imun)]);
+      const wMun = cdCard(`Municípios com mais empresas`, `${baixadas ? 'Empresas baixadas no período' : 'Empresas ativas'} · ${escopoUf}${okC && !baixadas ? ' · atividade filtrada' : ''}`, muns.length ? `<ul class="cd-dest">${muns.map(([k, v]) => {
+          const nome = D.mun.nome[k], temAnt = munAnt.has(k), ant = munAnt.get(k) || 0;
+          const d = temAnt ? cdDelta(v, ant, false, false, baixadas) : { cls: 'neu', txt: '' };
           const [ic, tom] = d.cls === 'up' ? ['setaCima', 'verde'] : d.cls === 'down' ? ['setaBaixo', 'vermelho'] : ['mapa', 'azul'];
-          return `<li${k === imun ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)} · saldo ${cagSinal(v)} · ${esc(d.txt)} vs. ${anoAnt} (${cagSinal(ant)}) · ${stkNum(a)} aberturas"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
-            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${cagSinal(v)} empresas</span> <span class="cd-dest-meta">${esc(d.txt)} vs. ${anoAnt} (${cagSinal(ant)}) · ${stkNum(a)} aberturas</span></span></span></div></li>`;
-        }).join('')}</ul>` : '<div class="stk-vazio">Sem movimentação no período.</div>');
+          const meta = temAnt ? `${d.txt} vs. ${anoAnt} (${stkNum(ant)})` : (baixadas ? J.rotulo : `edição ${edicao}`);
+          return `<li${k === imun ? ' class="cd-dest-sel"' : ''}><div title="${esc(nome)} · ${stkNum(v)} empresas · ${esc(meta)}"><span class="cd-dest-ic ${tom}">${stkIcone(ic)}</span>
+            <span class="cd-dest-txt"><span class="cd-dest-uma"><span class="cd-dest-tit">${esc(nome)} · ${stkNum(v)} empresas</span> <span class="cd-dest-meta">${esc(meta)}</span></span></span></div></li>`;
+        }).join('')}</ul>` : `<div class="stk-vazio">${okC && !baixadas && !D.acm ? 'Municípios por atividade: disponível após a próxima atualização dos dados da Receita.' : 'Sem empresas no recorte.'}</div>`);
 
-      ibgeTela([kSaldo, kAb, kBx, kEst, kVar], [wVolume, wEstados, wQtd], [wSecao, wSub, wMun]);
-      if(totPosQtd > 0) stkDesenharRoscaCd(dadosQtd, 'Quantidade de empresas', 196);
+      ibgeTela([kEst, kAb, kBx, kMei, kVar], [wVolume, wSetor, wQtd], [wSecao, wSub, wMun]);
+      if(totQtd > 0) stkDesenharRoscaCd(dadosQtd, 'Quantidade de empresas', 196);
       const graf = document.getElementById('stkFluxoGraf');
-      if(graf) stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200));
+      if(graf){
+        if(visaoAnual) stkDesenharBarrasAno(graf, anos, A, coresAno, cdAlturaLivre(graf, 200),
+          a => a === ultAno ? `${a} (até ${PAN_MES_CURTO[ultMes - 1]})` : String(a), baixadas ? 'Empresas baixadas' : 'Empresas ativas');
+        else stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200), null, baixadas ? null : 'auto');
+      }
       cdAjustarListas();
     }
     stkGrid.addEventListener('click', ev => {
       const btn = ev.target.closest('#empMatrizVisao .stk-seg-btn');
       if(!btn || btn.dataset.visao === empMatrizVisao) return;
       empMatrizVisao = btn.dataset.visao;
+      stkRender();
+    });
+    // Evolução da quantidade de empresas: Mensal | Anual.
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#empEvolVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === empEvolVisao) return;
+      empEvolVisao = btn.dataset.visao;
       stkRender();
     });
     // Switch Dashboard | Mapa da barra de filtros.
@@ -12912,7 +12987,7 @@ ${clipPlayerPills(n)}
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
-      stkEmpFiltros.forEach(el => { el.value = ''; });
+      stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkAbrir();
@@ -12925,7 +13000,7 @@ ${clipPlayerPills(n)}
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
       stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
-      stkEmpFiltros.forEach(el => { el.value = ''; });
+      stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
       stkRender();
