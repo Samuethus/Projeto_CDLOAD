@@ -12882,13 +12882,28 @@ ${clipPlayerPills(n)}
     // TEMPORÁRIO (só para testar o mapa enquanto cnpj_ceps.js não é gerado): um ponto por município de MT, na sede
     // (municipios_geo.js), com os CNPJs ativos (D.atm) ou baixados no período (D.prm). Remover quando o detalhe por CEP existir.
     const empMunChave = (uf, n) => uf + '|' + stkNorm(n).replace(/[^a-z0-9]/g, '');
-    function empMapaDadosTemp(D, J, imun, regOk, baixadas){
+    // Coordenada da sede de cada município de D (municipios_geo.js); null sem o arquivo.
+    function empMunLL(D){
       if(!window.MUNICIPIOS_GEO) return null;
       if(!D._ll){
         const idx = new Map();
         window.MUNICIPIOS_GEO.linhas.forEach(([uf, nome, lon, lat]) => idx.set(empMunChave(uf, nome), [lon, lat]));
         D._ll = D.mun.nome.map((n, k) => idx.get(empMunChave(D.ufs[D.mun.uf[k]], n)) || null);
       }
+      return D._ll;
+    }
+    // Ramo escolhido sem o detalhe por CEP (cnpj_ceps.js sem "dr"): ativos do ramo por município (acm), na sede.
+    function empMapaRamoPorMun(D, C, ir, nome, imun){
+      const m = empRamoPorMun(D, ir), ll = empMunLL(D);
+      if(!m || !ll) return { C, feats: [], baixadas: false, nAprox: 0, ramo: nome, semRamo: true };
+      const feats = [];
+      m.forEach((n, k) => {
+        if(n && ll[k] && (imun < 0 || k === imun)) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: ll[k] }, properties: { n, cep: '', end: '', mun: k, aprox: 0, ramo: nome } });
+      });
+      return { C: C || { edicao: D.edicao }, feats, baixadas: false, nAprox: 0, ramo: nome, temp: true };
+    }
+    function empMapaDadosTemp(D, J, imun, regOk, baixadas){
+      if(!empMunLL(D)) return null;
       const qtd = new Map(), soma = (x, n) => { if(n && (imun < 0 || x === imun)) qtd.set(x, (qtd.get(x) || 0) + n); };
       if(baixadas) empPreparar(D).prm.forEach(o => { if(regOk[o.r]){ let n = 0; for(const m of J.atual) n += o.b[m]; soma(o.x, n); } });
       else (D.atm || []).forEach(([x, , r, v]) => { if(regOk[r]) soma(x, v); });
@@ -12903,13 +12918,15 @@ ${clipPlayerPills(n)}
       const C = window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao ? window.CNPJ_CEPS : null;
       const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value, baixadas = stkEmpSituacaoEl.value === 'baixadas';
       const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
+      // Ramo escolhido: pontos de negócio do ramo (ativos) por CEP — C.dr = [iCep, iRamo, ativas], ramos casados pelo nome.
+      // Sem esse detalhe (dados ainda não regerados), mostra o ramo por município, na sede.
+      const ramoSel = stkEmpRamoEl.value, R = (window.CNPJ_RAMOS || {}).ramos || [];
+      const irCep = ramoSel !== '' && R[ramoSel] && C && C.ramos ? C.ramos.indexOf(R[ramoSel].nome) : -1;
+      if(ramoSel !== '' && R[ramoSel] && (!C || !C.dr || irCep < 0)) return empMapaRamoPorMun(D, C, Number(ramoSel), R[ramoSel].nome, imun);
       if(!C) return empMapaDadosTemp(D, J, imun, regOk, baixadas);
       const atual = [...J.atual], qtd = new Map();
-      // Ramo escolhido: pontos de negócio do ramo (ativos) por CEP — C.dr = [iCep, iRamo, ativas], ramos casados pelo nome.
-      const ramoSel = stkEmpRamoEl.value, R = (window.CNPJ_RAMOS || {}).ramos || [];
       if(ramoSel !== '' && R[ramoSel]){
-        const ir = C.ramos ? C.ramos.indexOf(R[ramoSel].nome) : -1;
-        if(!C.dr || ir < 0) return { C, feats: [], baixadas: false, nAprox: 0, ramo: R[ramoSel].nome, semRamo: true };
+        const ir = irCep;
         C.dr.forEach(([i, r, v]) => { if(r === ir && (imun < 0 || C.mun[i] === imun)) qtd.set(i, (qtd.get(i) || 0) + v); });
       } else for(const o of empCepsPrep(C)){
         if(!regOk[o.r] || (imun >= 0 && C.mun[o.i] !== imun)) continue;
@@ -12987,8 +13004,8 @@ ${clipPlayerPills(n)}
       const D = empMapaD, baixadas = stkEmpSituacaoEl.value === 'baixadas';
       const munNome = D && D.mun.nome[p.mun] ? `${D.mun.nome[p.mun]} (${D.ufs[D.mun.uf[p.mun]]})` : '';
       if(!p.cep) return `<div class="emp-mapa-pop"><strong>${esc(munNome)}</strong>`   // TEMPORÁRIO: ponto por município
-        + `<div class="emp-mapa-pop-sub">Visualização temporária: ponto único na sede do município</div>`
-        + `<table><tr><td>${baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos'}</td><td>${esc(stkNum(p.n))}</td></tr></table></div>`;
+        + `<div class="emp-mapa-pop-sub">${p.ramo ? esc(p.ramo) + ' · ponto único na sede do município' : 'Visualização temporária: ponto único na sede do município'}</div>`
+        + `<table><tr><td>${p.ramo ? 'Estabelecimentos ativos do ramo' : baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos'}</td><td>${esc(stkNum(p.n))}</td></tr></table></div>`;
       // CEP geral do município (cidade de CEP único): o ponto é o bairro registrado na Receita.
       const cepTxt = `${p.cep.slice(0, 5)}-${p.cep.slice(5)}`;
       return `<div class="emp-mapa-pop"><strong>${p.bairro ? esc(p.bairro) : 'CEP ' + esc(cepTxt)}</strong>`
@@ -13016,7 +13033,8 @@ ${clipPlayerPills(n)}
       }
       if(!empMapa) empMapaMsg('Carregando o mapa…');
       Promise.all([ibgeCarregar('empCeps').catch(() => null)
-        .then(() => window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao ? null : ibgeCarregar('munGeo')).catch(() => null), empMapaPronto || (empMapaPronto = empMapaCriar())])
+        // Sedes dos municípios: mapa temporário (sem CEPs) ou ramo sem o detalhe por CEP ("dr").
+        .then(() => window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao && (window.CNPJ_CEPS.dr || stkEmpRamoEl.value === '') ? null : ibgeCarregar('munGeo')).catch(() => null), empMapaPronto || (empMapaPronto = empMapaCriar())])
         .then(() => {
           if(seq !== empMapaSeq || empMapaEl.hidden) return;
           empMapaMsg('');
@@ -13053,18 +13071,20 @@ ${clipPlayerPills(n)}
       const local = imun >= 0 ? D.mun.nome[imun] : (PAN_UF_NOME[ufCep] || ufCep);
       const edicao = `${R.C.edicao.slice(5)}/${R.C.edicao.slice(0, 4)}`;
       const fReg = [stkEmpRegimeEl.value && stkEmpRegimeEl.selectedOptions[0].text, stkEmpSimeiEl.value && stkEmpSimeiEl.selectedOptions[0].text].filter(Boolean).join(' · ');
-      const notas = R.temp
+      const notas = R.temp && R.ramo
+        ? [`Ramo: ${R.ramo}. Cada município aparece como um ponto único na sede, com a quantidade de estabelecimentos ativos do ramo. O detalhe por CEP (endereço de cada ponto de negócio) aparece após a próxima atualização dos dados da Receita.`]
+        : R.temp
         ? ['Endereços (CEP) dos CNPJs ainda estão sendo gerados, cada município aparece como um ponto único na sede, com a quantidade de CNPJs dele.']
         : ['Cada ponto é o CEP registrado do CNPJ na Receita Federal; o número é a quantidade de CNPJs nesse CEP.'];
-      if(R.ramo) notas.unshift(`Ramo: ${R.ramo}. Cada ponto é um CEP com estabelecimentos ativos desse ramo (concorrentes e pontos de negócio na região).`);
+      if(R.ramo && !R.temp) notas.unshift(`Ramo: ${R.ramo}. Cada ponto é um CEP com estabelecimentos ativos desse ramo (concorrentes e pontos de negócio na região).`);
       notas.push(empMapaProgresso());
       if(!R.temp && R.C.bairro && R.C.bairro.some(Boolean)) notas.push('Cidades de CEP único (CEP geral, terminado em 000): os CNPJs aparecem separados pelo bairro registrado na Receita.');
       if(R.nAprox) notas.push(`${stkNum(R.nAprox)} de ${stkNum(R.feats.length)} pontos ainda sem coordenada própria aparecem na sede do município (a geocodificação avança a cada dia).`);
       if(stkBuscaInput.value.trim()) notas.push('A busca por atividade (CNAE) não se aplica ao mapa.');
-      corpo.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : R.ramo ? 'Pontos de negócio · ' + esc(R.ramo) : 'Endereço dos CNPJs (CEP)'}</h4>
+      corpo.innerHTML = `<h4>${R.temp && R.ramo ? 'Pontos de negócio · ' + esc(R.ramo) + ' <span class="emp-mapa-temp">por município</span>' : R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : R.ramo ? 'Pontos de negócio · ' + esc(R.ramo) : 'Endereço dos CNPJs (CEP)'}</h4>
         <div class="emp-mapa-sub">${esc(local)} · ${esc(R.baixadas ? 'baixados · ' + J.rotulo : 'ativos na edição ' + edicao)}${fReg ? ' · ' + esc(fReg) : ''}</div>
         <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.ramo ? 'estabelecimentos ativos' : R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} ${R.temp ? 'municípios' : 'CEPs'}</div>
-        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? 'Município (ponto na sede)' : R.ramo ? 'CEP com estabelecimentos do ramo' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
+        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? (R.ramo ? 'Município com estabelecimentos do ramo (ponto na sede)' : 'Município (ponto na sede)') : R.ramo ? 'CEP com estabelecimentos do ramo' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
         <div class="emp-mapa-nota">${notas.map(esc).join('<br>')}</div>`;
       if(!R.feats.length) empMapaMsg('Nenhum CNPJ no recorte escolhido.');
 
