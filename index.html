@@ -1744,7 +1744,10 @@
   .sm-painel .cd-rosca-legenda span{flex:0 1 auto;min-width:0;max-width:170px;}
   .sm-painel .cd-rosca-legenda strong{margin-left:2px;}
   /* Satisfação (1 a 5): legenda em 2 linhas centralizadas (5 · 4 · 3 / 2 · 1), nomes inteiros dentro do card. */
-  .sm-painel .cd-rosca-legenda.sm-legenda-satisf{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 12px;width:100%;}   /* row-gap conta 2x por causa da quebra */
+  /* A rosca cresce até o espaço livre: a legenda reserva a mesma altura da antiga (3 linhas de 12,5px + 2 espaços de 5px),
+     então a rosca fica do mesmo tamanho de antes; as 2 linhas vão para o pé dessa área, abrindo espaço abaixo da rosca. */
+  .sm-painel .cd-rosca-legenda.sm-legenda-satisf{display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-end;gap:3px 12px;width:100%;
+    font-size:12.5px;min-height:calc(3 * 1.2em + 10px);box-sizing:border-box;}   /* row-gap conta 2x por causa da quebra */
   .sm-painel .sm-legenda-satisf li{flex:0 0 auto;gap:5px;font-size:11.5px;line-height:1.25;}
   .sm-painel .sm-legenda-satisf li i{width:8px;height:8px;border-radius:2px;}
   .sm-painel .sm-legenda-satisf span{max-width:none;overflow:visible;}
