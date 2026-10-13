@@ -57,11 +57,14 @@ Gera também assets/data/cnpj_ceps.js (window.CNPJ_CEPS), o mapa por CEP de Mato
 """
 import base64
 import datetime
+import gc
 import io
 import json
 import os
 import re
+import shutil
 import sys
+import threading
 import time
 import unicodedata
 import urllib.error
@@ -77,6 +80,8 @@ TOKEN = 'YggdBLfdninEJX9'   # compartilhamento público "Dados Abertos CNPJ" (us
 UA = 'Mozilla/5.0 (CDLoad; Nucleo de Inteligencia CDL Cuiaba)'
 TMP = os.environ.get('CNPJ_TMP') or os.path.join(RAIZ, '.cnpj_tmp')
 PARTES = 8                  # downloads em partes paralelas (o servidor limita a velocidade por conexão)
+PARAR = threading.Event()   # cancela os downloads de uma edição que falhou (antes de tentar a anterior)
+POOLS = []                  # downloads em andamento da edição atual
 UF_DETALHE = b'MT'          # único estado processado (Mato Grosso, foco da CDL Cuiabá)
 AMOSTRA_MAX = 10
 MAX_CNPJ = 100_000_000      # CNPJ básico tem 8 dígitos: vetores indexados por ele
@@ -185,6 +190,8 @@ def baixar(caminho, destino, tamanho):
         arq = '%s.p%d' % (destino, i)
         falhas = 0   # só conta tentativa que não avançou nada: servidor lento, mas andando, não desiste
         while falhas < 8:
+            if PARAR.is_set():
+                raise RuntimeError('Download cancelado: %s' % caminho)
             feito = os.path.getsize(arq) if os.path.exists(arq) else 0
             if a + feito > b:
                 return arq
@@ -194,7 +201,7 @@ def baixar(caminho, destino, tamanho):
                 with r, open(arq, 'ab') as f:
                     while True:
                         x = r.read(1 << 20)
-                        if not x:
+                        if not x or PARAR.is_set():
                             break
                         f.write(x)
             except Exception as e:
@@ -312,6 +319,29 @@ def mes_idx(d):
 
 
 def main():
+    pastas = sorted(p.strip('/') for p, _ in listar() if re.fullmatch(r'\d{4}-\d{2}/', p))
+    if not pastas:
+        sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
+    # A edição nova aparece aos poucos (a pasta surge antes de todos os arquivos estarem completos). Se ela
+    # falhar (incompleta, download corrompido), processa a anterior, para o painel e o mapa não ficarem parados.
+    candidatas = pastas[::-1][:2]
+    for k, edicao in enumerate(candidatas):
+        try:
+            return processar(edicao)
+        except BaseException as e:   # inclui o sys.exit('Edição ... incompleta.')
+            if isinstance(e, KeyboardInterrupt) or k == len(candidatas) - 1:
+                raise
+            print('Edição %s falhou (%s); processando a edição %s.' % (edicao, e, candidatas[k + 1]), flush=True)
+        PARAR.set()
+        for p in POOLS:
+            p.shutdown(wait=True, cancel_futures=True)
+        POOLS.clear()
+        PARAR.clear()
+        shutil.rmtree(os.path.join(TMP, edicao), ignore_errors=True)   # libera o disco (~7 GB por edição)
+        gc.collect()
+
+
+def processar(edicao):
     import cnpj_ceps_geo as ceps_geo   # mapa por CEP: cache de coordenadas e gravação de cnpj_ceps.js
     # Ramos de negócio (assets/data/cnpj_ramos.js): prefixos de CNAE; vale o prefixo mais longo. Usado no mapa (pontos por ramo).
     ramos = (ceps_geo.ler_js(os.path.join(RAIZ, 'assets', 'data', 'cnpj_ramos.js'), 'CNPJ_RAMOS') or {}).get('ramos', [])
@@ -323,15 +353,11 @@ def main():
         if v is None:
             v = ramo_cache[cnae] = next((i for p, i in pref_ramo if cnae.startswith(p)), -1)
         return v
-    pastas = sorted(p.strip('/') for p, _ in listar() if re.fullmatch(r'\d{4}-\d{2}/', p))
-    if not pastas:
-        sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
-    edicao = pastas[-1]
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
             and '"ufs":["%s"]' % UF_DETALHE.decode() in open(SAIDA, encoding='utf-8').read() \
             and '"acm":' in open(SAIDA, encoding='utf-8').read() \
-            and '"dr":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
+            and '"dr":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
         return
@@ -341,9 +367,10 @@ def main():
     aux = ['Municipios.zip', 'Cnaes.zip', 'Naturezas.zip', 'Simples.zip']
     if len(estabs) < 10 or len(empresas) < 10 or any(a not in tam for a in aux):
         sys.exit('Edição %s incompleta.' % edicao)
-    os.makedirs(TMP, exist_ok=True)
+    tmp = os.path.join(TMP, edicao)   # uma pasta por edição: a tentativa anterior não mistura arquivos
+    os.makedirs(tmp, exist_ok=True)
     t0 = time.time()
-    caminho = lambda a: os.path.join(TMP, a)
+    caminho = lambda a: os.path.join(tmp, a)
 
     # Período: ano anterior + ano atual, até o último mês completo (o anterior ao da edição).
     a, m = int(edicao[:4]), int(edicao[5:])
@@ -357,6 +384,7 @@ def main():
     # Downloads: dois arquivos por vez (cada um em PARTES), na ordem em que serão lidos.
     ordem = aux + empresas + estabs
     pool = ThreadPoolExecutor(max_workers=2)
+    POOLS.append(pool)
     fut = {arq: pool.submit(baixar, '%s/%s' % (edicao, arq), caminho(arq), tam[arq]) for arq in ordem}
     pronto = lambda arq: fut[arq].result()
 

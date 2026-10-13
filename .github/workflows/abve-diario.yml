@@ -60,12 +60,25 @@ jobs:
       # Receita Federal: dados abertos do CNPJ (~7 GB por edição mensal: Estabelecimentos, Empresas e Simples).
       # Consulta só a lista de pastas e sai na hora quando a edição mais recente já foi processada; falha sem
       # bloquear os demais. Prazo largo: o servidor da Receita às vezes fica lento (~1 MB/s).
+      # Se a edição mais recente ainda estiver incompleta, o script processa a anterior. Uma falha não bloqueia os
+      # demais passos, mas fica registrada em scripts/cache/cnpj_status.txt (as últimas linhas do log), no repositório.
       - name: Extrair dados do CNPJ (Receita Federal)
+        id: cnpj
         continue-on-error: true
         timeout-minutes: 300
         env:
           CNPJ_TMP: ${{ runner.temp }}/cnpj
-        run: python scripts/cnpj_extrair.py
+        run: |
+          set -o pipefail
+          python -u scripts/cnpj_extrair.py 2>&1 | tee "$RUNNER_TEMP/cnpj.log"
+      - name: Registrar o resultado do CNPJ
+        if: always()
+        run: |
+          if [ "${{ steps.cnpj.outcome }}" = "success" ]; then
+            echo "ok" > scripts/cache/cnpj_status.txt
+          else
+            { echo "FALHA ${{ steps.cnpj.outcome }} em $(date -u +%Y-%m-%dT%H:%MZ) (run ${{ github.run_id }})"; tail -n 60 "$RUNNER_TEMP/cnpj.log" 2>/dev/null; } > scripts/cache/cnpj_status.txt
+          fi
       # Mapa de empresas (EMPRESAS > Mapa): coordenadas dos CEPs de Mato Grosso que ainda faltam no cache
       # (AwesomeAPI/BrasilAPI), um lote por dia; sem coordenada, o CEP fica na sede do município.
       - name: Coordenadas dos CEPs (mapa de empresas)
@@ -78,7 +91,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js assets/data/cnpj_ceps.js scripts/cache/ceps_geo.csv"
+          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js assets/data/cnpj_ceps.js scripts/cache/ceps_geo.csv scripts/cache/cnpj_status.txt"
           if [ -n "$(git status --porcelain $ARQS)" ]; then
             git config user.name "abve-bot"
             git config user.email "abve-bot@users.noreply.github.com"
@@ -86,10 +99,13 @@ jobs:
             git commit -m "Dados ABVE/CAGED/Sefaz/IBGE/Stone: atualização diária"
             # A execução leva ~1h30 (CNPJ + CEPs): se a main recebeu commits nesse meio tempo, o push simples é
             # recusado e tudo o que foi gerado se perde. Traz os commits novos (só mexem em outros arquivos) e tenta de novo.
+            # --autostash: algum arquivo fora da lista alterado pelos scripts não pode travar o rebase (e perder o commit).
+            enviado=""
             for i in 1 2 3; do
-              git pull --rebase origin main && git push && break
+              git pull --rebase --autostash origin main && git push && enviado=1 && break
               sleep 10
             done
+            [ -n "$enviado" ] || { echo "::error::Não foi possível enviar os dados gerados (push recusado 3 vezes)."; exit 1; }
             # Commits feitos pelo GITHUB_TOKEN não disparam o deploy sozinhos.
             gh workflow run deploy.yml
           else

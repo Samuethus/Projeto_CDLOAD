@@ -12934,15 +12934,14 @@ ${clipPlayerPills(n)}
         if(baixadas){ n = 0; for(const m of atual) n += o.b[m]; }
         if(n) qtd.set(o.i, (qtd.get(o.i) || 0) + n);
       }
-      const feats = [];
+      const feats = [], nomeRamo = ramoSel !== '' && R[ramoSel] ? R[ramoSel].nome : '';
       let nAprox = 0;
       qtd.forEach((n, i) => {
         if(!C.ll[i]) return;
         nAprox += C.aprox[i] ? 1 : 0;
         feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: C.ll[i] },
-          properties: { n, cep: C.ceps[i], bairro: (C.bairro && C.bairro[i]) || '', end: (C.end && C.end[i]) || '', mun: C.mun[i], aprox: C.aprox[i] || 0 } });
+          properties: { n, cep: C.ceps[i], bairro: (C.bairro && C.bairro[i]) || '', end: (C.end && C.end[i]) || '', mun: C.mun[i], aprox: C.aprox[i] || 0, ramo: nomeRamo } });
       });
-      const nomeRamo = ramoSel !== '' && R[ramoSel] ? R[ramoSel].nome : '';
       return { C, feats, baixadas: nomeRamo ? false : baixadas, nAprox, ramo: nomeRamo };
     }
 
@@ -13010,7 +13009,8 @@ ${clipPlayerPills(n)}
       const cepTxt = `${p.cep.slice(0, 5)}-${p.cep.slice(5)}`;
       return `<div class="emp-mapa-pop"><strong>${p.bairro ? esc(p.bairro) : 'CEP ' + esc(cepTxt)}</strong>`
         + `<div class="emp-mapa-pop-sub">${esc(p.bairro ? [`CEP geral ${cepTxt}`, munNome].join(' · ') : [p.end, munNome].filter(Boolean).join(' · '))}</div>`
-        + `<table><tr><td>${baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos registrados'}</td><td>${esc(stkNum(p.n))}</td></tr></table>`
+        + (p.ramo ? `<div class="emp-mapa-pop-sub">Ramo: ${esc(p.ramo)}</div>` : '')
+        + `<table><tr><td>${p.ramo ? 'Estabelecimentos ativos do ramo neste ' + (p.bairro ? 'bairro' : 'CEP') : baixadas ? 'CNPJs baixados no período' : 'CNPJs ativos registrados'}</td><td>${esc(stkNum(p.n))}</td></tr></table>`
         + (p.aprox ? `<div class="emp-mapa-pop-sub" style="margin:6px 0 0">Posição aproximada: ${p.bairro ? 'bairro' : 'CEP'} ainda sem coordenada, exibido na sede do município.</div>` : '')
         + '</div>';
     }
