@@ -58,7 +58,9 @@ Gera também assets/data/cnpj_ceps.js (window.CNPJ_CEPS), o mapa por CEP de Mato
 import base64
 import datetime
 import gc
+import heapq
 import io
+import itertools
 import json
 import os
 import re
@@ -75,6 +77,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, 'assets', 'data', 'cnpj_empresas.js')
+SAIDA_AMOSTRAS = os.path.join(RAIZ, 'assets', 'data', 'cnpj_amostras.js')   # Exportar filtrado (EMPRESAS)
 WEBDAV = 'https://arquivos.receitafederal.gov.br/public.php/webdav/'
 TOKEN = 'YggdBLfdninEJX9'   # compartilhamento público "Dados Abertos CNPJ" (usuário do WebDAV, sem senha)
 UA = 'Mozilla/5.0 (CDLoad; Nucleo de Inteligencia CDL Cuiaba)'
@@ -358,6 +361,7 @@ def processar(edicao):
             and '"acm":' in open(SAIDA, encoding='utf-8').read() \
             and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and '"dr":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
+            and os.path.exists(SAIDA_AMOSTRAS) \
             and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
         return
@@ -434,6 +438,19 @@ def processar(edicao):
     cf, cat, cep_mun = {}, {}, {}   # mapa de Mato Grosso: (mês, CEP, regime) → [aberturas, baixas] · (CEP, regime) → ativas
     cr = {}   # mapa de Mato Grosso: (CEP, ramo) → ativas (pontos de negócio por ramo)
     amostra, reserva = [], []
+    # Amostras do Exportar (Mato Grosso): os AMOSTRA_MAX estabelecimentos mais recentes por
+    # (município, ramo, regime, evento 0 = ativa / 1 = baixada no período) — o site filtra e exporta 10.
+    pool_am, seq_am = {}, itertools.count()
+
+    def guardar(chave, data, l):
+        h = pool_am.get(chave)
+        if h is None:
+            h = pool_am[chave] = []
+        item = (data, next(seq_am), l)
+        if len(h) < AMOSTRA_MAX:
+            heapq.heappush(h, item)
+        elif data > h[0][0]:
+            heapq.heapreplace(h, item)
 
     def idx(d, k):
         i = d.get(k)
@@ -491,6 +508,7 @@ def processar(edicao):
                 ac[ic] = ac.get(ic, 0) + 1                     # ativas por subclasse CNAE
                 acm[(imn, ic)] = acm.get((imn, ic), 0) + 1     # ativas por município × subclasse
                 if det:
+                    guardar((imn, ramo_de(c[11].zfill(7)), r, 0), dini, l)
                     k3 = (imn, p, r)
                     atm[k3] = atm.get(k3, 0) + 1
                     if cep:
@@ -521,6 +539,7 @@ def processar(edicao):
                     r = regime(cb, mes_idx(dsit))
                     soma(f, (k, iu, ic), 1); soma(fm, (k, imn), 1); soma(pr, (k, iu, p, r), 1)
                     if det:
+                        guardar((imn, ramo_de(c[11].zfill(7)), r, 1), dsit, l)
                         soma(prm, (k, imn, p, r), 1)
                         if cep:
                             soma(cf, (k, cep, r), 1)
@@ -533,7 +552,9 @@ def processar(edicao):
 
     # ---- Amostra consolidada: busca as linhas de Empresas e Simples dos CNPJs escolhidos ----
     escolhidas = (amostra + reserva)[:AMOSTRA_MAX]
-    alvo = {campos(l)[0] for l in escolhidas}
+    # (data, linha, chave) das amostras do Exportar, da mais recente para a mais antiga.
+    pool_lista = sorted(((d, l, ch) for ch, h in pool_am.items() for d, _, l in h), key=lambda x: x[0], reverse=True)
+    alvo = {campos(l)[0] for l in escolhidas} | {l[1:9].decode() for _, l, _ in pool_lista}
     emp_linha, sim_linha = {}, {}
     for arq in empresas:
         for l in linhas_zip(caminho(arq)):
@@ -574,8 +595,8 @@ def processar(edicao):
     vazio = [[0] * nM, [0] * nM]
 
     from caged_extrair import GRP_ASSOC, assoc   # mesmas regras de associação do CAGED/Sefaz
-    linhas_am = []
-    for l in escolhidas:
+    def linha_amostra(l, r, evento):
+        """Linha do Exportar: colunas de Estabelecimentos + Empresas + Simples + descrições do painel."""
         v = (campos(l) + [''] * 30)[:30]
         cb = v[0]
         e = (emp_linha.get(cb) or [''] * 6)
@@ -583,18 +604,28 @@ def processar(edicao):
         cnae = v[11].zfill(7)
         mun = mun_rfb.get(v[20].encode(), v[20])
         p_cod = PORTE_COD.get(e[4].encode(), 4) - 1 if e[4] else 3
-        mm = mes_idx(v[10].encode())
-        cbi = int(cb)
-        r = regime(cbi, mm)
-        linhas_am.append([mascarar_contato(i, x) for i, x in enumerate(v)]
-                         + [mascarar_cpf(e[0])] + e[1:]
-                         + s
-                         + ['%s.%s.%s/%s-%s' % (cb[:2], cb[2:5], cb[5:8], v[1], v[2]),
-                            {'1': 'Matriz', '2': 'Filial'}.get(v[3], v[3]), SITUACAO.get(v[5].zfill(2), v[5]),
-                            cnae_nome.get(cnae, ''), ibge.get((v[19], norm(mun))) or titulo(mun),
-                            nat_nome.get(e[1].zfill(4), '') if e[1] else '', PORTES[p_cod], REGIMES[r],
-                            'MEI' if r == 0 else ('ME' if p_cod == 0 else PORTES[p_cod]),
-                            'Abertura em ' + meses[-1], setor_painel(cnae), GRP_ASSOC[assoc(cnae)]])
+        if r is None:
+            r = regime(int(cb), mes_idx(v[10].encode()))
+        return ([mascarar_contato(i, x) for i, x in enumerate(v)]
+                + [mascarar_cpf(e[0])] + e[1:]
+                + s
+                + ['%s.%s.%s/%s-%s' % (cb[:2], cb[2:5], cb[5:8], v[1], v[2]),
+                   {'1': 'Matriz', '2': 'Filial'}.get(v[3], v[3]), SITUACAO.get(v[5].zfill(2), v[5]),
+                   cnae_nome.get(cnae, ''), ibge.get((v[19], norm(mun))) or titulo(mun),
+                   nat_nome.get(e[1].zfill(4), '') if e[1] else '', PORTES[p_cod], REGIMES[r],
+                   'MEI' if r == 0 else ('ME' if p_cod == 0 else PORTES[p_cod]),
+                   evento, setor_painel(cnae), GRP_ASSOC[assoc(cnae)]])
+
+    linhas_am = [linha_amostra(l, None, 'Abertura em ' + meses[-1]) for l in escolhidas]
+
+    # Amostras do Exportar (arquivo à parte, baixado só ao exportar). idx de cada linha:
+    # [município (ordem de mun), subclasse (ordem de cnaes), evento 0 ativa / 1 baixada, regime, mês do evento (-1 fora do período)]
+    am_linhas, am_idx = [], []
+    for d, l, (imn_, _ir, r_, ev) in pool_lista:
+        mes = d[:4].decode() + '-' + d[4:6].decode()
+        am_linhas.append(linha_amostra(l, r_, ('Baixada em ' if ev else 'Ativa · aberta em ') + mes))
+        ic_ = cnaes.get((campos(l)[11]).zfill(7).encode())
+        am_idx.append([nm[imn_], nc[ic_] if ic_ is not None else -1, ev, r_, im.get(d[:6], -1)])
 
     dados = {
         'fonte': 'Receita Federal · Cadastro Nacional da Pessoa Jurídica (dados abertos)',
@@ -622,6 +653,14 @@ def processar(edicao):
           '// Extraído em %s da edição %s dos dados abertos do CNPJ (Receita Federal).\n'
           'window.CNPJ_EMPRESAS = %s;\n') % (datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'), edicao, corpo)
     open(SAIDA, 'w', encoding='utf-8').write(js)
+    js_am = ('// Gerado por scripts/cnpj_extrair.py - não editar à mão.\n'
+             '// Amostras do Exportar do indicador EMPRESAS (Mato Grosso, edição %s): até %d estabelecimentos mais recentes\n'
+             '// por município × ramo × regime × situação (ativa | baixada no período). Contatos e CPF mascarados.\n'
+             'window.CNPJ_AMOSTRAS = %s;\n') % (edicao, AMOSTRA_MAX, json.dumps(
+                 {'edicao': edicao, 'colunas': COLUNAS_ESTAB + COLUNAS_EMPRESA + COLUNAS_SIMPLES + COLUNAS_EXTRA,
+                  'idx': am_idx, 'linhas': am_linhas}, ensure_ascii=False, separators=(',', ':')))
+    open(SAIDA_AMOSTRAS, 'w', encoding='utf-8').write(js_am)
+    print('Gravado %s: %d KB · %d amostras' % (os.path.relpath(SAIDA_AMOSTRAS, RAIZ), len(js_am) // 1024, len(am_linhas)))
     print('Gravado %s: %d KB · %d linhas · %s..%s · %.0fs' % (os.path.relpath(SAIDA, RAIZ), len(js) // 1024, total,
                                                              meses[0], meses[-1], time.time() - t0))
 

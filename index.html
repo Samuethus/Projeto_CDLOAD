@@ -12403,6 +12403,7 @@ ${clipPlayerPills(n)}
       return { M, cidadeMT };
     }
     const EMP_UF = 'MT';   // único estado do indicador EMPRESAS (scripts/cnpj_extrair.py descarta os demais)
+    const EMP_AMOSTRA_MAX = 10;   // linhas do Exportar (mesmo tamanho da amostra de scripts/cnpj_extrair.py)
     const EMP_CIDADE_PADRAO = 'Cuiabá';   // cidade já filtrada ao abrir o indicador (e ao Limpar)
     function empRender(){
       const D = window.CNPJ_EMPRESAS;
@@ -12457,15 +12458,23 @@ ${clipPlayerPills(n)}
     //   Baixadas = CNPJs baixados no período (Mês/Ano).
     // Filtros: Cidade, Subclasse (lista) + busca por atividade, Regime/SIMEI (porte × regime) e Mês/Ano.
     // Combinações que o arquivo não cruza (atividade × regime; cidade × atividade mês a mês) ficam indicadas nos cards.
-    function empDesenhar(D, J, iu, imun){
-      const P = empPreparar(D), anoAnt = J.anoAnt, nM = D.meses.length;
-      const baixadas = stkEmpSituacaoEl.value === 'baixadas';
-      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim(), subSel = stkEmpSubclasseEl.value;
+    // Subclasses CNAE (índices de D.cnaes) aceitas pela busca por atividade, pela Subclasse e pelo Ramo; null = todas.
+    // Usada pelo painel e pelo Exportar, para os dois seguirem exatamente os mesmos filtros.
+    function empCnaesFiltro(D){
+      const P = empPreparar(D), termos = ibgeTermo(), subSel = stkEmpSubclasseEl.value;
       let okC = termos.length ? new Set(P.busca.map((t, k) => termos.every(x => t.includes(x)) ? k : -1).filter(k => k >= 0)) : null;
       if(subSel !== '') okC = new Set([Number(subSel)].filter(k => !okC || okC.has(k)));
       // Ramo: só as subclasses CNAE do ramo (somado aos filtros de atividade acima).
-      const ramoSel = stkEmpRamoEl.value, RM = ramoSel !== '' ? empRamosDe(D) : null, nomeRamo = RM ? RM.R[Number(ramoSel)].nome : '';
+      const ramoSel = stkEmpRamoEl.value, RM = ramoSel !== '' ? empRamosDe(D) : null;
       if(RM){ const s = RM.cnaes[Number(ramoSel)]; okC = new Set([...(okC || s)].filter(k => s.has(k))); }
+      return okC;
+    }
+    function empDesenhar(D, J, iu, imun){
+      const P = empPreparar(D), anoAnt = J.anoAnt, nM = D.meses.length;
+      const baixadas = stkEmpSituacaoEl.value === 'baixadas';
+      const busca = stkBuscaInput.value.trim(), subSel = stkEmpSubclasseEl.value;
+      const okC = empCnaesFiltro(D);
+      const ramoSel = stkEmpRamoEl.value, RM = ramoSel !== '' ? empRamosDe(D) : null, nomeRamo = RM ? RM.R[Number(ramoSel)].nome : '';
       const cidade = imun >= 0 ? D.mun.nome[imun] : '';
       const nomeSub = subSel !== '' ? D.cnaes.nome[Number(subSel)] : '';
       const local = (cidade || PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso') + (nomeRamo ? ` · ${nomeRamo}` : '') + (nomeSub ? ` · ${nomeSub}` : busca ? ` · “${busca}”` : '');
@@ -13523,6 +13532,7 @@ ${clipPlayerPills(n)}
       empresas: ['assets/data/cnpj_empresas.js', 'CNPJ_EMPRESAS'],
       // EMPRESAS · Mapa: CNPJs de MT pelo CEP registrado.
       empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'], empRamos: ['assets/data/cnpj_ramos.js', 'CNPJ_RAMOS'],
+      empAmostras: ['assets/data/cnpj_amostras.js', 'CNPJ_AMOSTRAS'],   // Exportar filtrado (baixado só ao exportar)
       munGeo: ['assets/data/municipios_geo.js', 'MUNICIPIOS_GEO'] };   // TEMPORÁRIO: sede dos municípios enquanto não há CEP
     // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
     const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];
@@ -14323,21 +14333,56 @@ ${clipPlayerPills(n)}
         URL.revokeObjectURL(url);
         return;
       }
-      // EMPRESAS: amostra da base consolidada do CNPJ (até 10 estabelecimentos; todas as colunas de Estabelecimentos,
-      // Empresas e Simples + descrições usadas no painel), só para entender os dados. Contatos e CPF já vêm mascarados.
+      // EMPRESAS: amostra de até 10 estabelecimentos (todas as colunas de Estabelecimentos, Empresas e Simples +
+      // descrições do painel) que obedecem aos MESMOS filtros do painel: Cidade, Ramo, Subclasse/busca por atividade,
+      // Regime, SIMEI, Situação (Ativas | Baixadas) e, nas baixadas, o período (Mês/Ano). Os mais recentes primeiro.
+      // Fonte: assets/data/cnpj_amostras.js (baixado só aqui). Contatos e CPF já vêm mascarados.
       if(stkPainel() === 'empresas'){
-        const A0 = window.CNPJ_EMPRESAS && window.CNPJ_EMPRESAS.amostra;
-        if(!A0 || !A0.linhas.length) return;
-        // Só Mato Grosso (arquivos antigos traziam outros estados na amostra).
-        const iUf = A0.colunas.indexOf('UF'), A = { colunas: A0.colunas, linhas: iUf < 0 ? A0.linhas : A0.linhas.filter(l => l[iUf] === EMP_UF) };
-        if(!A.linhas.length) return;
-        // Códigos com zero à esquerda (CNAE, ordem, CEP…) como texto, para o Excel não cortar o zero.
-        const cel = v => { const t = String(v == null ? '' : v); if(/^0\d+$/.test(t)) return `="${t}"`; return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-        const url = URL.createObjectURL(new Blob(['﻿' + [A.colunas].concat(A.linhas).map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
-        const a = document.createElement('a');
-        a.href = url; a.download = `cnpj_amostra_estabelecimentos_${window.CNPJ_EMPRESAS.edicao}.csv`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const D = window.CNPJ_EMPRESAS;
+        if(!D) return;
+        const btn = document.getElementById('stkExportar');
+        btn.disabled = true;
+        ibgeCarregar('empAmostras').catch(() => null).then(() => {
+          const AM = window.CNPJ_AMOSTRAS && window.CNPJ_AMOSTRAS.edicao === D.edicao ? window.CNPJ_AMOSTRAS : null;
+          const imun = stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
+          const baixadas = stkEmpSituacaoEl.value === 'baixadas', J = panJanela(D);
+          const ramoSel = stkEmpRamoEl.value, RMs = (window.CNPJ_RAMOS || {}).ramos || [];
+          const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value;
+          const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
+          let colunas, linhas;
+          if(AM){
+            const okC = empCnaesFiltro(D), ev = baixadas ? 1 : 0;
+            colunas = AM.colunas; linhas = [];
+            // AM.idx vem do mais recente para o mais antigo: [município, subclasse, evento, regime, mês do evento].
+            for(let k = 0; k < AM.idx.length && linhas.length < EMP_AMOSTRA_MAX; k++){
+              const [x, c, e, r, m] = AM.idx[k];
+              if(e === ev && (imun < 0 || x === imun) && (!okC || okC.has(c)) && regOk[r] && (!baixadas || J.atual.has(m))) linhas.push(AM.linhas[k]);
+            }
+            if(!linhas.length){
+              alert('Nenhum estabelecimento na amostra para os filtros escolhidos. Amplie a seleção (cidade, ramo, atividade, regime ou período) e exporte de novo.');
+              return;
+            }
+          } else {
+            // Arquivo de amostras ainda não gerado: amostra fixa (aberturas do último mês em MT), sem os filtros.
+            const A0 = D.amostra;
+            if(!A0 || !A0.linhas.length) return;
+            const iUf = A0.colunas.indexOf('UF');
+            colunas = A0.colunas; linhas = iUf < 0 ? A0.linhas : A0.linhas.filter(l => l[iUf] === EMP_UF);
+            if(!linhas.length) return;
+            alert('A amostra filtrada fica disponível após a próxima atualização dos dados da Receita. Por enquanto, o arquivo traz a amostra fixa (aberturas do último mês em Mato Grosso), sem os filtros.');
+          }
+          // Códigos com zero à esquerda (CNAE, ordem, CEP…) como texto, para o Excel não cortar o zero.
+          const cel = v => { const t = String(v == null ? '' : v); if(/^0\d+$/.test(t)) return `="${t}"`; return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+          const url = URL.createObjectURL(new Blob(['﻿' + [colunas].concat(linhas).map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+          // Nome do arquivo com o recorte: cidade, ramo, situação e período.
+          const slug = t => stkNorm(t).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+          const partes = [imun >= 0 ? D.mun.nome[imun] : 'mt', ramoSel !== '' && RMs[ramoSel] ? RMs[ramoSel].nome : '',
+            AM ? (baixadas ? 'baixadas_' + J.rotulo : 'ativas') : 'amostra_fixa'].filter(Boolean).map(slug);
+          const a = document.createElement('a');
+          a.href = url; a.download = `cnpj_amostra_${partes.join('_')}_${D.edicao}.csv`;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }).finally(() => { btn.disabled = false; });
         return;
       }
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad'){
