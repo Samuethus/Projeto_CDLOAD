@@ -75,19 +75,19 @@ grant execute on function public.cdl_survey_todos(), public.cdl_survey_lista() t
 -- Passo 3
 drop policy if exists survey_formularios_select on public.survey_formularios;
 create policy survey_formularios_select on public.survey_formularios for select to authenticated
-  using ((select public.cdl_survey_todos()) or id = any ((select public.cdl_survey_lista())));
+  using ((select public.cdl_survey_todos()) or id = any ((select public.cdl_survey_lista())::text[]));
 
 drop policy if exists survey_perguntas_select on public.survey_perguntas;
 create policy survey_perguntas_select on public.survey_perguntas for select to authenticated
-  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())));
+  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())::text[]));
 
 drop policy if exists survey_coletores_select on public.survey_coletores;
 create policy survey_coletores_select on public.survey_coletores for select to authenticated
-  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())));
+  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())::text[]));
 
 drop policy if exists survey_respostas_select on public.survey_respostas;
 create policy survey_respostas_select on public.survey_respostas for select to authenticated
-  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())));
+  using ((select public.cdl_survey_todos()) or formulario_id = any ((select public.cdl_survey_lista())::text[]));
 
 notify pgrst, 'reload schema';
 
