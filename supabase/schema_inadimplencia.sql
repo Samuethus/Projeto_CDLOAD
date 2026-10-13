@@ -11,7 +11,8 @@
 --   A antiga seção "Configurações" passa a ser "Inadimplência" (a chave da seção continua
 --   "configuracoes": quem já tinha a seção liberada continua com acesso).
 --   Passo 1 — inadimplencia_arquivos: metadados de cada documento enviado
---             (abrangência Cuiabá | Mato Grosso | Brasil, mês de referência, arquivo, quem enviou).
+--             (abrangência Cuiabá | Mato Grosso | Brasil, data de publicação — define a pasta Ano > Mês —,
+--             arquivo, quem enviou).
 --   Passo 2 — bucket privado "inadimplencia" com o arquivo (o app só abre por link assinado e temporário).
 --   Passo 3 — Acesso (mesma regra da seção Relatórios):
 --               ler e enviar ......... quem tem a seção liberada (o autor não pode ser forjado)
@@ -34,6 +35,12 @@ create table if not exists public.inadimplencia_arquivos (
   created_at       timestamptz not null default now()
 );
 create index if not exists inadimplencia_arquivos_ref_idx on public.inadimplencia_arquivos (referencia desc, abrangencia);
+
+-- Data de publicação (campo do cadastro): define a pasta Ano > Mês do documento.
+-- Documentos enviados antes deste campo ficam com o mês de referência.
+alter table public.inadimplencia_arquivos add column if not exists data_publicacao date;
+update public.inadimplencia_arquivos set data_publicacao = referencia where data_publicacao is null;
+create index if not exists inadimplencia_arquivos_pub_idx on public.inadimplencia_arquivos (data_publicacao desc);
 
 comment on table public.inadimplencia_arquivos is
   'Inadimplência: documentos do SPC Brasil por abrangência (Cuiabá, Mato Grosso, Brasil) e mês de referência.';

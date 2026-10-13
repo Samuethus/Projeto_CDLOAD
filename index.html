@@ -837,7 +837,7 @@
     border-color:var(--wa-primary);box-shadow:0 0 0 2px var(--wa-primary-soft);
   }
   /* ---- Relatórios › Gerar relatório (assistente de PDF) ---- */
-  #relGerarModal [hidden]{display:none !important;}
+  #relGerarModal [hidden], #inadModal [hidden]{display:none !important;}
   #relBaixarBtn{text-decoration:none;}
   .rel-fade{animation:relFade .35s ease both;}
   @keyframes relFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
@@ -4354,58 +4354,78 @@
           </div>
         </div>
 
-        <!-- ===== MODAL: NOVO ARQUIVO (etapa única) ===== -->
+        <!-- ===== MODAL: NOVO ARQUIVO (etapa única, no guia de estilo do "Gerar relatório" da seção Relatórios) ===== -->
         <div class="wa-modal-overlay" id="inadModal">
-          <div class="wa-modal" style="max-width:640px;">
+          <div class="wa-modal wa-modal-lg">
             <div class="wa-modal-header">
               <div class="wa-modal-header-left">
                 <div class="wa-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg></div>
                 <div>
                   <div class="wa-modal-title">Novo Arquivo</div>
-                  <div class="wa-modal-sub">Documento de inadimplência emitido pelo SPC Brasil</div>
+                  <div class="wa-modal-sub">Anexe o documento de inadimplência emitido pelo SPC Brasil</div>
                 </div>
               </div>
               <button class="wa-modal-close" type="button" data-inad-fechar>&times;</button>
             </div>
+
             <div class="wa-modal-body">
-              <div class="wa-field">
-                <label>Abrangência</label>
+              <div id="inadEtapaForm">
+                <h3 class="wa-step-title">1. Abrangência</h3>
+                <div class="wa-empty-hint" style="margin-bottom:10px;">A quem os números do documento se referem. Facilita a identificação na tabela e no indicador do Panorama.</div>
                 <div class="rel-not-grid" id="inadAbrOpcoes" role="radiogroup" aria-label="Abrangência">
-                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Cuiabá"><span><span class="rel-ind-nome">Cuiabá</span><span class="rel-ind-info" style="display:block;">Capital</span></span></label>
-                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Mato Grosso"><span><span class="rel-ind-nome">Mato Grosso</span><span class="rel-ind-info" style="display:block;">Estado</span></span></label>
-                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Brasil"><span><span class="rel-ind-nome">Brasil</span><span class="rel-ind-info" style="display:block;">Nacional</span></span></label>
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Cuiabá"><span><span class="rel-ind-nome">Cuiabá</span><span class="rel-ind-info" style="display:block;">Capital · dados do município</span></span></label>
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Mato Grosso"><span><span class="rel-ind-nome">Mato Grosso</span><span class="rel-ind-info" style="display:block;">Estado · consolidado de MT</span></span></label>
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Brasil"><span><span class="rel-ind-nome">Brasil</span><span class="rel-ind-info" style="display:block;">Nacional · consolidado do país</span></span></label>
                 </div>
-              </div>
-              <div class="wa-form-grid">
+
+                <h3 class="wa-step-title" style="margin-top:22px;">2. Data de publicação <span class="rel-contagem" id="inadPastaInfo"></span></h3>
                 <div class="wa-field">
-                  <label for="inadMes">Mês de referência</label>
-                  <select id="inadMes"></select>
+                  <label for="inadDataPub">Publicado pelo SPC Brasil em</label>
+                  <input type="date" id="inadDataPub">
                 </div>
+                <div class="wa-empty-hint">O documento é guardado na pasta <b>Ano › Mês</b> desta data.</div>
+
+                <h3 class="wa-step-title" style="margin-top:22px;">3. Documento</h3>
                 <div class="wa-field">
-                  <label for="inadAno">Ano</label>
-                  <select id="inadAno"></select>
+                  <label for="inadTitulo">Título</label>
+                  <input type="text" id="inadTitulo" placeholder="Preenchido pela abrangência e pela data (pode editar)">
                 </div>
-              </div>
-              <div class="wa-field">
-                <label for="inadTitulo">Título</label>
-                <input type="text" id="inadTitulo" placeholder="Preenchido pela abrangência e pelo mês (pode editar)">
-              </div>
-              <div class="wa-field" style="margin-bottom:0;">
-                <label for="inadArquivoNome">Arquivo (PDF do SPC Brasil)</label>
-                <div class="wa-input-with-btn">
-                  <input type="text" id="inadArquivoNome" placeholder="Nenhum arquivo selecionado" readonly style="cursor:pointer;">
-                  <button type="button" class="wa-btn wa-btn-outline" id="inadArquivoBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    Selecionar
-                  </button>
+                <div class="wa-field" style="margin-bottom:0;">
+                  <label for="inadArquivoNome">Arquivo (PDF do SPC Brasil)</label>
+                  <div class="wa-input-with-btn">
+                    <input type="text" id="inadArquivoNome" placeholder="Nenhum arquivo selecionado" readonly style="cursor:pointer;">
+                    <button type="button" class="wa-btn wa-btn-outline" id="inadArquivoBtn">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      Selecionar
+                    </button>
+                  </div>
+                  <input type="file" id="inadArquivo" accept="application/pdf,.pdf" hidden>
                 </div>
-                <input type="file" id="inadArquivo" accept="application/pdf,.pdf" hidden>
+                <div class="wa-empty-hint" id="inadAviso"></div>
+              </div>
+
+              <div class="rel-status" id="inadEtapaEnviando" hidden>
+                <div class="rel-status-ic"><div class="rel-spinner"></div></div>
+                <div class="rel-status-tit">Enviando o documento…</div>
+                <div class="rel-status-txt">Guardando o PDF e registrando na pasta.</div>
+              </div>
+
+              <div class="rel-status" id="inadEtapaPronto" hidden>
+                <div class="rel-status-ic ok"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                <div class="rel-status-tit">Documento salvo</div>
+                <div class="rel-status-txt" id="inadProntoTxt"></div>
+                <ul class="rel-resumo" id="inadProntoResumo"></ul>
               </div>
             </div>
-            <div class="wa-modal-footer">
-              <span class="vb-ed-msg" id="inadMsg"></span>
-              <button class="wa-btn wa-btn-outline" type="button" data-inad-fechar>Cancelar</button>
-              <button class="wa-btn wa-btn-primary" type="button" id="inadSalvarBtn">Enviar Arquivo</button>
+
+            <div class="wa-wizard-footer">
+              <span class="wa-wizard-steps" id="inadRodape">Escolha a abrangência</span>
+              <div style="display:flex;gap:10px;">
+                <button class="wa-btn wa-btn-outline" type="button" id="inadCancelarBtn" data-inad-fechar>Cancelar</button>
+                <button class="wa-btn wa-btn-outline" type="button" id="inadOutroBtn" hidden>Enviar outro</button>
+                <button class="wa-btn wa-btn-primary" type="button" id="inadSalvarBtn" disabled>Enviar arquivo</button>
+                <button class="wa-btn wa-btn-primary" type="button" id="inadAbrirPastaBtn" hidden>Abrir a pasta</button>
+              </div>
             </div>
           </div>
         </div>
@@ -11114,7 +11134,10 @@ ${clipPlayerPills(n)}
     };
     const inadEl = id => document.getElementById(id);
     let inadArquivos = [], inadCarregado = false, inadErro = null, inadAno = null, inadMesSel = null, inadCargaProm = null;
-    const inadRef = r => String(r.referencia || '').slice(0, 7);          // 'AAAA-MM'
+    // Pasta Ano > Mês = data de publicação (documentos antigos, sem a data: o mês de referência).
+    const inadData = r => String(r.data_publicacao || r.referencia || '');
+    const inadRef = r => inadData(r).slice(0, 7);          // 'AAAA-MM'
+    let inadSemDataPub = false;   // banco sem a coluna data_publicacao (schema_inadimplencia.sql não rodado de novo)
     const inadAbrPill = a => `<span class="inad-abr ${INAD_ABR_CLS[a] || ''}">${esc(a)}</span>`;
     const inadPodeRemover = () => window.__podeEditar('configuracoes');
 
@@ -11126,17 +11149,22 @@ ${clipPlayerPills(n)}
           const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
           const ref = `${ant.getFullYear()}-${String(ant.getMonth() + 1).padStart(2, '0')}-01`;
           inadArquivos = INAD_ABR.map((a, i) => ({ id: 'demo-' + i, titulo: `Inadimplência · ${a} · ${INAD_MESES[ant.getMonth()]}/${ant.getFullYear()}`, abrangencia: a,
-            referencia: ref, arquivo_nome: `spc_inadimplencia_${INAD_ABR_CLS[a]}.pdf`, arquivo_path: null, tamanho_bytes: 480000 + i * 52000, usuario_email: null, created_at: new Date().toISOString() }));
+            referencia: ref, data_publicacao: ref.slice(0, 8) + '1' + (i + 2), arquivo_nome: `spc_inadimplencia_${INAD_ABR_CLS[a]}.pdf`, arquivo_path: null, tamanho_bytes: 480000 + i * 52000, usuario_email: null, created_at: new Date().toISOString() }));
         }
         inadCarregado = true; inadErro = null;
         return (inadCargaProm = Promise.resolve(inadArquivos));
       }
-      inadCargaProm = supabaseClient.from('inadimplencia_arquivos')
-        .select('id,titulo,abrangencia,referencia,arquivo_nome,arquivo_path,tamanho_bytes,usuario_email,created_at')
-        .order('referencia', { ascending: false }).order('created_at', { ascending: false })
-        .then(({ data, error }) => {
+      const COLS = 'id,titulo,abrangencia,referencia,arquivo_nome,arquivo_path,tamanho_bytes,usuario_email,created_at';
+      const ler = comData => supabaseClient.from('inadimplencia_arquivos').select(COLS + (comData ? ',data_publicacao' : ''))
+        .order('referencia', { ascending: false }).order('created_at', { ascending: false });
+      // Sem a coluna data_publicacao (SQL antigo), lê o resto e avisa no cadastro.
+      inadCargaProm = ler(true)
+        .then(res => res.error && /data_publicacao/.test(res.error.message || '') ? ler(false).then(r2 => ({ ...r2, semData: true })) : res)
+        .then(({ data, error, semData }) => {
           if(error) throw error;
-          inadArquivos = data || []; inadCarregado = true; inadErro = null;
+          inadSemDataPub = !!semData;
+          inadArquivos = (data || []).slice().sort((x, y) => inadData(y).localeCompare(inadData(x)) || (y.created_at || '').localeCompare(x.created_at || ''));
+          inadCarregado = true; inadErro = null;
           return inadArquivos;
         })
         .catch(e => { inadErro = e; inadCargaProm = null; inadArquivos = []; inadCarregado = true; throw e; });
@@ -11171,7 +11199,7 @@ ${clipPlayerPills(n)}
       const ext = (String(r.arquivo_nome).match(/\.([a-z0-9]+)$/i) || [])[1];
       return `<tr>
           <td class="wa-td-name"><span class="inad-nome">${INAD_SVG.arq}<span class="inad-nome-txt"><strong>${esc(r.titulo)}</strong>
-            <div class="wa-td-sub">${esc(r.arquivo_nome)}${caminho ? ` · ${esc(r.referencia.slice(0, 4))} › ${esc(INAD_MESES[Number(r.referencia.slice(5, 7)) - 1])}` : ''}${r.usuario_email ? ` · enviado por ${esc(r.usuario_email)}` : ''}</div></span></span></td>
+            <div class="wa-td-sub">${esc(r.arquivo_nome)}${r.data_publicacao ? ` · publicado em ${fmtDateBR(r.data_publicacao)}` : ''}${caminho ? ` · ${esc(inadRef(r).slice(0, 4))} › ${esc(INAD_MESES[Number(inadRef(r).slice(5, 7)) - 1])}` : ''}${r.usuario_email ? ` · enviado por ${esc(r.usuario_email)}` : ''}</div></span></span></td>
           <td>${inadAbrPill(r.abrangencia)}</td>
           <td style="white-space:nowrap;">${fmtDateTimeBR(r.created_at)}</td>
           <td>${ext ? 'Documento ' + esc(ext.toUpperCase()) : 'Arquivo'}</td>
@@ -11237,71 +11265,89 @@ ${clipPlayerPills(n)}
       inadCarregar(true).catch(e => console.error('Erro ao carregar documentos de inadimplência:', e)).finally(inadRender);
     }
 
-    // ---- Cadastro (etapa única) ----
+    // ---- Cadastro (etapa única, no guia de estilo do "Gerar relatório") ----
+    // 1. Abrangência · 2. Data de publicação (define a pasta Ano > Mês) · 3. Título + PDF.
+    // O rodapé diz o que falta; "Enviar arquivo" só libera com tudo preenchido. Enviado: tela "Documento salvo".
+    const inadAbrEscolhida = () => (document.querySelector('input[name="inadAbr"]:checked') || {}).value || '';
+    const inadPastaDe = data => data ? `${data.slice(0, 4)} › ${INAD_MESES[Number(data.slice(5, 7)) - 1]}` : '';
     function inadTituloSugerido(){
-      const a = (document.querySelector('input[name="inadAbr"]:checked') || {}).value;
-      return a ? `Inadimplência · ${a} · ${INAD_MESES[Number(inadEl('inadMes').value) - 1]}/${inadEl('inadAno').value}` : '';
+      const a = inadAbrEscolhida(), d = inadEl('inadDataPub').value;
+      return a && d ? `Inadimplência · ${a} · ${INAD_MESES[Number(d.slice(5, 7)) - 1]}/${d.slice(0, 4)}` : '';
     }
-    let inadTituloAuto = '';
-    function inadAtualizarTitulo(){
+    let inadTituloAuto = '', inadUltimoEnvio = null;
+    function inadEtapa(qual){
+      inadEl('inadEtapaForm').hidden = qual !== 'form';
+      inadEl('inadEtapaEnviando').hidden = qual !== 'enviando';
+      inadEl('inadEtapaPronto').hidden = qual !== 'pronto';
+      inadEl('inadCancelarBtn').hidden = qual === 'pronto';
+      inadEl('inadSalvarBtn').hidden = qual === 'pronto';
+      inadEl('inadOutroBtn').hidden = inadEl('inadAbrirPastaBtn').hidden = qual !== 'pronto';
+    }
+    function inadAtualizarForm(){
       const t = inadEl('inadTitulo');
       if(!t.value.trim() || t.value === inadTituloAuto){ inadTituloAuto = inadTituloSugerido(); t.value = inadTituloAuto; }
+      const a = inadAbrEscolhida(), d = inadEl('inadDataPub').value, f = inadEl('inadArquivo').files[0];
+      inadEl('inadPastaInfo').textContent = d ? 'Pasta: ' + inadPastaDe(d) : '';
+      inadEl('inadPastaInfo').classList.toggle('ok', !!d);
+      const pdf = f && (/\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+      const dup = a && d && inadArquivos.find(r => r.abrangencia === a && inadRef(r) === d.slice(0, 7));
+      inadEl('inadAviso').textContent = inadSemDataPub ? 'O banco ainda não tem o campo Data de publicação: rode de novo supabase/schema_inadimplencia.sql no Supabase.'
+        : f && !pdf ? 'O arquivo precisa ser um PDF.'
+        : dup ? `Já existe um documento de ${a} nessa pasta (${dup.titulo}); este será adicionado ao lado dele.` : '';
+      const falta = !a ? 'Escolha a abrangência' : !d ? 'Informe a data de publicação' : !f ? 'Selecione o PDF do SPC Brasil' : !pdf ? 'O arquivo precisa ser um PDF' : '';
+      inadEl('inadRodape').textContent = falta || `${a} · pasta ${inadPastaDe(d)} · pronto para enviar`;
+      inadEl('inadSalvarBtn').disabled = !!falta || inadSemDataPub;
     }
-    function inadMensagem(txt, cls){ const m = inadEl('inadMsg'); m.textContent = txt || ''; m.className = 'vb-ed-msg' + (cls ? ' ' + cls : ''); }
     function inadAbrirModal(){
-      const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
-      const anoAtual = new Date().getFullYear();
-      inadEl('inadMes').innerHTML = INAD_MESES.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m}</option>`).join('');
-      inadEl('inadAno').innerHTML = Array.from({ length: anoAtual - 2019 }, (_, k) => anoAtual - k).map(a => `<option value="${a}">${a}</option>`).join('');
-      // Dentro de uma pasta: já vem com o ano/mês dela; fora, o mês anterior (o SPC publica o mês fechado).
-      inadEl('inadMes').value = inadMesSel || String(ant.getMonth() + 1).padStart(2, '0');
-      inadEl('inadAno').value = inadAno || String(ant.getFullYear());
       document.querySelectorAll('input[name="inadAbr"]').forEach(r => { r.checked = false; });
       const abrF = inadEl('inadAbrFiltro').value;
       if(abrF) document.querySelector(`input[name="inadAbr"][value="${abrF}"]`).checked = true;
+      // Data: hoje; dentro de uma pasta de mês, o dia 1 daquele mês (o usuário ajusta o dia).
+      const hoje = new Date(), hojeTxt = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+      inadEl('inadDataPub').value = inadAno && inadMesSel ? `${inadAno}-${inadMesSel}-01` : hojeTxt;
+      inadEl('inadDataPub').max = hojeTxt;
       inadEl('inadTitulo').value = ''; inadTituloAuto = '';
       inadEl('inadArquivo').value = ''; inadEl('inadArquivoNome').value = '';
-      inadAtualizarTitulo();
-      inadMensagem('');
+      inadEtapa('form');
+      inadAtualizarForm();
       inadEl('inadModal').classList.add('open');
     }
     const inadFecharModal = () => inadEl('inadModal').classList.remove('open');
-    function inadPath(ref, abr, nome){
+    function inadPath(data, abr, nome){
       const safe = String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
-      return `${ref.slice(0, 4)}/${ref.slice(5, 7)}/${INAD_ABR_CLS[abr]}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safe}`;
+      return `${data.slice(0, 4)}/${data.slice(5, 7)}/${INAD_ABR_CLS[abr]}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safe}`;
     }
     async function inadSalvar(){
-      const abr = (document.querySelector('input[name="inadAbr"]:checked') || {}).value;
-      const file = inadEl('inadArquivo').files[0];
+      inadAtualizarForm();
+      if(inadEl('inadSalvarBtn').disabled) return;
+      const abr = inadAbrEscolhida(), data = inadEl('inadDataPub').value, file = inadEl('inadArquivo').files[0];
       const titulo = inadEl('inadTitulo').value.trim() || inadTituloSugerido();
-      const ref = `${inadEl('inadAno').value}-${inadEl('inadMes').value}-01`;
-      if(!abr) return inadMensagem('Escolha a abrangência: Cuiabá, Mato Grosso ou Brasil.', 'erro');
-      if(!file) return inadMensagem('Selecione o PDF emitido pelo SPC Brasil.', 'erro');
-      if(!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return inadMensagem('O arquivo precisa ser um PDF.', 'erro');
-      const dup = inadArquivos.find(r => r.abrangencia === abr && inadRef(r) === ref.slice(0, 7));
-      const btn = inadEl('inadSalvarBtn');
-      if(!supabaseReady){
-        inadArquivos.unshift({ id: 'demo-' + Date.now(), titulo, abrangencia: abr, referencia: ref, arquivo_nome: file.name, arquivo_path: null,
-          tamanho_bytes: file.size, usuario_email: currentUserEmail(), created_at: new Date().toISOString() });
-        inadFecharModal(); inadIr(ref.slice(0, 7)); return;
-      }
-      btn.disabled = true; btn.textContent = 'Enviando...';
-      inadMensagem(dup ? `Já existe um documento de ${abr} para este mês; este será adicionado ao lado dele.` : '');
+      const reg = { titulo, abrangencia: abr, referencia: data.slice(0, 8) + '01', data_publicacao: data,
+        arquivo_nome: file.name, tamanho_bytes: file.size, usuario_email: currentUserEmail() };
+      inadEtapa('enviando');
       try {
-        const path = inadPath(ref, abr, file.name);
-        const up = await supabaseClient.storage.from(INAD_BUCKET).upload(path, file, { upsert: false, contentType: 'application/pdf' });
-        if(up.error) throw up.error;
-        const { error } = await supabaseClient.from('inadimplencia_arquivos').insert({ titulo, abrangencia: abr, referencia: ref,
-          arquivo_nome: file.name, arquivo_path: path, tamanho_bytes: file.size, usuario_email: currentUserEmail() });
-        if(error){ await supabaseClient.storage.from(INAD_BUCKET).remove([path]); throw error; }
-        await inadCarregar(true);
-        inadFecharModal();
-        inadIr(ref.slice(0, 7));   // abre a pasta do mês enviado
+        if(!supabaseReady){
+          inadArquivos.unshift({ ...reg, id: 'demo-' + Date.now(), arquivo_path: null, created_at: new Date().toISOString() });
+        } else {
+          const path = inadPath(data, abr, file.name);
+          const up = await supabaseClient.storage.from(INAD_BUCKET).upload(path, file, { upsert: false, contentType: 'application/pdf' });
+          if(up.error) throw up.error;
+          const { error } = await supabaseClient.from('inadimplencia_arquivos').insert({ ...reg, arquivo_path: path });
+          if(error){ await supabaseClient.storage.from(INAD_BUCKET).remove([path]); throw error; }
+          await inadCarregar(true);
+        }
+        inadUltimoEnvio = data.slice(0, 7);
+        inadEl('inadProntoTxt').textContent = `Guardado na pasta ${inadPastaDe(data)}.`;
+        inadEl('inadProntoResumo').innerHTML = `<li><strong>${esc(titulo)}</strong></li>`
+          + `<li>${esc(abr)} <span>· publicado em ${esc(fmtDateBR(data))}</span></li>`
+          + `<li>${esc(file.name)} <span>· ${esc(fmtBytes(file.size))}</span></li>`;
+        inadEtapa('pronto');
+        inadIr(inadUltimoEnvio);   // a tabela, por trás, já mostra a pasta do documento
       } catch(e){
         console.error('Erro ao enviar documento de inadimplência:', e);
-        inadMensagem('Não foi possível enviar: ' + (e && e.message || e), 'erro');
-      } finally {
-        btn.disabled = false; btn.textContent = 'Enviar Arquivo';
+        inadEtapa('form');
+        inadAtualizarForm();
+        inadEl('inadAviso').textContent = 'Não foi possível enviar: ' + (e && e.message || e);
       }
     }
     async function inadLink(id, baixar){
@@ -11329,9 +11375,12 @@ ${clipPlayerPills(n)}
     inadEl('inadModal').addEventListener('click', ev => { if(ev.target === inadEl('inadModal') || ev.target.closest('[data-inad-fechar]')) inadFecharModal(); });
     inadEl('inadArquivoBtn').addEventListener('click', () => inadEl('inadArquivo').click());
     inadEl('inadArquivoNome').addEventListener('click', () => inadEl('inadArquivo').click());
-    inadEl('inadArquivo').addEventListener('change', () => { const f = inadEl('inadArquivo').files[0]; inadEl('inadArquivoNome').value = f ? f.name : ''; inadMensagem(''); });
-    ['inadMes', 'inadAno'].forEach(id => inadEl(id).addEventListener('change', inadAtualizarTitulo));
-    inadEl('inadAbrOpcoes').addEventListener('change', () => { inadAtualizarTitulo(); inadMensagem(''); });
+    inadEl('inadArquivo').addEventListener('change', () => { const f = inadEl('inadArquivo').files[0]; inadEl('inadArquivoNome').value = f ? f.name : ''; inadAtualizarForm(); });
+    inadEl('inadDataPub').addEventListener('input', inadAtualizarForm);
+    inadEl('inadTitulo').addEventListener('input', inadAtualizarForm);
+    inadEl('inadAbrOpcoes').addEventListener('change', inadAtualizarForm);
+    inadEl('inadOutroBtn').addEventListener('click', inadAbrirModal);
+    inadEl('inadAbrirPastaBtn').addEventListener('click', () => { inadFecharModal(); if(inadUltimoEnvio) inadIr(inadUltimoEnvio); });
     inadEl('inadBusca').addEventListener('input', inadRender);
     inadEl('inadAbrFiltro').addEventListener('change', inadRender);
     inadEl('inadLimpar').addEventListener('click', () => { inadEl('inadBusca').value = ''; inadEl('inadAbrFiltro').value = ''; inadIr(''); });
@@ -13213,8 +13262,8 @@ ${clipPlayerPills(n)}
       inadPainelDesenhar();
     }
     function inadPainelDesenhar(){
-      const docs = inadArquivos.slice().sort((a, b) => (b.referencia || '').localeCompare(a.referencia || '') || INAD_ABR.indexOf(a.abrangencia) - INAD_ABR.indexOf(b.abrangencia));
-      const ultRef = docs.length ? docs[0].referencia.slice(0, 7) : '';
+      const docs = inadArquivos.slice().sort((a, b) => inadData(b).localeCompare(inadData(a)) || INAD_ABR.indexOf(a.abrangencia) - INAD_ABR.indexOf(b.abrangencia));
+      const ultRef = docs.length ? inadRef(docs[0]) : '';
       const rotRef = ultRef ? `${PAN_MES_CURTO[Number(ultRef.slice(5, 7)) - 1]}/${ultRef.slice(0, 4)}` : '';
       const espera = { cls: 'neu', txt: 'aguardando dados' };
       const ref = docs.length ? `SPC Brasil · ${docs.length} documento${docs.length === 1 ? '' : 's'} recebido${docs.length === 1 ? '' : 's'}` : 'SPC Brasil · nenhum documento ainda';
@@ -13234,7 +13283,7 @@ ${clipPlayerPills(n)}
       const wDocs = cdCard('Documentos do SPC Brasil', inadErro ? 'Sem acesso à seção Inadimplência' : rotRef ? `Último mês recebido: ${rotRef}` : 'Nenhum documento recebido', inadErro
         ? '<div class="stk-vazio">Os documentos ficam na seção Inadimplência (peça acesso a um Administrador).</div>'
         : `<ul class="cd-dest">${porAbr.map(([a, r]) => {
-            const rot = r ? `${PAN_MES_CURTO[Number(r.referencia.slice(5, 7)) - 1]}/${r.referencia.slice(0, 4)}` : '';
+            const rot = r ? `${PAN_MES_CURTO[Number(inadRef(r).slice(5, 7)) - 1]}/${inadRef(r).slice(0, 4)}` : '';
             const qtd = docs.filter(x => x.abrangencia === a).length;
             return `<li><div title="${esc(a)}${r ? ` · último documento: ${esc(r.titulo)}` : ' · nenhum documento'}"><span class="cd-dest-ic ${r ? 'verde' : 'amarelo'}">${stkIcone(r ? 'setaCima' : 'alerta')}</span>
               <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(a)} · ${r ? 'até ' + esc(rot) : 'aguardando o 1º PDF'}</span><span class="cd-dest-meta">${qtd} documento${qtd === 1 ? '' : 's'} na seção Inadimplência</span></span></div></li>`;
@@ -15521,8 +15570,8 @@ ${clipPlayerPills(n)}
       // Inadimplência: enquanto a base do SPC não chega, exporta a lista de documentos recebidos.
       if(stkPainel() === 'inadimplencia'){
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-        const linhas = [['Ano', 'Mês', 'Abrangência', 'Título', 'Arquivo', 'Tamanho (bytes)', 'Enviado em', 'Enviado por']]
-          .concat(inadArquivos.map(r => [r.referencia.slice(0, 4), INAD_MESES[Number(r.referencia.slice(5, 7)) - 1], r.abrangencia, r.titulo, r.arquivo_nome, r.tamanho_bytes, r.created_at, r.usuario_email || '']));
+        const linhas = [['Ano', 'Mês', 'Data de publicação', 'Abrangência', 'Título', 'Arquivo', 'Tamanho (bytes)', 'Enviado em', 'Enviado por']]
+          .concat(inadArquivos.map(r => [inadRef(r).slice(0, 4), INAD_MESES[Number(inadRef(r).slice(5, 7)) - 1], r.data_publicacao ? fmtDateBR(r.data_publicacao) : '', r.abrangencia, r.titulo, r.arquivo_nome, r.tamanho_bytes, r.created_at, r.usuario_email || '']));
         const url = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
         a.href = url; a.download = 'inadimplencia_documentos_spc.csv';
