@@ -498,7 +498,7 @@
     .content{padding:18px 16px 40px;}
     /* As seções (fundo próprio) compensam o espaçamento menor do celular; com a margem do
        desktop (-34px) elas ficavam 36px mais largas que a tela e cortavam o lado direito. */
-    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
       margin:-18px -16px -40px;
       padding:18px 16px 40px;
     }
@@ -674,7 +674,7 @@
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp{
+  #page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -1443,18 +1443,18 @@
   /* ===== Barra de filtros: padrão único em todas as seções (igual à do Dashboard) =====
      Mesmo lugar (topo da seção), mesma altura, espaçamento, cantos e sombra: ao trocar de
      seção o box parece "fixo". O conteúdo de cada barra muda; o box não. */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
     box-sizing:border-box;min-height:58px;margin-bottom:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);
   }
   /* Uma linha só e altura fixa (58px) em qualquer largura de tela: o box nunca muda de tamanho.
      Os campos encolhem por igual; o que não couber rola para o lado (sem barra visível). */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
     flex-wrap:nowrap !important;height:58px;min-height:58px;padding:10px 14px;column-gap:10px;row-gap:0;
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
   }
   .content > .page > .filter-bar::-webkit-scrollbar{display:none;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
   .content > .page > .filter-bar .wa-view-toggle{padding:2px;}
   .content > .page > .filter-bar .wa-view-toggle-btn{padding:6px 12px;}
   @media (max-width:1800px){
@@ -1462,7 +1462,7 @@
     .content > .page > .filter-bar .btn{padding:10px 12px;}
   }
   /* Busca com a largura do Dashboard (Clipping mantém a sua: a barra dele tem mais controles). */
-  .content > :is(#page-estoque, #page-usuarios, #page-relatorios) > .filter-bar .wa-clip-search{
+  .content > :is(#page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes) > .filter-bar .wa-clip-search{
     width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;
   }
 
@@ -1907,8 +1907,8 @@
     #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
-    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-whatsapp){padding-top:18px;}
-    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-campanhas, #page-clipping) > .filter-bar{
+    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-whatsapp){padding-top:18px;}
+    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
       margin-bottom:14px;padding:10px 14px;column-gap:10px;
     }
     :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .stk-segmented{padding:2px;}
@@ -2335,7 +2335,7 @@
     --bg-panel:#1A2436;
     --bg-card:#172033;
   }
-  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-dashboard, #page-whatsapp){
+  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
     --wa-bg:#0B1220;
     --wa-card:#131C2E;
     --wa-border:#243047;
