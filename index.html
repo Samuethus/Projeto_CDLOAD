@@ -767,6 +767,15 @@
   .zap-pair label{display:block;font-size:12px;color:var(--wa-text-muted);margin-bottom:6px;}
   .zap-pair-row{display:flex;gap:8px;}
   .zap-pair-row input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--wa-border);border-radius:8px;font-family:inherit;}
+  .zap-disp-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+  @media (max-width:640px){ .zap-disp-grid{grid-template-columns:1fr;} }
+  .zap-input{width:100%;box-sizing:border-box;border:1px solid var(--wa-border);border-radius:10px;padding:9px 14px;font-family:inherit;font-size:13.5px;color:var(--wa-text);background:#fff;}
+  .zap-import{border:1px dashed var(--wa-border);border-radius:12px;padding:14px;margin-bottom:14px;background:#F8FAFC;}
+  .zap-imp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+  .zap-imp-info{font-size:11.5px;color:var(--wa-text-muted);}
+  .zap-disp-previa{white-space:pre-wrap;background:#E7F8DC;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#0f172a;margin-top:6px;}
+  .zap-disp-acoes .wa-btn{padding:5px 10px;font-size:12px;margin-left:4px;}
+  .zap-disp-cnt{font-size:11.5px;color:var(--wa-text-muted);margin-top:4px;}
 
   /* ---- Lista de templates ---- */
   .wa-template-list{padding:20px;display:flex;flex-direction:column;gap:14px;}
@@ -3543,6 +3552,106 @@
           <div class="empty-subtitle">Integração com a API do WhatsApp em desenvolvimento.</div>
         </div>
 
+        <!-- Disparos (Etapas 5 e 6): campanhas de wa_campanhas_resumo, atualizadas por Realtime. -->
+        <div id="zapDisparos" hidden>
+          <div class="wa-topcard">
+            <div class="wa-topcard-left">
+              <div class="wa-topcard-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </div>
+              <div>
+                <div class="wa-topcard-title">Novo Disparo</div>
+                <div class="wa-topcard-sub">Instância → template → lista → agendamento</div>
+              </div>
+            </div>
+            <div class="zap-inst-acoes" style="margin-top:0;">
+              <button class="wa-btn wa-btn-outline" id="zapOptoutBtn" type="button" title="Números que pediram para não receber mensagens">Opt-out</button>
+              <button class="wa-btn wa-btn-primary" id="zapDispNovo" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Novo Disparo
+              </button>
+            </div>
+          </div>
+          <div class="wa-card" style="margin-top:16px;">
+            <div class="wa-table-wrap">
+              <table class="wa-table">
+                <thead><tr><th>Disparo</th><th>Instância / Template</th><th>Status</th><th>Progresso</th><th>Agendado</th><th class="wa-table-actions">Ações</th></tr></thead>
+                <tbody id="zapDispBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal: novo disparo (assistente em 4 passos) -->
+        <div class="wa-modal-overlay" id="zapDispModal">
+          <div class="wa-modal wa-modal-lg">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div>
+                  <div class="wa-modal-title">Novo Disparo</div>
+                  <div class="wa-modal-sub">Contatos em opt-out, duplicados e sem WhatsApp saem da fila automaticamente</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" id="zapDispFechar">&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <div class="wa-field">
+                <label for="zapDispNome">Nome do disparo *</label>
+                <input type="text" id="zapDispNome" placeholder="Ex.: Convite assembleia outubro" maxlength="120">
+              </div>
+              <div class="zap-disp-grid">
+                <div class="wa-field">
+                  <label for="zapDispInst">1. Instância (número que envia) *</label>
+                  <select id="zapDispInst"></select>
+                </div>
+                <div class="wa-field">
+                  <label for="zapDispTpl">2. Template *</label>
+                  <select id="zapDispTpl"></select>
+                </div>
+              </div>
+              <div class="wa-field">
+                <label for="zapDispLista">3. Lista de contatos *</label>
+                <select id="zapDispLista"></select>
+              </div>
+              <div class="zap-import" id="zapImport" hidden>
+                <div class="wa-field">
+                  <label for="zapImpNome">Nome da nova lista *</label>
+                  <input type="text" id="zapImpNome" placeholder="Ex.: Associados centro" maxlength="80">
+                </div>
+                <div class="wa-field">
+                  <label for="zapImpTexto">Cole os contatos (uma linha por contato) ou escolha um arquivo CSV</label>
+                  <textarea id="zapImpTexto" rows="6" placeholder="nome;telefone;empresa&#10;Maria Silva;65999990000;Loja A&#10;João Souza;65988880000;Loja B"></textarea>
+                  <div class="zap-imp-row">
+                    <input type="file" id="zapImpArquivo" accept=".csv,.txt">
+                    <span class="zap-imp-info" id="zapImpInfo">A 1ª linha pode ser o cabeçalho (nome;telefone;...). Colunas extras viram variáveis, ex.: {{empresa}}.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="zap-disp-grid">
+                <div class="wa-field">
+                  <label for="zapDispQuando">4. Quando enviar</label>
+                  <input type="datetime-local" id="zapDispQuando" class="zap-input">
+                  <span class="zap-imp-info">Em branco = enviar agora.</span>
+                </div>
+                <div class="wa-field">
+                  <label>Intervalo entre mensagens (segundos)</label>
+                  <div class="zap-pair-row">
+                    <input type="number" id="zapDispDelayMin" class="zap-input" min="3" value="10" title="Mínimo">
+                    <input type="number" id="zapDispDelayMax" class="zap-input" min="3" value="30" title="Máximo">
+                  </div>
+                  <span class="zap-imp-info">Aleatório entre o mínimo e o máximo, para reduzir o risco de bloqueio.</span>
+                </div>
+              </div>
+              <div class="wa-preview-label" style="margin-top:6px;">Prévia (dados de exemplo)</div>
+              <div class="zap-disp-previa" id="zapDispPrevia">Escolha um template.</div>
+            </div>
+            <div class="wa-modal-footer">
+              <span class="zap-imp-info" id="zapDispMsg"></span>
+              <button class="wa-btn wa-btn-primary" type="button" id="zapDispCriar">Criar disparo</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Modal: conectar instância (QR code ou código de pareamento) -->
         <div class="wa-modal-overlay" id="zapConectarModal">
           <div class="wa-modal wa-modal-sm">
@@ -5518,13 +5627,16 @@
     for(let a = atual; a >= atual - 2; a--) ano.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
     // Templates: o bloco de Templates (cabeçalho, lista e assistente) fica em #zapTemplates.
     const zapTpl = document.getElementById('zapTemplates'), zapVazio = document.getElementById('zapVazio');
-    const zapInst = document.getElementById('zapInstancias');
+    const zapInst = document.getElementById('zapInstancias'), zapDisp = document.getElementById('zapDisparos');
     let visao = 'instancias';
     function mostrarVisao(){
       zapTpl.hidden = visao !== 'templates';
       zapInst.hidden = visao !== 'instancias';
-      zapVazio.hidden = visao !== 'disparos';
+      zapDisp.hidden = visao !== 'disparos';
+      zapVazio.hidden = true;
       if(visao === 'instancias'){ instCarregar(); instSincronizar(false); }
+      if(visao === 'templates' && window.zapTemplatesCarregar) window.zapTemplatesCarregar();
+      if(visao === 'disparos') dispCarregar();
     }
 
     // ---- Instâncias (Etapa 2): lê wa_instancias (RLS) e age pela Edge Function whatsapp-api ----
@@ -5545,6 +5657,7 @@
       if(!data || data.ok !== true) throw new Error((data && data.erro) || 'Falha na chamada.');
       return data;
     }
+    window.zapApi = waApi;   // Templates (outro módulo) usam a mesma chamada
     function fmtTel(t){
       const d = String(t || '').replace(/\D/g, '');
       if(d.length < 12) return d;
@@ -5661,7 +5774,193 @@
       catch(e){ alert('Não foi possível concluir: ' + e.message); }
       finally { btn.disabled = false; }
     });
-    busca.addEventListener('input', () => { if(visao === 'instancias') instDesenhar(); });
+    busca.addEventListener('input', () => { if(visao === 'instancias') instDesenhar(); if(visao === 'disparos') dispDesenhar(); });
+
+    // ---- Disparos (Etapas 5 e 6): lista de campanhas, assistente e controle ----
+    const DISP_ST = {
+      rascunho: ['Rascunho', 'wa-status-agendado'], agendada: ['Agendada', 'wa-status-agendado'], enviando: ['Enviando', 'wa-status-envio'],
+      pausada: ['Pausada', 'zap-st-aguardando_qr'], concluida: ['Concluída', 'wa-status-concluido'], cancelada: ['Cancelada', 'zap-st-desconectada']
+    };
+    const dispBody = document.getElementById('zapDispBody');
+    let campanhas = [], canalDisp = null, timerDisp = null;
+    const fmtDataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+
+    function dispDesenhar(){
+      const q = (busca.value || '').trim().toLowerCase();
+      const lista = campanhas.filter(c => !q || [c.nome, c.instancia_nome, c.template_nome, c.lista_nome].some(v => (v || '').toLowerCase().includes(q)));
+      if(!lista.length){
+        dispBody.innerHTML = `<tr class="wa-empty-row"><td colspan="6">${campanhas.length ? 'Nenhum disparo encontrado' : 'Nenhum disparo realizado'}</td></tr>`;
+        return;
+      }
+      const pode = window.__podeEditar('whatsapp');
+      dispBody.innerHTML = lista.map(c => {
+        const [rot, cls] = DISP_ST[c.status] || [c.status, 'wa-status-agendado'];
+        const feitos = c.enviados + c.entregues + c.lidos + c.falhas;
+        const pct = c.total ? Math.round(feitos / c.total * 100) : 0;
+        const ativo = ['enviando', 'agendada', 'pausada'].includes(c.status) && c.uazapi_folder_id;
+        const botoes = !pode ? '' : [
+          c.uazapi_folder_id ? '<button class="wa-btn wa-btn-outline" data-acao="atualizar" title="Conferir o status de cada mensagem na UAZAPI">Atualizar</button>' : '',
+          ativo && c.status !== 'pausada' ? '<button class="wa-btn wa-btn-outline" data-acao="pausar">Pausar</button>' : '',
+          ativo && c.status === 'pausada' ? '<button class="wa-btn wa-btn-outline" data-acao="retomar">Retomar</button>' : '',
+          ativo && c.status === 'agendada' ? '<button class="wa-btn wa-btn-outline" data-acao="enviar_agora">Enviar agora</button>' : '',
+          ativo ? '<button class="wa-btn wa-btn-outline" data-acao="cancelar">Cancelar</button>' : ''
+        ].join('');
+        return `<tr data-id="${esc(c.id)}">
+          <td><div class="wa-td-name">${esc(c.nome)}</div><div class="zap-disp-cnt">${esc(c.lista_nome || '—')}</div>${c.erro ? `<div class="zap-disp-cnt" style="color:#dc2626;">${esc(c.erro)}</div>` : ''}</td>
+          <td>${esc(c.instancia_nome || '—')}<div class="zap-disp-cnt">${esc(c.template_nome || '—')}</div></td>
+          <td><span class="wa-badge ${cls}">${esc(rot)}</span></td>
+          <td><div class="wa-progress-wrap"><div class="wa-progress-track"><div class="wa-progress-fill" style="width:${pct}%"></div></div><span class="wa-progress-pct">${pct}%</span></div>
+            <div class="zap-disp-cnt">${c.total} no total · ${c.na_fila} na fila · ${c.enviados + c.entregues + c.lidos} enviados · ${c.lidos} lidos · ${c.falhas} falhas</div></td>
+          <td>${fmtDataHora(c.agendada_para || c.criado_em)}</td>
+          <td class="wa-table-actions zap-disp-acoes">${botoes}</td>
+        </tr>`;
+      }).join('');
+    }
+    async function dispCarregar(){
+      const sb = window.CDL_SB;
+      if(!sb) return;
+      const { data, error } = await sb.from('wa_campanhas_resumo').select('*').order('criado_em', { ascending: false }).limit(200);
+      if(error){ dispBody.innerHTML = `<tr class="wa-empty-row"><td colspan="6">Não foi possível carregar os disparos: ${esc(error.message)}</td></tr>`; return; }
+      campanhas = data || [];
+      dispDesenhar();
+      if(!canalDisp){
+        // Muitos envios mudam juntos: agrupa as atualizações em uma recarga a cada 1,5 s.
+        const agendar = () => { clearTimeout(timerDisp); timerDisp = setTimeout(dispCarregar, 1500); };
+        canalDisp = sb.channel('cdload-wa-disparos')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_campanhas' }, agendar)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_envios' }, agendar)
+          .subscribe();
+      }
+    }
+    dispBody.addEventListener('click', async ev => {
+      const btn = ev.target.closest('[data-acao]');
+      if(!btn) return;
+      const id = btn.closest('tr').dataset.id, acao = btn.dataset.acao;
+      if(!window.__exigirEdicao('whatsapp', 'controlar disparos')) return;
+      if(acao === 'cancelar' && !confirm('Cancelar este disparo? As mensagens que ainda estão na fila não serão enviadas.')) return;
+      btn.disabled = true;
+      try {
+        if(acao === 'atualizar') await waApi('campanha_atualizar', { id });
+        else await waApi('campanha_controlar', { id, acao });
+        await dispCarregar();
+      } catch(e){ alert('Não foi possível concluir: ' + e.message); }
+      finally { btn.disabled = false; }
+    });
+
+    // Opt-out manual (a resposta "SAIR" automática entra com o webhook da Etapa 3).
+    document.getElementById('zapOptoutBtn').addEventListener('click', async () => {
+      if(!window.__exigirEdicao('whatsapp', 'registrar opt-out')) return;
+      const tel = (prompt('Número que não deve mais receber mensagens (DDD + número):') || '').trim();
+      if(!tel) return;
+      try { const r = await waApi('optout_adicionar', { telefone: tel, motivo: 'manual' }); alert(`${r.telefone} não receberá mais disparos.`); }
+      catch(e){ alert('Não foi possível registrar: ' + e.message); }
+    });
+
+    // ---- Assistente de novo disparo ----
+    const dm = id => document.getElementById(id);
+    const dispModal = dm('zapDispModal'), selInst = dm('zapDispInst'), selTpl = dm('zapDispTpl'), selLista = dm('zapDispLista');
+    const LISTA_NOVA = '__nova__';
+    let tplsDisp = [];
+
+    // Lê CSV/texto colado: separador ; , ou tab; 1ª linha é cabeçalho se tiver "telefone"/"celular"/"whatsapp".
+    function lerContatos(texto){
+      const linhas = String(texto || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if(!linhas.length) return [];
+      const sep = [';', '\t', ','].find(s => linhas[0].includes(s)) || ';';
+      const partes = l => l.split(sep).map(p => p.trim().replace(/^"|"$/g, ''));
+      let cab = partes(linhas[0]).map(c => c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_'));
+      const temCab = cab.some(c => /telefone|celular|whatsapp|fone/.test(c));
+      if(temCab){
+        cab = cab.map(c => /telefone|celular|whatsapp|fone/.test(c) ? 'telefone' : (/^nome/.test(c) ? 'nome' : c));
+        linhas.shift();
+      } else {
+        cab = ['nome', 'telefone'];
+      }
+      return linhas.map(l => {
+        const v = partes(l), o = {};
+        cab.forEach((c, i) => { if(v[i] !== undefined && v[i] !== '') o[c] = v[i]; });
+        if(!temCab && v.length === 1) return { telefone: v[0] };   // só o número
+        return o;
+      });
+    }
+    function atualizarPrevia(){
+      const t = tplsDisp.find(x => x.id === selTpl.value);
+      if(!t){ dm('zapDispPrevia').textContent = 'Escolha um template.'; return; }
+      const ex = { nome: 'Maria Silva', primeiro_nome: 'Maria', telefone: '5565999990000' };
+      const p = s => String(s || '').replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (m, k) => ex[k.toLowerCase()] ?? `[${k}]`);
+      dm('zapDispPrevia').textContent = (t.cabecalho ? `*${p(t.cabecalho)}*\n\n` : '') + p(t.corpo);
+    }
+    async function abrirDisparo(){
+      if(!window.__exigirEdicao('whatsapp', 'criar disparos')) return;
+      const sb = window.CDL_SB;
+      if(!sb) return;
+      const [ri, rt, rl] = await Promise.all([
+        sb.from('wa_instancias').select('id,nome,telefone').eq('status', 'conectada').order('nome'),
+        sb.from('wa_templates').select('id,nome,cabecalho,corpo').eq('ativo', true).order('nome'),
+        sb.from('wa_listas').select('id,nome,criado_em').order('criado_em', { ascending: false })
+      ]);
+      const insts = ri.data || [];
+      tplsDisp = rt.data || [];
+      if(!insts.length){ alert('Nenhuma instância conectada. Conecte um número na aba Instâncias.'); return; }
+      if(!tplsDisp.length){ alert('Crie um template na aba Templates antes do disparo.'); return; }
+      selInst.innerHTML = insts.map(i => `<option value="${esc(i.id)}">${esc(i.nome)}${i.telefone ? ' · ' + esc(fmtTel(i.telefone)) : ''}</option>`).join('');
+      selTpl.innerHTML = tplsDisp.map(t => `<option value="${esc(t.id)}">${esc(t.nome)}</option>`).join('');
+      selLista.innerHTML = `<option value="${LISTA_NOVA}">+ Importar nova lista</option>` + (rl.data || []).map(l => `<option value="${esc(l.id)}">${esc(l.nome)}</option>`).join('');
+      selLista.value = (rl.data || []).length ? rl.data[0].id : LISTA_NOVA;
+      ['zapDispNome', 'zapImpNome', 'zapImpTexto', 'zapDispQuando'].forEach(i => { dm(i).value = ''; });
+      dm('zapImpArquivo').value = '';
+      dm('zapDispMsg').textContent = '';
+      dm('zapImport').hidden = selLista.value !== LISTA_NOVA;
+      atualizarPrevia();
+      dispModal.classList.add('open');
+    }
+    dm('zapDispNovo').addEventListener('click', abrirDisparo);
+    dm('zapDispFechar').addEventListener('click', () => dispModal.classList.remove('open'));
+    selTpl.addEventListener('change', atualizarPrevia);
+    selLista.addEventListener('change', () => { dm('zapImport').hidden = selLista.value !== LISTA_NOVA; });
+    dm('zapImpArquivo').addEventListener('change', async ev => {
+      const f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      dm('zapImpTexto').value = await f.text();
+      if(!dm('zapImpNome').value) dm('zapImpNome').value = f.name.replace(/\.[^.]+$/, '');
+      dm('zapImpInfo').textContent = `${lerContatos(dm('zapImpTexto').value).length} contatos lidos do arquivo.`;
+    });
+    dm('zapDispCriar').addEventListener('click', async () => {
+      const btn = dm('zapDispCriar'), msg = dm('zapDispMsg');
+      const nome = dm('zapDispNome').value.trim();
+      if(!nome){ msg.textContent = 'Dê um nome ao disparo.'; return; }
+      const quando = dm('zapDispQuando').value;
+      const delayMin = Number(dm('zapDispDelayMin').value) || 10, delayMax = Number(dm('zapDispDelayMax').value) || 30;
+      if(delayMax < delayMin){ msg.textContent = 'O intervalo máximo deve ser maior ou igual ao mínimo.'; return; }
+      btn.disabled = true;
+      try {
+        let listaId = selLista.value;
+        if(listaId === LISTA_NOVA){
+          const contatos = lerContatos(dm('zapImpTexto').value);
+          if(!contatos.length){ msg.textContent = 'Cole os contatos ou escolha um arquivo.'; return; }
+          msg.textContent = `Importando ${contatos.length} contatos...`;
+          const nomeLista = dm('zapImpNome').value.trim() || nome;
+          const r = await waApi('lista_importar', { nome: nomeLista, contatos });
+          listaId = r.id;
+          // A lista já existe: fica selecionada (cancelar abaixo não reimporta).
+          selLista.insertAdjacentHTML('beforeend', `<option value="${esc(r.id)}">${esc(nomeLista)}</option>`);
+          selLista.value = r.id;
+          dm('zapImport').hidden = true;
+          msg.textContent = `Lista importada: ${r.total} contato(s)` + (r.invalidos ? `, ${r.invalidos} número(s) inválido(s) ignorado(s).` : '.');
+        }
+        if(!confirm(`Confirmar o disparo "${nome}"${quando ? ' agendado para ' + new Date(quando).toLocaleString('pt-BR') : ' agora'}?`)) return;
+        msg.textContent = 'Validando números e enviando para a fila...';
+        const r = await waApi('campanha_criar', {
+          nome, instancia_id: selInst.value, template_id: selTpl.value, lista_id: listaId,
+          agendada_para: quando ? new Date(quando).toISOString() : null, delay_min: delayMin, delay_max: delayMax
+        });
+        dispModal.classList.remove('open');
+        await dispCarregar();
+        const extras = [r.sem_whatsapp ? `${r.sem_whatsapp} sem WhatsApp` : '', r.optout ? `${r.optout} em opt-out` : ''].filter(Boolean).join(', ');
+        alert(r.aviso || `Disparo criado: ${r.enviados} mensagem(ns) na fila${extras ? ' (' + extras + ' ficaram de fora)' : ''}.`);
+      } catch(e){ msg.textContent = e.message; }
+      finally { btn.disabled = false; }
+    });
     seg.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
@@ -5851,17 +6150,31 @@
   // ===================================================================
   (function(){
 
-    // ---------------- Estado: Templates ----------------
-    const templates = [
-      { id: '1', name: 'promocao', category: 'Marketing', status: 'APPROVED', content: 'Olá, {{1}}, conheça a nossa nova promoção.', header: '' },
-      { id: '2', name: 'status_pedido', category: 'Utilidade', status: 'APPROVED', content: 'Seu pedido chegou!', header: '' }
-    ];
+    // ---------------- Estado: Templates (tabela wa_templates; escrita pela Edge Function whatsapp-api) ----------------
+    let templates = [], canalTpl = null;
+    // Dados de exemplo para a prévia das {{variáveis}}.
+    const EXEMPLO_VARS = { nome: 'Maria Silva', primeiro_nome: 'Maria', telefone: '5565999990000' };
+    const preencherVars = s => String(s || '').replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (m, k) => EXEMPLO_VARS[k.toLowerCase()] ?? m);
 
-    const templateBadgeClass = { APPROVED: 'wa-badge-approved', PENDING: 'wa-badge-pending', REJECTED: 'wa-badge-rejected' };
+    async function carregarTemplates(){
+      const sb = window.CDL_SB;
+      if(!sb) return;
+      const { data, error } = await sb.from('wa_templates').select('id,nome,categoria,cabecalho,corpo,ativo').order('atualizado_em', { ascending: false });
+      if(error){ waTemplateList.innerHTML = `<div class="empty-state"><div class="empty-title">Não foi possível carregar os templates</div><div class="empty-subtitle">${esc(error.message)}</div></div>`; return; }
+      templates = (data || []).map(t => ({ id: t.id, name: t.nome, category: t.categoria, header: t.cabecalho || '', content: t.corpo }));
+      renderTemplates();
+      if(!canalTpl){
+        canalTpl = sb.channel('cdload-wa-templates')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_templates' }, carregarTemplates)
+          .subscribe();
+      }
+    }
+    window.zapTemplatesCarregar = carregarTemplates;
+    window.zapTemplatesLista = () => templates;
 
     const waTemplateList = document.getElementById('waTemplateList');
     function renderTemplates(){
-      waTemplateList.innerHTML = '';
+      waTemplateList.innerHTML = templates.length ? '' : '<div class="empty-state"><div class="empty-title">Nenhum template cadastrado</div><div class="empty-subtitle">Clique em Adicionar Template para criar o primeiro.</div></div>';
       templates.forEach(tpl => {
         const item = document.createElement('div');
         item.className = 'wa-template-item';
@@ -5872,8 +6185,8 @@
               <span class="wa-pill-category">${esc(tpl.category)}</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span class="wa-badge ${templateBadgeClass[tpl.status] || 'wa-badge-approved'}">${esc(tpl.status)}</span>
-              ${window.__podeEditar('whatsapp') ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenTemplateModal('${tpl.id}')">
+              ${window.__podeEditar('whatsapp') ? `<button class="wa-btn wa-btn-outline" style="padding:5px 10px;font-size:12px;" title="Enviar este template para um número de teste" onclick="waTesteTemplate('${tpl.id}')">Enviar teste</button>
+              <button class="wa-icon-btn" title="Editar" onclick="waOpenTemplateModal('${tpl.id}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
               </button>
               <button class="wa-icon-btn danger" title="Remover" onclick="waDeleteTemplate('${tpl.id}')">
@@ -5882,20 +6195,39 @@
             </div>
           </div>
           ${tpl.header ? `<div class="wa-template-header-text">${esc(tpl.header)}</div>` : ''}
-          <div class="wa-template-content">${esc(tpl.content)}</div>
+          <div class="wa-template-content" style="white-space:pre-wrap;">${esc(tpl.content)}</div>
         `;
         waTemplateList.appendChild(item);
       });
     }
 
-    window.waDeleteTemplate = function(id){
+    window.waDeleteTemplate = async function(id){
       if(!window.__exigirEdicao('whatsapp', 'remover templates')) return;
-      if(confirm('Deseja remover este template?')){
-        const idx = templates.findIndex(t => t.id === id);
-        if(idx > -1) templates.splice(idx, 1);
-        renderTemplates();
-      }
+      if(!confirm('Deseja remover este template?')) return;
+      try { await window.zapApi('template_excluir', { id }); await carregarTemplates(); }
+      catch(e){ alert('Não foi possível remover: ' + e.message); }
     };
+
+    // Envia o template (com dados de exemplo) por uma instância conectada para um número informado.
+    window.waTesteTemplate = async function(id){
+      if(!window.__exigirEdicao('whatsapp', 'enviar teste')) return;
+      const sb = window.CDL_SB;
+      const { data: insts } = sb ? await sb.from('wa_instancias').select('id,nome').eq('status', 'conectada') : { data: [] };
+      if(!insts || !insts.length){ alert('Nenhuma instância conectada. Conecte um número na aba Instâncias.'); return; }
+      let inst = insts[0];
+      if(insts.length > 1){
+        const n = prompt('Enviar por qual instância?\n' + insts.map((i, k) => `${k + 1}. ${i.nome}`).join('\n'), '1');
+        inst = insts[Number(n) - 1];
+        if(!inst) return;
+      }
+      const tel = (prompt('Número que vai receber o teste (DDD + número):') || '').trim();
+      if(!tel) return;
+      try {
+        const r = await window.zapApi('template_teste', { id, instancia_id: inst.id, telefone: tel });
+        alert(`Teste enviado para ${r.telefone} por ${inst.nome}.`);
+      } catch(e){ alert('Não foi possível enviar o teste: ' + e.message); }
+    };
+    document.querySelector('#waTemplatesBloco .wa-card-header .wa-icon-btn').addEventListener('click', carregarTemplates);
 
     // ---------------- Wizard de Template (modal) ----------------
     const waTemplateModal = document.getElementById('waTemplateModal');
@@ -5931,7 +6263,7 @@
       waTplBody.value = editing ? editing.content : '';
 
       waTemplateModalTitle.textContent = editing ? 'Editar Template' : 'Criar Novo Template';
-      waTemplateModalSub.textContent = editing ? 'Atualize os dados do seu template' : 'Configure sua mensagem para aprovação da Meta';
+      waTemplateModalSub.textContent = editing ? 'Atualize os dados do seu template' : 'Use {{nome}}, {{primeiro_nome}} ou colunas da sua lista como variáveis';
 
       waCategoryGrid.querySelectorAll('.wa-category-card').forEach(c => c.classList.toggle('selected', c.dataset.cat === selectedCategory));
       updateTemplateWizardView();
@@ -5977,29 +6309,23 @@
       }
     };
 
-    function waSaveTemplate(){
-      if(editingTemplateId && !window.__exigirEdicao('whatsapp', 'editar templates')) return;
-      const name = waTplName.value.trim().toLowerCase().replace(/\s+/g, '_');
+    async function waSaveTemplate(){
+      if(!window.__exigirEdicao('whatsapp', editingTemplateId ? 'editar templates' : 'criar templates')) return;
+      if(!waTplBody.value.trim()){ alert('Escreva o corpo da mensagem.'); return; }
       const header = waTplHeaderType.value === 'Texto' ? waTplHeaderText.value : '';
-
-      if(editingTemplateId){
-        const tpl = templates.find(t => t.id === editingTemplateId);
-        tpl.name = name;
-        tpl.category = selectedCategory;
-        tpl.content = waTplBody.value;
-        tpl.header = header;
-      } else {
-        templates.unshift({
-          id: Date.now().toString(),
-          name,
-          category: selectedCategory,
-          status: 'APPROVED',
-          content: waTplBody.value,
-          header
+      waStepNextBtn.disabled = true;
+      try {
+        await window.zapApi('template_salvar', {
+          id: editingTemplateId || undefined,
+          nome: waTplName.value.trim(),
+          categoria: selectedCategory,
+          cabecalho: header,
+          corpo: waTplBody.value
         });
-      }
-      renderTemplates();
-      waCloseTemplateModal();
+        waCloseTemplateModal();
+        await carregarTemplates();
+      } catch(e){ alert('Não foi possível salvar o template: ' + e.message); }
+      finally { waStepNextBtn.disabled = false; }
     }
 
     window.waFormatText = function(prefix, suffix){
@@ -6015,24 +6341,27 @@
     };
 
     window.waAddVariable = function(){
-      const varCount = (waTplBody.value.match(/\{\{\d+\}\}/g) || []).length + 1;
-      waTplBody.value += ` {{${varCount}}}`;
+      const v = (prompt('Nome da variável (ex.: nome, primeiro_nome ou uma coluna da sua lista):', 'nome') || '').trim().toLowerCase().replace(/[^\w.-]+/g, '_');
+      if(!v) return;
+      const pos = waTplBody.selectionStart ?? waTplBody.value.length;
+      waTplBody.value = waTplBody.value.slice(0, pos) + `{{${v}}}` + waTplBody.value.slice(pos);
+      waTplBody.focus();
       updateCharCount();
       updateTemplatePreview();
     };
 
     function updateCharCount(){
-      waCharCount.textContent = `${waTplBody.value.length}/1024`;
+      waCharCount.textContent = `${waTplBody.value.length}/4096`;
     }
 
     function updateTemplatePreview(){
       if(waTplHeaderType.value === 'Texto' && waTplHeaderText.value.trim()){
-        waPreviewHeader.textContent = waTplHeaderText.value;
+        waPreviewHeader.textContent = preencherVars(waTplHeaderText.value);
         waPreviewHeader.hidden = false;
       } else {
         waPreviewHeader.hidden = true;
       }
-      waPreviewBody.textContent = waTplBody.value || 'Sua mensagem aparecerá aqui...';
+      waPreviewBody.textContent = preencherVars(waTplBody.value) || 'Sua mensagem aparecerá aqui...';
     }
 
     waTplBody.addEventListener('input', () => { updateCharCount(); updateTemplatePreview(); });

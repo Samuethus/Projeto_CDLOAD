@@ -9,6 +9,9 @@
 //   ping           → confirma login + permissão e informa se os secrets existem
 //   uazapi_teste   → (só Administrador) GET /instance/all com o admintoken; fecha a Etapa 0
 //   instancia_sincronizar · instancia_registrar · instancia_conectar · instancia_status · instancia_desconectar
+//   template_salvar · template_excluir · template_teste            (Etapa 4)
+//   lista_importar · optout_adicionar                              (Etapa 5)
+//   campanha_criar · campanha_controlar · campanha_atualizar       (Etapa 6)
 // Publicar: Supabase > Edge Functions > whatsapp-api > Code, colar este arquivo e Deploy
 // (passo a passo em whatsapp/LEIA-ME.md).
 
@@ -70,6 +73,24 @@ function interpretarStatus(r: any) {
   const status = conectada ? 'conectada' : qr ? 'aguardando_qr' : bruto === 'connecting' ? 'conectando' : 'desconectada';
   const telefone = String(inst.owner ?? inst.phone ?? r?.status?.jid ?? '').replace(/[:@].*$/, '').replace(/\D/g, '') || null;
   return { status, telefone, qrcode: qr || null, paircode: (inst.paircode ?? r?.paircode ?? null) as string | null };
+}
+
+// Telefone em E.164 sem "+": 55 + DDD + número. Aceita com ou sem 55, com máscara.
+function normalizarTelefone(v: unknown): string | null {
+  let d = String(v ?? '').replace(/\D/g, '').replace(/^0+/, '');
+  if (d.length === 10 || d.length === 11) d = '55' + d;
+  return /^55\d{10,11}$/.test(d) ? d : null;
+}
+
+// Monta o texto final: cabeçalho em negrito + corpo com {{variáveis}} preenchidas.
+// Variáveis: {{nome}}, {{primeiro_nome}}, {{telefone}} e qualquer coluna extra da lista importada.
+// deno-lint-ignore no-explicit-any
+function montarTexto(tpl: any, dados: Record<string, string>): string {
+  const nome = String(dados.nome ?? '').trim();
+  const valores: Record<string, string> = { ...dados, nome, primeiro_nome: nome.split(/\s+/)[0] ?? '' };
+  const preencher = (s: string) => s.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, k) => valores[String(k).toLowerCase()] ?? '');
+  const corpo = preencher(String(tpl.corpo ?? ''));
+  return tpl.cabecalho ? `*${preencher(String(tpl.cabecalho))}*\n\n${corpo}` : corpo;
 }
 
 const acoes: Record<string, Acao> = {
@@ -200,6 +221,247 @@ const acoes: Record<string, Acao> = {
     await uazapi('/instance/disconnect', { metodo: 'POST', token });
     await db.from('wa_instancias').update({ status: 'desconectada', ultimo_status_em: new Date().toISOString() }).eq('id', inst.id);
     return json({ ok: true });
+  },
+
+  // ---------- Etapa 4 · Templates ----------
+
+  async template_salvar({ supabase, entrada }) {
+    const nome = String(entrada.nome ?? '').trim().slice(0, 80);
+    const corpo = String(entrada.corpo ?? '').trim();
+    if (!nome) return json({ ok: false, erro: 'Informe o nome do template.' }, 400);
+    if (!corpo) return json({ ok: false, erro: 'Escreva o corpo da mensagem.' }, 400);
+    if (corpo.length > 4096) return json({ ok: false, erro: 'A mensagem passa de 4096 caracteres.' }, 400);
+    const dados = {
+      nome, corpo, tipo: 'texto',
+      categoria: String(entrada.categoria ?? 'Marketing').slice(0, 40),
+      cabecalho: String(entrada.cabecalho ?? '').trim() || null,
+      atualizado_em: new Date().toISOString(),
+    };
+    const db = admin();
+    if (entrada.id) {
+      const { error } = await db.from('wa_templates').update(dados).eq('id', String(entrada.id));
+      if (error) throw new Error(error.message);
+      return json({ ok: true, id: entrada.id });
+    }
+    const { data: user } = await supabase.auth.getUser();
+    const { data, error } = await db.from('wa_templates').insert({ ...dados, criado_por: user?.user?.id ?? null }).select('id').single();
+    if (error) throw new Error(error.message);
+    return json({ ok: true, id: data.id });
+  },
+
+  async template_excluir({ entrada }) {
+    const { error } = await admin().from('wa_templates').delete().eq('id', String(entrada.id ?? ''));
+    if (error) throw new Error(error.message);
+    return json({ ok: true });
+  },
+
+  // Envia o template, com dados de exemplo, para um número informado.
+  async template_teste({ entrada }) {
+    const { data: tpl } = await admin().from('wa_templates').select('*').eq('id', String(entrada.id ?? '')).maybeSingle();
+    if (!tpl) return json({ ok: false, erro: 'Template não encontrado.' }, 404);
+    const telefone = normalizarTelefone(entrada.telefone);
+    if (!telefone) return json({ ok: false, erro: 'Número inválido. Use DDD + número (ex.: 65999990000).' }, 400);
+    const { token } = await carregarInstancia(entrada.instancia_id);
+    const texto = montarTexto(tpl, { nome: 'Maria Silva', telefone });
+    const r = await uazapi('/send/text', { metodo: 'POST', token, corpo: { number: telefone, text: texto } });
+    return json({ ok: true, telefone, id: r?.messageid ?? r?.id ?? null });
+  },
+
+  // ---------- Etapa 5 · Contatos, listas e opt-out ----------
+
+  // contatos: [{ nome, telefone, ...outros campos (viram variáveis {{campo}}) }]
+  async lista_importar({ entrada }) {
+    const nome = String(entrada.nome ?? '').trim().slice(0, 80);
+    if (!nome) return json({ ok: false, erro: 'Dê um nome para a lista.' }, 400);
+    const brutos = Array.isArray(entrada.contatos) ? entrada.contatos.slice(0, 5000) : [];
+    const porTelefone = new Map<string, { nome: string | null; telefone: string; campos: Record<string, string>; origem: string }>();
+    let invalidos = 0;
+    for (const c of brutos) {
+      const telefone = normalizarTelefone(c?.telefone);
+      if (!telefone) { invalidos++; continue; }
+      const campos: Record<string, string> = {};
+      for (const [k, v] of Object.entries(c ?? {})) {
+        if (k !== 'nome' && k !== 'telefone' && v != null && String(v).trim()) campos[k.toLowerCase()] = String(v).trim();
+      }
+      porTelefone.set(telefone, { nome: String(c?.nome ?? '').trim() || null, telefone, campos, origem: `lista: ${nome}` });
+    }
+    if (!porTelefone.size) return json({ ok: false, erro: 'Nenhum telefone válido na lista.' }, 400);
+
+    const db = admin();
+    const { data: lista, error } = await db.from('wa_listas').insert({ nome }).select('id').single();
+    if (error) throw new Error(error.message);
+    const contatos = [...porTelefone.values()];
+    for (let i = 0; i < contatos.length; i += 500) {
+      const { data: salvos, error: e1 } = await db.from('wa_contatos')
+        .upsert(contatos.slice(i, i + 500), { onConflict: 'telefone' }).select('id');
+      if (e1) throw new Error(e1.message);
+      const { error: e2 } = await db.from('wa_listas_contatos')
+        .upsert((salvos ?? []).map((s: { id: string }) => ({ lista_id: lista.id, contato_id: s.id })));
+      if (e2) throw new Error(e2.message);
+    }
+    return json({ ok: true, id: lista.id, total: contatos.length, invalidos, duplicados: brutos.length - invalidos - contatos.length });
+  },
+
+  async optout_adicionar({ entrada }) {
+    const telefone = normalizarTelefone(entrada.telefone);
+    if (!telefone) return json({ ok: false, erro: 'Número inválido.' }, 400);
+    const { error } = await admin().from('wa_optout').upsert({ telefone, motivo: String(entrada.motivo ?? 'manual').slice(0, 200) });
+    if (error) throw new Error(error.message);
+    return json({ ok: true, telefone });
+  },
+
+  // ---------- Etapa 6 · Disparos ----------
+
+  // Cria a campanha, gera um envio por contato (sem opt-out, sem duplicados, só quem tem
+  // WhatsApp) e entrega a fila para a UAZAPI (/sender/advanced), já com agendamento e intervalo.
+  async campanha_criar({ supabase, entrada }) {
+    const nome = String(entrada.nome ?? '').trim().slice(0, 120);
+    if (!nome) return json({ ok: false, erro: 'Dê um nome ao disparo.' }, 400);
+    const delayMin = Math.max(3, Math.floor(Number(entrada.delay_min) || 10));
+    const delayMax = Math.max(delayMin, Math.floor(Number(entrada.delay_max) || 30));
+    const agendadaPara = entrada.agendada_para ? new Date(String(entrada.agendada_para)) : null;
+    if (agendadaPara && (isNaN(agendadaPara.getTime()) || agendadaPara.getTime() < Date.now() - 60_000)) {
+      return json({ ok: false, erro: 'A data de agendamento já passou.' }, 400);
+    }
+
+    const { inst, token } = await carregarInstancia(entrada.instancia_id);
+    if (inst.status !== 'conectada') return json({ ok: false, erro: 'A instância escolhida não está conectada.' }, 400);
+    const db = admin();
+    const { data: tpl } = await db.from('wa_templates').select('*').eq('id', String(entrada.template_id ?? '')).maybeSingle();
+    if (!tpl) return json({ ok: false, erro: 'Template não encontrado.' }, 400);
+    const { data: vinculos, error: eLista } = await db.from('wa_listas_contatos')
+      .select('wa_contatos(id,nome,telefone,campos)').eq('lista_id', String(entrada.lista_id ?? ''));
+    if (eLista) throw new Error(eLista.message);
+    // deno-lint-ignore no-explicit-any
+    const contatos: any[] = (vinculos ?? []).map((v: any) => v.wa_contatos).filter(Boolean);
+    if (!contatos.length) return json({ ok: false, erro: 'A lista está vazia.' }, 400);
+
+    const { data: saidas } = await db.from('wa_optout').select('telefone');
+    const bloqueados = new Set((saidas ?? []).map((o: { telefone: string }) => o.telefone));
+    const emOptout = contatos.filter((c) => bloqueados.has(c.telefone)).length;
+    const vistos = new Set<string>();
+    const fila = contatos.filter((c) => !bloqueados.has(c.telefone) && !vistos.has(c.telefone) && vistos.add(c.telefone));
+    if (!fila.length) return json({ ok: false, erro: 'Todos os contatos da lista estão em opt-out.' }, 400);
+
+    // Quem não tem WhatsApp sai da fila (se a verificação falhar, segue sem ela).
+    const semWhatsapp = new Set<string>();
+    try {
+      for (let i = 0; i < fila.length; i += 50) {
+        const numeros = fila.slice(i, i + 50).map((c) => c.telefone);
+        const r = await uazapi('/chat/check', { metodo: 'POST', token, corpo: { numbers: numeros } });
+        // deno-lint-ignore no-explicit-any
+        for (const item of (Array.isArray(r) ? r : r?.numbers ?? r?.result ?? []) as any[]) {
+          const n = String(item?.query ?? item?.number ?? '').replace(/\D/g, '');
+          if (n && (item?.isInWhatsapp === false || item?.exists === false)) semWhatsapp.add(n);
+        }
+      }
+    } catch { /* verificação indisponível: a própria UAZAPI marca a falha no envio */ }
+
+    const { data: user } = await supabase.auth.getUser();
+    const { data: camp, error: eCamp } = await db.from('wa_campanhas').insert({
+      nome, instancia_id: inst.id, template_id: tpl.id, lista_id: String(entrada.lista_id),
+      status: 'rascunho', agendada_para: agendadaPara?.toISOString() ?? null,
+      delay_min: delayMin, delay_max: delayMax, total: fila.length, criado_por: user?.user?.id ?? null,
+    }).select('id').single();
+    if (eCamp) throw new Error(eCamp.message);
+
+    const envios = fila.map((c) => ({
+      campanha_id: camp.id, contato_id: c.id, telefone: c.telefone,
+      texto_final: montarTexto(tpl, { ...(c.campos ?? {}), nome: c.nome ?? '', telefone: c.telefone }),
+      status: semWhatsapp.has(c.telefone) ? 'falhou' : 'fila',
+      erro: semWhatsapp.has(c.telefone) ? 'Número sem WhatsApp' : null,
+    }));
+    for (let i = 0; i < envios.length; i += 500) {
+      const { error } = await db.from('wa_envios').insert(envios.slice(i, i + 500));
+      if (error) throw new Error(error.message);
+    }
+    const validos = envios.filter((e) => e.status === 'fila');
+    if (!validos.length) {
+      await db.from('wa_campanhas').update({ status: 'concluida', erro: 'Nenhum número com WhatsApp.' }).eq('id', camp.id);
+      return json({ ok: true, id: camp.id, enviados: 0, aviso: 'Nenhum número da lista tem WhatsApp.' });
+    }
+
+    try {
+      const r = await uazapi('/sender/advanced', {
+        metodo: 'POST', token,
+        corpo: {
+          delayMin, delayMax, info: `cdload: ${nome}`,
+          ...(agendadaPara ? { scheduled_for: agendadaPara.getTime() } : {}),
+          messages: validos.map((e) => ({ number: e.telefone, type: 'text', text: e.texto_final })),
+        },
+      });
+      await db.from('wa_eventos').insert({ tipo: 'api:sender/advanced', payload: r });
+      const folderId = String(r?.folder_id ?? r?.folderId ?? r?.folder?.id ?? '');
+      await db.from('wa_campanhas').update({
+        status: agendadaPara ? 'agendada' : 'enviando', uazapi_folder_id: folderId || null, erro: null, atualizado_em: new Date().toISOString(),
+      }).eq('id', camp.id);
+      return json({ ok: true, id: camp.id, enviados: validos.length, sem_whatsapp: semWhatsapp.size, optout: emOptout });
+    } catch (e) {
+      await db.from('wa_campanhas').update({ erro: (e as Error).message, atualizado_em: new Date().toISOString() }).eq('id', camp.id);
+      throw e;
+    }
+  },
+
+  // acao: pausar | retomar | enviar_agora | cancelar  →  /sender/edit
+  async campanha_controlar({ entrada }) {
+    const mapa: Record<string, [string, string]> = {
+      pausar: ['stop', 'pausada'], retomar: ['continue', 'enviando'], enviar_agora: ['send_now', 'enviando'], cancelar: ['delete', 'cancelada'],
+    };
+    const par = mapa[String(entrada.acao ?? '')];
+    if (!par) return json({ ok: false, erro: 'Ação inválida.' }, 400);
+    const db = admin();
+    const { data: camp } = await db.from('wa_campanhas').select('id,instancia_id,uazapi_folder_id').eq('id', String(entrada.id ?? '')).maybeSingle();
+    if (!camp?.uazapi_folder_id) return json({ ok: false, erro: 'Disparo sem fila na UAZAPI.' }, 400);
+    const { token } = await carregarInstancia(camp.instancia_id);
+    await uazapi('/sender/edit', { metodo: 'POST', token, corpo: { folder_id: camp.uazapi_folder_id, action: par[0] } });
+    await db.from('wa_campanhas').update({ status: par[1], atualizado_em: new Date().toISOString() }).eq('id', camp.id);
+    if (par[1] === 'cancelada') await db.from('wa_envios').update({ status: 'falhou', erro: 'Cancelado' }).eq('campanha_id', camp.id).eq('status', 'fila');
+    return json({ ok: true });
+  },
+
+  // Confere na UAZAPI o status de cada mensagem da campanha (enquanto o webhook da Etapa 3 não existe).
+  async campanha_atualizar({ entrada }) {
+    const db = admin();
+    const { data: camp } = await db.from('wa_campanhas').select('id,instancia_id,uazapi_folder_id,status').eq('id', String(entrada.id ?? '')).maybeSingle();
+    if (!camp?.uazapi_folder_id) return json({ ok: false, erro: 'Disparo sem fila na UAZAPI.' }, 400);
+    const { token } = await carregarInstancia(camp.instancia_id);
+    const atualizacoes = new Map<string, { status: string; erro: string | null; msgId: string | null }>();
+    for (let pagina = 1; pagina <= 20; pagina++) {
+      const r = await uazapi('/sender/listmessages', { metodo: 'POST', token, corpo: { folder_id: camp.uazapi_folder_id, page: pagina, pageSize: 500 } });
+      // deno-lint-ignore no-explicit-any
+      const msgs: any[] = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
+      if (pagina === 1) await db.from('wa_eventos').insert({ tipo: 'api:sender/listmessages', payload: Array.isArray(r) ? { messages: r.slice(0, 5) } : { ...r, messages: msgs.slice(0, 5) } });
+      for (const m of msgs) {
+        const tel = String(m?.number ?? m?.chatid ?? m?.chatId ?? '').replace(/[:@].*$/, '').replace(/\D/g, '');
+        if (!tel) continue;
+        const bruto = String(m?.status ?? m?.messageStatus ?? '').toLowerCase();
+        const status = /fail|error|erro/.test(bruto) ? 'falhou'
+          : /read|lid|played/.test(bruto) ? 'lido'
+          : /deliver|entreg/.test(bruto) ? 'entregue'
+          : /sent|envi|server|success/.test(bruto) ? 'enviado' : 'fila';
+        atualizacoes.set(tel, { status, erro: status === 'falhou' ? String(m?.error ?? m?.errorMessage ?? bruto) : null, msgId: m?.messageid ?? m?.messageId ?? null });
+      }
+      const totalPaginas = Number(r?.pagination?.totalPages ?? r?.totalPages ?? 1);
+      if (!msgs.length || pagina >= totalPaginas) break;
+    }
+    // Só avança o status (fila → enviado → entregue → lido); nunca volta.
+    const anteriores: Record<string, string[]> = {
+      enviado: ['fila'], falhou: ['fila'], entregue: ['fila', 'enviado'], lido: ['fila', 'enviado', 'entregue'],
+    };
+    const campoTempo: Record<string, string> = { enviado: 'enviado_em', entregue: 'entregue_em', lido: 'lido_em' };
+    const agora = new Date().toISOString();
+    for (const [telefone, u] of atualizacoes) {
+      if (!anteriores[u.status]) continue;
+      await db.from('wa_envios').update({
+        status: u.status, erro: u.erro, uazapi_msg_id: u.msgId,
+        ...(campoTempo[u.status] ? { [campoTempo[u.status]]: agora } : {}),
+      }).eq('campanha_id', camp.id).eq('telefone', telefone).in('status', anteriores[u.status]);
+    }
+    const { count } = await db.from('wa_envios').select('id', { count: 'exact', head: true }).eq('campanha_id', camp.id).eq('status', 'fila');
+    if (count === 0 && ['enviando', 'agendada'].includes(camp.status)) {
+      await db.from('wa_campanhas').update({ status: 'concluida', atualizado_em: agora }).eq('id', camp.id);
+    }
+    return json({ ok: true, conferidos: atualizacoes.size, na_fila: count ?? null });
   },
 };
 
