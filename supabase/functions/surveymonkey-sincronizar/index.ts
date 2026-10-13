@@ -279,7 +279,9 @@ Deno.serve(async (req) => {
             const titulo = semHtml(q.headings?.[0]?.heading) || '(sem título)';
             const a = q.answers ?? {};
             // deno-lint-ignore no-explicit-any
-            const op = (xs: any[]) => (xs ?? []).map((x: any) => ({ id: String(x.id), text: semHtml(x.text) }));
+            // weight = nota da opção nas escalas de avaliação (estrelas); na = opção "N/A" (fica fora da média).
+            const op = (xs: any[]) => (xs ?? []).map((x: any) => ({ id: String(x.id), text: semHtml(x.text),
+              ...(typeof x.weight === 'number' ? { weight: x.weight } : {}), ...(x.is_na ? { na: true } : {}) }));
             const pessoal = q.family === 'demographic' || PESSOAL_RE.test(normalizar(titulo));
             perguntas.push({
               id: String(q.id), formulario_id: f.id, pagina: pg.position ?? ip + 1, posicao: q.position ?? iq + 1, titulo,

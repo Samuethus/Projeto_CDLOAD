@@ -1734,6 +1734,9 @@
   .sm-painel .cd-barra-val small{color:var(--cd-muted);margin-left:4px;}
   .sm-media{font-size:24px;font-weight:700;color:var(--cd-texto);line-height:1;letter-spacing:-.01em;white-space:nowrap;}
   .sm-media span{font-size:12px;font-weight:500;color:var(--cd-muted);margin-left:5px;}
+  .sm-satisf{font-weight:600;white-space:nowrap;}
+  .sm-satisf.alta{color:#3D8B37;}
+  .sm-satisf.baixa{color:#C2383D;}
   .sm-rosca-svg{display:block;}
   /* Legenda embaixo e centralizada, em 2 colunas (até 6 opções = 3 linhas); textos longos com reticências. */
   .sm-painel .cd-rosca-legenda{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,max-content));justify-content:center;gap:5px 18px;max-width:100%;margin:0;}
@@ -5262,12 +5265,46 @@
         if(data.length < 1000) return out;
       }
     }
+    // Escala de avaliação (estrelas 1 a 5, "Ruim…Ótimo"): no Survey Monkey é uma matriz de subtipo "rating",
+    // em geral com uma linha só e opções SEM texto (a nota é a posição/peso). Vira pergunta de nota (f = 'r'):
+    // cada opção recebe a nota = peso (weight, quando sincronizado) ou a posição (1, 2, 3…); "N/A" fica fora.
+    // Matriz com várias linhas (vários itens avaliados) → uma pergunta por linha ("Pergunta — item").
+    function escalaDe(d){
+      const op = d.opcoes || {}, choices = (op.choices || []).filter(c => !c.na);
+      if(d.familia !== 'matrix' || choices.length < 2 || choices.length > 11) return null;
+      const numerico = choices.every(c => /^\d+$/.test(String(c.text || '').trim()));
+      const semTexto = choices.every(c => !String(c.text || '').trim());
+      if(d.subtipo !== 'rating' && !numerico && !semTexto) return null;
+      return choices.map((c, i) => ({ id: c.id,
+        nota: Number.isFinite(Number(c.weight)) && c.weight != null ? Number(c.weight) : numerico ? Number(String(c.text).trim()) : i + 1,
+        rotulo: !numerico && String(c.text || '').trim() ? String(c.text).trim() : '' })).sort((a, b) => a.nota - b.nota);
+    }
+    function expandirEscalas(defs){
+      return defs.flatMap(d => {
+        const esc = !d.dado_pessoal && escalaDe(d);
+        if(!esc) return [d];
+        const rows = (d.opcoes || {}).rows || [];
+        const linhas = rows.length > 1 ? rows : [null];
+        return linhas.map(rw => ({ ...d, id: rw ? d.id + '|' + rw.id : d.id, _qid: d.id, _row: rw ? rw.id : null, _escala: esc,
+          titulo: rw && String(rw.text || '').trim() ? `${d.titulo} — ${String(rw.text).trim()}` : d.titulo }));
+      });
+    }
+    const respostasEscala = (d, r) => (r.respostas[d._qid] || []).filter(x => x.c && (!d._row || x.r === d._row));
+
     // Resumo por pergunta no formato do retrato: f = s/m/r/x/o · a = respondidas · k = puladas · c = [[opção, n]] · l = matriz.
+    // Nota (f = 'r') pode trazer rot = rótulo de cada nota ("Ótimo"), na mesma ordem de c.
     function resumir(defs, resps){
       const n = resps.length;
       return defs.map(d => {
         const op = d.opcoes || {}, choices = op.choices || [], rows = op.rows || [];
         const base = { t: d.titulo, p: d.dado_pessoal ? 1 : 0 };
+        if(d._escala){
+          const cont = new Map(d._escala.map(e => [e.id, 0]));
+          let a = 0;
+          resps.forEach(r => { const xs = respostasEscala(d, r).filter(x => cont.has(x.c)); if(xs.length){ a++; cont.set(xs[0].c, cont.get(xs[0].c) + 1); } });
+          const rot = d._escala.map(e => e.rotulo);
+          return { ...base, f: 'r', a, k: n - a, c: d._escala.map(e => [String(e.nota), cont.get(e.id)]), ...(rot.some(Boolean) ? { rot } : {}) };
+        }
         const respondeu = r => (r.respostas[d.id] || []).length > 0;
         const fechada = !d.dado_pessoal && ['single_choice', 'multiple_choice', 'matrix'].includes(d.familia) && choices.length;
         if(!fechada){ const a = resps.filter(respondeu).length; return { ...base, f: 'o', a, k: n - a }; }
@@ -5296,6 +5333,11 @@
     }
     // Texto de cada resposta para a tabela individual ("linha: opção" na matriz; "Outro: texto" no campo aberto).
     function textoResposta(d, xs){
+      // Escala: o número da nota (1 a 5…), com o rótulo quando houver ("4 · Bom").
+      if(d._escala){
+        const e = d._escala.find(e => (xs || []).some(x => x.c === e.id && (!d._row || x.r === d._row)));
+        return e ? String(e.nota) + (e.rotulo ? ' · ' + e.rotulo : '') : ((xs || []).some(x => x.p) ? '•••' : '');
+      }
       const op = d.opcoes || {}, nome = new Map([...(op.choices || []), ...(op.rows || []), ...(op.cols || [])].map(o => [o.id, o.text]));
       if(op.other) nome.set(op.other.id, op.other.text || 'Outro');
       return (xs || []).map(x => x.p ? '•••' : [x.r && nome.get(x.r), x.c && nome.get(x.c), x.k && nome.get(x.k), x.o && !x.c && nome.get(x.o), x.t]
@@ -5312,7 +5354,7 @@
       ]);
       if(dq.error) throw dq.error;
       if(dc.error) throw dc.error;
-      const defs = (dq.data || []).filter(d => d.familia !== 'presentation');
+      const defs = expandirEscalas((dq.data || []).filter(d => d.familia !== 'presentation'));
       let R = null;
       if(defs.length){
         const resps = await lerTudo(() => sb.from('survey_respostas').select('id,coletor_id,status,iniciada_em,respostas')
@@ -5323,7 +5365,7 @@
         coletores.forEach(c => { porColetor[c.id] = { perguntas: resumir(defs, resps.filter(r => r.coletor_id === c.id)) }; });
         R = { total: resps.length, perguntas: resumir(defs, resps), coletores: coletores.length > 1 ? coletores : [], porColetor,
           respostas: resps.map(r => ({ id: r.id, coletor_id: r.coletor_id, status: r.status, data: r.iniciada_em,
-            valores: defs.map(d => textoResposta(d, r.respostas[d.id])) })) };
+            valores: defs.map(d => textoResposta(d, r.respostas[d._qid || d.id])) })) };
       }
       vivoCache.set(f.id, { em: Date.now(), R });
       return R;
@@ -5390,6 +5432,35 @@
           <ul class="cd-rosca-legenda">${itens.map(([nome, v], i) => `<li title="${esc(nome)}: ${num(v)} (${pct(v, total)})"><i style="background:${CORES[i % CORES.length]}"></i><span>${esc(nome)}</span><strong>${pct(v, total)}</strong></li>`).join('')}</ul>
         </div>`;
     }
+    // Satisfação (nota de até 7 pontos, ex.: estrelas 1 a 5): rosca do vermelho (baixa) ao verde (alta),
+    // nota média no centro; legenda da maior para a menor nota, marcando alta/baixa.
+    // Alta = notas acima do meio da escala; baixa = abaixo (1 a 5: alta 4–5, neutra 3, baixa 1–2).
+    const corSatisf = (i, n) => {
+      const t = n > 1 ? i / (n - 1) : 1, mix = (a, b, u) => '#' + a.map((v, k) => Math.round(v + (b[k] - v) * u).toString(16).padStart(2, '0')).join('');
+      const verm = [0xE5, 0x48, 0x4D], cinza = [0xCB, 0xD5, 0xE1], verde = [0x3D, 0x8B, 0x37];
+      return t < .5 ? mix(verm, cinza, t * 2) : mix(cinza, verde, (t - .5) * 2);
+    };
+    function cardSatisfacao(q, pos){
+      const itens = q.c.map((c, i) => ({ nota: Number(c[0]), v: c[1], rot: (q.rot || [])[i] || '', cor: corSatisf(i, q.c.length) }));
+      const total = itens.reduce((s, x) => s + x.v, 0), min = itens[0].nota, max = itens[itens.length - 1].nota, meio = (min + max) / 2;
+      const media = total ? itens.reduce((s, x) => s + x.nota * x.v, 0) / total : 0;
+      const alta = itens.filter(x => x.nota > meio), baixa = itens.filter(x => x.nota < meio);
+      const soma = xs => xs.reduce((s, x) => s + x.v, 0);
+      const faixa = xs => xs.length > 1 ? `${xs[0].nota}–${xs[xs.length - 1].nota}` : xs.length ? String(xs[0].nota) : '';
+      let acum = 0;
+      const fatias = itens.map(x => {
+        const p = total ? x.v / total * 100 : 0, f = `<circle cx="21" cy="21" r="15.915" fill="none" stroke="${x.cor}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${(25 - acum).toFixed(3)}"><title>Nota ${x.nota}: ${num(x.v)} (${pct(x.v, total)})</title></circle>`;
+        acum += p; return f;
+      }).join('');
+      const nome = x => `${x.nota}${x.rot ? ' · ' + x.rot : ''}${x.nota === max ? ' · alta' : x.nota === min ? ' · baixa' : ''}`;
+      const corpo = `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><svg class="sm-rosca-svg" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#EEF2F7" stroke-width="6"></circle>${fatias}</svg>
+            <div class="cd-rosca-centro"><strong>${media.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong><span>média de ${max}</span></div></div>
+          <ul class="cd-rosca-legenda">${itens.slice().reverse().map(x => `<li title="Nota ${esc(nome(x))}: ${num(x.v)} (${pct(x.v, total)})"><i style="background:${x.cor}"></i><span>${esc(nome(x))}</span><strong>${pct(x.v, total)}</strong></li>`).join('')}</ul>
+        </div>`;
+      const sub = `${subResp(q)} · <span class="sm-satisf alta">alta (${faixa(alta)}) ${pct(soma(alta), total)}</span> · <span class="sm-satisf baixa">baixa (${faixa(baixa)}) ${pct(soma(baixa), total)}</span>`;
+      return card(q.t, sub, corpo, pos);
+    }
     function cardPergunta(q){
       if(q.f === 'x'){
         const opcoes = q.l[0][1].map(c => c[0]);
@@ -5408,9 +5479,12 @@
       }
       const itens = q.c, total = q.f === 'm' ? q.a : itens.reduce((s, c) => s + c[1], 0);
       // Barras (coluna 1): múltipla escolha, nota e escolha única com mais de 6 opções. Rosca (colunas 2 e 3): o resto.
-      const ehBarra = q.f === 'm' || q.f === 'r' || itens.length > 6;
+      // Nota de até 7 pontos (satisfação, estrelas): rosca de satisfação. Escalas maiores (0 a 10): barras.
+      const satisf = q.f === 'r' && itens.length <= 7;
+      const ehBarra = !satisf && (q.f === 'm' || q.f === 'r' || itens.length > 6);
       const pos = ehBarra ? 'sm-col-barra' : 'sm-col-rosca';
       if(!q.a) return card(q.t, subResp(q), '<div class="stk-vazio">Ninguém respondeu esta pergunta.</div>', pos);
+      if(satisf) return cardSatisfacao(q, pos);
       if(q.f === 'r'){
         const media = itens.reduce((s, c) => s + Number(c[0]) * c[1], 0) / total;
         // Escala com mais de 6 notas (ex.: 1 a 10): agrupa de 2 em 2 para caber no padrão de 6 linhas sem perder a ordem.
