@@ -1329,6 +1329,9 @@
   /* Filtros que só aparecem no menu (a barra mostra no máximo 7). */
   #page-dashboard .wa-stock-filters .stk-so-menu{display:none !important;}
   #stkFiltrosBtn[hidden]{display:none !important;}
+  /* .btn e .wa-clip-search definem display e anulariam o atributo hidden: o "Editar" da Viabilidade aparecia
+     nos demais painéis, e a busca some nos painéis sem item para buscar (INADIMPLÊNCIA). */
+  #stkViabEditar[hidden], #page-dashboard .wa-clip-search[hidden]{display:none !important;}
   .stk-filtros-btn{position:relative;padding:10px 12px;}
   .stk-filtros-badge{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;box-sizing:border-box;
     background:var(--cd-azul, #1D5FD3);color:#fff;font-size:10.5px;font-weight:700;line-height:20px;text-align:center;box-shadow:0 0 0 2px #fff;}
@@ -2665,7 +2668,7 @@
             <option value="pnad">IBGE: PNAD</option>
             <option value="ivs">Stone (IVS)</option>
             <option value="icva">Cielo (ICVA)</option>
-            <option value="inadimplencia">SPC: Inadimplência</option>
+            <option value="inadimplencia">INADIMPLÊNCIA</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
@@ -2719,9 +2722,9 @@
             <option value="">Município</option>
           </select>
           <select class="filter-select" id="stkInadLocalFiltro" title="Abrangência do relatório do SPC Brasil" hidden>
-            <option value="mt" selected>Mato Grosso</option>
-            <option value="br">Brasil</option>
-            <option value="cuiaba">Cuiabá</option>
+            <option value="mt" selected>Abrangência · Mato Grosso</option>
+            <option value="br">Abrangência · Brasil</option>
+            <option value="cuiaba">Abrangência · Cuiabá</option>
           </select>
           <select class="filter-select" id="stkIbgeLocalFiltro" title="Local" hidden>
             <option value="">Local</option>
@@ -11677,7 +11680,10 @@ ${clipPlayerPills(n)}
       document.getElementById('stkViabEditar').hidden = !viab || !window.__podeEditar('dashboard');
       document.getElementById('stkViabPrioridadeFiltro').hidden = !viab;
       document.getElementById('stkViabFerrFiltro').hidden = !viab;
-      document.getElementById('stkInadLocalFiltro').hidden = stkPainel() !== 'inadimplencia';
+      document.getElementById('stkInadLocalFiltro').hidden = !inad;
+      // INADIMPLÊNCIA: números agregados dos relatórios do SPC, sem item para buscar — a barra fica só com
+      // Painel, Indicador, Mês, Ano, Abrangência, Limpar e Exportar (a busca herdada do Estoque não fazia nada).
+      stkBuscaInput.closest('.wa-clip-search').hidden = inad;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -13258,8 +13264,9 @@ ${clipPlayerPills(n)}
     });
 
 
-    // ===== Inadimplência (SPC Brasil) — indicador do Panorama, mesma estrutura do CAGED =====
-    // Dados: assets/data/spc_inadimplencia.js — números dos relatórios do SPC Brasil anexados na seção Inadimplência
+    // ===== INADIMPLÊNCIA (SPC Brasil) — indicador do Panorama, mesma estrutura do CAGED =====
+    // Dados: assets/data/spc_inadimplencia.js — números dos relatórios do SPC Brasil anexados na seção Inadimplência,
+    // lidos todo dia por scripts/spc_inadimplencia_extrair.py (usuário leitor + API da Anthropic)
     // (Mato Grosso e Brasil/regiões; Cuiabá quando o SPC enviar). Uma "edição" por mês de referência dos relatórios.
     // Filtros: Abrangência (Mato Grosso | Brasil | Cuiabá) e Mês/Ano (a edição mais recente até a data escolhida).
     // KPIs comparam com a edição anterior disponível. Subir é ruim (inadimplência): alta em vermelho.
@@ -14382,10 +14389,10 @@ ${clipPlayerPills(n)}
     }
     function viabRender(){
       const seq = ++viabRenderSeq;
-      stkViabEditarEl.hidden = !window.__podeEditar('dashboard');
+      stkViabEditarEl.hidden = stkPainel() !== 'viabilidades' || !window.__podeEditar('dashboard');
       if(!viabDados){
         stkGrid.classList.add('cd-carregando');
-        viabCarregarTudo().then(() => { if(seq === viabRenderSeq) viabRender(); }).catch(() => {
+        viabCarregarTudo().then(() => { if(seq === viabRenderSeq && stkPainel() === 'viabilidades') viabRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
           stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados de viabilidade (assets/data/viabilidades.js).</div></div>`;
         });
