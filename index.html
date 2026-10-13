@@ -641,6 +641,7 @@
   }
 
   /* ---------- Empty state ---------- */
+  .empty-state[hidden]{display:none;}
   .empty-state{
     display:flex;
     flex-direction:column;
@@ -746,6 +747,26 @@
   .wa-role-user{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
   .wa-status-ativo{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
   .wa-status-inativo{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
+
+  /* ---- WhatsApp › Instâncias ---- */
+  .zap-inst-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px;}
+  .zap-inst-card{border:1px solid var(--wa-border);border-radius:12px;padding:18px;background:var(--wa-card,#fff);display:flex;flex-direction:column;gap:10px;}
+  .zap-inst-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .zap-inst-nome{font-size:15px;font-weight:700;color:var(--wa-text);word-break:break-word;}
+  .zap-inst-tel{font-size:13px;color:var(--wa-text-muted);}
+  .zap-inst-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .zap-inst-acoes .wa-btn{padding:7px 12px;font-size:12px;}
+  .zap-st-conectada{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
+  .zap-st-aguardando_qr,.zap-st-conectando{background:var(--wa-pending-bg);color:var(--wa-pending-text);}
+  .zap-st-desconectada{background:var(--wa-slate-bg);color:var(--wa-slate-text);}
+  .zap-qr-box{display:flex;align-items:center;justify-content:center;min-height:260px;background:#fff;border:1px solid var(--wa-border);border-radius:12px;padding:12px;}
+  .zap-qr-box img{width:240px;height:240px;image-rendering:pixelated;}
+  .zap-qr-box .zap-qr-code{font-size:30px;font-weight:800;letter-spacing:4px;color:#0f172a;}
+  .zap-qr-msg{color:var(--wa-text-muted);font-size:13px;}
+  .zap-qr-status{text-align:center;font-size:13px;font-weight:600;color:var(--wa-text-muted);margin:12px 0;}
+  .zap-pair label{display:block;font-size:12px;color:var(--wa-text-muted);margin-bottom:6px;}
+  .zap-pair-row{display:flex;gap:8px;}
+  .zap-pair-row input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--wa-border);border-radius:8px;font-family:inherit;}
 
   /* ---- Lista de templates ---- */
   .wa-template-list{padding:20px;display:flex;flex-direction:column;gap:14px;}
@@ -3491,10 +3512,55 @@
 
         </div><!-- /waTemplatesBloco -->
         </div>
-        <div class="empty-state" id="zapVazio">
+        <!-- Instâncias (Etapa 2): cartões vindos de wa_instancias, atualizados por Realtime. -->
+        <div id="zapInstancias">
+          <div class="wa-topcard">
+            <div class="wa-topcard-left">
+              <div class="wa-topcard-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </div>
+              <div>
+                <div class="wa-topcard-title">Nova Instância</div>
+                <div class="wa-topcard-sub">Cada instância é um número de WhatsApp conectado por QR code</div>
+              </div>
+            </div>
+            <button class="wa-btn wa-btn-primary" id="zapInstNova" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Criar Instância
+            </button>
+          </div>
+          <div class="zap-inst-grid" id="zapInstGrid"></div>
+        </div>
+        <div class="empty-state" id="zapVazio" hidden>
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></div>
           <div class="empty-title" id="zapVazioTitulo">Nenhuma instância conectada</div>
           <div class="empty-subtitle">Integração com a API do WhatsApp em desenvolvimento.</div>
+        </div>
+
+        <!-- Modal: conectar instância (QR code ou código de pareamento) -->
+        <div class="wa-modal-overlay" id="zapConectarModal">
+          <div class="wa-modal wa-modal-sm">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div>
+                  <div class="wa-modal-title" id="zapConectarTitulo">Conectar número</div>
+                  <div class="wa-modal-sub">WhatsApp &gt; Aparelhos conectados &gt; Conectar um aparelho</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" id="zapConectarFechar">&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <div class="zap-qr-box" id="zapQrBox"><span class="zap-qr-msg">Gerando QR code...</span></div>
+              <div class="zap-qr-status" id="zapQrStatus"></div>
+              <div class="zap-pair">
+                <label for="zapPairTel">Prefere código de pareamento? Informe o número com DDD:</label>
+                <div class="zap-pair-row">
+                  <input type="text" id="zapPairTel" placeholder="5565999990000" inputmode="numeric" autocomplete="off">
+                  <button class="wa-btn wa-btn-outline" type="button" id="zapPairBtn">Gerar código</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -5446,12 +5512,138 @@
     for(let a = atual; a >= atual - 2; a--) ano.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
     // Templates: o bloco de Templates (cabeçalho, lista e assistente) fica em #zapTemplates.
     const zapTpl = document.getElementById('zapTemplates'), zapVazio = document.getElementById('zapVazio');
+    const zapInst = document.getElementById('zapInstancias');
     let visao = 'instancias';
     function mostrarVisao(){
-      const tpl = visao === 'templates';
-      zapTpl.hidden = !tpl;
-      zapVazio.hidden = tpl;
+      zapTpl.hidden = visao !== 'templates';
+      zapInst.hidden = visao !== 'instancias';
+      zapVazio.hidden = visao !== 'disparos';
+      if(visao === 'instancias') instCarregar();
     }
+
+    // ---- Instâncias (Etapa 2): lê wa_instancias (RLS) e age pela Edge Function whatsapp-api ----
+    const ST_ROTULO = { conectada: 'Conectada', aguardando_qr: 'Aguardando QR', conectando: 'Conectando', desconectada: 'Desconectada' };
+    const grid = document.getElementById('zapInstGrid');
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let instancias = [], canalInst = null, modalId = null, pollQr = null;
+
+    async function waApi(acao, dados){
+      const sb = window.CDL_SB;
+      if(!sb) throw new Error('Supabase não configurado.');
+      const { data, error } = await sb.functions.invoke('whatsapp-api', { body: { acao, ...dados } });
+      if(error){
+        let msg = error.message;
+        try { const j = await error.context.json(); if(j && j.erro) msg = j.erro; } catch(e){ /* sem corpo */ }
+        throw new Error(msg);
+      }
+      if(!data || data.ok !== true) throw new Error((data && data.erro) || 'Falha na chamada.');
+      return data;
+    }
+    function fmtTel(t){
+      const d = String(t || '').replace(/\D/g, '');
+      if(d.length < 12) return d;
+      return `+${d.slice(0, 2)} (${d.slice(2, 4)}) ${d.slice(4, d.length - 4)}-${d.slice(-4)}`;
+    }
+    function instDesenhar(){
+      const q = (busca.value || '').trim().toLowerCase();
+      const lista = instancias.filter(i => !q || (i.nome || '').toLowerCase().includes(q) || String(i.telefone || '').includes(q));
+      if(!lista.length){
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-title">${instancias.length ? 'Nenhuma instância encontrada' : 'Nenhuma instância criada'}</div></div>`;
+        return;
+      }
+      const pode = window.__podeEditar('whatsapp'), adm = window.__isAdmin();
+      grid.innerHTML = lista.map(i => `
+        <div class="zap-inst-card" data-id="${esc(i.id)}">
+          <div class="zap-inst-top">
+            <div><div class="zap-inst-nome">${esc(i.nome)}</div><div class="zap-inst-tel">${i.telefone ? esc(fmtTel(i.telefone)) : 'Número ainda não conectado'}</div></div>
+            <span class="wa-badge zap-st-${esc(i.status)}">${esc(ST_ROTULO[i.status] || i.status)}</span>
+          </div>
+          ${pode ? `<div class="zap-inst-acoes">
+            <button class="wa-btn wa-btn-primary" type="button" data-acao="conectar">${i.status === 'conectada' ? 'Reconectar' : 'Conectar'}</button>
+            ${i.status === 'conectada' ? '<button class="wa-btn wa-btn-outline" type="button" data-acao="desconectar">Desconectar</button>' : ''}
+            <button class="wa-btn wa-btn-outline" type="button" data-acao="atualizar">Atualizar</button>
+            ${adm ? '<button class="wa-btn wa-btn-outline" type="button" data-acao="excluir">Excluir</button>' : ''}
+          </div>` : ''}
+        </div>`).join('');
+    }
+    async function instCarregar(){
+      const sb = window.CDL_SB;
+      if(!sb) return;
+      const { data, error } = await sb.from('wa_instancias').select('id,nome,telefone,status,ultimo_status_em').order('criado_em', { ascending: false });
+      if(error){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-title">Não foi possível carregar as instâncias</div><div class="empty-subtitle">${esc(error.message)}</div></div>`; return; }
+      instancias = data || [];
+      instDesenhar();
+      if(!canalInst){
+        canalInst = sb.channel('cdload-wa-instancias')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_instancias' }, instCarregar)
+          .subscribe();
+      }
+    }
+
+    const modalConectar = document.getElementById('zapConectarModal'), qrBox = document.getElementById('zapQrBox'), qrStatus = document.getElementById('zapQrStatus');
+    function mostrarQr(r){
+      if(r.paircode) qrBox.innerHTML = `<span class="zap-qr-code">${esc(r.paircode)}</span>`;
+      else if(r.qrcode) qrBox.innerHTML = `<img alt="QR code do WhatsApp" src="${esc(/^data:/.test(r.qrcode) ? r.qrcode : 'data:image/png;base64,' + r.qrcode)}">`;
+    }
+    function fecharConectar(){
+      clearInterval(pollQr); pollQr = null; modalId = null;
+      modalConectar.classList.remove('open');
+    }
+    async function conectar(id, telefone){
+      qrStatus.textContent = telefone ? 'Gerando código de pareamento...' : 'Gerando QR code...';
+      try {
+        const r = await waApi('instancia_conectar', { id, telefone });
+        if(r.status === 'conectada'){ fecharConectar(); instCarregar(); return; }
+        mostrarQr(r);
+        qrStatus.textContent = telefone ? 'Digite o código no WhatsApp do celular.' : 'Aguardando a leitura do QR code...';
+      } catch(e){ qrStatus.textContent = e.message; return; }
+      clearInterval(pollQr);
+      // Confere o status a cada 3 s; o cartão muda sozinho quando o celular lê o QR.
+      pollQr = setInterval(async () => {
+        if(modalId !== id) return;
+        try {
+          const s = await waApi('instancia_status', { id });
+          if(s.status === 'conectada'){ fecharConectar(); instCarregar(); }
+          else if(s.qrcode) mostrarQr(s);
+        } catch(e){ /* tenta de novo no próximo ciclo */ }
+      }, 3000);
+    }
+    function abrirConectar(id){
+      const inst = instancias.find(i => i.id === id);
+      modalId = id;
+      document.getElementById('zapConectarTitulo').textContent = 'Conectar ' + (inst ? inst.nome : 'número');
+      qrBox.innerHTML = '<span class="zap-qr-msg">Gerando QR code...</span>';
+      document.getElementById('zapPairTel').value = '';
+      modalConectar.classList.add('open');
+      conectar(id);
+    }
+    document.getElementById('zapConectarFechar').addEventListener('click', fecharConectar);
+    document.getElementById('zapPairBtn').addEventListener('click', () => {
+      const tel = document.getElementById('zapPairTel').value.replace(/\D/g, '');
+      if(tel.length < 12) { qrStatus.textContent = 'Informe o número com 55 + DDD + telefone.'; return; }
+      if(modalId) conectar(modalId, tel);
+    });
+    document.getElementById('zapInstNova').addEventListener('click', async () => {
+      if(!window.__exigirEdicao('whatsapp', 'criar instâncias')) return;
+      const nome = (prompt('Nome da instância (ex.: Atendimento CDL):') || '').trim();
+      if(!nome) return;
+      try { const r = await waApi('instancia_criar', { nome }); await instCarregar(); abrirConectar(r.id); }
+      catch(e){ alert('Não foi possível criar a instância: ' + e.message); }
+    });
+    grid.addEventListener('click', async ev => {
+      const btn = ev.target.closest('[data-acao]');
+      if(!btn) return;
+      const id = btn.closest('.zap-inst-card').dataset.id, acao = btn.dataset.acao;
+      if(!window.__exigirEdicao('whatsapp', 'gerenciar instâncias')) return;
+      if(acao === 'conectar') return abrirConectar(id);
+      if(acao === 'excluir' && !confirm('Excluir esta instância? O número será desconectado e não há como desfazer.')) return;
+      if(acao === 'desconectar' && !confirm('Desconectar este número do WhatsApp?')) return;
+      btn.disabled = true;
+      try { await waApi(acao === 'atualizar' ? 'instancia_status' : 'instancia_' + acao, { id }); await instCarregar(); }
+      catch(e){ alert('Não foi possível concluir: ' + e.message); }
+      finally { btn.disabled = false; }
+    });
+    busca.addEventListener('input', () => { if(visao === 'instancias') instDesenhar(); });
     seg.addEventListener('click', ev => {
       const btn = ev.target.closest('.stk-seg-btn');
       if(!btn) return;
