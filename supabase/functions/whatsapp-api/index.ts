@@ -70,11 +70,6 @@ function interpretarStatus(r: any) {
   return { status, telefone, qrcode: qr || null, paircode: (inst.paircode ?? r?.paircode ?? null) as string | null };
 }
 
-const exigirAdmin = async (supabase: Contexto['supabase']) => {
-  const { data } = await supabase.rpc('cdl_admin');
-  return data === true;
-};
-
 const acoes: Record<string, Acao> = {
   ping: () =>
     Promise.resolve(json({
@@ -103,34 +98,36 @@ const acoes: Record<string, Acao> = {
 
   // ---------- Etapa 2 · Instâncias ----------
 
-  async instancia_criar({ supabase, entrada }) {
-    if (!(await exigirAdmin(supabase))) return json({ ok: false, erro: 'Só o Administrador cria instâncias.' }, 403);
-    const nome = String(entrada.nome ?? '').trim().slice(0, 60);
-    if (nome.length < 2) return json({ ok: false, erro: 'Informe um nome para a instância.' }, 400);
-    const slug = nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'numero';
-    const uazapiNome = `cdload-${slug}-${crypto.randomUUID().slice(0, 6)}`;
-
-    const r = await uazapi('/instance/create', { metodo: 'POST', adminToken: true, corpo: { name: uazapiNome, systemName: 'cdload' } });
-    const token = r?.token ?? r?.instance?.token;
-    if (!token) throw new Error('A UAZAPI não devolveu o token da instância.');
-
-    const { data: user } = await supabase.auth.getUser();
+  // As instâncias são criadas no painel da UAZAPI. Aqui elas são importadas (com o token)
+  // para wa_instancias / wa_instancia_tokens; os cartões aparecem sozinhos pelo Realtime.
+  async instancia_sincronizar() {
+    const lista = await uazapi('/instance/all', { adminToken: true });
+    // deno-lint-ignore no-explicit-any
+    const itens: any[] = Array.isArray(lista) ? lista : (lista?.instances ?? []);
     const db = admin();
-    const { data: inst, error } = await db.from('wa_instancias')
-      .insert({ nome, uazapi_nome: uazapiNome, status: 'desconectada', ultimo_status_em: new Date().toISOString(), criado_por: user?.user?.id ?? null })
-      .select('id').single();
-    if (error) {
-      // Não deixa instância órfã na UAZAPI se o banco recusou.
-      await uazapi('/instance', { metodo: 'DELETE', token }).catch(() => {});
-      throw new Error(error.message);
+    const { data: existentes } = await db.from('wa_instancias').select('id,uazapi_nome');
+    const porNome = new Map<string, string>((existentes ?? []).map((i: { id: string; uazapi_nome: string }) => [i.uazapi_nome, i.id]));
+    const agora = new Date().toISOString();
+    let novas = 0;
+    for (const it of itens) {
+      const nomeUazapi = String(it?.name ?? it?.instanceName ?? '').trim();
+      const token = String(it?.token ?? '').trim();
+      if (!nomeUazapi || !token) continue;
+      const s = interpretarStatus(it);
+      let id = porNome.get(nomeUazapi);
+      if (id) {
+        await db.from('wa_instancias').update({ status: s.status, telefone: s.telefone, ultimo_status_em: agora }).eq('id', id);
+      } else {
+        const { data: nova, error } = await db.from('wa_instancias')
+          .insert({ nome: String(it?.profileName || nomeUazapi), uazapi_nome: nomeUazapi, telefone: s.telefone, status: s.status, ultimo_status_em: agora })
+          .select('id').single();
+        if (error) throw new Error(error.message);
+        id = nova.id as string;
+        novas++;
+      }
+      await db.from('wa_instancia_tokens').upsert({ instancia_id: id, token });
     }
-    const { error: erroToken } = await db.from('wa_instancia_tokens').insert({ instancia_id: inst.id, token });
-    if (erroToken) {
-      await uazapi('/instance', { metodo: 'DELETE', token }).catch(() => {});
-      await db.from('wa_instancias').delete().eq('id', inst.id);
-      throw new Error(erroToken.message);
-    }
-    return json({ ok: true, id: inst.id });
+    return json({ ok: true, total: itens.length, novas });
   },
 
   // Sem `telefone` gera QR code; com `telefone` gera código de pareamento.
@@ -157,14 +154,6 @@ const acoes: Record<string, Acao> = {
     const { db, inst, token } = await carregarInstancia(entrada.id);
     await uazapi('/instance/disconnect', { metodo: 'POST', token });
     await db.from('wa_instancias').update({ status: 'desconectada', ultimo_status_em: new Date().toISOString() }).eq('id', inst.id);
-    return json({ ok: true });
-  },
-
-  async instancia_excluir({ supabase, entrada }) {
-    if (!(await exigirAdmin(supabase))) return json({ ok: false, erro: 'Só o Administrador exclui instâncias.' }, 403);
-    const { db, inst, token } = await carregarInstancia(entrada.id);
-    await uazapi('/instance', { metodo: 'DELETE', token });
-    await db.from('wa_instancias').delete().eq('id', inst.id);  // o token sai junto (on delete cascade)
     return json({ ok: true });
   },
 };
