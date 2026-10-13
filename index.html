@@ -11246,9 +11246,9 @@ ${clipPlayerPills(n)}
       stkEmpFiltros.forEach(el => { el.hidden = !emp; });
       stkVisaoEmpEl.hidden = !emp;
       document.getElementById('page-dashboard').classList.toggle('stk-emp', emp);   // Limpar/Exportar só com ícone
-      // EMPRESAS: barra com Busca + 7 filtros (Painel, Indicador, Mês, Ano, Cidade, Regime, SIMEI) + switch + filtro + Limpar + Exportar;
-      // Situação, Subclasse e Ramo ficam só no menu flutuante (selo "+3").
-      [stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
+      // EMPRESAS: barra com Busca + 5 filtros (Painel, Indicador, Mês, Ano, Cidade) + switch + filtro + Limpar + Exportar;
+      // Regime, SIMEI, Situação, Subclasse e Ramo ficam só no menu flutuante (selo "+5").
+      [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
       stkFiltrosBtn.hidden = !emp;
       stkFiltrosAtualizar();
       if(!emp) stkFiltrosFechar();
