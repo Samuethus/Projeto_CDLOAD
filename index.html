@@ -12144,9 +12144,13 @@ ${clipPlayerPills(n)}
     // Filtros do painel atual, na ordem da barra (inclui os que só aparecem no menu).
     function stkFiltrosCampos(){
       const barra = stkBuscaInput.closest('.wa-stock-filters');
-      return [...barra.children].map(ch => ch.matches('.wa-clip-search') ? { el: stkBuscaInput, wrap: ch, rot: 'Busca' }
+      const campos = [...barra.children].map(ch => ch.matches('.wa-clip-search') ? { el: stkBuscaInput, wrap: ch, rot: 'Busca' }
           : ch.matches('select.filter-select') ? { el: ch, wrap: ch, rot: STK_FILTROS_ROT[ch.id] || ch.title || 'Filtro' } : null)
         .filter(c => c && !c.wrap.hidden && !c.el.hidden);
+      // No menu, o Ramo vem logo abaixo da busca (a barra mantém a ordem original).
+      const ramo = campos.findIndex(c => c.el.id === "stkEmpRamoFiltro");
+      if(ramo > 0) campos.splice(1, 0, campos.splice(ramo, 1)[0]);
+      return campos;
     }
     const stkFiltrosAberto = () => stkFiltrosOverlay.classList.contains('open');
     // Ramo no menu: digita "ótica", "padaria", "pet"… e escolhe entre os ramos (nome, sinônimos ou grupo, sem acento),
