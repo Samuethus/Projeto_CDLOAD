@@ -1,5 +1,8 @@
 // Dashboard › Painel · Viabilidades — impacto do CDLoad na rotina e no financeiro.
-// Fonte: planilha de viabilidade do Núcleo de Inteligência (out/2026). Edite aqui e publique.
+// Fonte: planilha de viabilidade do Núcleo de Inteligência (out/2026).
+// Os valores em uso ficam no Supabase (viabilidade_itens / viabilidade_parametros — supabase/schema_viabilidade.sql)
+// e são editados no próprio painel (botão Editar). Este arquivo é a reserva (tabela vazia ou inexistente)
+// e a fonte das logos (VIAB_LOGOS).
 //
 // ferramentas: custo anual = preco × frequencia (mesma conta da coluna VALOR da planilha).
 //              preco null = sem custo informado (entra no painel com R$ 0).

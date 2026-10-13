@@ -1732,6 +1732,28 @@
   .vb-pc-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .vb-pc-txt small{color:var(--cd-muted);font-size:11.5px;}
   .vb-pc-item.vazio .vb-pc-txt{color:var(--cd-muted);}
+  /* Viabilidade › Editar dados (tabelas viabilidade_itens/viabilidade_parametros do Supabase). */
+  .vb-ed-sec{margin-bottom:20px;}
+  .vb-ed-sec:last-child{margin-bottom:0;}
+  .vb-ed-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .vb-ed-cab h4{margin:0;font-size:13px;font-weight:700;color:var(--wa-text);}
+  .vb-ed-cab small{font-weight:400;color:var(--wa-text-muted);}
+  .vb-ed-tab-wrap{overflow-x:auto;border:1px solid var(--wa-border);border-radius:10px;}
+  .vb-ed-tab{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .vb-ed-tab th{background:#F8FAFC;font-size:11px;font-weight:700;color:#374151;text-align:left;padding:7px 6px;white-space:nowrap;border-bottom:1px solid var(--wa-border);}
+  .vb-ed-tab td{padding:5px 4px;border-bottom:1px solid var(--wa-border);vertical-align:middle;}
+  .vb-ed-tab tr:last-child td{border-bottom:none;}
+  .vb-ed-tab input[type="text"], .vb-ed-tab input[type="number"], .vb-ed-tab select{width:100%;min-width:72px;box-sizing:border-box;height:32px;padding:0 7px;border:1px solid var(--wa-border);border-radius:7px;font:inherit;color:var(--wa-text);background:#fff;}
+  .vb-ed-tab input[type="number"]{min-width:64px;text-align:right;}
+  .vb-ed-tab input.vb-ed-largo{min-width:160px;}
+  .vb-ed-tab input:focus, .vb-ed-tab select:focus{outline:none;border-color:var(--wa-primary);}
+  .vb-ed-tab input[type="checkbox"]{width:16px;height:16px;accent-color:#0056D2;display:block;margin:0 auto;}
+  .vb-ed-tab .vb-ed-calc{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--wa-text-muted);padding-right:8px;}
+  .vb-ed-dias{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--wa-text);}
+  .vb-ed-dias input{width:80px;height:32px;padding:0 7px;border:1px solid var(--wa-border);border-radius:7px;font:inherit;text-align:right;}
+  .vb-ed-msg{font-size:12px;color:var(--wa-text-muted);flex:1;min-width:0;}
+  .vb-ed-msg.erro{color:#B91C1C;}
+  .vb-ed-msg.ok{color:#047857;}
   .cd-rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
   /* EMPRESAS: Perfil das empresas — porte × regime tributário (calor pela participação no total). */
   .emp-matriz-wrap{flex:1 1 auto;min-height:0;overflow:auto;}
@@ -2637,6 +2659,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             <span class="btn-label">Limpar</span>
           </button>
+          <!-- Viabilidade: editar custos, módulos e planos (Supabase · viabilidade_itens) — só quem pode editar o Dashboard -->
+          <button class="btn btn-clear" id="stkViabEditar" title="Editar dados da viabilidade" aria-label="Editar dados da viabilidade" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <span class="btn-label">Editar</span>
+          </button>
           <button class="btn btn-export" id="stkExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
             <span class="btn-label">Exportar</span>
@@ -2650,6 +2677,29 @@
           <div class="emp-mapa-msg" id="empMapaMsg" hidden></div>
         </div>
         <div class="stk-tooltip" id="stkTooltip" role="tooltip" hidden></div>
+        <!-- ===== MODAL: VIABILIDADE › EDITAR DADOS ===== -->
+        <div class="wa-modal-overlay" id="viabEditModal">
+          <div class="wa-modal wa-modal-lg" style="max-width:1180px;">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </div>
+                <div>
+                  <div class="wa-modal-title">Editar viabilidade</div>
+                  <div class="wa-modal-sub" id="viabEditSub">Custos das ferramentas, ganhos dos módulos e planos de captação</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" id="viabEditFechar">&times;</button>
+            </div>
+            <div class="wa-modal-body" id="viabEditCorpo"></div>
+            <div class="wa-modal-footer">
+              <span class="vb-ed-msg" id="viabEditMsg"></span>
+              <button class="wa-btn wa-btn-outline" type="button" id="viabEditCancelar">Cancelar</button>
+              <button class="wa-btn wa-btn-primary" type="button" id="viabEditSalvar">Salvar</button>
+            </div>
+          </div>
+        </div>
         <!-- Menu de filtragem flutuante (lateral direita, fade da direita para a esquerda, fundo com blur como os modais Wizard) -->
         <div class="stk-filtros-overlay" id="stkFiltrosOverlay" aria-hidden="true">
           <aside class="stk-filtros-painel" role="dialog" aria-modal="true" aria-labelledby="stkFiltrosTitulo">
@@ -10714,6 +10764,7 @@ ${clipPlayerPills(n)}
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
       stkLicencasEl.hidden = !viab;
+      document.getElementById('stkViabEditar').hidden = !viab || !window.__podeEditar('dashboard');
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -13110,13 +13161,18 @@ ${clipPlayerPills(n)}
 
     // ===== Painel Viabilidade — mesma estrutura do CAGED =====
     // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x
-    // captação via planos). Dados da planilha de viabilidade: assets/data/viabilidades.js.
+    // captação via planos). Dados: Supabase (viabilidade_itens + viabilidade_parametros —
+    // supabase/schema_viabilidade.sql), editáveis pelo botão "Editar" da barra. Sem a tabela (ou vazia),
+    // vale a planilha em assets/data/viabilidades.js, que também traz as logos (VIAB_LOGOS).
     // A busca filtra ferramentas e módulos, cada lado por si: o lado em que o termo não
     // aparece fica completo ("Clipping" filtra só os módulos; o custo segue o total).
     // Simulações (combinam entre si em todas as análises):
     //   Leads (01 a 05, padrão 01): cada lead é um plano contratado (preço × leads × 12 meses);
     //   Power BI (01 a 07 licenças, padrão 01): ferramentas com porLicenca custam preço × frequência × licenças.
     let viabDadosPromessa = null, viabUltimo = null, viabRenderSeq = 0;
+    // viabDados: dados em uso (banco ou arquivo); viabArquivo: cópia da planilha; viabBanco: estado da tabela
+    // ('ok' com linhas, 'vazio' tabela sem linhas, 'ausente' sem tabela/sem acesso — erro em viabBancoErro).
+    let viabDados = null, viabArquivo = null, viabBanco = 'ausente', viabBancoErro = null, viabCargaPromessa = null;
     function viabCarregar(){
       if(window.VIAB_DADOS) return Promise.resolve();
       if(!viabDadosPromessa) viabDadosPromessa = new Promise((ok, falha) => {
@@ -13134,6 +13190,39 @@ ${clipPlayerPills(n)}
       return (v < 0 && a > 0 ? '−' : '') + 'R$ ' + a.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); };
     const viabHoras = v => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
     const viabDiario = per => stkNorm(per).startsWith('diar');
+    // Linhas do Supabase → mesmo formato de window.VIAB_DADOS (cada item leva o id da linha).
+    function viabDoBanco(itens, dias, base){
+      const num = v => v == null || v === '' ? null : Number(v), txt = v => v == null ? '' : String(v);
+      const de = tipo => itens.filter(r => r.tipo === tipo).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+      const datas = itens.map(r => txt(r.atualizado_em).slice(0, 10)).filter(Boolean).sort();
+      return { atualizado: datas[datas.length - 1] || (base && base.atualizado) || '',
+        diasUteisMes: Number(dias) || (base && base.diasUteisMes) || 22,
+        ferramentas: de('ferramenta').map(r => ({ id: r.id, ferramenta: txt(r.nome), logo: txt(r.logo), descricao: txt(r.descricao), objetivo: txt(r.objetivo),
+          prioridade: txt(r.prioridade), plano: txt(r.plano), periodicidade: txt(r.periodicidade), frequencia: num(r.frequencia) || 0, preco: num(r.preco), porLicenca: !!r.por_licenca })),
+        cdload: de('modulo').map(r => ({ id: r.id, modulo: txt(r.nome),
+          pro: { objetivo: txt(r.objetivo), prioridade: txt(r.prioridade), periodicidade: txt(r.periodicidade), frequencia: num(r.frequencia) || 0, horas: num(r.horas) || 0 },
+          contra: { objetivo: txt(r.contra_objetivo) || 'Nenhum', prioridade: txt(r.contra_prioridade) || 'Baixa' } })),
+        planos: de('plano').map(r => ({ id: r.id, nome: txt(r.nome), objetivo: txt(r.objetivo), prioridade: txt(r.prioridade), plano: txt(r.plano),
+          periodicidade: txt(r.periodicidade) || 'Mensal', quantidade: 1, preco: num(r.preco) || 0 })) };
+    }
+    // Planilha (logos e reserva) + Supabase; a tabela com linhas vence. Falha do banco não derruba o painel.
+    function viabCarregarTudo(){
+      if(!viabCargaPromessa){
+        const sb = window.CDL_SB;
+        const banco = !sb ? Promise.reject(new Error('Sem conexão com o Supabase.')) : Promise.all([
+          sb.from('viabilidade_itens').select('*').order('ordem'),
+          sb.from('viabilidade_parametros').select('dias_uteis_mes').eq('id', 1).maybeSingle()
+        ]).then(([it, par]) => { if(it.error) throw it.error; return { itens: it.data || [], dias: par.data && par.data.dias_uteis_mes }; });
+        viabCargaPromessa = Promise.all([viabCarregar().catch(() => null), banco.catch(e => ({ erro: e }))]).then(([, B]) => {
+          if(window.VIAB_DADOS && !viabArquivo) viabArquivo = window.VIAB_DADOS;
+          viabBancoErro = B.erro || null;
+          viabBanco = B.erro ? 'ausente' : B.itens.length ? 'ok' : 'vazio';
+          viabDados = viabBanco === 'ok' ? viabDoBanco(B.itens, B.dias, viabArquivo) : viabArquivo;
+          if(!viabDados){ viabCargaPromessa = null; throw new Error('viabilidade'); }
+        });
+      }
+      return viabCargaPromessa;
+    }
     function viabModelo(D){
       const busca = stkBuscaInput.value.trim(), q = stkNorm(busca);
       const tem = (...txt) => !q || txt.some(x => stkNorm(x).includes(q));
@@ -13156,16 +13245,144 @@ ${clipPlayerPills(n)}
     }
     function viabRender(){
       const seq = ++viabRenderSeq;
-      if(!window.VIAB_DADOS){
+      stkViabEditarEl.hidden = !window.__podeEditar('dashboard');
+      if(!viabDados){
         stkGrid.classList.add('cd-carregando');
-        viabCarregar().then(() => { if(seq === viabRenderSeq) viabRender(); }).catch(() => {
+        viabCarregarTudo().then(() => { if(seq === viabRenderSeq) viabRender(); }).catch(() => {
           stkGrid.classList.remove('cd-fit', 'cd-carregando');
           stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados de viabilidade (assets/data/viabilidades.js).</div></div>`;
         });
         return;
       }
-      viabDesenhar(viabModelo(window.VIAB_DADOS));
+      viabDesenhar(viabModelo(viabDados));
     }
+
+    // ---- Viabilidade › Editar dados (Supabase) ----
+    // Uma tabela por tipo (ferramentas, módulos, planos) + dias úteis. Salvar grava tudo de uma vez:
+    // exclui as linhas removidas, atualiza as existentes e insere as novas (ordem = posição na tela).
+    // O RLS só aceita quem pode editar o Dashboard (cdl_pode_editar('dashboard')).
+    const stkViabEditarEl = document.getElementById('stkViabEditar');
+    const viabEdModal = document.getElementById('viabEditModal'), viabEdCorpo = document.getElementById('viabEditCorpo');
+    const viabEdMsg = document.getElementById('viabEditMsg'), viabEdSalvarBtn = document.getElementById('viabEditSalvar');
+    let viabEdRemovidos = new Set();
+    const VIAB_COLUNAS = ['nome', 'descricao', 'objetivo', 'prioridade', 'plano', 'periodicidade', 'frequencia', 'preco', 'horas', 'logo', 'contra_objetivo', 'contra_prioridade'];
+    const VIAB_PRIORIDADES = ['Alta', 'Média', 'Baixa'], VIAB_PERIODOS = ['Diário', 'Mensal', 'Anual'];
+    const viabEdOpcoes = (lista, val) => (lista.includes(val) || !val ? '' : `<option selected>${esc(val)}</option>`)
+      + lista.map(o => `<option${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('');
+    const viabEdTxt = (k, v, largo) => `<input type="text" data-k="${k}" value="${esc(v == null ? '' : v)}"${largo ? ' class="vb-ed-largo"' : ''}>`;
+    const viabEdNum = (k, v, passo) => `<input type="number" data-k="${k}" min="0" step="${passo || 'any'}" value="${v == null ? '' : v}">`;
+    const viabEdSel = (k, lista, v) => `<select data-k="${k}">${viabEdOpcoes(lista, v)}</select>`;
+    const viabEdRemover = '<td><button type="button" class="wa-icon-btn danger" data-vb-remover title="Remover linha">&times;</button></td>';
+    const VIAB_ED = {
+      ferramenta: { titulo: 'Ferramentas', dica: 'custo anual = preço × frequência (× licenças Power BI, se marcado)',
+        cab: ['Ferramenta', 'Plano', 'Periodicidade', 'Frequência', 'Preço (R$)', 'Por licença', 'Prioridade', 'Objetivo', 'Descrição', 'Logo', 'Custo anual', ''],
+        novo: { ferramenta: '', plano: '', periodicidade: 'Mensal', frequencia: 12, preco: null, porLicenca: false, prioridade: 'Média', objetivo: '', descricao: '', logo: '' },
+        linha: f => `<td>${viabEdTxt('nome', f.ferramenta)}</td><td>${viabEdTxt('plano', f.plano)}</td><td>${viabEdSel('periodicidade', VIAB_PERIODOS, f.periodicidade)}</td>
+          <td>${viabEdNum('frequencia', f.frequencia)}</td><td>${viabEdNum('preco', f.preco, '0.01')}</td><td><input type="checkbox" data-k="por_licenca"${f.porLicenca ? ' checked' : ''}></td>
+          <td>${viabEdSel('prioridade', VIAB_PRIORIDADES, f.prioridade)}</td><td>${viabEdTxt('objetivo', f.objetivo, 1)}</td><td>${viabEdTxt('descricao', f.descricao, 1)}</td>
+          <td>${viabEdSel('logo', [''].concat(Object.keys(window.VIAB_LOGOS || {})), f.logo)}</td><td class="vb-ed-calc" data-calc></td>` },
+      modulo: { titulo: 'Módulos do CDLoad', dica: 'horas salvas/mês = frequência × horas (× dias úteis, se diário)',
+        cab: ['Módulo', 'Pró · objetivo', 'Prioridade', 'Periodicidade', 'Frequência', 'Horas', 'Contra · objetivo', 'Prioridade', 'Horas/mês', ''],
+        novo: { modulo: '', pro: { objetivo: '', prioridade: 'Alta', periodicidade: 'Mensal', frequencia: 1, horas: 1 }, contra: { objetivo: 'Nenhum', prioridade: 'Baixa' } },
+        linha: m => `<td>${viabEdTxt('nome', m.modulo)}</td><td>${viabEdTxt('objetivo', m.pro.objetivo, 1)}</td><td>${viabEdSel('prioridade', VIAB_PRIORIDADES, m.pro.prioridade)}</td>
+          <td>${viabEdSel('periodicidade', VIAB_PERIODOS, m.pro.periodicidade)}</td><td>${viabEdNum('frequencia', m.pro.frequencia)}</td><td>${viabEdNum('horas', m.pro.horas)}</td>
+          <td>${viabEdTxt('contra_objetivo', m.contra.objetivo, 1)}</td><td>${viabEdSel('contra_prioridade', VIAB_PRIORIDADES, m.contra.prioridade)}</td><td class="vb-ed-calc" data-calc></td>` },
+      plano: { titulo: 'Planos (captação)', dica: 'captação anual = preço × leads (Simulação Leads) × 12',
+        cab: ['Nome', 'Plano', 'Objetivo', 'Prioridade', 'Periodicidade', 'Preço (R$)', 'Captação/ano (1 lead)', ''],
+        novo: { nome: '', plano: '', objetivo: '', prioridade: 'Alta', periodicidade: 'Mensal', preco: null },
+        linha: pl => `<td>${viabEdTxt('nome', pl.nome)}</td><td>${viabEdTxt('plano', pl.plano)}</td><td>${viabEdTxt('objetivo', pl.objetivo, 1)}</td>
+          <td>${viabEdSel('prioridade', VIAB_PRIORIDADES, pl.prioridade)}</td><td>${viabEdSel('periodicidade', VIAB_PERIODOS, pl.periodicidade)}</td>
+          <td>${viabEdNum('preco', pl.preco, '0.01')}</td><td class="vb-ed-calc" data-calc></td>` }
+    };
+    const viabEdTr = (tipo, item) => `<tr data-tipo="${tipo}"${item.id ? ` data-id="${esc(item.id)}"` : ''}>${VIAB_ED[tipo].linha(item)}${viabEdRemover}</tr>`;
+    function viabEdMensagem(txt, cls){ viabEdMsg.textContent = txt || ''; viabEdMsg.className = 'vb-ed-msg' + (cls ? ' ' + cls : ''); }
+    // Valores calculados ao lado de cada linha (atualizam enquanto digita).
+    function viabEdRecalcular(){
+      const dias = Number(viabEdCorpo.querySelector('[data-k="dias_uteis_mes"]').value) || 0;
+      viabEdCorpo.querySelectorAll('tr[data-tipo]').forEach(tr => {
+        const v = k => { const el = tr.querySelector(`[data-k="${k}"]`); return el ? Number(el.value) || 0 : 0; };
+        const per = (tr.querySelector('[data-k="periodicidade"]') || {}).value || '', cel = tr.querySelector('[data-calc]');
+        if(tr.dataset.tipo === 'ferramenta') cel.textContent = viabMoeda(v('preco') * v('frequencia')) + (tr.querySelector('[data-k="por_licenca"]').checked ? ' × lic.' : '');
+        else if(tr.dataset.tipo === 'modulo') cel.textContent = viabHoras(v('frequencia') * v('horas') * (viabDiario(per) ? dias : 1));
+        else cel.textContent = viabMoeda(v('preco') * (viabDiario(per) ? dias * 12 : stkNorm(per).startsWith('anu') ? 1 : 12));
+      });
+    }
+    function viabEdAbrir(){
+      if(!window.__exigirEdicao('dashboard', 'editar os dados da viabilidade')) return;
+      viabCarregarTudo().catch(() => null).then(() => {
+        const D = viabDados || { diasUteisMes: 22, ferramentas: [], cdload: [], planos: [] };
+        const secao = (tipo, itens) => `<div class="vb-ed-sec"><div class="vb-ed-cab"><h4>${VIAB_ED[tipo].titulo} <small>· ${esc(VIAB_ED[tipo].dica)}</small></h4>
+            <button type="button" class="wa-btn wa-btn-outline" data-vb-incluir="${tipo}" style="padding:5px 10px;font-size:12px;">+ Incluir</button></div>
+          <div class="vb-ed-tab-wrap"><table class="vb-ed-tab"><thead><tr>${VIAB_ED[tipo].cab.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+          <tbody data-tbody="${tipo}">${itens.map(it => viabEdTr(tipo, it)).join('')}</tbody></table></div></div>`;
+        viabEdCorpo.innerHTML = `<div class="vb-ed-sec"><label class="vb-ed-dias">Dias úteis por mês ${viabEdNum('dias_uteis_mes', D.diasUteisMes, 1)}
+            <small style="color:var(--wa-text-muted)">rotinas diárias × dias úteis</small></label></div>`
+          + secao('ferramenta', D.ferramentas) + secao('modulo', D.cdload) + secao('plano', D.planos);
+        viabEdRemovidos = new Set();
+        viabEdSalvarBtn.disabled = viabBanco === 'ausente';
+        viabEdMensagem(viabBanco === 'ausente'
+          ? `Tabela viabilidade_itens indisponível no Supabase — rode supabase/schema_viabilidade.sql (${viabBancoErro && viabBancoErro.message || 'sem conexão'}).`
+          : viabBanco === 'vazio' ? 'Tabela vazia: ao salvar, estes valores (planilha) passam a ficar no Supabase.'
+          : viabDados.atualizado ? `Última alteração em ${viabDados.atualizado.split('-').reverse().join('/')}.` : '', viabBanco === 'ausente' ? 'erro' : '');
+        viabEdRecalcular();
+        viabEdModal.classList.add('open');
+      });
+    }
+    const viabEdFechar = () => viabEdModal.classList.remove('open');
+    async function viabEdSalvar(){
+      if(!window.__exigirEdicao('dashboard', 'editar os dados da viabilidade')) return;
+      const sb = window.CDL_SB;
+      const dias = Math.round(Number(viabEdCorpo.querySelector('[data-k="dias_uteis_mes"]').value));
+      if(!(dias >= 1 && dias <= 31)) return viabEdMensagem('Dias úteis por mês: informe de 1 a 31.', 'erro');
+      const atualizar = [], inserir = [], ordem = {};
+      for(const tr of viabEdCorpo.querySelectorAll('tr[data-tipo]')){
+        // Todas as linhas com as mesmas colunas (o PostgREST grava null nas que faltam).
+        const tipo = tr.dataset.tipo, r = { tipo, ordem: ordem[tipo] = (ordem[tipo] || 0) + 1, por_licenca: false };
+        VIAB_COLUNAS.forEach(k => { r[k] = null; });
+        tr.querySelectorAll('[data-k]').forEach(el => {
+          r[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (el.value === '' ? null : Number(el.value)) : (el.value.trim() || null);
+        });
+        if(!r.nome){ tr.querySelector('[data-k="nome"]').focus(); return viabEdMensagem(`${VIAB_ED[tipo].titulo}: preencha o nome de todas as linhas.`, 'erro'); }
+        if(Object.keys(r).some(k => typeof r[k] === 'number' && r[k] < 0)) return viabEdMensagem(`${r.nome}: valores não podem ser negativos.`, 'erro');
+        if(tr.dataset.id){ r.id = tr.dataset.id; atualizar.push(r); } else inserir.push(r);
+      }
+      viabEdSalvarBtn.disabled = true;
+      viabEdMensagem('Salvando…');
+      try {
+        const passos = [
+          () => sb.from('viabilidade_parametros').upsert({ id: 1, dias_uteis_mes: dias }),
+          () => viabEdRemovidos.size ? sb.from('viabilidade_itens').delete().in('id', [...viabEdRemovidos]) : null,
+          () => atualizar.length ? sb.from('viabilidade_itens').upsert(atualizar) : null,
+          () => inserir.length ? sb.from('viabilidade_itens').insert(inserir) : null
+        ];
+        for(const passo of passos){ const res = await passo(); if(res && res.error) throw res.error; }
+        viabCargaPromessa = null; viabDados = null;
+        await viabCarregarTudo();
+        viabEdFechar();
+        if(stkPainel() === 'viabilidades') viabRender();
+      } catch(e){
+        viabEdMensagem('Não foi possível salvar: ' + (e && e.message || e), 'erro');
+      } finally {
+        viabEdSalvarBtn.disabled = false;
+      }
+    }
+    stkViabEditarEl.addEventListener('click', viabEdAbrir);
+    document.getElementById('viabEditFechar').addEventListener('click', viabEdFechar);
+    document.getElementById('viabEditCancelar').addEventListener('click', viabEdFechar);
+    viabEdSalvarBtn.addEventListener('click', viabEdSalvar);
+    viabEdModal.addEventListener('click', ev => { if(ev.target === viabEdModal) viabEdFechar(); });
+    viabEdCorpo.addEventListener('input', viabEdRecalcular);
+    viabEdCorpo.addEventListener('change', viabEdRecalcular);
+    viabEdCorpo.addEventListener('click', ev => {
+      const rem = ev.target.closest('[data-vb-remover]'), inc = ev.target.closest('[data-vb-incluir]');
+      if(rem){ const tr = rem.closest('tr'); if(tr.dataset.id) viabEdRemovidos.add(tr.dataset.id); tr.remove(); viabEdMensagem('Linha removida · confirme em Salvar.'); }
+      if(inc){
+        const tipo = inc.dataset.vbIncluir, tb = viabEdCorpo.querySelector(`[data-tbody="${tipo}"]`);
+        tb.insertAdjacentHTML('beforeend', viabEdTr(tipo, VIAB_ED[tipo].novo));
+        viabEdRecalcular();
+        tb.lastElementChild.querySelector('[data-k="nome"]').focus();
+      }
+    });
     function viabDesenhar(M){
       const D = M.D, neu = txt => ({ cls: 'neu', txt });
       const saldo = M.capt - M.custo, cobertura = M.custo > 0 ? M.capt / M.custo : 0;
