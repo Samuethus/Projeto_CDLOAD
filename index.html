@@ -15475,7 +15475,34 @@ ${clipPlayerPills(n)}
       { id: 'pmc', nome: 'Vendas do varejo', local: 'Mato Grosso', fonte: 'IBGE · PMC', carregar: () => ibgeCarregar('pmc'), dados: () => window.IBGE_PMC,
         sobeBom: true, fmt: v => relNum(v, 1),
         serie: D => D.varejo.vol[D.locais.nomes.indexOf('Mato Grosso')].map(x => x == null ? null : x),
-        texto: (c) => `O volume de vendas do varejo de Mato Grosso ficou em ${c.valorTxt} pontos em ${c.mesTxt}${c.momTxt ? `, ${c.momTxt} sobre o mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}.` }
+        texto: (c) => `O volume de vendas do varejo de Mato Grosso ficou em ${c.valorTxt} pontos em ${c.mesTxt}${c.momTxt ? `, ${c.momTxt} sobre o mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}.` },
+      { id: 'empresas', nome: 'Abertura de empresas', local: 'Cuiabá', fonte: 'Receita Federal · CNPJ', carregar: () => ibgeCarregar('empresas'), dados: () => window.CNPJ_EMPRESAS,
+        sobeBom: true, fmt: v => relNum(v),
+        serie: D => { const k = D.mun.nome.indexOf('Cuiabá'), a = k >= 0 ? (D.fm[k][0] || '').split(',') : [];
+          return D.meses.map((m, i) => k < 0 ? null : Number(a[i]) || 0); },
+        texto: (c, D, i) => { const k = D.mun.nome.indexOf('Cuiabá'), b = Number(((D.fm[k] || [])[1] || '').split(',')[i]) || 0, saldo = c.valor - b;
+          return `Cuiabá registrou ${c.valorTxt} abertura${c.valor === 1 ? '' : 's'} de empresas (estabelecimentos no CNPJ) em ${c.mesTxt}${c.momTxt ? `, ${c.momTxt} em relação ao mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}. No mesmo mês, ${relNum(b)} empresa${b === 1 ? ' foi baixada' : 's foram baixadas'}, saldo de ${saldo > 0 ? '+' : saldo < 0 ? '−' : ''}${relNum(Math.abs(saldo))}.`; } },
+      // PNAD: a desocupação por estado sai por trimestre (não há trimestre móvel por UF). Cada trimestre entra no mês em que termina.
+      { id: 'pnad', nome: 'Taxa de desocupação', local: 'Mato Grosso', fonte: 'IBGE · PNAD Contínua', carregar: () => ibgeCarregar('pnad'),
+        dados: () => { const P = window.IBGE_PNAD;
+          if(!P._rel){ const k = P.locais.sig.indexOf('MT');
+            P._rel = { meses: P.uf.trimestres.map(t => `${t.slice(0, 4)}-${String(Number(t.slice(5)) * 3).padStart(2, '0')}`), v: k >= 0 ? P.uf.desoc[k] : [] }; }
+          return P._rel; },
+        sobeBom: false, taxa: true, fmt: v => `${relNum(v, 1)}%`,
+        serie: D => D.meses.map((m, i) => D.v[i] == null ? null : D.v[i]),
+        texto: (c, D, i) => { const tri = Number(D.meses[i].slice(5, 7)) / 3, ano = D.meses[i].slice(0, 4);
+          const ant = D.v[i - 1], kA = D.meses.indexOf(`${ano - 1}-${D.meses[i].slice(5, 7)}`), aa = kA >= 0 ? D.v[kA] : null;
+          const pp = (a, b) => { const d = Math.round((a - b) * 10) / 10; return d > 0 ? `alta de ${relNum(d, 1)} p.p.` : d < 0 ? `queda de ${relNum(-d, 1)} p.p.` : 'estabilidade'; };
+          return `A taxa de desocupação em Mato Grosso ficou em ${c.valorTxt} no ${tri}º trimestre de ${ano}${ant != null ? `, ${pp(c.valor, ant)} em relação ao trimestre anterior` : ''}${aa != null ? ` e ${pp(c.valor, aa)} frente ao ${tri}º trimestre de ${ano - 1}` : ''}.`; } },
+      { id: 'ivs', nome: 'Varejo · Índice Stone', local: 'Mato Grosso', fonte: 'Stone · IVS', carregar: () => ibgeCarregar('ivs'), dados: () => window.STONE_IVS,
+        sobeBom: true, fmt: v => relNum(v, 1),
+        serie: D => { const s = D.series[`${D.setores.indexOf('geral restrito')},${D.locais.sig.indexOf('MT')}`]; return D.meses.map((m, i) => s && s[0][i] != null ? s[0][i] : null); },
+        texto: (c) => `O Índice do Varejo Stone de Mato Grosso ficou em ${c.valorTxt} pontos em ${c.mesTxt}${c.momTxt ? `, ${c.momTxt} sobre o mês anterior` : ''}${c.yoyTxt ? ` e ${c.yoyTxt} frente a ${c.mesAnoAntTxt}` : ''}.` },
+      // ICVA: a Cielo publica a variação das vendas contra o mesmo mês do ano anterior (deflacionada), por região (sem estados).
+      { id: 'icva', nome: 'Varejo · ICVA', local: 'Centro-Oeste', fonte: 'Cielo · ICVA', carregar: () => ibgeCarregar('icva'), dados: () => window.CIELO_ICVA,
+        sobeBom: true, taxa: true, fmt: v => relPctDet(v),
+        serie: D => { const s = D.mensal[`def,${D.locais.nomes.indexOf('Centro-Oeste')}`] || []; return D.meses.map((m, i) => s[i] == null ? null : s[i]); },
+        texto: (c) => `As vendas do varejo no Centro-Oeste variaram ${c.valorTxt} em ${c.mesTxt} frente a ${c.mesAnoAntTxt}, já descontada a inflação${c.antTxt ? `; no mês anterior, a variação foi de ${c.antTxt}` : ''}.` }
     ];
 
     // Série do relatório: mês de referência = último mês com dado até o escolhido;
