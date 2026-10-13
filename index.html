@@ -1732,6 +1732,15 @@
   .vb-pc-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .vb-pc-txt small{color:var(--cd-muted);font-size:11.5px;}
   .vb-pc-item.vazio .vb-pc-txt{color:var(--cd-muted);}
+  /* Viabilidade › filtro Ferramentas: lista suspensa com checkbox (mesmo visual da lista da busca). */
+  .vb-ferr-filtro{position:relative;flex:1 1 0;min-width:96px;}
+  .vb-ferr-filtro[hidden]{display:none;}
+  .vb-ferr-filtro > .filter-select{width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .vb-ferr-filtro > .filter-select.ativo{background-color:#EAF2FF;color:var(--stk-primary);font-weight:600;}
+  #page-dashboard .vb-ferr-filtro .stk-busca-lista{left:0;right:auto;min-width:min(320px,calc(100vw - 48px));}
+  .vb-ferr-logo{width:16px;height:16px;flex:0 0 auto;display:inline-flex;}
+  .vb-ferr-logo svg{width:16px;height:16px;}
+  #stkViabPrioridadeFiltro.ativo{background-color:#EAF2FF;color:var(--stk-primary);font-weight:600;}
   /* Viabilidade › Editar dados (tabelas viabilidade_itens/viabilidade_parametros do Supabase). */
   .vb-ed-sec{margin-bottom:20px;}
   .vb-ed-sec:last-child{margin-bottom:0;}
@@ -2560,6 +2569,17 @@
             <option value="6">Simulação Power BI · 06 Licenças</option>
             <option value="7">Simulação Power BI · 07 Licenças</option>
           </select>
+          <!-- Viabilidade: Prioridade (ferramentas e módulos) e Ferramentas (marcar/desmarcar entra ou sai das contas) -->
+          <select class="filter-select" id="stkViabPrioridadeFiltro" title="Prioridade das ferramentas e dos módulos" hidden>
+            <option value="">Prioridade</option>
+            <option value="Alta">Prioridade · Alta</option>
+            <option value="Média">Prioridade · Média</option>
+            <option value="Baixa">Prioridade · Baixa</option>
+          </select>
+          <div class="vb-ferr-filtro" id="stkViabFerrFiltro" hidden>
+            <button type="button" class="filter-select" id="stkViabFerrBtn" title="Ferramentas incluídas no painel" aria-haspopup="listbox" aria-expanded="false">Ferramentas</button>
+            <div class="stk-busca-lista" id="stkViabFerrLista" role="listbox" aria-multiselectable="true" hidden></div>
+          </div>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
             <option value="caged">CAGED</option>
@@ -10765,6 +10785,8 @@ ${clipPlayerPills(n)}
       stkLeadsEl.hidden = !viab;
       stkLicencasEl.hidden = !viab;
       document.getElementById('stkViabEditar').hidden = !viab || !window.__podeEditar('dashboard');
+      document.getElementById('stkViabPrioridadeFiltro').hidden = !viab;
+      document.getElementById('stkViabFerrFiltro').hidden = !viab;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -13190,6 +13212,12 @@ ${clipPlayerPills(n)}
       return (v < 0 && a > 0 ? '−' : '') + 'R$ ' + a.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); };
     const viabHoras = v => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
     const viabDiario = per => stkNorm(per).startsWith('diar');
+    // Logo da ferramenta: chave informada ou, sem ela, o nome sem espaços/acentos ("Power BI" → powerbi).
+    const viabLogo = f => { const L = window.VIAB_LOGOS || {}; return L[f.logo] || L[stkNorm(f.ferramenta).replace(/[^a-z0-9]/g, '')] || ''; };
+    // Filtros Prioridade (ferramentas e módulos) e Ferramentas (desmarcadas saem de todas as contas).
+    const stkViabPriEl = document.getElementById('stkViabPrioridadeFiltro');
+    const stkViabFerrBtn = document.getElementById('stkViabFerrBtn'), stkViabFerrLista = document.getElementById('stkViabFerrLista');
+    const viabFerrDesmarcadas = new Set();   // pelo nome da ferramenta (sobrevive a recargas e edições)
     // Linhas do Supabase → mesmo formato de window.VIAB_DADOS (cada item leva o id da linha).
     function viabDoBanco(itens, dias, base){
       const num = v => v == null || v === '' ? null : Number(v), txt = v => v == null ? '' : String(v);
@@ -13226,13 +13254,18 @@ ${clipPlayerPills(n)}
     function viabModelo(D){
       const busca = stkBuscaInput.value.trim(), q = stkNorm(busca);
       const tem = (...txt) => !q || txt.some(x => stkNorm(x).includes(q));
-      const ferrAchou = D.ferramentas.filter(f => tem(f.ferramenta, f.descricao, f.objetivo, f.plano));
-      const modsAchou = D.cdload.filter(m => tem(m.modulo, m.pro.objetivo, m.contra.objetivo));
-      const ferrFilt = !!q && ferrAchou.length > 0, modFilt = !!q && modsAchou.length > 0;
+      const pri = stkViabPriEl.value, temPri = p => !pri || p === pri;
+      const ferrBase = D.ferramentas.filter(f => !viabFerrDesmarcadas.has(f.ferramenta) && temPri(f.prioridade));
+      const modsBase = D.cdload.filter(m => temPri(m.pro.prioridade));
+      const ferrAchou = ferrBase.filter(f => tem(f.ferramenta, f.descricao, f.objetivo, f.plano));
+      const modsAchou = modsBase.filter(m => tem(m.modulo, m.pro.objetivo, m.contra.objetivo));
+      const ferrBusca = !!q && ferrAchou.length > 0, modBusca = !!q && modsAchou.length > 0;
+      const ferrSel = ferrBase.length < D.ferramentas.length, modSel = modsBase.length < D.cdload.length;
+      const ferrFilt = ferrBusca || ferrSel, modFilt = modBusca || modSel;
       const licencas = Math.max(1, Number(stkLicencasEl.value) || 1);
-      const ferr = (ferrFilt ? ferrAchou : D.ferramentas).map(f => ({ ...f, licencas: f.porLicenca ? licencas : null,
+      const ferr = (ferrBusca ? ferrAchou : ferrBase).map(f => ({ ...f, licencas: f.porLicenca ? licencas : null,
         anual: (f.preco || 0) * (f.frequencia || 0) * (f.porLicenca ? licencas : 1) }));
-      const mods = (modFilt ? modsAchou : D.cdload)
+      const mods = (modBusca ? modsAchou : modsBase)
         .map(m => ({ ...m, horasMes: m.pro.frequencia * m.pro.horas * (viabDiario(m.pro.periodicidade) ? D.diasUteisMes : 1) }));
       const leads = Math.max(1, Number(stkLeadsEl.value) || 1);
       const planos = D.planos.map(pl => ({ ...pl, quantidade: leads, mensal: pl.preco * leads * (viabDiario(pl.periodicidade) ? D.diasUteisMes : stkNorm(pl.periodicidade).startsWith('anu') ? 1 / 12 : 1) }));
@@ -13240,8 +13273,10 @@ ${clipPlayerPills(n)}
       const captMes = planos.reduce((s, pl) => s + pl.mensal, 0), capt = captMes * 12;
       const horasMes = mods.reduce((s, m) => s + m.horasMes, 0);
       const precoPlano = planos.length ? planos[0].preco : 0, qtdPlanos = planos.reduce((s, pl) => s + pl.quantidade, 0);
-      return { D, busca, licencas, ferr, mods, ferrFilt, modFilt, nada: !!q && !ferrFilt && !modFilt, planos, custo, capt, captMes, horasMes, precoPlano, qtdPlanos,
-        local: busca ? `“${busca}”` : 'CDLoad · Núcleo de Inteligência' };
+      const desm = D.ferramentas.length - D.ferramentas.filter(f => !viabFerrDesmarcadas.has(f.ferramenta)).length;
+      const filtros = [busca ? `“${busca}”` : '', pri ? `Prioridade ${pri}` : '', desm ? `${D.ferramentas.length - desm} de ${D.ferramentas.length} ferramentas` : ''].filter(Boolean);
+      return { D, busca, licencas, ferr, mods, ferrFilt, modFilt, nada: !!q && !ferrBusca && !modBusca, planos, custo, capt, captMes, horasMes, precoPlano, qtdPlanos,
+        local: filtros.length ? filtros.join(' · ') : 'CDLoad · Núcleo de Inteligência' };
     }
     function viabRender(){
       const seq = ++viabRenderSeq;
@@ -13254,8 +13289,56 @@ ${clipPlayerPills(n)}
         });
         return;
       }
+      viabFerrAtualizar();
       viabDesenhar(viabModelo(viabDados));
     }
+
+    // ---- Filtro Ferramentas: lista suspensa com checkbox ----
+    function viabFerrAtualizar(){
+      const todas = viabDados ? viabDados.ferramentas : [];
+      [...viabFerrDesmarcadas].forEach(n => { if(!todas.some(f => f.ferramenta === n)) viabFerrDesmarcadas.delete(n); });
+      const marcadas = todas.length - viabFerrDesmarcadas.size;
+      stkViabFerrBtn.textContent = !todas.length || !viabFerrDesmarcadas.size ? 'Ferramentas · Todas'
+        : marcadas === 1 ? 'Ferramentas · ' + todas.find(f => !viabFerrDesmarcadas.has(f.ferramenta)).ferramenta : `Ferramentas · ${marcadas} de ${todas.length}`;
+      stkViabFerrBtn.classList.toggle('ativo', viabFerrDesmarcadas.size > 0);
+      stkViabPriEl.classList.toggle('ativo', !!stkViabPriEl.value);
+      if(stkViabFerrLista.hidden) return;
+      const licencas = Math.max(1, Number(stkLicencasEl.value) || 1);
+      stkViabFerrLista.innerHTML = !todas.length ? '<div class="stk-busca-vazio">Nenhuma ferramenta cadastrada.</div>'
+        : `<div class="stk-busca-topo"><span>${marcadas} de ${todas.length} marcadas</span><span class="stk-busca-acoes">
+            <button type="button" data-vb-ferr-todas>Marcar todas</button><button type="button" data-vb-ferr-nenhuma>Desmarcar todas</button></span></div>`
+          + todas.map(f => { const ok = !viabFerrDesmarcadas.has(f.ferramenta), lg = viabLogo(f);
+              const anual = (f.preco || 0) * (f.frequencia || 0) * (f.porLicenca ? licencas : 1);
+              return `<label class="stk-busca-item${ok ? ' marcado' : ''}" role="option" aria-selected="${ok}">
+                <input type="checkbox" data-vb-ferr="${esc(f.ferramenta)}"${ok ? ' checked' : ''}>
+                ${lg ? `<span class="vb-ferr-logo" aria-hidden="true">${lg}</span>` : ''}
+                <span class="stk-busca-nome">${esc(f.ferramenta)}</span>
+                <span class="stk-busca-meta">${f.prioridade ? esc(f.prioridade) + ' · ' : ''}${f.preco == null ? 'Sem custo' : esc(viabMoeda(anual)) + '/ano'}</span></label>`; }).join('');
+    }
+    function viabFerrAbrir(abrir){
+      stkViabFerrLista.hidden = !abrir;
+      stkViabFerrBtn.setAttribute('aria-expanded', String(abrir));
+      if(abrir) viabFerrAtualizar();
+    }
+    stkViabFerrBtn.addEventListener('click', () => viabFerrAbrir(stkViabFerrLista.hidden));
+    stkViabFerrLista.addEventListener('change', ev => {
+      const cb = ev.target.closest('[data-vb-ferr]');
+      if(!cb) return;
+      if(cb.checked) viabFerrDesmarcadas.delete(cb.dataset.vbFerr); else viabFerrDesmarcadas.add(cb.dataset.vbFerr);
+      viabRender();
+    });
+    stkViabFerrLista.addEventListener('click', ev => {
+      const todas = ev.target.closest('[data-vb-ferr-todas]'), nenhuma = ev.target.closest('[data-vb-ferr-nenhuma]');
+      if(!todas && !nenhuma) return;
+      viabFerrDesmarcadas.clear();
+      if(nenhuma && viabDados) viabDados.ferramentas.forEach(f => viabFerrDesmarcadas.add(f.ferramenta));
+      viabRender();
+    });
+    document.addEventListener('click', ev => { if(!stkViabFerrLista.hidden && !ev.target.closest('#stkViabFerrFiltro')) viabFerrAbrir(false); });
+    document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && !stkViabFerrLista.hidden){ viabFerrAbrir(false); stkViabFerrBtn.focus(); } });
+    stkViabPriEl.addEventListener('change', stkRender);
+    // Limpar / troca de painel: Prioridade vazia e todas as ferramentas marcadas.
+    function viabFiltrosLimpar(){ stkViabPriEl.value = ''; viabFerrDesmarcadas.clear(); viabFerrAbrir(false); }
 
     // ---- Viabilidade › Editar dados (Supabase) ----
     // Uma tabela por tipo (ferramentas, módulos, planos) + dias úteis. Salvar grava tudo de uma vez:
@@ -13414,7 +13497,7 @@ ${clipPlayerPills(n)}
       // ---- Custo anual por ferramenta ----
       const ferrOrd = M.ferr.slice().sort((a, b) => b.anual - a.anual);
       const wFerr = cdCard('Custo anual por ferramenta', M.ferrFilt ? M.local : 'Preço × frequência de cada plano',
-        cdBarras(ferrOrd.map((f, i) => ({ nome: f.porLicenca ? `${f.ferramenta} (${f.licencas}×)` : f.ferramenta, logo: (window.VIAB_LOGOS || {})[f.logo] || '', valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
+        cdBarras(ferrOrd.map((f, i) => ({ nome: f.porLicenca ? `${f.ferramenta} (${f.licencas}×)` : f.ferramenta, logo: viabLogo(f), valor: f.anual, rotulo: f.preco == null ? 'Sem custo' : viabMoeda(f.anual),
           dica: f.preco == null ? 'Sem custo informado' : f.porLicenca ? `${viabMoeda(f.anual)} · ${f.licencas} licença${f.licencas === 1 ? '' : 's'} × ${viabMoeda(f.preco)}/mês`
             : `${viabMoeda(f.anual)} · ${f.plano} (${f.periodicidade.toLowerCase()})`,
           cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', ferrOrd.length > 1 ? i / (ferrOrd.length - 1) : 0) })), 'Custo anual por ferramenta', 'Nenhuma ferramenta encontrada.'));
@@ -14386,7 +14469,7 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar();
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -14399,7 +14482,7 @@ ${clipPlayerPills(n)}
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar();
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
