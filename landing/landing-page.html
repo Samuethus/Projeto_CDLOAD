@@ -165,6 +165,22 @@
   @keyframes flutuar{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
 
   /* ---------- 2. Plataformas Integradas ---------- */
+  /* Vídeo demonstrativo: moldura arredondada, autoplay sem som quando entra na tela e play/pausa no canto. */
+  .demo-video{position:relative; max-width:960px; margin:40px auto 0; border-radius:28px; padding:10px; background:var(--bg-card);
+    box-shadow:0 30px 70px -30px rgba(2,43,83,.45);}
+  .demo-video video{display:block; width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:20px; background:#d4d6da; cursor:pointer;}
+  .demo-ctrl{position:absolute; right:26px; bottom:26px; display:flex; gap:8px;}
+  .demo-ctrl button{width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.92); color:var(--sidebar-bg); box-shadow:0 6px 18px rgba(2,43,83,.25); transition:transform .2s ease, background .2s ease;}
+  .demo-ctrl button:hover{transform:scale(1.08); background:#fff;}
+  .demo-ctrl button:focus-visible{outline:3px solid var(--azul-royal); outline-offset:2px;}
+  .demo-ctrl svg{width:18px; height:18px;}
+  .demo-play{position:absolute; inset:10px; border-radius:20px; display:flex; align-items:center; justify-content:center; border:none;
+    background:rgba(2,43,83,.18); cursor:pointer; transition:opacity .25s ease;}
+  .demo-play span{width:84px; height:84px; border-radius:50%; background:var(--gradiente); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 14px 30px rgba(2,43,83,.35);}
+  .demo-play svg{width:30px; height:30px; margin-left:5px;}
+  .demo-video.tocando .demo-play{opacity:0; pointer-events:none;}
   .integracoes{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:48px;}
   .integracao{
     background:var(--bg-card); border-radius:16px; height:92px; display:flex; align-items:center; justify-content:center;
@@ -461,6 +477,14 @@
     <div class="container">
       <h2 class="secao-titulo revelar">As ferramentas que sua equipe já usa, <span class="destaque">conectadas</span></h2>
       <p class="secao-sub revelar">O CDLoad reúne fontes de dados oficiais e serviços de mercado em um só ambiente, sem trocar de sistema a cada tarefa.</p>
+      <div class="demo-video revelar" id="demoVideo">
+        <video src="cdload_demo_plataforma.mp4" poster="cdload_demo_poster.jpg" muted loop playsinline preload="metadata"
+          aria-label="Vídeo demonstrativo da plataforma CDLoad (dados fictícios)"></video>
+        <button type="button" class="demo-play" aria-label="Reproduzir vídeo"><span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></span></button>
+        <div class="demo-ctrl">
+          <button type="button" data-acao="play" aria-label="Pausar vídeo" title="Pausar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></button>
+        </div>
+      </div>
       <div class="integracoes revelar">
         <div class="integracao">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Power BI
@@ -762,6 +786,34 @@
   } else {
     revelar.forEach(el => el.classList.add('visivel'));
   }
+
+  // Vídeo demonstrativo: toca sozinho (mudo, em loop) quando aparece na tela e pausa ao sair dela.
+  // Com "reduzir movimento" ligado no sistema, não inicia sozinho: fica o botão de reproduzir.
+  (() => {
+    const box = document.getElementById('demoVideo'), v = box.querySelector('video');
+    const btnPlay = box.querySelector('[data-acao="play"]');
+    const ICO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+    const ICO_PAUSA = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+    let pausadoPeloUsuario = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tocar = () => { const p = v.play(); if (p) p.catch(() => {}); };
+    const atualizar = () => {
+      const on = !v.paused;
+      box.classList.toggle('tocando', on);
+      btnPlay.innerHTML = on ? ICO_PAUSA : ICO_PLAY;
+      btnPlay.setAttribute('aria-label', on ? 'Pausar vídeo' : 'Reproduzir vídeo'); btnPlay.title = on ? 'Pausar' : 'Reproduzir';
+    };
+    const alternar = () => { if (v.paused) { pausadoPeloUsuario = false; tocar(); } else { pausadoPeloUsuario = true; v.pause(); } };
+    ["play", "pause"].forEach(ev => v.addEventListener(ev, atualizar));
+    v.addEventListener('click', alternar);
+    box.querySelector('.demo-play').addEventListener('click', alternar);
+    btnPlay.addEventListener('click', alternar);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([en]) => {
+        if (en.isIntersecting) { if (!pausadoPeloUsuario) tocar(); } else if (!v.paused) v.pause();
+      }, { threshold: .35 }).observe(v);
+    } else if (!pausadoPeloUsuario) tocar();
+    atualizar();
+  })();
 
   document.getElementById('ano').textContent = new Date().getFullYear();
 </script>
