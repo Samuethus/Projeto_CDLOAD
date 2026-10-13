@@ -1302,6 +1302,31 @@
   :root[data-theme="dark"] .stk-filtros-painel{background:#111A2E;}
   :root[data-theme="dark"] .stk-filtros-rodape{background:#0F1729;}
   :root[data-theme="dark"] .stk-filtros-badge{box-shadow:0 0 0 2px #0F1729;}
+  /* EMPRESAS · Ramo no menu: combobox inteligente (busca por nome/sinônimo, sugestões com a quantidade na cidade)
+     + quadro de concorrência do ramo (quantas há, densidade vs. MT, posição da cidade, bairros com mais pontos). */
+  .emp-ramo{position:relative;}
+  .emp-ramo-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--cd-azul-bg, #E8F0FD);color:var(--cd-azul, #1D5FD3);
+    border-radius:8px;padding:8px 10px 8px 12px;font-size:13px;font-weight:700;margin-bottom:6px;}
+  .emp-ramo-chip small{font-weight:500;color:#475569;margin-left:4px;}
+  .emp-ramo-chip button{border:none;background:transparent;color:inherit;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;}
+  .emp-ramo-sug{list-style:none;margin:4px 0 0;padding:4px;border:1px solid var(--wa-border, #E6EBF2);border-radius:10px;background:#fff;
+    box-shadow:0 10px 30px rgba(15,23,42,.12);max-height:290px;overflow-y:auto;}
+  .emp-ramo-sug[hidden]{display:none;}
+  .emp-ramo-sug li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text-dark);}
+  .emp-ramo-sug li small{display:block;font-size:10.5px;color:#64748B;}
+  .emp-ramo-sug li b{font-size:12px;color:var(--cd-azul, #1D5FD3);white-space:nowrap;}
+  .emp-ramo-sug li.ativo, .emp-ramo-sug li:hover{background:var(--cd-azul-bg, #E8F0FD);}
+  .emp-ramo-sug li.emp-ramo-cnae{color:#475569;font-style:italic;border-top:1px dashed var(--wa-border, #E6EBF2);margin-top:3px;}
+  .emp-ramo-info{margin-top:8px;border:1px solid var(--wa-border, #E6EBF2);border-radius:10px;padding:12px 14px;font-size:12.5px;color:#334155;background:#F8FAFC;}
+  .emp-ramo-info h5{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:#475569;}
+  .emp-ramo-info .emp-ramo-big{font-size:22px;font-weight:800;color:var(--cd-azul, #1D5FD3);line-height:1.1;}
+  .emp-ramo-info p{margin:6px 0 0;line-height:1.45;}
+  .emp-ramo-info ol{margin:6px 0 0;padding-left:18px;}
+  .emp-ramo-info li{margin:2px 0;}
+  .emp-ramo-info .emp-ramo-mais{color:#5DB14E;font-weight:700;} .emp-ramo-info .emp-ramo-menos{color:#EF4444;font-weight:700;}
+  .emp-ramo-info button{margin-top:10px;width:100%;border:none;border-radius:8px;padding:9px 12px;background:var(--cd-azul, #1D5FD3);color:#fff;font-weight:700;font-family:inherit;cursor:pointer;}
+  :root[data-theme="dark"] .emp-ramo-sug{background:#111A2E;}
+  :root[data-theme="dark"] .emp-ramo-info{background:#0F1729;color:#CBD5E1;}
   /* EMPRESAS: Subclasse (nomes longos da CNAE) com largura limitada, sem empurrar os demais filtros. */
   #page-dashboard .wa-stock-filters #stkEmpSubclasseFiltro{max-width:220px;text-overflow:ellipsis;}
   /* EMPRESAS: muitos filtros na barra — busca mais estreita para os rótulos dos selects caberem. */
@@ -2534,6 +2559,10 @@
           </select>
           <select class="filter-select" id="stkEmpSubclasseFiltro" title="Subclasse da atividade econômica (CNAE)" hidden>
             <option value="">Subclasse</option>
+          </select>
+          <!-- Ramo de negócio (óticas, farmácias…): agrupa subclasses CNAE (assets/data/cnpj_ramos.js); no menu flutuante vira uma busca inteligente -->
+          <select class="filter-select" id="stkEmpRamoFiltro" title="Ramo de negócio (agrupa atividades CNAE)" hidden>
+            <option value="">Ramo</option>
           </select>
           <select class="filter-select" id="stkRegiaoFiltro" title="Região fiscal de Mato Grosso" hidden>
             <option value="">Região</option>
@@ -9912,7 +9941,8 @@ ${clipPlayerPills(n)}
     const stkEmpSituacaoEl = document.getElementById('stkEmpSituacaoFiltro');
     const stkEmpSubclasseEl = document.getElementById('stkEmpSubclasseFiltro');
     // Limpar volta cada um ao padrão (data-padrao: Situação = Ativas; os demais vazios).
-    const stkEmpFiltros = [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl];
+    const stkEmpRamoEl = document.getElementById('stkEmpRamoFiltro');
+    const stkEmpFiltros = [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl];
     // EMPRESAS: switch Dashboard | Mapa (o mapa ocupa a área dos gráficos).
     const stkVisaoEmpEl = document.getElementById('stkVisaoEmp');
     let empVisao = 'dash';
@@ -10156,8 +10186,8 @@ ${clipPlayerPills(n)}
       stkVisaoEmpEl.hidden = !emp;
       document.getElementById('page-dashboard').classList.toggle('stk-emp', emp);   // Limpar/Exportar só com ícone
       // EMPRESAS: barra com Busca + 7 filtros (Painel, Indicador, Mês, Ano, Cidade, Regime, SIMEI) + switch + filtro + Limpar + Exportar;
-      // Situação e Subclasse ficam só no menu flutuante (selo "+2").
-      [stkEmpSituacaoEl, stkEmpSubclasseEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
+      // Situação, Subclasse e Ramo ficam só no menu flutuante (selo "+3").
+      [stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
       stkFiltrosBtn.hidden = !emp;
       stkFiltrosAtualizar();
       if(!emp) stkFiltrosFechar();
@@ -11750,6 +11780,75 @@ ${clipPlayerPills(n)}
         pr: (D.pr || []).map(([u, p, r, a, b]) => ({ u, p, r, a: vet(a), b: vet(b) })),
         prm: (D.prm || []).map(([x, p, r, a, b]) => ({ x, p, r, a: vet(a), b: vet(b) })) });
     }
+    // Ramo de negócio (assets/data/cnpj_ramos.js): cada subclasse CNAE cai no ramo do prefixo mais longo que a contém.
+    function empRamosDe(D){
+      const R = (window.CNPJ_RAMOS || {}).ramos;
+      if(!R) return null;
+      if(D._ramo) return D._ramo;
+      const pref = R.flatMap((rm, i) => rm.cnaes.map(p => [p, i])).sort((a, b) => b[0].length - a[0].length);
+      const deC = D.cnaes.cod.map(c => { const s = String(c).padStart(7, '0'), h = pref.find(([p]) => s.startsWith(p)); return h ? h[1] : -1; });
+      const cnaes = R.map(() => new Set());
+      deC.forEach((i, c) => { if(i >= 0) cnaes[i].add(c); });
+      return (D._ramo = { R, deC, cnaes, porMun: new Map(), porRamo: new Map(),
+        busca: R.map(rm => stkNorm([rm.nome, rm.grupo, ...(rm.sinonimos || [])].join(' '))) });
+    }
+    // Ativas por ramo na cidade (acm) ou em MT (ac), mais o total de ativas do recorte: { n:[por ramo], tot }.
+    function empRamoContagem(D, imun){
+      const RM = empRamosDe(D);
+      if(!RM || (imun >= 0 ? !D.acm : !D.ac)) return null;
+      if(RM.porMun.has(imun)) return RM.porMun.get(imun);
+      const n = RM.R.map(() => 0);
+      let tot = 0;
+      const soma = (c, v) => { tot += v; if(RM.deC[c] >= 0) n[RM.deC[c]] += v; };
+      if(imun >= 0) D.acm.forEach(([x, c, v]) => { if(x === imun) soma(c, v); });
+      else D.ac.forEach(([c, v]) => soma(c, v));
+      const o = { n, tot };
+      RM.porMun.set(imun, o);
+      return o;
+    }
+    // Ativas do ramo por município de MT (Map imun → qtd), para a posição da cidade.
+    function empRamoPorMun(D, ir){
+      const RM = empRamosDe(D);
+      if(!RM || !D.acm) return null;
+      if(!RM.porRamo.has(ir)){
+        const m = new Map();
+        D.acm.forEach(([x, c, v]) => { if(RM.deC[c] === ir) m.set(x, (m.get(x) || 0) + v); });
+        RM.porRamo.set(ir, m);
+      }
+      return RM.porRamo.get(ir);
+    }
+    // Quadro de concorrência do ramo (menu de filtros): quantos pontos há, densidade vs. MT, posição da cidade e bairros.
+    function empRamoInsight(D, ir, imun){
+      const RM = empRamosDe(D), nome = RM.R[ir].nome, cidade = imun >= 0 ? D.mun.nome[imun] : '';
+      const loc = empRamoContagem(D, imun), uf = empRamoContagem(D, -1);
+      if(!loc) return `<h5>${esc(nome)}</h5><p>Contagem por ramo disponível após a próxima atualização dos dados da Receita.</p>`;
+      const q = loc.n[ir], fmt = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+      let h = `<h5>Concorrência · ${esc(nome)}</h5><div class="emp-ramo-big">${stkNum(q)}</div>
+        <p>estabelecimentos ativos ${cidade ? 'em ' + esc(cidade) : 'em Mato Grosso'}${q ? ` · 1 a cada ${fmt(loc.tot / q)} empresas` : ''}</p>`;
+      if(!q) return h + `<p>Nenhum ponto desse ramo no recorte${cidade ? ' — possível oportunidade de mercado na cidade' : ''}.</p>`;
+      const muns = empRamoPorMun(D, ir);
+      if(cidade && uf && uf.n[ir]){
+        const dens = (q / loc.tot) / (uf.n[ir] / uf.tot), dif = Math.round((dens - 1) * 100);
+        h += `<p>Densidade ${Math.abs(dif) < 5 ? 'na média de MT' : `<span class="${dif > 0 ? 'emp-ramo-mais' : 'emp-ramo-menos'}">${Math.abs(dif)}% ${dif > 0 ? 'acima' : 'abaixo'}</span> da média de MT`}
+          (${dif > 0 ? 'mercado mais disputado' : dif < -5 ? 'menos concorrência por empresa' : 'concorrência típica'}).</p>`;
+        if(muns){
+          const ord = [...muns.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]), pos = ord.findIndex(([x]) => x === imun) + 1;
+          if(pos) h += `<p>${pos}ª cidade de MT em quantidade (de ${ord.length} com o ramo) · ${Math.round(q / uf.n[ir] * 100)}% dos pontos do estado.</p>`;
+        }
+      } else if(muns){
+        const top = [...muns.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+        h += `<p>Cidades com mais pontos:</p><ol>${top.map(([x, v]) => `<li>${esc(D.mun.nome[x])} · ${stkNum(v)}</li>`).join('')}</ol>`;
+      }
+      // Bairros com mais pontos (cnpj_ceps.js com o detalhe por ramo "dr").
+      const C = window.CNPJ_CEPS && window.CNPJ_CEPS.edicao === D.edicao ? window.CNPJ_CEPS : null, irc = C && C.ramos ? C.ramos.indexOf(nome) : -1;
+      if(cidade && C && C.dr && irc >= 0){
+        const b = new Map();
+        C.dr.forEach(([i, r, v]) => { if(r === irc && C.mun[i] === imun){ const k = (C.bairro && C.bairro[i]) || 'Sem bairro'; b.set(k, (b.get(k) || 0) + v); } });
+        const top = [...b.entries()].sort((x, y) => y[1] - x[1]).slice(0, 5);
+        if(top.length) h += `<p>Bairros com mais pontos:</p><ol>${top.map(([k, v]) => `<li>${esc(k)} · ${stkNum(v)}</li>`).join('')}</ol>`;
+      }
+      return h + `<button type="button" data-emp-ramo-mapa>Ver pontos no mapa</button>`;
+    }
     // Porte × regime do recorte: matriz [porte][regime] de aberturas, baixas (meses da janela) ou ativas (edição).
     // Cidade de Mato Grosso: dados do município; outra cidade: os do estado (a base aberta só detalha MT).
     function empMatriz(D, P, iu, imun, meses, visao){
@@ -11785,6 +11884,15 @@ ${clipPlayerPills(n)}
         stkEmpSubclasseEl.innerHTML = '<option value="">Subclasse</option>' + [...tem].sort((a, b) => D.cnaes.nome[a].localeCompare(D.cnaes.nome[b], 'pt-BR'))
           .map(c => `<option value="${c}" title="${esc(cod(D.cnaes.cod[c]))} · ${esc(D.cnaes.nome[c])}">${esc(D.cnaes.nome[c])} (${esc(cod(D.cnaes.cod[c]))})</option>`).join('');
       }
+      // Ramos de negócio (arquivo pequeno, sem bloquear o painel): por grupo, com a quantidade de ativas em MT.
+      if(!window.CNPJ_RAMOS){ if(!ibgeProm.empRamos) ibgeCarregar('empRamos').then(() => { if(stkPainel() === 'empresas') stkRender(); }).catch(() => {}); }
+      else if(stkEmpRamoEl.options.length <= 1){
+        const RM = empRamosDe(D), cont = empRamoContagem(D, -1), grupos = new Map();
+        RM.R.forEach((rm, i) => { if(!grupos.has(rm.grupo)) grupos.set(rm.grupo, []); grupos.get(rm.grupo).push(i); });
+        stkEmpRamoEl.innerHTML = '<option value="">Ramo</option>' + [...grupos].map(([g, l]) => `<optgroup label="${esc(g)}">${l
+          .sort((a, b) => RM.R[a].nome.localeCompare(RM.R[b].nome, 'pt-BR'))
+          .map(i => `<option value="${i}">${esc(RM.R[i].nome)}${cont ? ` (${stkNum(cont.n[i])})` : ''}</option>`).join('')}</optgroup>`).join('');
+      }
       if(!stkEmpSituacaoEl.value) stkEmpSituacaoEl.value = 'ativas';
       // Só Mato Grosso (a base é limpa na extração): o Estado fica fixo em MT e o filtro não aparece.
       // Padrão: Cuiabá (ao entrar no indicador e ao Limpar). Espera a lista de cidades para já desenhar filtrado.
@@ -11816,9 +11924,12 @@ ${clipPlayerPills(n)}
       const termos = ibgeTermo(), busca = stkBuscaInput.value.trim(), subSel = stkEmpSubclasseEl.value;
       let okC = termos.length ? new Set(P.busca.map((t, k) => termos.every(x => t.includes(x)) ? k : -1).filter(k => k >= 0)) : null;
       if(subSel !== '') okC = new Set([Number(subSel)].filter(k => !okC || okC.has(k)));
+      // Ramo: só as subclasses CNAE do ramo (somado aos filtros de atividade acima).
+      const ramoSel = stkEmpRamoEl.value, RM = ramoSel !== '' ? empRamosDe(D) : null, nomeRamo = RM ? RM.R[Number(ramoSel)].nome : '';
+      if(RM){ const s = RM.cnaes[Number(ramoSel)]; okC = new Set([...(okC || s)].filter(k => s.has(k))); }
       const cidade = imun >= 0 ? D.mun.nome[imun] : '';
       const nomeSub = subSel !== '' ? D.cnaes.nome[Number(subSel)] : '';
-      const local = (cidade || PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso') + (nomeSub ? ` · ${nomeSub}` : busca ? ` · “${busca}”` : '');
+      const local = (cidade || PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso') + (nomeRamo ? ` · ${nomeRamo}` : '') + (nomeSub ? ` · ${nomeSub}` : busca ? ` · “${busca}”` : '');
       const escopoUf = PAN_UF_NOME[D.ufs[iu]] || 'Mato Grosso';
       const edicao = `${D.edicao.slice(5)}/${D.edicao.slice(0, 4)}`;
       const atual = [...J.atual], anterior = [...J.anterior];
@@ -11969,7 +12080,7 @@ ${clipPlayerPills(n)}
       const wSub = cdCard('Atividades com mais empresas', `Subclasse CNAE · ${baixadas ? 'baixadas no período' : 'empresas ativas'} · ${escopoSub}`, subs.length ? `<ol class="cd-rank">${subs.map(([c, v], i) => {
           const nome = D.cnaes.nome[c];
           return `<li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(D.cnaes.cod[c])} · ${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${stkPct(v / totSub)}</span></li>`; }).join('')}</ol>`
-        : `<div class="stk-vazio">${esc(okC && !okC.size ? `Nenhuma atividade com “${busca}”.` : 'Sem empresas no recorte.')}</div>`);
+        : `<div class="stk-vazio">${esc(okC && !okC.size && busca ? `Nenhuma atividade com “${busca}”${nomeRamo ? ' no ramo ' + nomeRamo : ''}.` :'Sem empresas no recorte.')}</div>`);
 
       // ---- Municípios com mais empresas (cidade filtrada em destaque) ----
       const munQ = new Map(), munAnt = new Map();
@@ -12038,6 +12149,72 @@ ${clipPlayerPills(n)}
         .filter(c => c && !c.wrap.hidden && !c.el.hidden);
     }
     const stkFiltrosAberto = () => stkFiltrosOverlay.classList.contains('open');
+    // Ramo no menu: digita "ótica", "padaria", "pet"… e escolhe entre os ramos (nome, sinônimos ou grupo, sem acento),
+    // ordenados pela quantidade na cidade; sem ramo que sirva, busca a atividade CNAE com o texto. Escolhido, mostra o
+    // quadro de concorrência do ramo (empRamoInsight) com o atalho para os pontos no mapa.
+    function empRamoCombo(sel){
+      const D = window.CNPJ_EMPRESAS, RM = empRamosDe(D);
+      const imun = stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
+      const cont = empRamoContagem(D, imun) || empRamoContagem(D, -1);
+      const wrap = document.createElement('div'), inp = document.createElement('input'), ul = document.createElement('ul');
+      wrap.className = 'emp-ramo';
+      inp.type = 'text'; inp.autocomplete = 'off'; inp.placeholder = 'Digite o ramo: ótica, farmácia, padaria…';
+      inp.setAttribute('role', 'combobox'); inp.setAttribute('aria-autocomplete', 'list'); inp.setAttribute('aria-expanded', 'false');
+      ul.className = 'emp-ramo-sug'; ul.setAttribute('role', 'listbox'); ul.hidden = true;
+      const aplicar = v => { inp.blur(); if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); setTimeout(stkFiltrosMontar, 80); };
+      const ir = sel.value !== '' ? Number(sel.value) : -1;
+      if(ir >= 0){
+        const chip = document.createElement('div');
+        chip.className = 'emp-ramo-chip';
+        chip.innerHTML = `<span>${esc(RM.R[ir].nome)}<small>${esc(RM.R[ir].grupo)}</small></span><button type="button" aria-label="Limpar ramo" title="Limpar ramo">×</button>`;
+        chip.querySelector('button').addEventListener('click', () => aplicar(''));
+        wrap.appendChild(chip);
+        inp.placeholder = 'Trocar de ramo…';
+      }
+      wrap.append(inp, ul);
+      let itens = [], ativo = -1;
+      const marcar = k => { ativo = k; [...ul.children].forEach((li, j) => li.classList.toggle('ativo', j === k)); if(ul.children[k]) ul.children[k].scrollIntoView({ block: 'nearest' }); };
+      const fechar = () => { ul.hidden = true; inp.setAttribute('aria-expanded', 'false'); };
+      const sugerir = () => {
+        const termos = stkNorm(inp.value.trim()).split(/\s+/).filter(Boolean);
+        // "oticas" também acha "ótica" e vice-versa: compara pela raiz (sem o "s" final).
+        const raiz = termos.map(t => t.length > 3 ? t.replace(/s$/, '') : t);
+        itens = RM.R.map((_, i) => i).filter(i => raiz.every(t => RM.busca[i].includes(t)))
+          .sort((a, b) => (cont ? cont.n[b] - cont.n[a] : 0) || RM.R[a].nome.localeCompare(RM.R[b].nome, 'pt-BR')).slice(0, 8)
+          .map(i => ({ i, html: `<span>${esc(RM.R[i].nome)}<small>${esc(RM.R[i].grupo)}</small></span>${cont ? `<b>${stkNum(cont.n[i])}</b>` : ''}` }));
+        if(termos.length) itens.push({ cnae: inp.value.trim(), html: `<span>Buscar atividade (CNAE) com “${esc(inp.value.trim())}”</span>` });
+        ul.innerHTML = itens.map((o, k) => `<li role="option" data-k="${k}"${o.cnae ? ' class="emp-ramo-cnae"' : ''}>${o.html}</li>`).join('');
+        ul.hidden = !itens.length; inp.setAttribute('aria-expanded', String(!ul.hidden));
+        marcar(itens.length && !itens[0].cnae ? 0 : -1);
+      };
+      const escolher = o => {
+        if(!o) return;
+        if(o.cnae == null) return aplicar(String(o.i));
+        inp.blur(); fechar();
+        stkBuscaInput.value = o.cnae; stkBuscaInput.dispatchEvent(new Event('input', { bubbles: true }));
+        setTimeout(stkFiltrosMontar, 80);
+      };
+      inp.addEventListener('input', sugerir);
+      inp.addEventListener('focus', sugerir);
+      inp.addEventListener('blur', () => setTimeout(fechar, 150));
+      inp.addEventListener('keydown', ev => {
+        if(ev.key === 'ArrowDown' || ev.key === 'ArrowUp'){ ev.preventDefault(); if(ul.hidden) sugerir(); else if(itens.length) marcar((ativo + (ev.key === 'ArrowDown' ? 1 : itens.length - 1)) % itens.length); }
+        else if(ev.key === 'Enter'){ ev.preventDefault(); escolher(itens[ativo] || itens[0]); }
+        else if(ev.key === 'Escape' && !ul.hidden){ ev.stopPropagation(); fechar(); }
+      });
+      ul.addEventListener('mousedown', ev => ev.preventDefault());   // não tira o foco do campo antes do clique
+      ul.addEventListener('click', ev => { const li = ev.target.closest('li'); if(li) escolher(itens[Number(li.dataset.k)]); });
+      if(ir >= 0){
+        const info = document.createElement('div');
+        info.className = 'emp-ramo-info';
+        info.innerHTML = empRamoInsight(D, ir, imun);
+        const b = info.querySelector('[data-emp-ramo-mapa]');
+        if(b) b.addEventListener('click', () => { const m = stkVisaoEmpEl.querySelector('[data-visao="mapa"]'); if(m && empVisao !== 'mapa') m.click(); stkFiltrosFechar(); });
+        wrap.appendChild(info);
+      }
+      inp.wrap = wrap;
+      return inp;
+    }
     function stkFiltrosMontar(){
       // Digitando na busca do menu: só sincroniza os valores, sem recriar (não perde o foco).
       if(stkFiltrosCorpo.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
@@ -12048,6 +12225,13 @@ ${clipPlayerPills(n)}
         rot.htmlFor = id;
         rot.innerHTML = esc(c.rot) + (c.wrap.classList.contains('stk-so-menu') ? '<span class="stk-filtros-tag">só no menu</span>' : '');
         let ctl;
+        if(c.el.id === 'stkEmpRamoFiltro' && window.CNPJ_EMPRESAS && empRamosDe(window.CNPJ_EMPRESAS)){
+          ctl = empRamoCombo(c.el);
+          campo.append(rot, ctl.wrap);
+          rot.htmlFor = ctl.id = id;
+          stkFiltrosCorpo.appendChild(campo);
+          return;
+        }
         if(c.el.tagName === 'SELECT'){
           ctl = document.createElement('select');
           ctl.className = 'filter-select';
@@ -12178,7 +12362,13 @@ ${clipPlayerPills(n)}
       const regOk = D.regimes.map((_, r) => (!fReg || (fReg === 'simples' ? r <= 1 : r === 2)) && (!fSimei || (fSimei === 'sim' ? r === 0 : r > 0)));
       if(!C) return empMapaDadosTemp(D, J, imun, regOk, baixadas);
       const atual = [...J.atual], qtd = new Map();
-      for(const o of empCepsPrep(C)){
+      // Ramo escolhido: pontos de negócio do ramo (ativos) por CEP — C.dr = [iCep, iRamo, ativas], ramos casados pelo nome.
+      const ramoSel = stkEmpRamoEl.value, R = (window.CNPJ_RAMOS || {}).ramos || [];
+      if(ramoSel !== '' && R[ramoSel]){
+        const ir = C.ramos ? C.ramos.indexOf(R[ramoSel].nome) : -1;
+        if(!C.dr || ir < 0) return { C, feats: [], baixadas: false, nAprox: 0, ramo: R[ramoSel].nome, semRamo: true };
+        C.dr.forEach(([i, r, v]) => { if(r === ir && (imun < 0 || C.mun[i] === imun)) qtd.set(i, (qtd.get(i) || 0) + v); });
+      } else for(const o of empCepsPrep(C)){
         if(!regOk[o.r] || (imun >= 0 && C.mun[o.i] !== imun)) continue;
         let n = o.at;
         if(baixadas){ n = 0; for(const m of atual) n += o.b[m]; }
@@ -12192,7 +12382,8 @@ ${clipPlayerPills(n)}
         feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: C.ll[i] },
           properties: { n, cep: C.ceps[i], bairro: (C.bairro && C.bairro[i]) || '', end: (C.end && C.end[i]) || '', mun: C.mun[i], aprox: C.aprox[i] || 0 } });
       });
-      return { C, feats, baixadas, nAprox };
+      const nomeRamo = ramoSel !== '' && R[ramoSel] ? R[ramoSel].nome : '';
+      return { C, feats, baixadas: nomeRamo ? false : baixadas, nAprox, ramo: nomeRamo };
     }
 
     function empMapaCriar(){
@@ -12304,9 +12495,10 @@ ${clipPlayerPills(n)}
         return vazio(`O endereço (CEP) dos CNPJs está disponível para ${PAN_UF_NOME[ufCep] || ufCep}, o estado detalhado na base da Receita processada pelo sistema. Escolha ${PAN_UF_NOME[ufCep] || ufCep} (ou nenhum estado) no filtro Estado.`);
       const R = empMapaDados(D, J, imun);
       if(!R) return vazio('Os endereços (CEP) dos CNPJs ainda estão sendo gerados pela atualização automática dos dados da Receita Federal. Assim que ela terminar, cada CNPJ aparece aqui no CEP em que está registrado.');
+      if(R.semRamo) return vazio(`Pontos de negócio de "${R.ramo}" no mapa: disponíveis após a próxima atualização dos dados da Receita (o painel Dashboard já mostra a quantidade). Para ver todas as empresas, limpe o filtro Ramo.`);
       painel.hidden = false;
       empMapa.getSource('emp').setData({ type: 'FeatureCollection', features: R.feats });
-      const cor = R.baixadas ? CD_COR.vermelho : CD_COR.azul;
+      const cor = R.ramo ? CD_COR.verde : R.baixadas ? CD_COR.vermelho : CD_COR.azul;
       const maxPt = Math.max(1, ...R.feats.map(f => f.properties.n)), tot = Math.max(maxPt + 1, R.feats.reduce((t, f) => t + f.properties.n, 0));
       empMapa.setPaintProperty('emp-pontos', 'circle-color', cor);
       empMapa.setPaintProperty('emp-grupos', 'circle-color', cor);
@@ -12321,14 +12513,15 @@ ${clipPlayerPills(n)}
       const notas = R.temp
         ? ['Endereços (CEP) dos CNPJs ainda estão sendo gerados, cada município aparece como um ponto único na sede, com a quantidade de CNPJs dele.']
         : ['Cada ponto é o CEP registrado do CNPJ na Receita Federal; o número é a quantidade de CNPJs nesse CEP.'];
+      if(R.ramo) notas.unshift(`Ramo: ${R.ramo}. Cada ponto é um CEP com estabelecimentos ativos desse ramo (concorrentes e pontos de negócio na região).`);
       notas.push(empMapaProgresso());
       if(!R.temp && R.C.bairro && R.C.bairro.some(Boolean)) notas.push('Cidades de CEP único (CEP geral, terminado em 000): os CNPJs aparecem separados pelo bairro registrado na Receita.');
       if(R.nAprox) notas.push(`${stkNum(R.nAprox)} de ${stkNum(R.feats.length)} pontos ainda sem coordenada própria aparecem na sede do município (a geocodificação avança a cada dia).`);
       if(stkBuscaInput.value.trim()) notas.push('A busca por atividade (CNAE) não se aplica ao mapa.');
-      corpo.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : 'Endereço dos CNPJs (CEP)'}</h4>
+      corpo.innerHTML = `<h4>${R.temp ? 'CNPJs por município <span class="emp-mapa-temp">temporário</span>' : R.ramo ? 'Pontos de negócio · ' + esc(R.ramo) : 'Endereço dos CNPJs (CEP)'}</h4>
         <div class="emp-mapa-sub">${esc(local)} · ${esc(R.baixadas ? 'baixados · ' + J.rotulo : 'ativos na edição ' + edicao)}${fReg ? ' · ' + esc(fReg) : ''}</div>
-        <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} ${R.temp ? 'municípios' : 'CEPs'}</div>
-        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? 'Município (ponto na sede)' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
+        <div class="emp-mapa-total">${stkNum(total)}</div><div>${R.ramo ? 'estabelecimentos ativos' : R.baixadas ? 'CNPJs baixados' : 'CNPJs ativos'} em ${stkNum(R.feats.length)} ${R.temp ? 'municípios' : 'CEPs'}</div>
+        <div class="emp-mapa-leg"><span><i style="background:${cor}"></i>${R.temp ? 'Município (ponto na sede)' : R.ramo ? 'CEP com estabelecimentos do ramo' : 'CEP com CNPJs registrados'}</span><span>Clique nos grupos para aproximar</span></div>
         <div class="emp-mapa-nota">${notas.map(esc).join('<br>')}</div>`;
       if(!R.feats.length) empMapaMsg('Nenhum CNPJ no recorte escolhido.');
 
@@ -12766,7 +12959,7 @@ ${clipPlayerPills(n)}
       icva: ['assets/data/cielo_icva.js', 'CIELO_ICVA'], pnad: ['assets/data/ibge_pnad.js', 'IBGE_PNAD'],
       empresas: ['assets/data/cnpj_empresas.js', 'CNPJ_EMPRESAS'],
       // EMPRESAS · Mapa: CNPJs de MT pelo CEP registrado.
-      empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'],
+      empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'], empRamos: ['assets/data/cnpj_ramos.js', 'CNPJ_RAMOS'],
       munGeo: ['assets/data/municipios_geo.js', 'MUNICIPIOS_GEO'] };   // TEMPORÁRIO: sede dos municípios enquanto não há CEP
     // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
     const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];

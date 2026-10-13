@@ -313,6 +313,16 @@ def mes_idx(d):
 
 def main():
     import cnpj_ceps_geo as ceps_geo   # mapa por CEP: cache de coordenadas e gravação de cnpj_ceps.js
+    # Ramos de negócio (assets/data/cnpj_ramos.js): prefixos de CNAE; vale o prefixo mais longo. Usado no mapa (pontos por ramo).
+    ramos = (ceps_geo.ler_js(os.path.join(RAIZ, 'assets', 'data', 'cnpj_ramos.js'), 'CNPJ_RAMOS') or {}).get('ramos', [])
+    pref_ramo = sorted(((p.encode(), i) for i, rm in enumerate(ramos) for p in rm['cnaes']), key=lambda x: -len(x[0]))
+    ramo_cache = {}
+
+    def ramo_de(cnae):
+        v = ramo_cache.get(cnae)
+        if v is None:
+            v = ramo_cache[cnae] = next((i for p, i in pref_ramo if cnae.startswith(p)), -1)
+        return v
     pastas = sorted(p.strip('/') for p, _ in listar() if re.fullmatch(r'\d{4}-\d{2}/', p))
     if not pastas:
         sys.exit('Nenhuma pasta mensal encontrada no compartilhamento da Receita.')
@@ -320,6 +330,7 @@ def main():
     if os.path.exists(SAIDA) and ('"edicao":"%s"' % edicao) in open(SAIDA, encoding='utf-8').read(2000) \
             and '"ufs":["%s"]' % UF_DETALHE.decode() in open(SAIDA, encoding='utf-8').read() \
             and '"acm":' in open(SAIDA, encoding='utf-8').read() \
+            and '"dr":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and os.path.exists(ceps_geo.SAIDA) and '"bairro":' in open(ceps_geo.SAIDA, encoding='utf-8').read() \
             and not os.environ.get('CNPJ_FORCAR'):
         print('Sem mudanças (edição %s já processada).' % edicao)
@@ -393,6 +404,7 @@ def main():
     f, e0, fm, em0, pr, at, prm, atm = {}, {}, {}, {}, {}, {}, {}, {}
     ac, acm = {}, {}   # empresas ativas na edição por subclasse CNAE e por município × subclasse
     cf, cat, cep_mun = {}, {}, {}   # mapa de Mato Grosso: (mês, CEP, regime) → [aberturas, baixas] · (CEP, regime) → ativas
+    cr = {}   # mapa de Mato Grosso: (CEP, ramo) → ativas (pontos de negócio por ramo)
     amostra, reserva = [], []
 
     def idx(d, k):
@@ -455,6 +467,9 @@ def main():
                     atm[k3] = atm.get(k3, 0) + 1
                     if cep:
                         cat[(cep, r)] = cat.get((cep, r), 0) + 1
+                        ir = ramo_de(c[11].zfill(7))
+                        if ir >= 0:
+                            cr[(cep, ir)] = cr.get((cep, ir), 0) + 1
             if estoque0:
                 e0[(iu, ic)] = e0.get((iu, ic), 0) + 1
                 em0[imn] = em0.get(imn, 0) + 1
@@ -593,6 +608,8 @@ def main():
         'bairro': [titulo(c.split(b'|')[1].decode().lower()) if b'|' in c else '' for c in cep_ord],
         'mun': [nm[cep_mun[c][0]] for c in cep_ord],
         'munCod': [cep_mun[c][1].decode() for c in cep_ord],
+        'ramos': [rm['nome'] for rm in ramos],
+        'dr': sorted([icep[c], ir, v] for (c, ir), v in cr.items() if c in icep),   # [iCep, iRamo, ativas]: pontos de negócio por ramo
         'd': [[i, r, cat.get((cep_ord[i], r), 0), serie(porCep.get((i, r), vazio)[0]), serie(porCep.get((i, r), vazio)[1])]
               for i, r in chaves],
     }
