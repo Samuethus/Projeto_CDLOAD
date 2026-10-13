@@ -9,7 +9,8 @@
 //   ping           → confirma login + permissão e informa se os secrets existem
 //   uazapi_teste   → (só Administrador) GET /instance/all com o admintoken; fecha a Etapa 0
 //   instancia_sincronizar · instancia_registrar · instancia_conectar · instancia_status · instancia_desconectar
-// Publicar: npx supabase functions deploy whatsapp-api
+// Publicar: Supabase > Edge Functions > whatsapp-api > Code, colar este arquivo e Deploy
+// (passo a passo em whatsapp/LEIA-ME.md).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
