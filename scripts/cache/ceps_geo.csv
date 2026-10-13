@@ -69,6 +69,7 @@ cep;lon;lat;logradouro;bairro
 78005000|PARQUE ATALAIA;-56.09789;-15.60141;Rua Ariquena;Parque Atalaia
 78005000|PARQUE DAS NACOES;;;;
 78005000|PARQUE HUMAITA;;;;
+78005000|PASCOAL RAMOS;-56.09789;-15.60141;Rua Fernando Bazan;Pascoal Ramos
 78005000|PEDRA 90;-55.92967;-15.62937;Comunidade Urbana Pedra 90 A;Pedra 90
 78005000|PICO DO AMOR;-56.10668;-15.59080;Rua 31 de Março;Pico do Amor
 78005000|PLANALTO;;;;
@@ -192,6 +193,7 @@ cep;lon;lat;logradouro;bairro
 78005906;-56.09585;-15.59757;Praça Alencastro, 158;Centro-Norte
 78005907;-56.09692;-15.59661;Rua Barão de Melgaço, 915;Centro-Norte
 78005908;-56.09750;-15.59694;Rua Barão de Melgaço, 3475;Centro-Norte
+78005909;-56.03111;-15.55137;Rua J, 13;Araés
 78005910;-56.08546;-15.58763;Rua Estrela do Norte, 58;Araés
 78005970;-56.09577;-15.59836;Praça da República, 101;Centro-Norte
 78005971;-56.09577;-15.59836;Praça da República, 101;Centro-Norte
@@ -258,6 +260,7 @@ cep;lon;lat;logradouro;bairro
 78008565;-56.09165;-15.59525;Praça do Rosário;Lixeira
 78008575;-56.08566;-15.59719;Travessa das Laranjeiras;Lixeira
 78008585;-56.09165;-15.59525;Travessa do Rosário;Lixeira
+78008595;-56.09016;-15.59559;Travessa do Caju;Lixeira
 78008600;-56.09094;-15.59360;Rua São Francisco;Lixeira
 78008605;-56.09094;-15.59360;Travessa São Francisco;Lixeira
 78008800;-56.02957;-15.57752;Avenida Professor João Gomes Monteiro Sobrinho;Lixeira
@@ -321,6 +324,7 @@ cep;lon;lat;logradouro;bairro
 78010325;-56.09263;-15.59453;Rua E;Areão
 78010330;-56.09263;-15.59453;Rua B;Areão
 78010333;-56.08021;-15.59775;Rua A;Areão
+78010335;-56.09263;-15.59453;Rua C;Areão
 78010350;-56.08378;-15.59605;Rua São Luis;Areão
 78010355;-56.09263;-15.59453;Rua Honório Rivereto do Couto;Areão
 78010360;-56.09263;-15.59453;Travessa M;Areão
@@ -1398,6 +1402,7 @@ cep;lon;lat;logradouro;bairro
 78045000|QUILOMBO;-56.09518;-15.58026;Rua Quilombo;Quilombo
 78045000|SANTA HELANA;;;;
 78045000|SANTA HELENA;;;;
+78045000|SANTA MARTA;-56.09980;-15.57599;Rua Santa Mônica;Jardim Santa Marta
 78045000|SANTA ROSA;-56.09982;-15.57595;Rua Santa Monica (Santa Marta);Santa Rosa
 78045008;-56.07859;-15.58309;Avenida Presidente Joaquim Augusto da Costa Marques;Quilombo
 78045010;-56.09306;-15.58145;Rua dos Nhambiquaras;Quilombo
@@ -1513,6 +1518,7 @@ cep;lon;lat;logradouro;bairro
 78048145;-56.10801;-15.56116;Avenida Mário Palma;Ribeirão do Lipa
 78048146;-56.10325;-15.55554;Beco B;Ribeirão do Lipa
 78048148;-56.07478;-15.59829;Rua Projetada Um;Ribeirão do Lipa
+78048149;-56.10755;-15.57025;Avenida das Brisas;Ribeirão do Lipa
 78048150;-56.09930;-15.54502;Rodovia Arquiteto Hélder Cândia;Ribeirão do Lipa
 78048151;-56.08054;-15.55854;Rua dos Lírios;Ribeirão do Lipa
 78048152;-56.13701;-15.59681;Rua Projetada Dois;Ribeirão do Lipa
@@ -1960,6 +1966,7 @@ cep;lon;lat;logradouro;bairro
 78050486;-56.06787;-15.59747;Rua Quinze;Dom Bosco
 78050490;-56.02675;-15.54811;Rua Dezenove;Dom Bosco
 78050492;-56.06499;-15.58318;Rua Vinte;Dom Bosco
+78050494;-56.05417;-15.56764;Rua Vinte e Dois;Dom Bosco
 78050496;-56.02862;-15.55602;Rua Vinte e Um;Dom Bosco
 78050500;-56.10173;-15.60123;Travessa L;Dom Bosco
 78050503;-55.95087;-15.63108;Rua Vinte e Seis;Dom Bosco
@@ -2965,6 +2972,7 @@ cep;lon;lat;logradouro;bairro
 78057018;-56.03206;-15.55230;Rua C;Residencial Buriti
 78057019;-56.03296;-15.55300;Rua B;Residencial Buriti
 78057020;-56.06266;-15.56691;Rua A;Residencial Buriti
+78057030;-56.03747;-15.53219;Rua M;Loteamento Residencial Jamil Boutros Nadaf
 78057032;-56.03747;-15.53219;Rua A;Loteamento Residencial Jamil Boutros Nadaf
 78057033;-56.03747;-15.53219;Rua B;Loteamento Residencial Jamil Boutros Nadaf
 78057034;-56.03747;-15.53219;Rua C;Loteamento Residencial Jamil Boutros Nadaf
@@ -3049,6 +3057,7 @@ cep;lon;lat;logradouro;bairro
 78058000|NOVO HORIZONTE;;;;
 78058000|NOVO MATO GROSSO;;;;
 78058000|NOVO PARAISO II;;;;
+78058000|OURO FINO;-56.09556;-15.59472;Rua BG;Ouro Fino
 78058000|PLANALTO;;;;
 78058000|PRIMEIRO DE MARCO;-56.03331;-15.54457;Travessa Primeiro de Março;Primeiro de Março
 78058000|PRIMEIRO DE MARO;;;;
@@ -3195,6 +3204,7 @@ cep;lon;lat;logradouro;bairro
 78058290;-56.01943;-15.63796;Rua Cento e Quinze;Morada da Serra
 78058292;-56.02072;-15.63654;Rua Cento e Dezesseis;Morada da Serra
 78058294;-56.11410;-15.60979;Avenida Garça-Real;Morada da Serra
+78058295;-56.03095;-15.60274;Rua Pica-Pau;Morada da Serra
 78058296;-56.03343;-15.56155;Rua Nhambú;Morada da Serra
 78058299;-56.03762;-15.55818;Rua Carlos Luiz de Mattos;Morada da Serra
 78058300;-56.03521;-15.55542;Travessa Cento e Treze;Morada da Serra
@@ -3479,6 +3489,7 @@ cep;lon;lat;logradouro;bairro
 78058837;-56.03239;-15.54965;Rua S;Planalto
 78058841;-56.03218;-15.56084;Rua T;Planalto
 78058842;-56.03218;-15.56084;Avenida A;Planalto
+78058843;-56.03218;-15.56084;Rua U;Planalto
 78058845;-56.03218;-15.56084;Rua V;Planalto
 78058847;-56.03218;-15.56084;Rua A;Planalto
 78058849;-56.04830;-15.58715;Rua Sete Marias;Planalto
@@ -4589,6 +4600,7 @@ cep;lon;lat;logradouro;bairro
 78085005;-56.06160;-15.63313;Rua Antônio Dorileo;Coxipó
 78085008;-56.06644;-15.61233;Rua Um;Coxipó
 78085010;-56.05680;-15.63005;Rua João Batista S de Oliveira;Coxipó
+78085015;-56.05377;-15.63154;Rua Dois;Coxipó
 78085024;-56.05469;-15.63038;Rua Três;Coxipó
 78085035;-56.05377;-15.63154;Rua Quatro;Coxipó
 78085055;-56.06023;-15.62732;Rua Ivan Rodrigues Arrais;Coxipó
@@ -5088,8 +5100,10 @@ cep;lon;lat;logradouro;bairro
 78089846;-56.02487;-15.64570;Alameda 24;Jardim Presidente
 78089850;-56.09819;-15.66199;Alameda 19;Jardim Presidente
 78089856;-56.02487;-15.64570;Alameda 27;Jardim Presidente
+78089862;-56.09859;-15.66292;Alameda 30;Jardim Presidente
 78089864;-56.02765;-15.64810;Avenida A;Jardim Presidente
 78089866;-56.02487;-15.64570;Alameda 16;Jardim Presidente
+78089868;-56.02487;-15.64570;Alameda 17;Jardim Presidente
 78089870;-56.09814;-15.66185;Alameda 14;Jardim Presidente
 78089882;-56.04098;-15.56799;Alameda 8;Jardim Presidente
 78089886;-56.02487;-15.64570;Alameda 9;Jardim Presidente
@@ -5606,6 +5620,7 @@ cep;lon;lat;logradouro;bairro
 78093490;-56.00631;-15.61524;Rua F-10;Jardim Fortaleza
 78093500;-55.99636;-15.61874;Rua F-12;Jardim Fortaleza
 78093505;-56.00321;-15.61637;Rua F-14;Jardim Fortaleza
+78093510;-56.00423;-15.63384;Rua F-9;Jardim Fortaleza
 78093515;-56.00311;-15.61681;Rua F-15;Jardim Fortaleza
 78093520;-55.99869;-15.61540;Rua F-8;Jardim Fortaleza
 78093530;-56.00475;-15.61326;Rua F-11;Jardim Fortaleza
@@ -5967,6 +5982,7 @@ cep;lon;lat;logradouro;bairro
 78098000|JARDIM PASSAREDO;-56.08900;-15.62082;Rua Dinamarca;Jardim Passaredo
 78098000|JD INDUSTRIARIO;;;;
 78098000|JD INDUSTRIARIO I;;;;
+78098000|JD INDUSTRIARIO II;;;;Jd Industriario Ii
 78098000|JD PAULISTA;;;;
 78098000|MANDURI;;;;
 78098000|NOVA ESPERANA III;;;;
@@ -6223,6 +6239,7 @@ cep;lon;lat;logradouro;bairro
 78098780;-56.00644;-15.61342;Rua Cinco;Loteamento Residencial Flor-de-Lis
 78098782;-56.04883;-15.61593;Rua Quatro;Loteamento Residencial Flor-de-Lis
 78098900;-56.00047;-15.61973;Rua Z, s/n;Distrito Industrial
+78098901;-56.07469;-15.62143;Rua Z, 150;Distrito Industrial
 78098903;-55.97420;-15.62706;Rua Fernando Bazan, s/n;Pascoal Ramos
 78098970;-55.98216;-15.65823;Avenida Pedro Paulo de Faria Junior, 1934;Distrito Industrial
 78098971;-55.98192;-15.64042;Rua Benedito Antônio, s/n;Pascoal Ramos
@@ -6409,6 +6426,7 @@ cep;lon;lat;logradouro;bairro
 78102000|PEDRA 90;-55.92967;-15.62937;Comunidade Urbana Pedra 90 A;Pedra 90
 78102000|PEDRA 90 CINTURAO VERDE;;;;
 78102000|RESIDENCIAL LETICIA;;;;
+78102000|RESIDENCIAL PARAISO DAS AGUAS;;;;Residencial Paraiso das Aguas
 78102000|ZONA RUAL;;;;
 78102000|ZONA RURAL;;;;
 78103000|BRASIL 21;;;;
@@ -6634,6 +6652,7 @@ cep;lon;lat;logradouro;bairro
 78110706;-56.12962;-15.63983;Rua Rolândia;23 de Setembro
 78110708;-56.12561;-15.63888;Rua Paraná;23 de Setembro
 78110710;-56.13229;-15.63953;Rua Miguel Ângelo Galdino;23 de Setembro
+78110711;-56.10378;-15.63091;Rua dos Ipês;23 de Setembro
 78110715;-56.13271;-15.64625;Rua Valmira Maria da Silva;23 de Setembro
 78110717;-56.13271;-15.64625;Rua João Batista Rodrigues;23 de Setembro
 78110720;-56.13034;-15.63900;Rua das Flores;23 de Setembro
@@ -6803,6 +6822,7 @@ cep;lon;lat;logradouro;bairro
 78115369;-56.11612;-15.62563;Rua José de Alencar;Ponte Nova
 78115380;-56.10103;-15.63264;Rua dos Jatobás;Ponte Nova
 78115385;-56.11061;-15.63641;Rua das Oliveiras;Ponte Nova
+78115400;-56.10222;-15.63233;Rua das Figueiras;Ponte Nova
 78115410;-56.10183;-15.63209;Rua das Cerejeiras;Ponte Nova
 78115415;-56.09812;-15.63135;Rua Walter Fontana;Ponte Nova
 78115420;-56.10222;-15.63233;Rua dos Jacarandás;Ponte Nova
@@ -7106,6 +7126,7 @@ cep;lon;lat;logradouro;bairro
 78118184;-56.09824;-15.63929;Rua Honório Rodrigues;Cristo Rei
 78118187;-56.10136;-15.64189;Avenida Dom Orlando Chaves;Cristo Rei
 78118189;-56.08446;-15.63352;Avenida Doutor Paraná;Cristo Rei
+78118190;-56.08751;-15.64381;Rua Sete;Cristo Rei
 78118191;-56.13271;-15.64625;Rua Vereador Dito de Souza;Cristo Rei
 78118200;-56.13271;-15.64625;Avenida Angelo Venâncio de Souza;Cristo Rei
 78118210;-56.10080;-15.63868;Travessa C;Cristo Rei
@@ -7175,6 +7196,7 @@ cep;lon;lat;logradouro;bairro
 78118380;-56.14073;-15.65807;Rua Jaspe;Cristo Rei
 78118390;-56.12983;-15.65168;Rua Turmalina;Cristo Rei
 78118395;-56.07837;-15.58938;Rua Topázio;Cristo Rei
+78118400;-56.09133;-15.67473;Rua Ametista;Cristo Rei
 78118405;-56.13271;-15.64625;Rua Turquesa;Cristo Rei
 78118420;-56.09946;-15.68053;Rua Dez;Cristo Rei
 78118456;-56.18951;-15.65913;Rua Cabo Verde;Cristo Rei
@@ -7451,6 +7473,7 @@ cep;lon;lat;logradouro;bairro
 78120796;-56.09424;-15.66841;Rua Vilhena;Parque do Lago
 78120802;-56.09134;-15.67473;Rua 26 de Dezembro;Parque do Lago
 78120804;-56.09160;-15.67254;Rua Mário de Almeida;Parque do Lago
+78120805;-56.07883;-15.65043;Rua Vila Nova;Parque do Lago
 78120806;-56.08868;-15.66873;Rua Verdão;Parque do Lago
 78120808;-56.08535;-15.67231;Rua das Orquídeas;Parque do Lago
 78120809;-56.13271;-15.64625;Rua Mário Nadaf;Parque do Lago
@@ -7955,6 +7978,7 @@ cep;lon;lat;logradouro;bairro
 78130762;-56.13271;-15.64625;Rua Brasilina Rosa Da Costa;Ikaray
 78130800;-56.13031;-15.69238;Avenida Leôncio Lopes de Miranda;Ikaray
 78130802;-56.17862;-15.66024;Rua Santana;Ikaray
+78130804;-56.13570;-15.66748;Rua São Bento;Ikaray
 78130808;-56.13816;-15.66910;Rua Theodorico Marques de Assunção;Ikaray
 78130815;-56.13419;-15.66453;Avenida Alzira Santana;Ikaray
 78130870;-56.13087;-15.67938;Rua Antônio Faustino;Ikaray
@@ -8200,7 +8224,9 @@ cep;lon;lat;logradouro;bairro
 78134108;-56.08291;-15.62448;Rua Rio Juruena;Capão do Pequi
 78134110;-56.08175;-15.62459;Rua Rio Aricá;Capão do Pequi
 78134112;-56.07974;-15.62513;Rua Rio Manso;Capão do Pequi
+78134114;-56.13271;-15.64625;Rua Rio Paraguai;Capão do Pequi
 78134116;-56.17003;-15.64376;Rua Rio Teles Pires;Capão do Pequi
+78134118;-56.13271;-15.64625;Rua Rio Sepotuba;Capão do Pequi
 78134120;-56.13241;-15.71960;Rua Rio Branco;Capão do Pequi
 78134128;-56.13271;-15.64625;Rua Rio São Lourenço;Capão do Pequi
 78134132;-56.13271;-15.64625;Rua Rio Roosevelt;Capão do Pequi
@@ -8238,6 +8264,7 @@ cep;lon;lat;logradouro;bairro
 78134210;-56.15214;-15.72925;Rua Cajá Manga;Capão do Pequi
 78134212;-56.16102;-15.63132;Rua Samambaia;Capão do Pequi
 78134218;-56.15064;-15.72582;Rua das Violetas;Capão do Pequi
+78134220;-56.15239;-15.72874;Rua do Cajueiro;Capão do Pequi
 78134232;-56.13271;-15.64625;Rua Francisco Xavier de Arruda;Capão do Pequi
 78134236;-56.10301;-15.63286;Rua do Cedro;Capão do Pequi
 78134238;-56.09714;-15.65486;Rua São Sebastião;Capão do Pequi
@@ -8804,9 +8831,11 @@ cep;lon;lat;logradouro;bairro
 78141190;-56.15344;-15.63081;Rua Luzitana;Glória
 78141194;-56.15761;-15.63871;Rua Harmonia;Glória
 78141196;-56.15108;-15.62883;Rua Redentor;Glória
+78141220;-56.13271;-15.64625;Rua Senador Lúcio Bittencourt;Glória
 78141228;-56.15108;-15.62883;Rua do Redentor;Glória
 78141232;-56.03781;-15.58247;Rua Monte Azul;Glória
 78141234;-56.13271;-15.64625;Rua Serra da Mantiqueira;Glória
+78141244;-56.13271;-15.64625;Rua Serra Bonita;Glória
 78141245;-56.15108;-15.62883;Rua Redentor;Glória
 78141248;-56.14651;-15.62447;Rua Santo Antônio;Glória
 78141250;-56.14828;-15.62590;Rua das Flores;Glória
@@ -8936,6 +8965,7 @@ cep;lon;lat;logradouro;bairro
 78142570;-56.16000;-15.62687;Rua Primavera;Mapim
 78142572;-56.15655;-15.63020;Rua São Sebastião;Mapim
 78142576;-56.15804;-15.63140;Rua Tarumã;Mapim
+78142578;-56.15764;-15.62770;Rua Marfim;Mapim
 78142588;-56.13271;-15.64625;Rua Prudentina;Mapim
 78142590;-56.15610;-15.62310;Rua Primavera;Mapim
 78142592;-56.15803;-15.62867;Rua Hortência;Mapim
@@ -8997,7 +9027,6 @@ cep;lon;lat;logradouro;bairro
 78142790;-56.15610;-15.62310;Rua Primavera;Mapim
 78142792;-56.15891;-15.62726;Rua do DNER;Mapim
 78142794;-56.15765;-15.62510;Rua Sete Quedas;Mapim
-78142796;-56.15728;-15.62579;Rua Salto Guaíra;Mapim
 78142798;-56.15893;-15.62926;Rua Violeta;Mapim
 78142799;-56.15749;-15.62623;Rua Paulo Afonso;Mapim
 78142800;-56.15968;-15.62379;Rua Joana Batista de Campos;Mapim
@@ -9066,6 +9095,7 @@ cep;lon;lat;logradouro;bairro
 78143390;-56.16197;-15.62014;Rua Porto dos Gaúchos;Mapim
 78143392;-56.16076;-15.61915;Rua Alto Paraguai;Mapim
 78143394;-56.16197;-15.62014;Rua Rosário Oeste;Mapim
+78143395;-56.15502;-15.63788;Rua Jaciara;Mapim
 78143396;-56.16331;-15.61865;Rua Peru;Mapim
 78143398;-56.16487;-15.62186;Rua Urubupungá;Mapim
 78143400;-56.10307;-15.60720;Rua Porto Alegre;Mapim
@@ -9130,7 +9160,6 @@ cep;lon;lat;logradouro;bairro
 78144380;-56.18065;-15.60284;Rua das Rosas;Petrópolis
 78144382;-56.12986;-15.65170;Rua 25 de Dezembro;Petrópolis
 78144390;-56.18065;-15.60284;Rua das Rosas;Petrópolis
-78144391;-56.07684;-15.60295;Rua das Laranjeiras;Petrópolis
 78144392;-56.09978;-15.62915;Rua Tulipa;Petrópolis
 78144394;-56.17822;-15.60718;Rua Duque de Caxias;Petrópolis
 78144396;-56.14974;-15.72641;Rua Jasmim;Petrópolis
@@ -9180,6 +9209,7 @@ cep;lon;lat;logradouro;bairro
 78144524;-56.18181;-15.60464;Rua Margarida;Petrópolis
 78144526;-56.13293;-15.65293;Rua Cravo;Petrópolis
 78144528;-56.17951;-15.60454;Rua da Harmonia;Petrópolis
+78144540;-56.13271;-15.64625;Rua Estado do Tocantins;Petrópolis
 78144552;-56.13101;-15.66080;Rua Estado de Mato Grosso do Sul;Petrópolis
 78144554;-56.13271;-15.64625;Rua Estado de Sergipe;Petrópolis
 78144564;-56.13271;-15.64625;Rua Janildo Dionísio Fernandes;Petrópolis
@@ -9212,6 +9242,7 @@ cep;lon;lat;logradouro;bairro
 78144700;-56.13271;-15.64625;Rua Joaquim Pedro Fernandes;Petrópolis
 78144704;-56.13271;-15.64625;Rua Valdemar Rodrigues da Cunha;Petrópolis
 78144706;-56.14073;-15.71920;Rua Azelina Carvalho Coene;Petrópolis
+78144708;-56.14073;-15.71920;Rua Benedito Fernandes;Petrópolis
 78144712;-56.14073;-15.71920;Rua José Oraci Gogo;Petrópolis
 78144714;-56.14073;-15.71920;Rua Isaura Pelegrine;Petrópolis
 78144720;-56.14073;-15.71920;Rua Carmelita Fernandes;Petrópolis
@@ -9273,7 +9304,6 @@ cep;lon;lat;logradouro;bairro
 78145132;-56.16516;-15.62804;Rua Curitiba;Ikaray
 78145133;-56.13271;-15.64625;Rua Felipe Brüehmüller;Ikaray
 78145134;-56.17672;-15.63992;Rua Ceará;Ikaray
-78145135;-56.16118;-15.63659;Rua Pinheiro;Ikaray
 78145136;-56.07684;-15.60295;Rua das Laranjeiras;Ikaray
 78145137;-56.14303;-15.65542;Rua Pará;Ikaray
 78145154;-56.13271;-15.64625;Rua Salomão Soares Andrade;Ikaray
@@ -9335,6 +9365,7 @@ cep;lon;lat;logradouro;bairro
 78145756;-56.13981;-15.64239;Rua Francelino José da Silva;São Simão
 78145758;-56.15345;-15.68758;Rua José Vicente Dias;São Simão
 78145760;-56.15630;-15.68470;Rua Chamma Mussa;São Simão
+78145764;-56.15397;-15.68672;Rua Cláudio Crisostomo Amorim;São Simão
 78145766;-56.15815;-15.67940;Rua Engenho Velho;São Simão
 78145768;-56.15509;-15.68570;Rua Lourenço Pinto de Godoy;São Simão
 78145770;-56.16082;-15.68373;Rua Gonçalo Marques de Arruda;São Simão
@@ -9434,6 +9465,7 @@ cep;lon;lat;logradouro;bairro
 78148218;-56.14823;-15.65146;Rua Jandaia;Canelas
 78148220;-56.15587;-15.67498;Rua São Simão;Canelas
 78148228;-56.14546;-15.65577;Rua Cáceres;Canelas
+78148230;-56.13369;-15.61090;Rua Acre;Canelas
 78148235;;;;
 78148340;-56.16010;-15.67706;Rua Joel Nassarden (Lot S Simão);São Simão
 78148350;-56.15812;-15.68369;Rua Antônio José da Silva (Lot S Simão);São Simão
@@ -9537,7 +9569,6 @@ cep;lon;lat;logradouro;bairro
 78149088;-56.16326;-15.62340;Rua Paraguai;Novo Mundo
 78149090;-56.13271;-15.64625;Rua Dominica;Novo Mundo
 78149091;-56.13606;-15.64360;Rodovia MT-070;Novo Mundo
-78149094;-56.16432;-15.62285;Rua Canadá;Novo Mundo
 78149100;-56.13271;-15.64625;Rua Cuba;Novo Mundo
 78149104;-56.13271;-15.64625;Rua Aruba;Novo Mundo
 78149106;-56.10332;-15.65577;Rua Barbados;Novo Mundo
@@ -9713,7 +9744,6 @@ cep;lon;lat;logradouro;bairro
 78149694;-56.13271;-15.64625;Rua Junípero;Novo Mundo
 78149696;-56.13271;-15.64625;Rua Jurema;Novo Mundo
 78149698;-56.13271;-15.64625;Rua Jurubeba;Novo Mundo
-78149700;-56.13271;-15.64625;Rua Tritônia;Novo Mundo
 78149726;-56.19516;-15.65609;Rua Vereda dos Sonhos;Novo Mundo
 78149900;-56.20373;-15.64123;Rua Banha de Galinha, s/n;Novo Mundo
 78149901;-56.20256;-15.64271;Rua Pitangueira, s/n;Novo Mundo
@@ -9738,6 +9768,7 @@ cep;lon;lat;logradouro;bairro
 78150000|DISTRITO DO BOM SUCESSO;;;;
 78150000|DISTRITO INDUSTRIAL;-56.15422;-15.67185;Rua H;Distrito Industrial
 78150000|FRUTAL DE MINAS;;;;
+78150000|GUARITA;;;;Guarita
 78150000|ICARAI;;;;
 78150000|INDEFINIDO;;;;
 78150000|JAR ALBERTO CANELAS;;;;
@@ -9779,6 +9810,7 @@ cep;lon;lat;logradouro;bairro
 78150132;-56.09207;-15.66616;Rua Vale dos Lírios;Santa Isabel
 78150162;-56.16091;-15.62163;Rua dos Laminados;Santa Isabel
 78150190;-56.17107;-15.64223;Rua Oceano Índico;Santa Isabel
+78150192;-56.15296;-15.63571;Rua Paquistão;Santa Isabel
 78150194;-56.13271;-15.64625;Rua Cairo;Santa Isabel
 78150198;-56.17107;-15.64223;Rua Oceano Atlântico;Santa Isabel
 78150200;-56.12474;-15.58807;Rua Israel;Santa Isabel
@@ -9987,7 +10019,6 @@ cep;lon;lat;logradouro;bairro
 78150990;-56.09148;-15.65446;Rua Trinta e Dois - Esquina c/ Rua Oito;
 78150991;-56.18745;-15.65533;Av. Celestino Escolástico esquina com Av. Anízio Hadad;
 78151000|NOVO MUNDO;-56.20066;-15.65191;Rua Novo Mundo;Novo Mundo
-78151052;-56.12029;-15.63875;Rua Um;Residencial Renato José dos Santos
 78151056;-56.09133;-15.67473;Rua Seis;Residencial Renato José dos Santos
 78151104;-56.12983;-15.65168;Rua Cinco;Residencial Alice Gonçalves de Campos
 78151114;-56.10947;-15.63681;Rua Dois;Residencial Alice Gonçalves de Campos
@@ -10160,6 +10191,7 @@ cep;lon;lat;logradouro;bairro
 78156102;-56.17421;-15.61019;Rua Vinte;Nova Esperança
 78156104;-56.17379;-15.60983;Rua Dezenove;Nova Esperança
 78156105;-56.16653;-15.61418;Avenida Mário Andreazza;Nova Esperança
+78156106;-56.17264;-15.61369;Rua Dezoito;Nova Esperança
 78156108;-56.17494;-15.61086;Rua Dezessete;Nova Esperança
 78156111;-56.17443;-15.60974;Avenida Um;Nova Esperança
 78156202;-56.17582;-15.60674;Rua Dois;Jardim Manaíra
@@ -10413,6 +10445,7 @@ cep;lon;lat;logradouro;bairro
 78167000|PARQUE BOA VISTA 1;;;;
 78168000;-56.13250;-15.64667;;Passagem da Conceição
 78168000|CRISTO REI;-56.13198;-15.64605;Rua dos Canários;Cristo Rei
+78168000|DISTRITO DA PASSAGEM DA CONCEICAO;;;;Distrito da Passagem da Conceicao
 78168000|DISTRITO DO PARI;;;;
 78168000|DISTRITO PASSAGEM DA CONCEICAO;;;;
 78168000|FAZENDINHA;;;;
@@ -10644,7 +10677,10 @@ cep;lon;lat;logradouro;bairro
 78175000|ACENTAMENTO GIRAL;;;;
 78175000|ACENTAMENTO SANTA TEREZA;;;;
 78175000|AEROPORTO;;;;
+78175000|AG8;;;;Ag8
 78175000|AGROANA GIRAU;;;;
+78175000|ALVORADA;;;;Alvorada
+78175000|ANDRE MAGGI;;;;Andre Maggi
 78175000|ANDRE MAGI;;;;
 78175000|AREA RURAL;;;;
 78175000|AREAO;;;;
@@ -10658,6 +10694,7 @@ cep;lon;lat;logradouro;bairro
 78175000|ASSENTAMENTO ZONA RURAL;;;;
 78175000|B0M PASTOR;;;;
 78175000|BAIRRO;;;;
+78175000|BAIRRO BOA ESPERANCA;;;;Bairro Boa Esperanca
 78175000|BAIRRO BOM PASTOR;;;;
 78175000|BAIRRO JOAO GODOFREDO;;;;
 78175000|BAIRRO SANTA TERESA;;;;
@@ -10777,6 +10814,7 @@ cep;lon;lat;logradouro;bairro
 78175000|JARDIM DO ESTADO;;;;
 78175000|JARDIM DOS ESTADO;;;;
 78175000|JARDIM DOS ESTADOS;;;;
+78175000|JARDIM OLIVEIRA;;;;Jardim Oliveira
 78175000|JARDIM SANTA TEREZA;;;;
 78175000|JARDIM SANTANA TEREZA;;;;
 78175000|JARDINS DOS ESTADOS;;;;
@@ -10824,6 +10862,7 @@ cep;lon;lat;logradouro;bairro
 78175000|RESIDENCIAL;-56.62748;-16.24668;Rua I;Residencial Villa Vorata
 78175000|RESIDENCIAL 120;;;;
 78175000|RESIDENCIAL AMARAL;;;;
+78175000|RESIDENCIAL DO PANTANAL;;;;Residencial do Pantanal
 78175000|RESIDENCIAL GARCIAS;;;;
 78175000|RESIDENCIAL GM BOM PASTOR;;;;
 78175000|RESIDENCIAL GUATOS;;;;
@@ -10957,6 +10996,7 @@ cep;lon;lat;logradouro;bairro
 78180000|BAIRRO LIXA;;;;
 78180000|BAIRRO NOSSA SENHORA APARECIDA;;;;
 78180000|BAIRRO NOSSA SENHORA DE APARECIDA;;;;
+78180000|BAIRRO NOSSA SENHORA DE FATIMA;;;;Bairro Nossa Senhora de Fatima
 78180000|BAIRRO PARQUE DOS PIQUIZEIRO;;;;
 78180000|BAIRRO VILA NOVA;;;;
 78180000|BAMBA;;;;
@@ -11027,6 +11067,7 @@ cep;lon;lat;logradouro;bairro
 78180000|COMUNIDADE OLHO D AGUA;;;;
 78180000|COMUNIDADE OLHOS DAGUA;;;;
 78180000|COMUNIDADE PA SANTANA DO TAQUARAL;;;;
+78180000|COMUNIDADE PANTANALZINHO;;;;Comunidade Pantanalzinho
 78180000|COMUNIDADE SANGRADOURO;;;;
 78180000|COMUNIDADE SERRANA;;;;
 78180000|COMUNIDADE VALO VERDE;;;;
@@ -11054,6 +11095,7 @@ cep;lon;lat;logradouro;bairro
 78180000|DISTRITO NOVA ESPERANCA;;;;
 78180000|DISTRITO PIQUIZEIRO;;;;
 78180000|DISTRITO PORTO DE FORA;;;;
+78180000|ECOVILE PANTANAL II;;;;Ecovile Pantanal Ii
 78180000|ECOVILLE PANTANAL;;;;
 78180000|EMPORIO CAJU;;;;
 78180000|ENGENHO VELHO;;;;
@@ -11105,6 +11147,7 @@ cep;lon;lat;logradouro;bairro
 78180000|LAMBARI;;;;
 78180000|LIDERANCA;;;;
 78180000|LIXA;;;;
+78180000|LOT JARDIM UNIVERSITARIO;;;;Lot Jardim Universitario
 78180000|LOT JD STO ANT;;;;
 78180000|LOTE 61;;;;
 78180000|LOTEAMENTO BEIRA RIO;;;;
@@ -11183,6 +11226,7 @@ cep;lon;lat;logradouro;bairro
 78180000|REGIAO DO RIO PEIXE DE COURO;;;;
 78180000|RES NOVA ESPERANCA;;;;
 78180000|RESID COUNTRY CLUB;;;;
+78180000|RESIDENCIAL ALTOS DO LEVEGER 2;;;;Residencial Altos do Leveger 2
 78180000|RESIDENCIAL ALTOS DO LEVERGER;;;;
 78180000|RESIDENCIAL CAUNTRY CLUB;;;;
 78180000|RESIDENCIAL COHAB ALTOS DO LEVERGER II;;;;
@@ -11360,6 +11404,7 @@ cep;lon;lat;logradouro;bairro
 78190000|SAO PEDRO;;;;
 78190000|SAO PEDRO DE JOSELANDIA;;;;
 78190000|SITIO CAPOEIRINHA;;;;
+78190000|VIAL RECREIO;;;;Vial Recreio
 78190000|VIDA SAUDAVEL;;;;
 78190000|VILA ALBUQUERQUE;;;;
 78190000|VILA DAUDAVEL;;;;
@@ -11432,6 +11477,7 @@ cep;lon;lat;logradouro;bairro
 78195000|ASSENTAMENTO MAMEDE;;;;
 78195000|ASSENTAMENTO PA QUILOMBO;;;;
 78195000|ASSENTAMENTO QUILOMBO;;;;
+78195000|AUTO DOS MIRANTES;;;;Auto dos Mirantes
 78195000|AUTOS DO SANTANA;;;;
 78195000|BACIA HIDROGRAFICA PLATINA;;;;
 78195000|BAIRRO;;;;
@@ -11457,6 +11503,7 @@ cep;lon;lat;logradouro;bairro
 78195000|BOM CLIMA CHAPADA DOS GUIMARAES;;;;
 78195000|BOM CLIMA I;;;;
 78195000|BOM CLIMA II;;;;
+78195000|BOM CLIMA III;;;;Bom Clima Iii
 78195000|BOM CLIMA OFICIAL;;;;
 78195000|BOM JARDIM;;;;
 78195000|BOM LIMA;;;;
@@ -11518,6 +11565,7 @@ cep;lon;lat;logradouro;bairro
 78195000|COMUNIDADE PRAIA RICA;;;;
 78195000|COMUNIDADE RIO DA CASCA;;;;
 78195000|COMUNIDADE RURAL RIO DA CASCA;;;;
+78195000|COMUNIDADE SAO RAFAEL;;;;Comunidade Sao Rafael
 78195000|COND ALTOS DA SERRA;;;;
 78195000|COND BRUMAS DA CHAPADA;;;;
 78195000|COND CHAPADA VILLAGE II;;;;
@@ -11590,6 +11638,7 @@ cep;lon;lat;logradouro;bairro
 78195000|JARDIM SANTISTA I;;;;
 78195000|JARDIM VALE DA CHAPADA;;;;
 78195000|JARDIM VISTA VERDE;;;;
+78195000|JARDIN FLORIPA;;;;Jardin Floripa
 78195000|JD ACLIMACAO;;;;
 78195000|JOAO CARRO;;;;
 78195000|KM 10;;;;
@@ -11602,6 +11651,7 @@ cep;lon;lat;logradouro;bairro
 78195000|LOT BOM CLIMA;;;;
 78195000|LOT FECHADO CHAPADA VILLAGCHAPADA DOS GUIMARAES;;;;
 78195000|LOT FLORADA DA SERRA;;;;
+78195000|LOT JARDIM BUCAIR;;;;Lot Jardim Bucair
 78195000|LOT OFICIAL;;;;
 78195000|LOT QUINTAS DO BRUMADO;;;;
 78195000|LOT SANTANA;;;;
@@ -11656,6 +11706,7 @@ cep;lon;lat;logradouro;bairro
 78195000|NUCLEO COLONIAL JAMACA;;;;
 78195000|NUCLEO HABITACIONAL VEO DE NOIVA;;;;
 78195000|OFICIAL;;;;
+78195000|OFICIAL BOM CLIMA;;;;Oficial Bom Clima
 78195000|OHAB VEU DE NOIVA;;;;
 78195000|OLHA D AGUA;;;;
 78195000|OLHA DAGUA;;;;
@@ -11671,6 +11722,7 @@ cep;lon;lat;logradouro;bairro
 78195000|PANAMBY;;;;
 78195000|PARAISO DO MANSO;;;;
 78195000|PARAISO DO MANSO ZONA RURAL;;;;
+78195000|PICINAO;;;;Picinao
 78195000|PINGADOR;;;;
 78195000|POR DO SOL;;;;
 78195000|PORTAL DA SAMAMBAIA;;;;
@@ -11706,6 +11758,7 @@ cep;lon;lat;logradouro;bairro
 78195000|SANTA ELVIRA;;;;
 78195000|SANTA EUVIRA;;;;
 78195000|SANTANA;;;;
+78195000|SAO BENEDITO;;;;Sao Benedito
 78195000|SAO FELIX;;;;
 78195000|SAO FRANCISCO;;;;
 78195000|SAO RAFAEL;;;;
@@ -11714,6 +11767,7 @@ cep;lon;lat;logradouro;bairro
 78195000|SAO SEBASTAO;;;;
 78195000|SAO SEBASTIAO;-55.95477;-15.62220;Rua K;São Sebastião
 78195000|SAO SEBASTIAO 1;;;;
+78195000|SAO SEBASTIAO CENTRO;;;;Sao Sebastiao Centro
 78195000|SAO SEBASTIAO I;;;;
 78195000|SAO SEBASTIAO II;;;;
 78195000|SAO SEBASTIAO IV;;;;
@@ -11722,6 +11776,7 @@ cep;lon;lat;logradouro;bairro
 78195000|SEDE;;;;
 78195000|SEM BAIRRO;;;;
 78195000|SERRA DO ATIMA;;;;
+78195000|SETOR RURAL;;;;Setor Rural
 78195000|SINOP;;;;
 78195000|SITIO;;;;
 78195000|SITIO LAVRINHA;;;;
@@ -11774,9 +11829,11 @@ cep;lon;lat;logradouro;bairro
 78195000|ZONA URBANA;;;;
 78195959;-55.74943;-15.46241;Rua Tiradentes, s/n;Centro
 78195970;-55.74545;-15.47133;Rua Tiradentes, s/n;Centro
+78196000|DISTRITO PARAISO DE MANSO;;;;Distrito Paraiso de Manso
 78197000|AGUA FRIA;;;;
 78197000|CACHOEIRA DO BOM JARDIM;;;;
 78197000|DISTRITO AGUA FRIA;;;;
+78197000|ZONA RURAL;;;;Zona Rural
 78197970;-55.73264;-15.46591;Rua Principal, s/n;Centro
 78198000|SAO SEBASTIAO;-55.95477;-15.62220;Rua K;São Sebastião
 78200000;;;;
@@ -12090,6 +12147,7 @@ cep;lon;lat;logradouro;bairro
 78200469;-57.69523;-16.09452;Rua dos Latoeiros;Rodeio
 78200471;-57.69530;-16.09299;Rua dos Sapateiros;Rodeio
 78200473;-57.69550;-16.09286;Rua do Fico;Rodeio
+78200477;-57.69422;-16.09243;Rua Disneylândia;Rodeio
 78200480;-57.69481;-16.09205;Rua Nortelândia;Rodeio
 78200482;-57.69608;-16.09279;Rua dos Zattar;Rodeio
 78200484;-57.69558;-16.09362;Rua Marreco;Rodeio
@@ -12318,6 +12376,7 @@ cep;lon;lat;logradouro;bairro
 78205070;-57.69974;-16.07764;Rua dos Avestruz;Jardim São Luiz da Ponte
 78205090;-57.69755;-16.07944;Avenida 31 de Março;Jardim São Luiz da Ponte
 78205095;-57.69842;-16.07741;Rua Doutor Rangel Torres;Jardim São Luiz da Ponte
+78205100;-57.69762;-16.07822;Rua Jeripoca;Jardim São Luiz da Ponte
 78205105;-57.69795;-16.08041;Rua Ataíde Peixoto;Jardim São Luiz da Ponte
 78205110;-57.69795;-16.08041;Rua Domingos Zanetti;Jardim São Luiz da Ponte
 78205115;-57.69585;-16.07666;Avenida Marechal Castelo Branco;Jardim São Luiz da Ponte
@@ -12575,6 +12634,7 @@ cep;lon;lat;logradouro;bairro
 78206858;-57.67487;-16.10709;Travessa Coxipó;Vitória Régia
 78206862;-57.67596;-16.10648;Rodovia BR-070;Vitória Régia
 78206866;-57.67381;-16.10737;Rua Guaporé;Vitória Régia
+78206870;-57.68231;-16.06741;Travessa Sararé;Vitória Régia
 78206874;-57.67334;-16.10554;Travessa Mamoré;Vitória Régia
 78210000|CENTRO;-57.68185;-16.07208;Rua das Opalas;Centro
 78210001;-57.66844;-16.07511;Avenida Sete de Setembro;Centro
@@ -12779,6 +12839,7 @@ cep;lon;lat;logradouro;bairro
 78210784;-57.67112;-16.07591;Rua Descalvados;Lavapés
 78210786;-57.67480;-16.07562;Rua Daveron;Lavapés
 78210788;-57.67173;-16.07611;Avenida da Liberdade;Lavapés
+78210790;-57.67241;-16.07529;Rua Chile;Lavapés
 78210792;-57.67480;-16.07562;Rua Cambará;Lavapés
 78210794;-57.71109;-16.10126;Rua Bahia;Lavapés
 78210796;-57.67480;-16.07562;Rua Ayrton Senna;Lavapés
@@ -13211,6 +13272,7 @@ cep;lon;lat;logradouro;bairro
 78234000|SANTA CRUZ;-57.68945;-16.08958;Rua Santa Maria;Santa Cruz
 78234000|VILA APARECIDA;;;;
 78234000|ZONA RURAL;;;;
+78235000|DISTRITO HORIZONTE D OESTE;;;;Distrito Horizonte D Oeste
 78235000|HORIZONTE DO OESTE;;;;
 78235000|ZONA RURAL;;;;
 78235970;-57.67143;-16.10599;Rua Principal, s/n;Centro
@@ -13329,6 +13391,7 @@ cep;lon;lat;logradouro;bairro
 78240000|DISTRITO DE PEDRO NECA;;;;
 78240000|DISTRITO DE VILA CARDOSO;;;;
 78240000|DISTRITO DE VILA PICADA;;;;
+78240000|DISTRITO PEDRO NECA;;;;Distrito Pedro Neca
 78240000|DOMINGO JOSE DE MORAIS;;;;
 78240000|EDELMINA MARCHETE;;;;
 78240000|EDELMINA MARCHETT;;;;
@@ -13396,6 +13459,7 @@ cep;lon;lat;logradouro;bairro
 78240000|VILA NOVA PICADA;;;;
 78240000|VILA PICADA;;;;
 78240000|VILA SANTA RITA;;;;
+78240000|ZONA;;;;Zona
 78240000|ZONA RURAL;;;;
 78240970;-58.46919;-15.85337;Avenida Januário Santana do Carmo, s/n;Parque das Américas
 78242000|CENTRO;-58.46244;-15.85745;Rua Paraná, s/n;Centro
@@ -13442,6 +13506,7 @@ cep;lon;lat;logradouro;bairro
 78243000|ZONA RURALL;;;;
 78243970;-59.58639;-14.47025;Avenida Uirapuru, 630;Centro
 78245000;-59.95056;-15.00806;;
+78245000|AERO PORTO;;;;Aero Porto
 78245000|AEROPORTO;;;;
 78245000|AREA RURAL;;;;
 78245000|ASSENTAMENTO RITINHA;;;;
@@ -13471,6 +13536,7 @@ cep;lon;lat;logradouro;bairro
 78245000|DISTRITO;;;;
 78245000|DISTRITO DE SANTA CLARA;;;;
 78245000|DISTRITO DE SANTA CLARA DO MONTE CRISTO;;;;
+78245000|DISTRITO DE VILA BELA DA SANTISSIMA TRINDADE;;;;Distrito de Vila Bela da Santissima Trindade
 78245000|DISTRITO INDUSTRIAL;;;;
 78245000|DISTRITO SANTA CLARA DO MONTE CRISTO;;;;
 78245000|ESPERANCA;;;;
@@ -13571,6 +13637,7 @@ cep;lon;lat;logradouro;bairro
 78250000|ASSENTAMENTO BARRA DO MARCOS;;;;
 78250000|ASSENTAMENTO N TERRA N GENTE;;;;
 78250000|ASSENTAMENTO NOSSA TERRA NOSSA GENTE;;;;
+78250000|ASSENTAMENTO NOSSA TERRANOSSA GENTE;;;;Assentamento Nossa Terranossa Gente
 78250000|ASSENTAMENTO RENASCER;;;;
 78250000|ASSENTAMENTO TRIUNFO;;;;
 78250000|AVENIDA;;;;
@@ -13655,6 +13722,7 @@ cep;lon;lat;logradouro;bairro
 78250000|CHACARA 26A;;;;
 78250000|CHACARA 2A;;;;
 78250000|CHACARA 2B;;;;
+78250000|CHACARA 3 IRMAOS;;;;Chacara 3 Irmaos
 78250000|CHACARA 33;;;;
 78250000|CHACARA 34;;;;
 78250000|CHACARA 35;;;;
@@ -13734,7 +13802,9 @@ cep;lon;lat;logradouro;bairro
 78250000|CONQUISTA D OESTE;;;;
 78250000|CORGO DA ONCA;;;;
 78250000|CORREGO DA ONCA;;;;
+78250000|DERMART;;;;Dermart
 78250000|DERMAT;;;;
+78250000|DISTRITO INDUSTRIAL;;;;Distrito Industrial
 78250000|EBEC;;;;
 78250000|ESTANCIA SAO LUCAS;;;;
 78250000|ESTRADA RURAL;;;;
@@ -13782,6 +13852,7 @@ cep;lon;lat;logradouro;bairro
 78250000|JARDIM AMERICA;;;;
 78250000|JARDIM AMERICO MAZETE;;;;
 78250000|JARDIM ANA MARIA SILVA;;;;
+78250000|JARDIM ANA MARIA SILVA MARIA C;;;;Jardim Ana Maria Silva Maria C
 78250000|JARDIM ANA MARIA SILVA MARIA CAPOEIRA;;;;
 78250000|JARDIM ANTONIO SOARES;;;;
 78250000|JARDIM ANTONIO SOARES DIAS;;;;
@@ -13832,6 +13903,7 @@ cep;lon;lat;logradouro;bairro
 78250000|JARDIM IPACARAI;;;;
 78250000|JARDIM IPCARAI;;;;
 78250000|JARDIM JASMIM;;;;
+78250000|JARDIM JASMIN;;;;Jardim Jasmin
 78250000|JARDIM LATOS DA GLORIA;;;;
 78250000|JARDIM LIONS INTERNACIONAL;;;;
 78250000|JARDIM LIONS INTERNACIONAL PONTES E LACERDA;;;;
@@ -13914,6 +13986,7 @@ cep;lon;lat;logradouro;bairro
 78250000|JD ANTONIO SOARES DIAS;;;;
 78250000|JD BANDEIRANTES;;;;
 78250000|JD BELA VISTA;;;;
+78250000|JD BELA VISTA III;;;;Jd Bela Vista Iii
 78250000|JD BOA VISTA;;;;
 78250000|JD BURITI;;;;
 78250000|JD DAS PALMEIRAS;;;;
@@ -13987,6 +14060,7 @@ cep;lon;lat;logradouro;bairro
 78250000|PALMITEIRA;;;;
 78250000|PAQUE SANTA CRUZ II;;;;
 78250000|PARQ SANTA CRUZ;;;;
+78250000|PARQ SAO CRISTOVAO;;;;Parq Sao Cristovao
 78250000|PARQUE SANO CRISTOVAO;;;;
 78250000|PARQUE SANTA CRU I;;;;
 78250000|PARQUE SANTA CRUZ;;;;
@@ -14016,6 +14090,7 @@ cep;lon;lat;logradouro;bairro
 78250000|REIDENCIAL GLORIA;;;;
 78250000|RES FLORAIS;;;;
 78250000|RES GLORIA;;;;
+78250000|RES PROENCA;;;;Res Proenca
 78250000|RES SANTA BARBARA;;;;
 78250000|RES SANTO ANTONIO;;;;
 78250000|RES STA BARBARA;;;;
@@ -14029,6 +14104,7 @@ cep;lon;lat;logradouro;bairro
 78250000|RESIDENCIAL AMERICO MAZETE;;;;
 78250000|RESIDENCIAL AMERICO MAZETTI;;;;
 78250000|RESIDENCIAL AMERICO MAZZETI;;;;
+78250000|RESIDENCIAL BELA VISTA;;;;Residencial Bela Vista
 78250000|RESIDENCIAL DO GLORIA;;;;
 78250000|RESIDENCIAL FLO;;;;
 78250000|RESIDENCIAL FLOR DA SERRA;;;;
@@ -14094,6 +14170,7 @@ cep;lon;lat;logradouro;bairro
 78250000|SANTA HELENA;;;;
 78250000|SANTA LUCIA;;;;
 78250000|SANTO ANTONIO;;;;
+78250000|SAO CRIATOVAO;;;;Sao Criatovao
 78250000|SAO CRISTOVAM;;;;
 78250000|SAO CRISTOVAO;;;;
 78250000|SAO CRISTOVON;;;;
@@ -14145,6 +14222,7 @@ cep;lon;lat;logradouro;bairro
 78250000|VILA EBERNEK;;;;
 78250000|VILA ENEC;;;;
 78250000|VILA GUAPORE;;;;
+78250000|VILA GUAPORE CENTRO;;;;Vila Guapore Centro
 78250000|VILA IBEC;;;;
 78250000|VILA IBECK;;;;
 78250000|VILA IGUACU;;;;
@@ -14192,6 +14270,7 @@ cep;lon;lat;logradouro;bairro
 78253000|DISTRITO DE ADRIANOPOLIA;;;;
 78253000|DISTRITO DE ADRIANOPOLIS;;;;
 78253000|FAZENDA AGUIA;;;;
+78253000|JARDIM;;;;Jardim
 78253000|JARDIM ADRIANOPOLIS;;;;
 78253000|JARDIM ADRIANOPOLIS ADRIANOPOLIS;;;;
 78253000|LOTE 14;;;;
@@ -14280,6 +14359,7 @@ cep;lon;lat;logradouro;bairro
 78255000|COHAB NOVA CRUZEIRO;;;;
 78255000|COMUNIDADE CORREGO DO OURO;;;;
 78255000|COMUNIDADE SITIO INACIO;;;;
+78255000|CONJUNTO HABITACIONAL;;;;Conjunto Habitacional
 78255000|CORREGO DO OURO BRANCO;;;;
 78255000|CORREGO DO POUSO;;;;
 78255000|CRUZEIRO;;;;
@@ -14453,6 +14533,7 @@ cep;lon;lat;logradouro;bairro
 78265000|CENTRO;-58.38557;-15.12139;Avenida José Julio Lima, 302;Centro
 78265000|CIDADE ALTA;;;;
 78265000|COHAB POR DO SOL;;;;
+78265000|COMUNIDADE BAIXO DRACENA;;;;Comunidade Baixo Dracena
 78265000|COMUNIDADE IPE ROCHO;;;;
 78265000|COMUNIDADE RURAL ALTO SETE DE SETEMBRO;;;;
 78265000|FAZENDA;;;;
@@ -14518,17 +14599,22 @@ cep;lon;lat;logradouro;bairro
 78275000|CIDADE ALTA COHAB PEDRO HENRY;;;;
 78275000|CLUBE BEIRA RIO;;;;
 78275000|COAB BEIRA RIO;;;;
+78275000|COAB PEDRO HENRY;;;;Coab Pedro Henry
 78275000|COAB SANTA TEREZINHA;;;;
 78275000|COABH PEDRO HENRY;;;;
 78275000|COAHB PEDRO HENRY;;;;
 78275000|COHAB PEDRO HENRI;;;;
 78275000|COHAB PEDRO HENRY;;;;
 78275000|COHAB PEDRO HENRY CIDADE ALTA;;;;
+78275000|COHAB VELHA;;;;Cohab Velha
+78275000|COHAH PEDRO HENRY;;;;Cohah Pedro Henry
+78275000|COMUNIDADE PANORAMA;;;;Comunidade Panorama
 78275000|DOS OPERARIOS;;;;
 78275000|DOS OPEREARIOS;;;;
 78275000|FIDELANDIA;;;;
 78275000|FIDERLANDIA;;;;
 78275000|INDEFINIDO;;;;
+78275000|MORADA DO VALE;;;;Morada do Vale
 78275000|OPERARIO;;;;
 78275000|OPERARIOS;;;;
 78275000|PANORAMA;;;;
@@ -14564,6 +14650,7 @@ cep;lon;lat;logradouro;bairro
 78278000|CENTRO;-58.00467;-15.31919;Avenida Cidrolândia, 3136;Centro
 78278000|CIDELANDIA;;;;
 78278000|CIDERLANDIA;;;;
+78278000|CIDROLANDIA;;;;Cidrolandia
 78278000|CIRDELANDIA;;;;
 78278000|COAB BOA ESPERANCA;;;;
 78278000|COAB CIDERLANDIA;;;;
@@ -14657,6 +14744,7 @@ cep;lon;lat;logradouro;bairro
 78280000|CHACARA PERIMENTRO URBANO;;;;
 78280000|CHACARA PERIMETRO URBANO;;;;
 78280000|CHACARA SEM FG;;;;
+78280000|CHANGRILA;;;;Changrila
 78280000|CIDADA TAMANDARE;;;;
 78280000|CIDADE DE DEUS;;;;
 78280000|CIDADE III;;;;
@@ -14775,6 +14863,7 @@ cep;lon;lat;logradouro;bairro
 78280000|LOTEAMENTO SHANGRI LA;;;;
 78280000|LOTEAMENTO SILVA;;;;
 78280000|LOTEAMENTO TELES;;;;
+78280000|LOTOAMENTO TELES;;;;Lotoamento Teles
 78280000|MARGARIDA ALVES;;;;
 78280000|MIRASSIL II;;;;
 78280000|MIRASSO II;;;;
@@ -14865,6 +14954,7 @@ cep;lon;lat;logradouro;bairro
 78280000|RESIDENCIAL MIRASSOL;;;;
 78280000|RESIDENCIAL NOVA MIRASSOL;;;;
 78280000|RESIDENCIAL VALE DO SOL;;;;
+78280000|RISIDENCIAL INTERLAGO 1;;;;Risidencial Interlago 1
 78280000|RIVIERA;;;;
 78280000|RURAL;;;;
 78280000|SANTA LUZIA;;;;
@@ -14907,6 +14997,7 @@ cep;lon;lat;logradouro;bairro
 78285000|BAIRRO;;;;
 78285000|BAIRRO BELA VISTA;;;;
 78285000|BAIRRO CASEMAT;;;;
+78285000|BAIRRO JARDIM ITALIA;;;;Bairro Jardim Italia
 78285000|BAIRRO JARDIM MORADA DO SOL;;;;
 78285000|BAIRRO JARDIM RONDON;;;;
 78285000|BAIRRO JARDIM SANTA MARIA;;;;
@@ -14950,6 +15041,7 @@ cep;lon;lat;logradouro;bairro
 78285000|COMUNIDADE SANTA FE;;;;
 78285000|COMUNIDADE SANTA ROSA;;;;
 78285000|COMUNIDADE SANTO ANTONIO;;;;
+78285000|COMUNIDADE SANTO ANTONIO DAS PITAS;;;;Comunidade Santo Antonio das Pitas
 78285000|COMUNIDADE SAO JOAO DA FIGUEIRINHA;;;;
 78285000|COMUNIDADE SAO LUCAS;;;;
 78285000|COMUNIDADE SERRINHA;;;;
@@ -15172,6 +15264,7 @@ cep;lon;lat;logradouro;bairro
 78293000|CENTRO;-58.31121;-15.76935;Rua Vinte e Quatro de Junho, s/n;Centro
 78293000|CHACARA FONTE CRISTALINA;;;;
 78293000|COABE;;;;
+78293000|COABE MORADA DO SOL;;;;Coabe Morada do Sol
 78293000|COHAB;;;;
 78293000|COHAB MORADA DO SOL;;;;
 78293000|COHAB SANTA TERESINHA;;;;
@@ -15636,6 +15729,7 @@ cep;lon;lat;logradouro;bairro
 78300180;-57.47689;-14.60971;Estrada Renualdo Ciryllo Denadai;Jardim Europa
 78300183;-57.46940;-14.60279;Rua Cachoeirinha;Jardim Europa
 78300200;-57.48872;-14.62058;Avenida Brasil;Jardim Floriza
+78300202;-57.47685;-14.61589;Rua Sivaldo José Gonçalves Ferreira;Jardim Floriza
 78300204;-57.47685;-14.61589;Rua Erotildes Rodrigues Machado;Jardim Floriza
 78300206;-57.46395;-14.63724;Rua José Vicente da Costa;Jardim Floriza
 78300208;-57.47685;-14.61589;Rua Oswaldo Donato;Jardim Floriza
@@ -15817,7 +15911,6 @@ cep;lon;lat;logradouro;bairro
 78302132;-57.48617;-14.60584;Rua Pedro Camillo Zamparoni;Jardim Horizonte
 78302138;-57.48617;-14.60584;Rua Raimundo Dias dos Santos;Jardim Horizonte
 78302140;-57.48884;-14.60313;Viela Cinco;Jardim Horizonte
-78302141;-57.48617;-14.60584;Estrada do Mutum;Jardim Horizonte
 78302142;-57.48617;-14.60584;Rua João Martinez Garcia;Jardim Horizonte
 78302144;-57.48617;-14.60584;Rua Belizário de Almeida;Jardim Horizonte
 78302148;-57.47256;-14.62115;Rua João Elias Ramos;Jardim Horizonte
@@ -16207,6 +16300,7 @@ cep;lon;lat;logradouro;bairro
 78305038;-57.51006;-14.63444;Rua Antônio José da Silva;Jardim Monte Líbano
 78305040;-57.51512;-14.63650;Travessa 40-B;Jardim Monte Líbano
 78305042;-57.51512;-14.63650;Travessa 38-B;Jardim Monte Líbano
+78305044;-57.51512;-14.63650;Avenida Leontina Dolores Rodrigues Sanches;Jardim Monte Líbano
 78305045;-57.51512;-14.63650;Avenida Leontina Dolores Rodrigues Sanches;Jardim Monte Líbano
 78305047;-57.51054;-14.63603;Rua Antônio Hortolani;Jardim Monte Líbano
 78305055;-57.48872;-14.62058;Avenida Brasil;Jardim Monte Líbano
@@ -16376,6 +16470,7 @@ cep;lon;lat;logradouro;bairro
 78306223;-57.50773;-14.62711;Rua Valdemar José da Cruz;Parque Universitário
 78306229;-57.49508;-14.65155;Anel Viário André Antônio Maggi;Parque Universitário
 78306495;-57.48872;-14.62058;Avenida Brasil;Parque Figueira
+78306502;-57.51233;-14.64892;Rua 14;Parque Figueira
 78306506;-57.51411;-14.64883;Rua 10;Parque Figueira
 78306508;-57.46957;-14.60293;Rua Sete;Parque Figueira
 78306512;-57.47674;-14.60836;Rua Cinco;Parque Figueira
@@ -16612,6 +16707,7 @@ cep;lon;lat;logradouro;bairro
 78310000|LOT RESIDENCIAL RESERVA PARK;;;;
 78310000|LOTEAM AREA VERDE;;;;
 78310000|LOTEAMENTO CIDADE VERDE;;;;
+78310000|LOTEAMENTO RESERVA PARK;;;;Loteamento Reserva Park
 78310000|LOTEAMENTO RESERVA PARQUE;;;;
 78310000|MACUCO;;;;
 78310000|MIRANDA;;;;
@@ -16750,7 +16846,9 @@ cep;lon;lat;logradouro;bairro
 78319000|SOL NASCENTE CASA 02;;;;
 78319000|VIDA NOVA;;;;
 78319000|VILA NOVA;;;;
+78319000|VILLA NOVA;;;;Villa Nova
 78319000|ZONA RUAL;;;;
+78319000|ZONA RURAK;;;;Zona Rurak
 78319000|ZONA RURAL;;;;
 78319959;-59.26915;-13.72172;Rua Santa Catarina, s/n;Centro
 78319970;-59.26915;-13.72172;Rua Santa Catarina, 75-S;Centro
@@ -16900,6 +16998,7 @@ cep;lon;lat;logradouro;bairro
 78320000|FILADELFIA;;;;
 78320000|FILADELFIA JUINA;;;;
 78320000|FLABOYANT;;;;
+78320000|FLAMBOYAN;;;;Flamboyan
 78320000|FLAMBOYANT;;;;
 78320000|FLAMBOYANTT;;;;
 78320000|FLANBOYANT;;;;
@@ -16921,6 +17020,7 @@ cep;lon;lat;logradouro;bairro
 78320000|JARDIM TETO VERDE PADRE DUILIO;;;;
 78320000|JARDIM TRES AMERICAS;;;;
 78320000|JK;;;;
+78320000|JOSE OPERARIO;;;;Jose Operario
 78320000|JUINA;;;;
 78320000|JURUENA;;;;
 78320000|L PRESIDENTE;;;;
@@ -17031,6 +17131,7 @@ cep;lon;lat;logradouro;bairro
 78320000|MODLO 05;;;;
 78320000|MODOLO 05;;;;
 78320000|MODOLO 06;;;;
+78320000|MODOLO 3;;;;Modolo 3
 78320000|MODOLO 5;;;;
 78320000|MODOLO 6;;;;
 78320000|MODUL0 02;;;;
@@ -17147,6 +17248,7 @@ cep;lon;lat;logradouro;bairro
 78320000|RES BOA VISTA;;;;
 78320000|RESERVA TECNICA SETOR DE SERVICOS;;;;
 78320000|RESID BEIJA FLOR;;;;
+78320000|RESIDENCIAL ALVORADA;;;;Residencial Alvorada
 78320000|RESIDENCIAL ALVORADA II;;;;
 78320000|RESIDENCIAL BANDEIRANTE;;;;
 78320000|RESIDENCIAL BANDEIRANTES;;;;
@@ -17157,6 +17259,8 @@ cep;lon;lat;logradouro;bairro
 78320000|RESIDENCIAL BEIJA FLOR II;;;;
 78320000|RESIDENCIAL BELA VISTA;;;;
 78320000|RESIDENCIAL BOA VISTA;;;;
+78320000|RESIDENCIAL BOULEVARD JUINA;;;;Residencial Boulevard Juina
+78320000|RESIDENCIAL ELDORADO;;;;Residencial Eldorado
 78320000|RESIDENCIAL FLAMBOYANT;;;;
 78320000|RESIDENCIAL IGUATEMI;;;;
 78320000|RESIDENCIAL PARAISO;;;;
@@ -17188,6 +17292,7 @@ cep;lon;lat;logradouro;bairro
 78320000|SECCAO DE CHACARAS 1 FASE;;;;
 78320000|SECCAO J;;;;
 78320000|SEFOR F;;;;
+78320000|SEFOR F MODULO 05;;;;Sefor F Modulo 05
 78320000|SEM NOME BAIRRO;;;;
 78320000|SETAR A;;;;
 78320000|SETOE E;;;;
@@ -17234,6 +17339,7 @@ cep;lon;lat;logradouro;bairro
 78320000|SETOR DE SERVICO QUADRA S2 LOTE 06;;;;
 78320000|SETOR DE SERVICOS;;;;
 78320000|SETOR DE SERVICOS EXPANSAO URBANA;;;;
+78320000|SETOR DOS ESPORTES;;;;Setor dos Esportes
 78320000|SETOR E;;;;
 78320000|SETOR E MODULO 05;;;;
 78320000|SETOR EIXO COM 01;;;;
@@ -17369,6 +17475,7 @@ cep;lon;lat;logradouro;bairro
 78325000|CLAUDINO ALEIXO;;;;
 78325000|CNSELVAN;;;;
 78325000|COHAB NOVA;;;;
+78325000|COLSELVAN;;;;Colselvan
 78325000|COMUNIDADE CRISTO REI;;;;
 78325000|COMUNIDADE MILAGROSA;;;;
 78325000|CONIZA;;;;
@@ -17396,6 +17503,7 @@ cep;lon;lat;logradouro;bairro
 78325000|ESTRADA DOS GARIMPEIROS;;;;
 78325000|ESTRADA PROXIMO A BR;;;;
 78325000|ESTRADA RURAL;;;;
+78325000|FAZENDA CANADA;;;;Fazenda Canada
 78325000|FAZENDA INTERLAGOS;;;;
 78325000|FESTIVAL DE PESCA;;;;
 78325000|FONTANILLAS;;;;
@@ -17461,6 +17569,7 @@ cep;lon;lat;logradouro;bairro
 78325000|LOTEAMENTO CACHOEIRA DAS ANDORINHAS;;;;
 78325000|LOTEAMENTO CRISTO REI;;;;
 78325000|LOTEAMENTO DA PAZ;;;;
+78325000|LOTEAMENTO DARDANELOS;;;;Loteamento Dardanelos
 78325000|MANGUEIRAL;;;;
 78325000|MANGUERAL;;;;
 78325000|MEDALHA MILAGROSA ZONA RURAL;;;;
@@ -17530,6 +17639,7 @@ cep;lon;lat;logradouro;bairro
 78325000|SETOR CRISTO REI;;;;
 78325000|SETOR DA EMPAER;;;;
 78325000|SETOR DAS CHACARAS;;;;
+78325000|SETOR DE CHACARA;;;;Setor de Chacara
 78325000|SETOR DE CHACARAS;;;;
 78325000|SETOR DE CHACARAS DO TATAO;;;;
 78325000|SETOR DE CHACARAS FREI CANUTO;;;;
@@ -17634,6 +17744,7 @@ cep;lon;lat;logradouro;bairro
 78330000|JARDIM BOTONICO II;;;;
 78330000|JARDIM DAS FLORES;;;;
 78330000|JARDIM DAS FLORES NOVA UNIAO;;;;
+78330000|JARDIM INDUSTRIAL;;;;Jardim Industrial
 78330000|JARDIM PRIMAVEIRA;;;;
 78330000|JARDIM PRIMAVERA;;;;
 78330000|JARDIM VILA RICA;;;;
@@ -17714,7 +17825,9 @@ cep;lon;lat;logradouro;bairro
 78335000|BAIRRO JARDIM IMPERIAL;;;;
 78335000|BAIRRO RONDONIA;;;;
 78335000|BAIRRO VERDAM;;;;
+78335000|BEL A VISTA;;;;Bel A Vista
 78335000|BELA VISTA;;;;
+78335000|BELA VISTA EM FRENTE A OFICINA BEIRA RIO;;;;Bela Vista Em Frente A Oficina Beira Rio
 78335000|BELLA VISTA;;;;
 78335000|CAPA MANSA;;;;
 78335000|CASTELO;;;;
@@ -17786,6 +17899,7 @@ cep;lon;lat;logradouro;bairro
 78335000|GUATA;;;;
 78335000|INDUSTRIAL;;;;
 78335000|INDUSTRIAL II;;;;
+78335000|INSDUSTRIAL;;;;Insdustrial
 78335000|JARDIM AEROPORTO;;;;
 78335000|JARDIM IMPERIAL;;;;
 78335000|JD IMPERIAL;;;;
@@ -17811,6 +17925,7 @@ cep;lon;lat;logradouro;bairro
 78335000|RONDONIA;;;;
 78335000|ROOSVELT;;;;
 78335000|RUA DAS BROMELIAS;;;;
+78335000|RUAL;;;;Rual
 78335000|RURAL;;;;
 78335000|SALA 1 ANEXO POSTO MODELO;;;;
 78335000|SALVACAO;;;;
@@ -17900,6 +18015,7 @@ cep;lon;lat;logradouro;bairro
 78338970;-61.46013;-10.84152;Rua Principal, s/n;Centro
 78338971;-61.45863;-10.84139;Rua André Maggi, s/n;Centro
 78340000;-58.50233;-10.32997;;
+78340000|AREA RURAL;;;;Area Rural
 78340000|BAIRRO BELA VISTA;;;;
 78340000|BAIRRO CENTRO;;;;
 78340000|BAIRRO CIDADE ALTA;;;;
@@ -17923,6 +18039,7 @@ cep;lon;lat;logradouro;bairro
 78340000|CHACARAS;;;;
 78340000|CIADADE ALTA;;;;
 78340000|CIDADE ALTA;;;;
+78340000|CIDADE ALTA II;;;;Cidade Alta Ii
 78340000|CIDADE ALTA MINI ESTADIO;;;;
 78340000|CIDADE ELTA;;;;
 78340000|COMUNIDADE 13 DE MAIO;;;;
@@ -17987,6 +18104,7 @@ cep;lon;lat;logradouro;bairro
 78340000|ZONA CENTRAL ZC 01;;;;
 78340000|ZONA CENTRAL ZC 01 NOBRE;;;;
 78340000|ZONA CENTRAL ZC 1;;;;
+78340000|ZONA CENTRAL ZC01;;;;Zona Central Zc01
 78340000|ZONA INDUASTRIAL ZL 2;;;;
 78340000|ZONA INDUSTRIAL;;;;
 78340000|ZONA INDUSTRIAL 02;;;;
@@ -18002,6 +18120,8 @@ cep;lon;lat;logradouro;bairro
 78340000|ZONA RURA;;;;
 78340000|ZONA RURAL;;;;
 78340000|ZONA RURAL LINHA 06;;;;
+78340000|ZONA RURAL LINHA 6;;;;Zona Rural Linha 6
+78340000|ZONAA REGIONAL ZR 01;;;;Zonaa Regional Zr 01
 78340970;-51.89639;-23.39368;Avenida Brasil, 1361;Centro
 78345000;-58.60250;-11.13250;;
 78345000|BAIRRO GUADALUPE;;;;
@@ -18034,6 +18154,8 @@ cep;lon;lat;logradouro;bairro
 78345000|INDUSTRIAL;;;;
 78345000|JUINA 2 FASE;;;;
 78345000|LINHA 1;;;;
+78345000|LIRIO ZENI;;;;Lirio Zeni
+78345000|MODULO 5;;;;Modulo 5
 78345000|NOGA;;;;
 78345000|NOGA II;;;;
 78345000|NOGA2;;;;
@@ -18176,6 +18298,7 @@ cep;lon;lat;logradouro;bairro
 78350000|SENTIDO CAMPO NOVO DOS PARECIS;;;;
 78350000|SETOR DAS CHACARAS;;;;
 78350000|SETOR INDUSTRIAL;;;;
+78350000|SETOR XV;;;;Setor Xv
 78350000|SITIO;;;;
 78350000|SOL NASCENTE AREPORTO;;;;
 78350000|TERRA INDIGENA ERIKPATSA;;;;
@@ -18240,6 +18363,7 @@ cep;lon;lat;logradouro;bairro
 78360000|CAMPO NOVO;;;;
 78360000|CAMPO NOVO DO PARECIS;;;;
 78360000|CEMTRO;;;;
+78360000|CENRO;;;;Cenro
 78360000|CENTRO;-57.89177;-13.65805;Rua Parana, 614;Centro
 78360000|CENTRO BOA ESPERANCA;;;;
 78360000|CENTROO;;;;
@@ -18262,6 +18386,7 @@ cep;lon;lat;logradouro;bairro
 78360000|DIST INDUST PINDORAMA;;;;
 78360000|DIST INDUSTRIAL I;;;;
 78360000|DIST INDUSTRIAL PINDORAMA;;;;
+78360000|DIST MAR RONDON;;;;Dist Mar Rondon
 78360000|DIST MARECHAL RONDON;;;;
 78360000|DISTRITO INDUSTRIAL;;;;
 78360000|DISTRITO INDUSTRIAL PINDORAMA;;;;
@@ -18295,6 +18420,7 @@ cep;lon;lat;logradouro;bairro
 78360000|ITANORTE;;;;
 78360000|JADE DAS PALMEIRAS;;;;
 78360000|JADIM ALVORADA;;;;
+78360000|JADIM PRIMAVERA;;;;Jadim Primavera
 78360000|JAIRDIM DAS PALMEIRAS;;;;
 78360000|JARDI DAS PALMEIRAS;;;;
 78360000|JARDIM ALTOS DAS PALMEIRAS;;;;
@@ -18320,6 +18446,7 @@ cep;lon;lat;logradouro;bairro
 78360000|JARDIM DAS PAMEIRAS;;;;
 78360000|JARDIM DOS PALMEIRAS;;;;
 78360000|JARDIM EUROPA;;;;
+78360000|JARDIM GIRASSOIS;;;;Jardim Girassois
 78360000|JARDIM GIRRASOIS;;;;
 78360000|JARDIM ILTALIA;;;;
 78360000|JARDIM INDUSTRIAL;;;;
@@ -18338,6 +18465,7 @@ cep;lon;lat;logradouro;bairro
 78360000|JARDIM PARIS;;;;
 78360000|JARDIM PRIMAVERA;-57.90060;-13.66270;Travessa 2;Jardim Primavera
 78360000|JARDIM PRIMAVERA POLO EMPRESARIAL;;;;
+78360000|JARDIM PRIMAVERA ZONA INDUSTRIAL III;;;;Jardim Primavera Zona Industrial Iii
 78360000|JARDIM PRIMAVERS;;;;
 78360000|JARDIM TALIA II;;;;
 78360000|JARDIM TROPICAL;;;;
@@ -18347,6 +18475,7 @@ cep;lon;lat;logradouro;bairro
 78360000|JARDINS DAS PAUMEIRAS;;;;
 78360000|JARDIR MILAO;;;;
 78360000|JARDM DAS PALMEIRAS;;;;
+78360000|JARIDM DAS PALMEIRAS;;;;Jaridm das Palmeiras
 78360000|JARIM DAS PALMEIRAS;;;;
 78360000|JARIM ITALIA;;;;
 78360000|JD ALVORADA;;;;
@@ -18449,6 +18578,7 @@ cep;lon;lat;logradouro;bairro
 78360000|RUA ANDIROBA;;;;
 78360000|RURAL;;;;
 78360000|S B;;;;
+78360000|SALA A;;;;Sala A
 78360000|SAPEZAL;;;;
 78360000|SEDE;;;;
 78360000|SEIS LAGOA;;;;
@@ -18598,6 +18728,7 @@ cep;lon;lat;logradouro;bairro
 78365000|LOTEAMENTO CIDEZAL VI;;;;
 78365000|LOTEAMENTO CIDEZAL VII;;;;
 78365000|LOTEAMENTO CIDEZALII;;;;
+78365000|LOTEAMENTO CIDEZL II;;;;Loteamento Cidezl Ii
 78365000|LOTEAMENTO COMERCIAL HILARIO DAL ALBA SC;;;;
 78365000|LOTEAMENTO COMERCIAL HILARIO DAL ALBA SCARIOTI;;;;
 78365000|LOTEAMENTO GUA CLARA II;;;;
@@ -18653,6 +18784,7 @@ cep;lon;lat;logradouro;bairro
 78365000|TERRA INDIGENA TIRECATINGA;;;;
 78365000|VILA CIDEZAL;;;;
 78365000|VILA CIDEZAL I;;;;
+78365000|VILA CIDEZAL II;;;;Vila Cidezal Ii
 78365000|VILA POPULAR;;;;
 78365000|ZEQUINHA;;;;
 78365000|ZONA INDUSTRIAL;;;;
@@ -18817,6 +18949,7 @@ cep;lon;lat;logradouro;bairro
 78366214;-58.83156;-13.55659;Rua 3;Jardim Floresta
 78366216;-44.99883;-21.26186;Rua 2;Jardim Floresta
 78366218;-51.15913;-30.00070;Rua Doutor José Delfino Campos de Souza - lado par;Jardim Floresta
+78366222;-58.81631;-13.54810;Rua Doutor José Delfino Campos de Souza - lado ímpar;Jardim Irene
 78366224;-46.51747;-23.43032;Rua Projetada A;Jardim Irene
 78366236;-58.81631;-13.54810;Avenida das Tulipas - lado par;Jardim Irene
 78366238;-58.82872;-13.55937;Avenida das Tulipas - lado ímpar;Jardim Irene
@@ -19077,6 +19210,7 @@ cep;lon;lat;logradouro;bairro
 78370000|SAO JOAO 2;;;;
 78370000|SAO JOAO I;;;;
 78370000|SAO JOSE;;;;
+78370000|SHAGRI LA;;;;Shagri La
 78370000|SHANGRI LA;;;;
 78370000|SHANGRILA;;;;
 78370000|SHANGRILAR;;;;
@@ -19394,6 +19528,7 @@ cep;lon;lat;logradouro;bairro
 78400000|ALTO DA SERRA;;;;
 78400000|ALTO PARAGUAI ZONA RURAL;;;;
 78400000|ALTOS DA SERRA;;;;
+78400000|ALVORADA;;;;Alvorada
 78400000|AREA RURAL;;;;
 78400000|ASSENTAMENTO BOJUI;;;;
 78400000|ASSENTAMENTO CAETE;;;;
@@ -19567,6 +19702,7 @@ cep;lon;lat;logradouro;bairro
 78400000|ZONA RURAL DE DIAMANTINO;;;;
 78400000|ZONA RURAL ESTIVADO;;;;
 78400000|ZONA RURAL FAZENDA PAIAGUAS;;;;
+78400000|ZONA RURAL GLEBA BURITI;;;;Zona Rural Gleba Buriti
 78400000|ZONA RURAL GLEBA CAETE LOTE 151;;;;
 78400000|ZONA RURAL P A BOJUI;;;;
 78400000|ZONA RURAL PARECIS;;;;
@@ -19594,6 +19730,7 @@ cep;lon;lat;logradouro;bairro
 78402000|JD ALVORADA;;;;
 78402000|JD ALVORADA NOVO DIAMANTINO;;;;
 78402000|LOTEAMENTO BOM JESUS;;;;
+78402000|NOVA DIAMANTINO;;;;Nova Diamantino
 78402000|NOVO DIAMANTINO;;;;
 78402000|NOVO DIAMANTINO ALTOS DA SERRA;;;;
 78402000|NOVO DIAMANTINO BOM JESUS;;;;
@@ -19859,6 +19996,7 @@ cep;lon;lat;logradouro;bairro
 78430000|BR;;;;
 78430000|CENTRO;-56.79501;-14.45445;Avenida Prefeito João Macaúba, 615;Centro
 78430000|CENTRO NOVO HORIZONTE;;;;
+78430000|CHACARA RECANTO DAS FLORES;;;;Chacara Recanto das Flores
 78430000|COAB SANTO ANTONIO;;;;
 78430000|COABH SANTO ANTONIO;;;;
 78430000|COAHB;;;;
@@ -19949,6 +20087,7 @@ cep;lon;lat;logradouro;bairro
 78435000|JD R CLARO;;;;
 78435000|JD RIO CLARO;;;;
 78435000|KM 30 ZONA RURAL;;;;
+78435000|LPT;;;;Lpt
 78435000|MASSAPE II;;;;
 78435000|MORADA DO IPES;;;;
 78435000|MORADA DOS IPES;;;;
@@ -19966,6 +20105,7 @@ cep;lon;lat;logradouro;bairro
 78435000|RESIDENCIAL IPE;;;;
 78435000|RESIDENCIAL SANTA TEREZINHA;;;;
 78435000|RESIDENCIAL SANTA TEREZINHA II;;;;
+78435000|RIO CLARO;;;;Rio Claro
 78435000|RUA SERGIPE;;;;
 78435000|RURAL;;;;
 78435000|SANTA TERESINHA;;;;
@@ -20139,6 +20279,7 @@ cep;lon;lat;logradouro;bairro
 78445000|SETOR INDUSTRIAL;;;;
 78445000|SONHO MEU;;;;
 78445000|TELES PIRES;;;;
+78445000|TUIUIU;;;;Tuiuiu
 78445000|ZONA RUAL;;;;
 78445000|ZONA RURAL;;;;
 78445000|ZONA RURAL GLEBA BEIJA FLOR;;;;
@@ -20146,11 +20287,13 @@ cep;lon;lat;logradouro;bairro
 78445970;-57.09163;-12.99659;Rua Amós Bernardino Zanchet, s/n;Centro
 78445971;-55.27462;-13.81532;Avenida dos Flávio Luiz, 2201;Centro
 78446000|BRIANORTE;;;;
+78449000|PACOVAL;;;;Pacoval
 78449970;-56.00032;-15.65033;Avenida A, s/n Setor 5 Quadra 14 Lote 1;Centro
 78450000;-56.08222;-13.82889;;
 78450000|4300W;;;;
 78450000|ACACIAS;-56.09444;-13.82746;Avenida das Seriemas;Residencial das Acácias
 78450000|AEROPORTO;-56.08724;-13.83765;Rua 2;Aeroporto
+78450000|AEROPROTO MUNICIPAL EDUARDO GOMES;;;;Aeroproto Municipal Eduardo Gomes
 78450000|AGATA;-56.08445;-13.84033;Rua A;Jardim Ágata
 78450000|AGROINDUSTRIAL HILDA STRENGER RIBEIRO;;;;
 78450000|ALTO COLINA;;;;
@@ -20207,6 +20350,7 @@ cep;lon;lat;logradouro;bairro
 78450000|DIAMANTINO;;;;
 78450000|DIST IND NORTE;;;;
 78450000|DIST INDUSTRIAL JOSE APARECIDO RIBEIRO;;;;
+78450000|DIST INDUSTRIAL NORTE;;;;Dist Industrial Norte
 78450000|DIST INDUSTRIAL SUL;;;;
 78450000|DIST PACOVAL I;;;;
 78450000|DISTRITO DA RANCHAO;;;;
@@ -20305,6 +20449,7 @@ cep;lon;lat;logradouro;bairro
 78450000|JD PRIMAVERA 3;;;;
 78450000|JD PRIMAVERA II;;;;
 78450000|JOSE APARECIDO RIBEIRO;-56.07887;-13.82603;Avenida José Aparecido Ribeiro;Comercial José Aparecido Ribeiro
+78450000|KM 612;;;;Km 612
 78450000|LIRIO DO CAMPO;;;;
 78450000|LIRIO DO CAMPO II;;;;
 78450000|LIRIO DOS CAMPOS;;;;
@@ -20315,6 +20460,7 @@ cep;lon;lat;logradouro;bairro
 78450000|LIRIOS DO CAMPO 2;;;;
 78450000|LIRIOS DO CAMPO I;-56.07549;-13.82451;Rua das Figueiras;Lírios do Campo II
 78450000|LIRIOS DO CAMPO II;-56.07549;-13.82451;Rua das Figueiras;Lírios do Campo II
+78450000|LIRIOS DO CAMPOS 2;;;;Lirios do Campos 2
 78450000|LIRIOS DOS CAMPOS 2;;;;
 78450000|LOT AEROPORTO;;;;
 78450000|LOT ARARA AZUL;;;;
@@ -20359,6 +20505,7 @@ cep;lon;lat;logradouro;bairro
 78450000|LOTEAMENTO FLANBOYANTS;;;;
 78450000|LOTEAMENTO INDUSTRIAL NORTE;;;;
 78450000|LOTEAMENTO INDUSTRIAL SUL;;;;
+78450000|LOTEAMENTO IRMANDADE;;;;Loteamento Irmandade
 78450000|LOTEAMENTO JAR;;;;
 78450000|LOTEAMENTO JARDIM AGATA;;;;
 78450000|LOTEAMENTO JARDIM DAS ORQUIDEAS;;;;
@@ -20529,6 +20676,7 @@ cep;lon;lat;logradouro;bairro
 78450076;-56.08466;-13.81939;Rua das Tamareiras;Centro
 78450078;-56.08535;-13.82111;Avenida das Araras;Centro
 78450080;-56.08123;-13.81461;Rua dos Flamboyants;Centro
+78450082;-56.09251;-13.82180;Rua das Carambolas;Centro
 78450084;-56.08303;-13.82202;Rua das Primaveras;Centro
 78450086;-56.08124;-13.82053;Rua dos Cedros;Centro
 78450088;-56.07987;-13.82073;Avenida dos Uirapurus;Centro
@@ -20568,6 +20716,7 @@ cep;lon;lat;logradouro;bairro
 78450159;-56.08465;-13.82105;Avenida dos Canários;Loteamento Reserva Técnica
 78450161;-56.07992;-13.82434;Rua das Goiabeiras;Loteamento Reserva Técnica
 78450163;-56.08679;-13.82285;Rua das Hortênsias;Loteamento Reserva Técnica
+78450165;-56.08146;-13.82759;Rua das Jacutingas;Loteamento Reserva Técnica
 78450167;-56.07910;-13.82497;Rua dos Girassóis;Loteamento Reserva Técnica
 78450169;-56.08213;-13.82888;Rua das Flores;Loteamento Reserva Técnica
 78450171;-56.07795;-13.82180;Avenida Perimetral das Samambaias;Loteamento Reserva Técnica
@@ -20656,6 +20805,7 @@ cep;lon;lat;logradouro;bairro
 78450534;-56.07549;-13.82451;Rua das Figueiras;Parque Nova Mutum
 78450557;-56.08843;-13.81700;Rua Palermo;
 78450558;-56.08843;-13.81700;Rua Brescia;
+78450561;-56.08843;-13.81700;Rua Monferrato;
 78450563;-56.09455;-13.85370;Avenida Paraná;Loteamento Turim
 78450565;-56.08929;-13.82786;Rua dos Tuiuíus;
 78450566;-56.09002;-13.82820;Rua das Cegonhas;
@@ -20718,6 +20868,7 @@ cep;lon;lat;logradouro;bairro
 78452123;-56.10317;-13.81390;Rua dos Jerivás;Jardim Califórnia
 78452133;-56.08284;-13.81658;Avenida Mato Grosso;Santo Inácio
 78452135;-56.10317;-13.81390;Rua dos Jerivás;Santo Inácio
+78452140;-56.08465;-13.82105;Avenida dos Canários;Loteamento Villa Jardim
 78452500;-56.08416;-13.79634;Avenida Belo Horizonte;Montserrat
 78452502;-56.07910;-13.82497;Alameda Floriano Peixoto;Montserrat
 78452503;-56.08590;-13.79493;Alameda Emílio Garrastazu Médici;Montserrat
@@ -20911,6 +21062,7 @@ cep;lon;lat;logradouro;bairro
 78454246;-56.10896;-13.83451;Rua Mauá;Jardim Montreal
 78454248;-56.10896;-13.83451;Rua Piracicaba;Jardim Montreal
 78454250;-56.10896;-13.83451;Rua Guarulhos;Jardim Montreal
+78454252;-56.08940;-13.84762;Rua das Açucenas;Jardim Montreal
 78454254;-56.11342;-13.83285;Avenida Rio Grande do Sul;Jardim Montreal
 78454270;-56.09782;-13.83872;Rua das Amêndoas;Residencial Veneza
 78454274;-56.10874;-13.83144;Rua Andradina;Residencial Veneza
@@ -21448,6 +21600,7 @@ cep;lon;lat;logradouro;bairro
 78460000|COQUEIRAL;;;;
 78460000|COQUEIRAL RODA DAGUA;;;;
 78460000|DA TORRE;;;;
+78460000|DIST COQUEIRAL;;;;Dist Coqueiral
 78460000|DISTRITO COQUEIRAL;;;;
 78460000|DISTRITO COQUEIRAL RODA D AGUA;;;;
 78460000|DISTRITO DE BOM JARDIM;;;;
@@ -21817,6 +21970,7 @@ cep;lon;lat;logradouro;bairro
 78462673;-55.90115;-13.07921;Rua São José;Bom Jesus
 78462675;-55.91233;-13.05828;Rua São Miguel;Bom Jesus
 78462677;-55.90115;-13.07921;Rua São Pedro;Bom Jesus
+78462681;-55.89862;-13.08950;Rua das Laranjeiras;Bom Jesus
 78462683;-55.90115;-13.07921;Rua São Rafael;Bom Jesus
 78462685;-55.90215;-13.09178;Rua Angelim;Bom Jesus
 78462687;-55.90115;-13.07921;Rua São Gabriel;Bom Jesus
@@ -22051,6 +22205,7 @@ cep;lon;lat;logradouro;bairro
 78466200;-55.92373;-13.09335;Rua Cuba;Florais dos Buritis
 78466202;-55.92233;-13.09324;Rua Equador;Florais dos Buritis
 78466206;-55.92102;-13.09451;Rua Panamá;Florais dos Buritis
+78466209;-55.92505;-13.09438;Avenida Estados Unidos;Florais dos Buritis
 78466215;-55.91905;-13.09644;Rua Uruguai;Florais dos Buritis
 78466217;-55.91256;-13.09138;Avenida Ângelo Antônio DallAlba;Florais dos Buritis
 78466226;-55.91649;-13.08967;Rua Madrid;Florais dos Buritis
@@ -22191,6 +22346,7 @@ cep;lon;lat;logradouro;bairro
 78470000|COAHB VELHA;;;;
 78470000|COCALZINHO;;;;
 78470000|COHAB;;;;
+78470000|COHAB DAURY RIVA;;;;Cohab Daury Riva
 78470000|COHAB JARDIM PETROPOLIS;;;;
 78470000|COHAB MARZAGAO;;;;
 78470000|COHAB N S DO ROSARIO;;;;
@@ -22222,6 +22378,7 @@ cep;lon;lat;logradouro;bairro
 78470000|FIGUEIRA;;;;
 78470000|FONTE DE LUZ;;;;
 78470000|GLEBA SELA DOURADA;;;;
+78470000|GLEBA SERRAGEM;;;;Gleba Serragem
 78470000|INDEFINIDO;;;;
 78470000|JANGADA;;;;
 78470000|JARDIM AEROPORTO;;;;
@@ -22243,6 +22400,7 @@ cep;lon;lat;logradouro;bairro
 78470000|JARDIMPETROPOLIS;;;;
 78470000|JARDINS DAS PALMEIRAS;;;;
 78470000|JD CAROLINA;;;;
+78470000|JD CAROLINA NOBRES;;;;Jd Carolina Nobres
 78470000|JD DAS PALMEIRAS;;;;
 78470000|JD GLORIA;;;;
 78470000|JD GLORIA NOBRES;;;;
@@ -22288,6 +22446,7 @@ cep;lon;lat;logradouro;bairro
 78470000|RODA D AGUA;;;;
 78470000|RODA DA AGUA COQUEIRAL;;;;
 78470000|RODA DAGUA;;;;
+78470000|RODOVIA;;;;Rodovia
 78470000|ROSARIO;;;;
 78470000|ROSARIO OESTE;;;;
 78470000|RURAL;;;;
@@ -22363,6 +22522,7 @@ cep;lon;lat;logradouro;bairro
 78480000|BAIRRO DA PAZ;;;;
 78480000|BAIRRO NOSSA SENHORA APARECIDA;;;;
 78480000|BAIRRO SANTA IZABEL;;;;
+78480000|BAIRRO SANTO ANTONIO;;;;Bairro Santo Antonio
 78480000|BAIRRO SAO BENEDITO;;;;
 78480000|BARRO ALTO;;;;
 78480000|BAUS;;;;
@@ -22467,6 +22627,7 @@ cep;lon;lat;logradouro;bairro
 78480000|RESIDENCIAL SANTA CRUZ;;;;
 78480000|RESIDENCIAL VO JEOVA;;;;
 78480000|RIBEIRAO GRANDE;;;;
+78480000|RIO VERDE DE MATO GROSSO DO SUL;;;;Rio Verde de Mato Grosso do Sul
 78480000|RODOVIA RURAL;;;;
 78480000|ROSARIO OESTE;;;;
 78480000|ROSARIO OESTE MT;;;;
@@ -22524,16 +22685,19 @@ cep;lon;lat;logradouro;bairro
 78485000;-56.36583;-15.20472;;
 78485000|ACORIZAL;;;;
 78485000|ALDEIA;;;;
+78485000|ALEIXO;;;;Aleixo
 78485000|ASSENTAMENTO ZE DA PAES;;;;
 78485000|BAUS;;;;
 78485000|CAMPO LIMPO;;;;
 78485000|CANDONGA;;;;
 78485000|CENTRO;-56.36372;-15.19445;Avenida Honorato Pedroso de Barros, s/n;Centro
+78485000|CENTRO SUL;;;;Centro Sul
 78485000|CIDADE A LTA;;;;
 78485000|CIDADE ALTA;;;;
 78485000|COHAB AQUINO MONTEIRO;;;;
 78485000|COHAB VO JEOVA;;;;
 78485000|COMUNIDADE BAUS;;;;
+78485000|COMUNIDADE DE ALEIXO;;;;Comunidade de Aleixo
 78485000|DA PAZ;;;;
 78485000|DISTRITO DE ALDEIA;;;;
 78485000|DISTRITO DE BAUS;;;;
@@ -22695,10 +22859,12 @@ cep;lon;lat;logradouro;bairro
 78500000|CENTRAL;;;;
 78500000|CENTRO;-55.45756;-10.80929;Avenida Tancredo Neves, 329;Centro
 78500000|CENTRO SETOR LESTE;;;;
+78500000|CENTRO SETOR NORTE;;;;Centro Setor Norte
 78500000|CENTRO SETOR OESTE;;;;
 78500000|CENTRO SETOR SUL;;;;
 78500000|CENTRO TERRA NOVA;;;;
 78500000|CENTRP;;;;
+78500000|CHAC DA CURVA;;;;Chac da Curva
 78500000|CHACARA APARECIDA;;;;
 78500000|CHACARA BELA VISTA;;;;
 78500000|CHACARA BOA ESPERANCA;;;;
@@ -22711,6 +22877,7 @@ cep;lon;lat;logradouro;bairro
 78500000|CHACARAS BELA VISTA;;;;
 78500000|CHACARAS BELA VISTA III;;;;
 78500000|CIDADE ALTA;;;;
+78500000|CIDADE PRIMAVERA II;;;;Cidade Primavera Ii
 78500000|COLIDER MATOGROSSO;;;;
 78500000|COM LEO BAIANO;;;;
 78500000|COM MARCO DE CIMENTO;;;;
@@ -22745,6 +22912,7 @@ cep;lon;lat;logradouro;bairro
 78500000|COMUNIDADE SANTO REIS;;;;
 78500000|COMUNIDADE SANTOS REIS;;;;
 78500000|COMUNIDADE SAO DOMIGOS;;;;
+78500000|COMUNIDADE SAO JOAO APOSTOLO;;;;Comunidade Sao Joao Apostolo
 78500000|COMUNIDADE SAO JUDAS TADEU;;;;
 78500000|COMUNIDADE SAO LAZARO;;;;
 78500000|COMUNIDADE SAO LOURENCO;;;;
@@ -22937,6 +23105,7 @@ cep;lon;lat;logradouro;bairro
 78500000|RESIDENCIAL DE CHACARAS BELA VISTA IV;;;;
 78500000|RESIDENCIAL DE CHACARAS BELAS VISTA;;;;
 78500000|RESIDENCIAL EVEREST;;;;
+78500000|RESIDENCIAL EVEREST I;;;;Residencial Everest I
 78500000|RESIDENCIAL EVEREST II;;;;
 78500000|RESIDENCIAL EVERESTE;;;;
 78500000|RESIDENCIAL EVERET;;;;
@@ -23176,6 +23345,7 @@ cep;lon;lat;logradouro;bairro
 78508000|COM SANTA IZABEL;;;;
 78508000|COM SERRA NEGRA;;;;
 78508000|COMUNIDADE CRISTO REI;;;;
+78508000|COMUNIDADE FREI GALVAO;;;;Comunidade Frei Galvao
 78508000|COMUNIDADE NOVO HORIZONTE;;;;
 78508000|COMUNIDADE RECANTO ALEGRE;;;;
 78508000|CWENTRO;;;;
@@ -23392,6 +23562,7 @@ cep;lon;lat;logradouro;bairro
 78518000|COLORADO DO NORTE;;;;
 78518000|DISTRITO COLORADO DO NORTE;;;;
 78520000;-54.90822;-9.95051;;
+78520000|13;;;;13
 78520000|13 DE MAIO;;;;
 78520000|7 DE SETEMBRO;;;;
 78520000|AEREA DE EXPANSAO URBANA;;;;
@@ -23437,6 +23608,7 @@ cep;lon;lat;logradouro;bairro
 78520000|BAIRRO JARDIM ARAGUAIA I;;;;
 78520000|BAIRRO JARDIM ARAGUAYA II;;;;
 78520000|BAIRRO OURO VERDE;;;;
+78520000|BAIRRO SANTA MARTA;;;;Bairro Santa Marta
 78520000|BAIRRO URBANO;;;;
 78520000|BELA VISTA;;;;
 78520000|BELA VISTA ZONA RURAL;;;;
@@ -23449,6 +23621,7 @@ cep;lon;lat;logradouro;bairro
 78520000|CENTRO ADMINISTRATIVO;;;;
 78520000|CENTRO ESPACO ATMA;;;;
 78520000|CENTRO NORTE;;;;
+78520000|CHACARA;;;;Chacara
 78520000|CHACARA BOA FE;;;;
 78520000|CHACARA DE ESQUINA COM FERRO VELHO;;;;
 78520000|CHACARA RECANTO DA NATUREZA ZONA RURAL;;;;
@@ -23500,6 +23673,7 @@ cep;lon;lat;logradouro;bairro
 78520000|INDRUSTRIARIO;;;;
 78520000|INDUSTRIAL;;;;
 78520000|INUDUSTRIAL;;;;
+78520000|ITALIA;;;;Italia
 78520000|ITALIA I;;;;
 78520000|ITALIA II;;;;
 78520000|J VITORIA;;;;
@@ -23695,6 +23869,7 @@ cep;lon;lat;logradouro;bairro
 78525000|AREA RURAL;;;;
 78525000|ASSENTAMENTO SAO JOSE UNIAO;;;;
 78525000|AV VICTOR VIDELES DOMINGOS;;;;
+78525000|AVENIDA HERMINIO OMETTO;;;;Avenida Herminio Ometto
 78525000|AVENIDA PRINCIPAL;;;;
 78525000|AVENIDA PRINCIPAL FLOR DA SERRA;;;;
 78525000|AZALEIAS;;;;
@@ -23753,6 +23928,7 @@ cep;lon;lat;logradouro;bairro
 78525000|COMUNIDADE SANTO ANTONIO;;;;
 78525000|CUIABA SANTAREM;;;;
 78525000|CUMUNIDADE ALTO ALEGRE;;;;
+78525000|DISTRITO 01;;;;Distrito 01
 78525000|DISTRITO FLOR DA SERRA;;;;
 78525000|DISTRITO INDUSTRIAL;;;;
 78525000|E 60;;;;
@@ -23966,6 +24142,7 @@ cep;lon;lat;logradouro;bairro
 78525000|ZI 001 ZONA INDUSTRIAL;;;;
 78525000|ZI 002;;;;
 78525000|ZI 002 003;;;;
+78525000|ZI 002 003 SETOR INDUSTRIAL;;;;Zi 002 003 Setor Industrial
 78525000|ZI 002 SETOR INDUSTRIAL;;;;
 78525000|ZI 002 ZONA CENTRAL;;;;
 78525000|ZI 002 ZONA INDUSTRIAL;;;;
@@ -24024,6 +24201,7 @@ cep;lon;lat;logradouro;bairro
 78525000|ZONA REGIONAL ZR 001;;;;
 78525000|ZONA RURAL;;;;
 78525000|ZONA RURAL P A SAO JOSE UNIAO;;;;
+78525000|ZONA RURAL TRAV 03 COMUN SANTO ANTONIO;;;;Zona Rural Trav 03 Comun Santo Antonio
 78525000|ZORA RURA;;;;
 78525000|ZP 002;;;;
 78525000|ZP 002 CIDADE ALTA;;;;
@@ -24065,12 +24243,15 @@ cep;lon;lat;logradouro;bairro
 78528000|CHACARAS;;;;
 78528000|CIDADE NOVA;;;;
 78528000|COM CRISTALINO DO NORTE;;;;
+78528000|COMUNIDADE 5000;;;;Comunidade 5000
 78528000|COMUNIDADE CINCO MIL;;;;
 78528000|COMUNIDADE CINCO MIL ZONA RURAL;;;;
+78528000|COMUNIDADE CRISTALINO;;;;Comunidade Cristalino
 78528000|COMUNIDADE CRISTALINO DO NORTE;;;;
 78528000|COMUNIDADE CRISTALINO DO NOTE;;;;
 78528000|COMUNIDADE ESTRADA CRISTALINA DO NORTE;;;;
 78528000|COTREL;;;;
+78528000|CRISTALINNO;;;;Cristalinno
 78528000|CRISTALINO DO NORTE;;;;
 78528000|DAMA DE OURO;;;;
 78528000|DAMA DE OURO II;;;;
@@ -24084,6 +24265,7 @@ cep;lon;lat;logradouro;bairro
 78528000|GLEBA BELA VISTA;;;;
 78528000|GLEBA DIVISA;;;;
 78528000|GLEBA NHANDU;;;;
+78528000|GLEBA NHANDU FAZ NOVA ESPERANCA;;;;Gleba Nhandu Faz Nova Esperanca
 78528000|GUARANTA DO NORTE;;;;
 78528000|JARDIM PRIMAVERA;;;;
 78528000|JARDIM VITORIA;;;;
@@ -24276,6 +24458,7 @@ cep;lon;lat;logradouro;bairro
 78530000|ZONA RUAL;;;;
 78530000|ZONA RURAL;;;;
 78530000|ZONA RURAL CHACARA DOIS IRMAOS;;;;
+78530000|ZONA RURAL UNIAO DO NORTE;;;;Zona Rural Uniao do Norte
 78530000|ZONA URBANA;;;;
 78530000|ZONARURAL;;;;
 78530000|ZOPNA RURAL;;;;
@@ -24330,6 +24513,7 @@ cep;lon;lat;logradouro;bairro
 78535000|BONJAGURAR;;;;
 78535000|CACHOEIRINHA;;;;
 78535000|CACHOEIRINHA SETOR 03;;;;
+78535000|CACHOERINHA 2;;;;Cachoerinha 2
 78535000|CAIXA POSTAL 56;;;;
 78535000|CAJABI;;;;
 78535000|CATARINENSE I;;;;
@@ -24343,6 +24527,7 @@ cep;lon;lat;logradouro;bairro
 78535000|CHACARA BOA ESPERANCA;;;;
 78535000|CHACARA DO BRANCO;;;;
 78535000|CHACARA NOSSA SENHORA APARECIDA;;;;
+78535000|CHACARA POR DO SOL;;;;Chacara Por do Sol
 78535000|CILA ESPERANCA;;;;
 78535000|CILA TUPY;;;;
 78535000|COMUNIDADE BOM JAGUAR;;;;
@@ -24494,6 +24679,7 @@ cep;lon;lat;logradouro;bairro
 78540000|BAIRO INDUSTRIAL;;;;
 78540000|BAIRRO CAMPO VERDE;;;;
 78540000|BAIRRO CENTRO;;;;
+78540000|BAIRRO CHACARAS CUIABA;;;;Bairro Chacaras Cuiaba
 78540000|BAIRRO CUIABA;;;;
 78540000|BAIRRO DA BALANCA;;;;
 78540000|BAIRRO DE CHACARAS CUIABA;;;;
@@ -24558,6 +24744,7 @@ cep;lon;lat;logradouro;bairro
 78540000|MARISA 6 PARTE;;;;
 78540000|MEU LAR;;;;
 78540000|MST;;;;
+78540000|MT 423;;;;Mt 423
 78540000|NAO INFORMADO;;;;
 78540000|NOVA OLIMPIA;;;;
 78540000|P D S XII DE OUTUBRO;;;;
@@ -24734,6 +24921,7 @@ cep;lon;lat;logradouro;bairro
 78549470;-55.50376;-11.85976;Rua dos Periquitos;Residencial Canarinho I e II
 78549473;-55.50994;-11.85436;Travessa das Avestruzes;Residencial Canarinho I e II
 78549475;-57.80359;-9.87052;Travessa dos Corvos;Residencial Canarinho I e II
+78549479;-57.80359;-9.87052;Travessa Tiziu;Residencial Canarinho I e II
 78549481;-57.80359;-9.87052;Travessa das Jandaias;Residencial Canarinho I e II
 78549482;-55.50334;-11.85981;Rua das Cacatuas;Residencial Canarinho I e II
 78549483;-57.80359;-9.87052;Travessa Cuco;Residencial Canarinho I e II
@@ -25644,6 +25832,7 @@ cep;lon;lat;logradouro;bairro
 78553637;-55.51457;-11.83145;Rua dos Xaxins;Jardim dos Ipês
 78553643;-55.52780;-11.83380;Rua Antônio Brioschi;Jardim dos Ipês
 78553646;-55.52734;-11.83161;Rua Geremias Garcia;Jardim dos Ipês
+78553649;-55.50955;-11.86085;Rua Gines Sanches Parra;Jardim dos Ipês
 78553653;-55.52745;-11.82893;Rua 18;Jardim dos Ipês
 78553670;-55.52550;-11.85476;Avenida André Antônio Maggi;Jardim Novo Estado
 78553673;-55.51457;-11.83145;Rua dos Xaxins;Jardim Novo Estado
@@ -25762,6 +25951,7 @@ cep;lon;lat;logradouro;bairro
 78554086;-55.47971;-11.83972;Rua Projetada T;Residencial Daury Riva
 78554087;-55.51426;-11.81765;Avenida das Águias;Residencial Primor das Águias
 78554089;-55.51320;-11.80949;Rua Roque Gomes Moreira;Residencial Primor das Águias
+78554091;-55.47716;-11.88630;Rua 3;Residencial Primor das Águias
 78554095;-55.47702;-11.88672;Rua 4;Residencial Primor das Águias
 78554099;-55.51761;-11.82404;Rua 1;Residencial Primor das Águias
 78554100;-55.47971;-11.83972;Rua Projetada Y;Jardim Califórnia
@@ -25853,6 +26043,7 @@ cep;lon;lat;logradouro;bairro
 78554292;-55.55603;-11.84487;Rua Projetada 1;Recanto da Mata
 78554294;-55.51788;-11.81286;Rua Projetada 5;Recanto da Mata
 78554296;-55.53142;-11.87585;Rua Projetada 4;Recanto da Mata
+78554300;-55.51183;-11.94647;Avenida Projetada 1;Recanto da Mata
 78554312;-56.09465;-15.59887;Rua Abunã;Residencial Iguatemi
 78554313;-55.53353;-11.81789;Rua Bom Jesus do Araguaia;Residencial Iguatemi
 78554317;-56.09465;-15.59887;Rua Chuí;Residencial Iguatemi
@@ -25879,6 +26070,7 @@ cep;lon;lat;logradouro;bairro
 78554359;-55.53065;-11.79872;Estrada Selene;Residencial Iguatemi
 78554361;-56.06963;-15.59935;Rua Mamoré;Residencial Iguatemi
 78554362;-55.50994;-11.85436;Rua Canumã;Residencial Iguatemi
+78554371;-55.49643;-11.89543;Rua Guarajá;Residencial Iguatemi
 78554400;-55.50077;-11.80580;Avenida André Maggi;Jardim das Rosas
 78554402;-55.50232;-11.81187;Rua Alice Schumacher;Jardim das Rosas
 78554403;-55.50217;-11.81318;Rua Rosa Kristium Trindade;Jardim das Rosas
@@ -25924,6 +26116,7 @@ cep;lon;lat;logradouro;bairro
 78555000|SAO CRISTOVAO;;;;
 78555000|SETOR INDUSTRIAL;;;;
 78555000|SIMIONI;;;;
+78555000|TAPURAH;;;;Tapurah
 78555000|ZONA RURAL;;;;
 78555002;-55.51259;-11.84580;Avenida dos Ingás;Jardim Imperial
 78555004;-55.51872;-11.84759;Avenida das Figueiras;Jardim Imperial
@@ -26252,6 +26445,7 @@ cep;lon;lat;logradouro;bairro
 78555746;-55.48069;-11.88333;Avenida Projetada 1;Loteamento Residencial San Martini
 78555747;-55.48069;-11.88333;Avenida Projetada 1;Loteamento Residencial San Martini
 78555749;-55.55590;-11.84415;Rua Projetada 2;Loteamento Residencial San Martini
+78555753;-55.49542;-11.85764;Avenida dos Tarumãs;Loteamento Residencial San Martini
 78555757;-55.49482;-11.93151;Rua Projetada 8;Loteamento Residencial San Martini
 78555761;-55.55277;-11.83528;Rua Projetada 7;Loteamento Residencial San Martini
 78555765;-55.52277;-11.88761;Rua Projetada 9;Loteamento Residencial San Martini
@@ -26462,6 +26656,7 @@ cep;lon;lat;logradouro;bairro
 78556276;-55.52089;-11.85586;Avenida dos Guarantãs;Jardim Maringá
 78556277;-55.50129;-11.84813;Rua das Helicônias;Jardim Maringá
 78556278;-55.51912;-11.85226;Avenida Dom Henrique Froehlich;Jardim Maringá
+78556280;-55.50776;-11.87093;Avenida dos Flamboyants;Jardim Belo Horizonte
 78556282;-55.51949;-11.87014;Rua das Guabirobas;Jardim Belo Horizonte
 78556284;-55.52096;-11.87164;Rua dos Sabarás;Jardim Belo Horizonte
 78556286;-55.52249;-11.87313;Rua dos Mamoeiros;Jardim Belo Horizonte
@@ -26808,6 +27003,7 @@ cep;lon;lat;logradouro;bairro
 78557311;-55.52658;-11.97194;Avenida Projetada 2;Residencial Villa Toscana
 78557312;-55.49706;-11.90172;Avenida Projetada 1;Residencial Villa Toscana
 78557314;-55.49706;-11.90172;Travessa Projetada 11;Residencial Villa Toscana
+78557316;-55.49692;-11.90190;Travessa Projetada 12;Residencial Villa Toscana
 78557318;-55.49706;-11.90172;Travessa Projetada 13;Residencial Villa Toscana
 78557319;-55.50158;-11.92775;Rua Projetada 5;Residencial Villa Toscana
 78557321;-55.49706;-11.90172;Travessa Projetada 15;Residencial Villa Toscana
@@ -27004,6 +27200,7 @@ cep;lon;lat;logradouro;bairro
 78557816;-55.50771;-11.89022;Rua Rio Arinos;Residencial Ipiranga
 78557820;-55.45789;-11.84308;Estrada Adalgisa;Loteamento Villa Torino
 78557824;-55.55590;-11.84415;Rua Projetada 2;Loteamento Villa Torino
+78557827;-55.53436;-11.83528;Rodovia MT 140;Loteamento Villa Torino
 78557829;-55.55603;-11.84487;Rua Projetada 1;Loteamento Villa Torino
 78557830;-55.47166;-11.89523;Rodovia MT 140;Loteamento Jardim Tropical
 78557831;-54.64034;-16.43975;Avenida Fiorelo Nelso Possan;Loteamento Jardim Tropical
@@ -27229,7 +27426,6 @@ cep;lon;lat;logradouro;bairro
 78558469;-55.51554;-11.99363;Rua Bahia;Loteamento Alto da Glória
 78558472;-55.51466;-11.99265;Avenida Mato Grosso;Loteamento Alto da Glória
 78558478;-55.50805;-11.89750;Rua Brasil;Loteamento Alto da Glória
-78558481;-55.50955;-11.86085;Avenida Goiás;Loteamento Alto da Glória
 78558484;-55.51466;-11.99265;Avenida Mato Grosso;Loteamento Alto da Glória
 78558487;-55.50812;-11.84797;Rua Paraná;Loteamento Alto da Glória
 78558490;-55.50805;-11.89750;Rua Brasil;Loteamento Alto da Glória
@@ -27307,6 +27503,7 @@ cep;lon;lat;logradouro;bairro
 78558781;-55.50882;-11.81556;Rua Projetada G;
 78558782;-55.50998;-11.81108;Rua Projetada H;
 78558783;-55.50204;-11.90597;Rua Projetada I;
+78558784;-55.52489;-11.94163;Rua Projetada J;
 78558790;-55.51302;-11.81450;Rua Projetada P;
 78558865;-55.51780;-11.81270;Rua Projetada 25;Loteamento Cidade Alta
 78558868;-55.51762;-11.81277;Rua Projetada 26;Loteamento Cidade Alta
@@ -27582,7 +27779,6 @@ cep;lon;lat;logradouro;bairro
 78559649;-55.51026;-11.85438;Rua 2;Residencial Boa Vista
 78559660;-55.49196;-11.86795;Rua Projetada 9;Residencial Sebastião de Matos II
 78559664;-55.47971;-11.83972;Rua Projetada 10;Residencial Sebastião de Matos II
-78559666;-55.48129;-11.86602;Rua Projetada 2;Residencial Sebastião de Matos II
 78559668;-55.48428;-11.86987;Rua Projetada 3;Residencial Sebastião de Matos II
 78559670;-55.47395;-11.85454;Rua Projetada 4;Residencial Sebastião de Matos II
 78559672;-55.47971;-11.83972;Rua Projetada 1;Residencial Sebastião de Matos II
@@ -27761,6 +27957,7 @@ cep;lon;lat;logradouro;bairro
 78560000|VILA NOVO PARANA;;;;
 78560000|VILA OPERARIA;;;;
 78560000|VILA SAO JOAO;;;;
+78560000|VILA SIMIONE;;;;Vila Simione
 78560000|VILA SIMIONI;;;;
 78560000|ZONA DE EXPANSAO INDUSTRIAL;;;;
 78560000|ZONA DE EXPANSAO INDUSTRIAL ZEI;;;;
@@ -27820,6 +28017,7 @@ cep;lon;lat;logradouro;bairro
 78563000|CIDADE DE NOVA FRONTEIRA;;;;
 78563000|COABE;;;;
 78563000|COHAB;;;;
+78563000|COMENDADOR JOSE PEDRO DIAS;;;;Comendador Jose Pedro Dias
 78563000|COMUNIDADE PAI HEROI;;;;
 78563000|COMUNIDADE SAO PEDRO ALTO BATELAO;;;;
 78563000|CONJUNTO ABTACIONAL;;;;
@@ -28017,6 +28215,7 @@ cep;lon;lat;logradouro;bairro
 78565000|PROXIMO AO DISTRITO JAPURANA;;;;
 78565000|RECANTO DOS PASSARO;;;;
 78565000|RECANTO DOS PASSAROS;;;;
+78565000|RESIDENCIAL ALVORADA;;;;Residencial Alvorada
 78565000|RESIDENCIAL LUISA;;;;
 78565000|RUA B;;;;
 78565000|RUA RIO GRANDE DO SUL;;;;
@@ -28045,6 +28244,7 @@ cep;lon;lat;logradouro;bairro
 78565000|TR ACORIZAL;;;;
 78565000|TRAVESSA POCONE;;;;
 78565000|UNIAO;;;;
+78565000|VILA;;;;Vila
 78565000|VILA GARIMPEIRA;;;;
 78565000|VILA JAPURANA;;;;
 78565000|VILA PARAISO DO NORTE;;;;
@@ -28075,6 +28275,7 @@ cep;lon;lat;logradouro;bairro
 78570000|COMUNIDADDE CARVALHO 1;;;;
 78570000|COMUNIDADE CARVALHO I;;;;
 78570000|COMUNIDADE TABAJARA;;;;
+78570000|CONJUNTO HABITACIONAL;;;;Conjunto Habitacional
 78570000|CONJUNTO HABITACIONAL CELCITA PINHEIRO;;;;
 78570000|DAUR RIVAI;;;;
 78570000|DAURI RIVA;;;;
@@ -28086,6 +28287,8 @@ cep;lon;lat;logradouro;bairro
 78570000|FAZENDA ESTANCIA BELA VISTA II;;;;
 78570000|GLEBA BOSMAJI;;;;
 78570000|GLEBA IBITINGA;;;;
+78570000|GLEBA JULIETA;;;;Gleba Julieta
+78570000|GLEBA TABAJARA;;;;Gleba Tabajara
 78570000|GLEBA TAQUARAL;;;;
 78570000|INDUSTRIAL;;;;
 78570000|JARDIM CONQUISTA;;;;
@@ -28102,6 +28305,7 @@ cep;lon;lat;logradouro;bairro
 78570000|OLINDO CAMPOREZE;;;;
 78570000|OLINDO CAMPOREZI;;;;
 78570000|OLINDO CAMPOREZZI;;;;
+78570000|PA JULIETA;;;;Pa Julieta
 78570000|PAPA JOAO PAULO;;;;
 78570000|PAPA JOAO PAULO II;;;;
 78570000|PEDRO ULIANA;;;;
@@ -28285,6 +28489,7 @@ cep;lon;lat;logradouro;bairro
 78575000|CENTRAL;;;;
 78575000|CENTRI;;;;
 78575000|CENTRO;-57.51703;-11.27063;Rua Luis Mena, 56;Centro
+78575000|CENTRO SALA 05;;;;Centro Sala 05
 78575000|CENTRO ZONA RURAL;;;;
 78575000|CHACARA;;;;
 78575000|CHACARA 09 CZ2;;;;
@@ -28311,6 +28516,7 @@ cep;lon;lat;logradouro;bairro
 78575000|COMUNIDADE AGUA BOA;;;;
 78575000|COMUNIDADE AGUA BOA KM 9;;;;
 78575000|COMUNIDADE DO JAU;;;;
+78575000|COMUNIDADE JOAO RIPAR;;;;Comunidade Joao Ripar
 78575000|COMUNIDADE PROJETO CASULO;;;;
 78575000|CONTINENTAL;;;;
 78575000|CRUZEIRO DO SUL;;;;
@@ -28441,6 +28647,7 @@ cep;lon;lat;logradouro;bairro
 78575000|JD SAO JOAO;;;;
 78575000|JD SAOJOAO;;;;
 78575000|JD UBIRAJARA;;;;
+78575000|JDCALIFORNIA;;;;Jdcalifornia
 78575000|JOAO DE BARRO;;;;
 78575000|JOAO DE BARRO I;;;;
 78575000|JRD SAO GABRIEL;;;;
@@ -28456,6 +28663,7 @@ cep;lon;lat;logradouro;bairro
 78575000|LINHA DO BARBOSINHA;;;;
 78575000|LINHA DOS BARBOSA;;;;
 78575000|LINHA DOS BARBOSAS;;;;
+78575000|LINHA JOAO RIPAR;;;;Linha Joao Ripar
 78575000|LOTE 153 GLEBA TAQUARAL;;;;
 78575000|LOTEAMENTO ARINOS;;;;
 78575000|LOTEAMENTO BARBOSA;;;;
@@ -28474,6 +28682,7 @@ cep;lon;lat;logradouro;bairro
 78575000|NOVA JUARA;;;;
 78575000|NV HORIZONTE NORTE;;;;
 78575000|OURO VERDE;;;;
+78575000|PARANAGA;;;;Paranaga
 78575000|PARANAGUA;;;;
 78575000|PARANORTE;;;;
 78575000|PARQUE ALVORA II;;;;
@@ -28531,6 +28740,7 @@ cep;lon;lat;logradouro;bairro
 78575000|RESIDENCIAL COLINAS;;;;
 78575000|RESIDENCIAL COLLINAS;;;;
 78575000|RESIDENCIAL CRUZEIRO DO SUL;;;;
+78575000|RESIDENCIAL FLORENCA;;;;Residencial Florenca
 78575000|RESIDENCIAL FLOREST;;;;
 78575000|RESIDENCIAL FLORESTA;;;;
 78575000|RESIDENCIAL JARDIM SANTA CRUZ;;;;
@@ -28640,15 +28850,18 @@ cep;lon;lat;logradouro;bairro
 78578000|EXPANSAO URBANA;;;;
 78578000|FAZENDA;;;;
 78578000|FAZENDA PRIMAVER KM 17 ZONA RURAL;;;;
+78578000|FAZENDA RIO GRANDENSE;;;;Fazenda Rio Grandense
 78578000|FAZENDA SANTA FE;;;;
 78578000|FLORES;;;;
 78578000|FRUTAS;;;;
+78578000|GOLD VALLE;;;;Gold Valle
 78578000|GOLDE VALE;;;;
 78578000|GOLDE VALLE;;;;
 78578000|GOLDEM VALE;;;;
 78578000|GOLDEM VALLE;;;;
 78578000|GOLDEN VALE;;;;
 78578000|GOLDEN VALLE;;;;
+78578000|INDUSTRIAL;;;;Industrial
 78578000|INTERIOR;;;;
 78578000|IPIRANGA DO NORTE;;;;
 78578000|JARDIM DAS ARVORES;;;;
@@ -28699,6 +28912,7 @@ cep;lon;lat;logradouro;bairro
 78579000|COABE;;;;
 78579000|COAHB;;;;
 78579000|COHAB;;;;
+78579000|CRISTAL;;;;Cristal
 78579000|DISTRITO INDUSTRIAL;;;;
 78579000|DOS COREIO;;;;
 78579000|ESTRADA RURAL;;;;
@@ -28797,6 +29011,7 @@ cep;lon;lat;logradouro;bairro
 78580000|AREA RURAL;;;;
 78580000|AREA RURAL RODOVIAS;;;;
 78580000|ASSENTAMENTO JACAMINHO;;;;
+78580000|AV BOM PASTOR;;;;Av Bom Pastor
 78580000|AV DEPUTADO FEDERAL ROGERIO SILVA;;;;
 78580000|AV MATO GROSSO;;;;
 78580000|AV RES MANGUEIRAS;;;;
@@ -28808,6 +29023,7 @@ cep;lon;lat;logradouro;bairro
 78580000|B JARDI PRIMAVERA;;;;
 78580000|BACAERI;;;;
 78580000|BAIRRO;;;;
+78580000|BAIRRO BOA ESPERANCA;;;;Bairro Boa Esperanca
 78580000|BAIRRO BOA NOVA;;;;
 78580000|BAIRRO BOA NOVA 1;;;;
 78580000|BAIRRO BOA NOVA 3;;;;
@@ -28870,6 +29086,7 @@ cep;lon;lat;logradouro;bairro
 78580000|BOA NOVA 2 ST SE 2N;;;;
 78580000|BOA NOVA 3;;;;
 78580000|BOA NOVA 3 SETOR SE 2S;;;;
+78580000|BOA NOVA DOIS;;;;Boa Nova Dois
 78580000|BOA NOVA I;;;;
 78580000|BOA NOVA II;;;;
 78580000|BOA NOVA III;;;;
@@ -28916,6 +29133,7 @@ cep;lon;lat;logradouro;bairro
 78580000|CENTRO SETOR D;;;;
 78580000|CENTRO SETOR G;;;;
 78580000|CENTRO SETOR H;;;;
+78580000|CENTRO SETOR J;;;;Centro Setor J
 78580000|CENTRO TERMINAL RODOVIARIO;;;;
 78580000|CETOR G CENTRO;;;;
 78580000|CHACARA ALTO ALEGRE;;;;
@@ -29036,6 +29254,7 @@ cep;lon;lat;logradouro;bairro
 78580000|FLORAS DO VALE;;;;
 78580000|FLORATA;;;;
 78580000|FRAMBOYAM;;;;
+78580000|FRAMBOYANT;;;;Framboyant
 78580000|G;;;;
 78580000|GARIMPO DO CABECA;;;;
 78580000|GAURANA I;;;;
@@ -29071,6 +29290,7 @@ cep;lon;lat;logradouro;bairro
 78580000|IMPERIAL;;;;
 78580000|INDUSTRIAL;;;;
 78580000|INDUSTRIAL BOM JESUS;;;;
+78580000|INDUSTRIAL T2;;;;Industrial T2
 78580000|IPES;;;;
 78580000|IPIRANGA;;;;
 78580000|J;;;;
@@ -29111,6 +29331,7 @@ cep;lon;lat;logradouro;bairro
 78580000|JARDIM DAS BEGONHAS;;;;
 78580000|JARDIM DAS BEGONIAS;;;;
 78580000|JARDIM DAS FLORES;;;;
+78580000|JARDIM DAS FLORES CIDADE ALTA;;;;Jardim das Flores Cidade Alta
 78580000|JARDIM DAS MANGUEIRAS;;;;
 78580000|JARDIM DAS OLIVEIRA;;;;
 78580000|JARDIM DAS OLIVEIRAS;;;;
@@ -29155,6 +29376,7 @@ cep;lon;lat;logradouro;bairro
 78580000|JARDIM PANORAMA II;;;;
 78580000|JARDIM PANORAMA LOTE 01 QUADRA 06;;;;
 78580000|JARDIM PANORANA;;;;
+78580000|JARDIM PERIMENTRAL;;;;Jardim Perimentral
 78580000|JARDIM PERIMETRAL;;;;
 78580000|JARDIM PIRIMETRAL;;;;
 78580000|JARDIM PLANALTO;;;;
@@ -29194,6 +29416,7 @@ cep;lon;lat;logradouro;bairro
 78580000|JD IPIRANGA;;;;
 78580000|JD OLIVEIRAS;;;;
 78580000|JD PANORAMA;;;;
+78580000|JD PANORAMA B;;;;Jd Panorama B
 78580000|JD POR DO SOL;;;;
 78580000|JD PRIMAVERA;;;;
 78580000|JD UNIVERSITARIO;;;;
@@ -29283,7 +29506,9 @@ cep;lon;lat;logradouro;bairro
 78580000|PEDRA DO INDIO;;;;
 78580000|PERIMENTRAL CENTRO;;;;
 78580000|PERIMETRAL;;;;
+78580000|PERIMETRAL OESTE;;;;Perimetral Oeste
 78580000|PERIMETRAL OESTE 2;;;;
+78580000|PIONEIRO;;;;Pioneiro
 78580000|PISTA DO CABECA;;;;
 78580000|PISTA DO CABECA COMUNIDADE NOVO CRUZEIRO;;;;
 78580000|PISTA DO CABECA ZONA RURAL;;;;
@@ -29298,6 +29523,7 @@ cep;lon;lat;logradouro;bairro
 78580000|RENACER;;;;
 78580000|RENASCER;;;;
 78580000|RES DOS YPES;;;;
+78580000|RES JARDIM UNIVERSITARIO;;;;Res Jardim Universitario
 78580000|RES TELES PIRES;;;;
 78580000|RES UNIVERSITARIO;;;;
 78580000|RESEDENCIAL BEGONIAS;;;;
@@ -29309,6 +29535,7 @@ cep;lon;lat;logradouro;bairro
 78580000|RESIDECIAL UNIVERSITARIO;;;;
 78580000|RESIDENCIA UNIVERSITARIO;;;;
 78580000|RESIDENCIAL ACROPOLE;;;;
+78580000|RESIDENCIAL ALTA FLORESTA;;;;Residencial Alta Floresta
 78580000|RESIDENCIAL ALVORADA;;;;
 78580000|RESIDENCIAL AMARILIS;;;;
 78580000|RESIDENCIAL BOA VISTA;;;;
@@ -29341,8 +29568,10 @@ cep;lon;lat;logradouro;bairro
 78580000|RESIDENCIAL UNIVERSITARIO;;;;
 78580000|RESIDENCIAL UNIVERSITARIO ALTA FLORESTA;;;;
 78580000|RESIDENCIAL UNIVERSITRIO;;;;
+78580000|RESIDENCIAL UNIVERSSITARIO;;;;Residencial Universsitario
 78580000|RESIDENCIAL UNUVERSITARIO;;;;
 78580000|RESIDENCIAL VALE DO SOL;;;;
+78580000|RESIDENCIAL VERSALLES;;;;Residencial Versalles
 78580000|RESIDENCIAL YPES;;;;
 78580000|RESISDENCIAL BOA VISTA;;;;
 78580000|RI;;;;
@@ -29393,6 +29622,7 @@ cep;lon;lat;logradouro;bairro
 78580000|SETOR AEROPORTO;;;;
 78580000|SETOR AMARILIS;;;;
 78580000|SETOR AP B2;;;;
+78580000|SETOR AP D 3;;;;Setor Ap D 3
 78580000|SETOR AP D3;;;;
 78580000|SETOR AP D4;;;;
 78580000|SETOR AP F 2;;;;
@@ -29634,6 +29864,7 @@ cep;lon;lat;logradouro;bairro
 78580000|SETOR RENACER;;;;
 78580000|SETOR RENASCER;;;;
 78580000|SETOR RESERVA ECOLOGICA NORTE;;;;
+78580000|SETOR RESERVA ECOLOGICA NORTE BAIRRO BOM JESUS;;;;Setor Reserva Ecologica Norte Bairro Bom Jesus
 78580000|SETOR RESIDENCIAL;;;;
 78580000|SETOR RESIDENCIAL ACROPOLE;;;;
 78580000|SETOR RESIDENCIAL AMARILIS;;;;
@@ -29715,6 +29946,7 @@ cep;lon;lat;logradouro;bairro
 78580000|VALE DO SOL;;;;
 78580000|VICINAL 2 LESTE;;;;
 78580000|VICINAL AURORA;;;;
+78580000|VICINAL PRIMEIRA LESTE;;;;Vicinal Primeira Leste
 78580000|VIILA NOVA;;;;
 78580000|VILA;;;;
 78580000|VILA NOVA;;;;
@@ -29840,6 +30072,7 @@ cep;lon;lat;logradouro;bairro
 78587000|ZONA DE EXPANSAO URBANA;;;;
 78587000|ZONA RUARL;;;;
 78587000|ZONA RURAL;;;;
+78587000|ZONA RURAL SITIO PAI E FILHO;;;;Zona Rural Sitio Pai e Filho
 78587000|ZONA SUBURBANA;;;;
 78587970;-55.82486;-9.97132;Avenida das Itaúbas, 676;Centro
 78590000;-56.47667;-9.66472;;
@@ -29847,6 +30080,7 @@ cep;lon;lat;logradouro;bairro
 78590000|ACENT SAO PEDRO;;;;
 78590000|AO LADO DA TERRA AGRICOLA;;;;
 78590000|AREA PARQUE CENTRAL;;;;
+78590000|AREA RURAL PARA;;;;Area Rural Para
 78590000|ASSENT SAO PEDRO;;;;
 78590000|ASSENT SAO PEDRO ZONA RURAL;;;;
 78590000|ASSENTAMENTO SAO PEDRO;;;;
@@ -29882,6 +30116,7 @@ cep;lon;lat;logradouro;bairro
 78590000|ESTRELA DO ORIENTE SETOR COHAB;;;;
 78590000|FAZENDA ZE VERMELHO;;;;
 78590000|GLEBA PARANAITA;;;;
+78590000|GLEBA SAO BENEDITO;;;;Gleba Sao Benedito
 78590000|INDUSTRIAL;;;;
 78590000|JARDIM AMAZONAS;;;;
 78590000|JARDIM AMAZONIA;;;;
@@ -29972,6 +30207,7 @@ cep;lon;lat;logradouro;bairro
 78590000|SETOR NORTE IIO;;;;
 78590000|SETOR NORTE SETOR DAS CHACARAS;;;;
 78590000|SETOR NOVO HORIZONTE;;;;
+78590000|SETOR PICINA;;;;Setor Picina
 78590000|SETOR PISCINA;;;;
 78590000|SETOR RES NORTE;;;;
 78590000|SETOR RES NORTE I;;;;
@@ -29983,6 +30219,7 @@ cep;lon;lat;logradouro;bairro
 78590000|SETOR RESIDENCIAL SE 01;;;;
 78590000|SETOR RESIDENCIAL SE 012;;;;
 78590000|SETOR RESIDENCIAL SUL;;;;
+78590000|SETOR SAO CRISTOVAO;;;;Setor Sao Cristovao
 78590000|SETOR SE 01;;;;
 78590000|SETOR SE 01 PISCINA;;;;
 78590000|SETOR SE 01 SETOR DOS BAIANINHOS;;;;
@@ -29994,6 +30231,7 @@ cep;lon;lat;logradouro;bairro
 78590000|SETOR SE 1 PISCINA;;;;
 78590000|SETOR SE 2 L;;;;
 78590000|SETOR SE1;;;;
+78590000|SETOR SERRARIAS;;;;Setor Serrarias
 78590000|SETOR SUL;;;;
 78590000|SETOR SUL I;;;;
 78590000|SETOR SUL II;;;;
@@ -30007,6 +30245,7 @@ cep;lon;lat;logradouro;bairro
 78590000|VICINAL;;;;
 78590000|VILA BOA ESPERANCA;;;;
 78590000|VILA RURAL BOA ESPERANCA;;;;
+78590000|ZANETE;;;;Zanete
 78590000|ZE FERINO;;;;
 78590000|ZONA;;;;
 78590000|ZONA RURA;;;;
@@ -30023,6 +30262,7 @@ cep;lon;lat;logradouro;bairro
 78590000|ZONA RURAL COMUNIDADE NOVA UNIAO;;;;
 78590000|ZONA RURAL COMUNIDADE SORRISO;;;;
 78590000|ZONA RURAL ESTRADA FLORESTA AZUL;;;;
+78590000|ZONA RURAL GUARITA QUEIMADO;;;;Zona Rural Guarita Queimado
 78590000|ZONA RURAL MANDACARU;;;;
 78590000|ZONA RURAL NOSSA TERRA NOSSA GENTE;;;;
 78590000|ZONA RURAL SETOR GRANJA DO PAULINHO;;;;
@@ -30047,6 +30287,7 @@ cep;lon;lat;logradouro;bairro
 78593000|CASA NOVA;;;;
 78593000|CENTRO;-57.46676;-9.97957;Avenida Rondonópolis, s/n;Centro
 78593000|CENTRO SETOR CHACARA;;;;
+78593000|CENTROA;;;;Centroa
 78593000|CHACARA SAO JOAO;;;;
 78593000|CIDADE NOVA;-57.46517;-9.97069;Rua Jose Roberto Urias;Cidade Nova
 78593000|CINTURAO DAS CHACARAS;;;;
@@ -30070,6 +30311,7 @@ cep;lon;lat;logradouro;bairro
 78593000|LOTEAMENTO ALMEIDA PRADO I;;;;
 78593000|LOTEAMENTO ALMEIDA PRADO II;;;;
 78593000|LOTEAMENTO CASA NOVA;;;;
+78593000|LOTEAMENTO LAIENE;;;;Loteamento Laiene
 78593000|LOTEAMENTO MARINO;;;;
 78593000|LOTEAMENTO NOVO HORIZONTE;;;;
 78593000|LOTEAMENTO SANTO ANTONIO;;;;
@@ -30114,6 +30356,7 @@ cep;lon;lat;logradouro;bairro
 78595000|ALAMEDA DOS IPES;;;;
 78595000|ALDEIA MAIROWI;;;;
 78595000|APIACAS;;;;
+78595000|APIACAS MT;;;;Apiacas Mt
 78595000|AVENIDA;;;;
 78595000|BAIRRO BOM JESUS I;;;;
 78595000|BAIRRO PRIMAVERA;;;;
@@ -30140,6 +30383,7 @@ cep;lon;lat;logradouro;bairro
 78595000|JARDIM DAS NACOES 2;;;;
 78595000|MUTUM;;;;
 78595000|NUCLEO URBANO;;;;
+78595000|PIONEIRA;;;;Pioneira
 78595000|PIONEIRO;;;;
 78595000|PRIMAVEIRA;;;;
 78595000|PRIMAVERA;;;;
@@ -30661,6 +30905,7 @@ cep;lon;lat;logradouro;bairro
 78600665;-52.28429;-15.88367;Avenida Principal 2;Loteamento Residencial Tambury
 78600670;-52.27586;-15.86849;Rua W7;Loteamento Residencial Tambury
 78600672;-52.27586;-15.86849;Rua W8;Loteamento Residencial Tambury
+78600674;-52.27586;-15.86849;Rua W9;Loteamento Residencial Tambury
 78600690;-52.29524;-15.89326;Avenida Wilmar Peres de Farias;Residencial Wilmar Peres de Farias
 78600692;-52.29524;-15.89326;Avenida Wilmar Peres de Farias;Residencial Wilmar Peres de Farias
 78600704;-52.28539;-15.88964;Rua Perimetral Oeste;Residencial Wilmar Peres de Farias
@@ -30698,6 +30943,7 @@ cep;lon;lat;logradouro;bairro
 78601050;-52.25977;-15.88742;Avenida Salomé José Rodrigues;Loteamento Vista Alegre II
 78601052;-52.31861;-15.86549;Rua Um;Loteamento Vista Alegre II
 78601054;-52.26270;-15.88270;Rua Dom Aquino;Loteamento Vista Alegre II
+78601058;-52.25681;-15.88564;Rua Manoel Camerino;Loteamento Vista Alegre II
 78601070;-52.26244;-15.88617;Rua 7 de Setembro;Loteamento Alto da Boa Vista
 78601072;-52.26513;-15.89145;Rua XV de Novembro;Loteamento Alto da Boa Vista
 78601078;-52.26152;-15.88546;Rua Princesa Isabel;Loteamento Alto da Boa Vista
@@ -30720,6 +30966,7 @@ cep;lon;lat;logradouro;bairro
 78601125;-52.26581;-15.88478;Avenida Gabriel Ferreira;Santa Rosa
 78601130;-52.25718;-15.88734;Avenida Coronel Antônio Cristino Cortês;Santa Rosa
 78601156;-52.26541;-15.88923;Rua Alessandra Morganti;Loteamento João XXIII
+78601158;-52.25525;-15.88353;Rua Benjamim Antunes Teixeira;Loteamento João XXIII
 78601160;-52.25490;-15.88176;Avenida Maria das Mercês Casal Del Rey;Loteamento João XXIII
 78601162;-52.25646;-15.88409;Rua Laurindo Sobreira Amaral;Loteamento João XXIII
 78601164;-52.25789;-15.89446;Rua S14;Loteamento João XXIII
@@ -30942,6 +31189,7 @@ cep;lon;lat;logradouro;bairro
 78603006;-52.27058;-15.88735;Rua Eudócia Oliveira Silva;Conjunto Habitacional Piracema
 78603008;-52.28760;-15.88375;Rua Manoel Oleiro;Conjunto Habitacional Piracema
 78603010;-52.29309;-15.88487;Avenida Principal;Conjunto Habitacional Piracema
+78603011;-52.28604;-15.88592;Rua Manoel José Rodrigues;Conjunto Habitacional Piracema
 78603012;-52.25268;-15.88092;Travessa Cinco;Conjunto Habitacional Piracema
 78603016;-52.28588;-15.88135;Rua Ana Corsina Santos;Conjunto Habitacional Piracema
 78603018;-52.27586;-15.86849;Rua Ibrahim Ali Saleh;Conjunto Habitacional Piracema
@@ -31476,6 +31724,7 @@ cep;lon;lat;logradouro;bairro
 78606681;-52.30184;-15.90848;Rua Palmeiras;Jardim Nova Barra do Garças
 78606685;-52.30247;-15.90392;Rua Gonçalves Dias;Jardim Nova Barra do Garças
 78606688;-52.30320;-15.90751;Rua Carlos Gomes;Jardim Nova Barra do Garças
+78606691;-52.30388;-15.90748;Rua Rui Barbosa;Jardim Nova Barra do Garças
 78606695;-52.30455;-15.90551;Rua Olavo Bilac;Jardim Nova Barra do Garças
 78606698;-52.31497;-15.88108;Rua Xibiu;Jardim Nova Barra do Garças
 78606704;-52.30557;-15.90769;Rua Dourados;Jardim Nova Barra do Garças
@@ -31563,6 +31812,7 @@ cep;lon;lat;logradouro;bairro
 78607168;-52.32948;-15.88387;Avenida Coronel Elias Galvão;Loteamento Residencial Cidade Jardim
 78607170;-52.34630;-15.88494;Rua 18;Loteamento Residencial Cidade Jardim
 78607172;-52.23073;-15.04191;Rua 17;Loteamento Residencial Cidade Jardim
+78607174;-52.34247;-15.88464;Rua 16;Loteamento Residencial Cidade Jardim
 78607176;-52.34273;-15.88191;Rua 14;Loteamento Residencial Cidade Jardim
 78607178;-52.34555;-15.87577;Rua 13;Loteamento Residencial Cidade Jardim
 78607180;-52.29027;-15.88050;Rua 12;Loteamento Residencial Cidade Jardim
@@ -31633,6 +31883,7 @@ cep;lon;lat;logradouro;bairro
 78613000|CONJ HAB JOAO DE BARROS;;;;
 78613000|DISTRITO AGROINDUSTRIAL JONAS PINHEIRO;;;;
 78613000|INDEFINIDO;;;;
+78613000|JAO DE BARRO;;;;Jao de Barro
 78613000|JARDIM DAS FLORES;;;;
 78613000|JARDIM DOS IPES;;;;
 78613000|JARDIM DOS YPES;;;;
@@ -31750,6 +32001,7 @@ cep;lon;lat;logradouro;bairro
 78625000;-53.01833;-14.90583;;
 78625000|300;;;;
 78625000|ALTO DA COLINA;;;;
+78625000|AREA RURAL;;;;Area Rural
 78625000|BAIRRO JARDIM DAS PALMEIRAS;;;;
 78625000|BOA ESEPRANCA;;;;
 78625000|BOA ESPERANCA;;;;
@@ -31912,6 +32164,7 @@ cep;lon;lat;logradouro;bairro
 78630000|SETOR VILA SOLAR;;;;
 78630000|SETOR VIOLA;;;;
 78630000|SETOR ZE VIOLA;;;;
+78630000|SOLAR DA VIDEIRAS;;;;Solar da Videiras
 78630000|SOLAR DA VIDREIRAS;;;;
 78630000|SOLAR DAS;;;;
 78630000|SOLAR DAS VIDEIRAS;;;;
@@ -31974,6 +32227,7 @@ cep;lon;lat;logradouro;bairro
 78635000|CHACARA;;;;
 78635000|CHACARA 09 VILA 0;;;;
 78635000|CHACARA 6 FAZ BOA ESPERANCA;;;;
+78635000|CHACARA DAS PALMEIRAS ST INDUSTRIAL;;;;Chacara das Palmeiras St Industrial
 78635000|CHACARAS;;;;
 78635000|CHACARAS ARAGUAIA PARQUE;;;;
 78635000|CHACARAS GUARUJA;;;;
@@ -32041,6 +32295,7 @@ cep;lon;lat;logradouro;bairro
 78635000|INDUSTRIAL LL;;;;
 78635000|INDUSTRIAL V;;;;
 78635000|INDUSTRRIAL I;;;;
+78635000|INDUTRIAL;;;;Indutrial
 78635000|INDUTRIAL V;;;;
 78635000|INSDUSTRIAL;;;;
 78635000|IPE;;;;
@@ -32053,6 +32308,7 @@ cep;lon;lat;logradouro;bairro
 78635000|JARDIM DO LAGO;;;;
 78635000|JARDIM DOS IPES;;;;
 78635000|JARDIM DOS YPES;;;;
+78635000|JARDIM GUARUJA;;;;Jardim Guaruja
 78635000|JARDIM NOROESTE;;;;
 78635000|JARDIM PLANALTO;;;;
 78635000|JARDIM PRIMAVERA;;;;
@@ -32173,6 +32429,7 @@ cep;lon;lat;logradouro;bairro
 78635000|UNIVERSITARIO;;;;
 78635000|UNIVERSITARIO ECHER;;;;
 78635000|UNIVERSITARIO ECKER;;;;
+78635000|UNIVERSITARIO I;;;;Universitario I
 78635000|UNIVERSITARIO II;;;;
 78635000|UNIVERSITARO;;;;
 78635000|UNIVESITARIO;;;;
@@ -32196,6 +32453,7 @@ cep;lon;lat;logradouro;bairro
 78635000|ZONA RURAL SERRINHA;;;;
 78635000|ZONA URBANA;;;;
 78635970;-52.15799;-14.04883;Rua Cinco, 184;Centro
+78635971;-52.15938;-14.04749;Rua Principal, s/n;Serrinha
 78636970;-52.15938;-14.04749;Rua Principal, s/n;Jaragua
 78638000;-51.79874;-13.99025;;
 78638000|BR CENTRO;;;;
@@ -32284,6 +32542,7 @@ cep;lon;lat;logradouro;bairro
 78640000|DSITRITO SERRA DOURADA;;;;
 78640000|DT SERRA DOURADA;;;;
 78640000|ENTROCAMENTO;;;;
+78640000|ESTANCIA SANTA LUCIA I;;;;Estancia Santa Lucia I
 78640000|ESTRADA RURAL;;;;
 78640000|EXPANSAO I;;;;
 78640000|EXPANSAO II;;;;
@@ -32307,6 +32566,7 @@ cep;lon;lat;logradouro;bairro
 78640000|INDEFINIDO;;;;
 78640000|INDUSTRIA;;;;
 78640000|INDUSTRIAL;;;;
+78640000|INDUSTRIAL IV;;;;Industrial Iv
 78640000|INTERIOR;;;;
 78640000|IPICA;;;;
 78640000|J FLAMBOYANT;;;;
@@ -32374,6 +32634,7 @@ cep;lon;lat;logradouro;bairro
 78640000|MORADA MELHOR;;;;
 78640000|MORADO DO SOL;;;;
 78640000|MORADO DO VALE;;;;
+78640000|MORADO DO VALLE;;;;Morado do Valle
 78640000|MORAR MELHOR;;;;
 78640000|MT 020;;;;
 78640000|MT 110 PROXIMO AO ESPACO LUNI DE EVENTOS;;;;
@@ -32388,6 +32649,7 @@ cep;lon;lat;logradouro;bairro
 78640000|NOVA CANARANA;;;;
 78640000|NOVA CANARNA;;;;
 78640000|NOVA CANRANA;;;;
+78640000|NOVA CARANA;;;;Nova Carana
 78640000|NOVA CARNARAN;;;;
 78640000|NOVA ESPERANCA;;;;
 78640000|NOVO CANARANA;;;;
@@ -32508,6 +32770,7 @@ cep;lon;lat;logradouro;bairro
 78643000|B MORADA DO SOL;;;;
 78643000|B RESIDENCIAL GREEN VILLE 2;;;;
 78643000|B SETOR INDUSTRIAL;;;;
+78643000|BAIRRO;;;;Bairro
 78643000|BAIRRO F;;;;
 78643000|BAIRRO GREENVILE I;;;;
 78643000|BAIRRO JARDIM BELA VISTA;;;;
@@ -32539,6 +32802,7 @@ cep;lon;lat;logradouro;bairro
 78643000|CALEFFI VALLE;;;;
 78643000|CAMPO EXPERIMENTAL;;;;
 78643000|CENTRO;-52.20775;-12.59435;Avenida Centro-Oeste, s/n;Centro
+78643000|CERTOR INDUSTRIAL;;;;Certor Industrial
 78643000|CETOR F;;;;
 78643000|CHACARA;;;;
 78643000|CHACARAS;;;;
@@ -32552,6 +32816,7 @@ cep;lon;lat;logradouro;bairro
 78643000|DISTRITO PINGO DAGUA;;;;
 78643000|DISTRITO PINGOS D AGUA;;;;
 78643000|E;;;;
+78643000|ESPIGAO DO LESTE;;;;Espigao do Leste
 78643000|EXPANSAO INDUSTRIAL;;;;
 78643000|EXPANSAO URBANA;;;;
 78643000|EXPANSAO URBANO;;;;
@@ -32595,6 +32860,7 @@ cep;lon;lat;logradouro;bairro
 78643000|JARDIM AMERICA;;;;
 78643000|JARDIM BELA BELA VISTA;;;;
 78643000|JARDIM BELA VISTA;;;;
+78643000|JARDIM BELA VISTA II;;;;Jardim Bela Vista Ii
 78643000|JARDIM BETIS;;;;
 78643000|JARDIM DAS FLORES;;;;
 78643000|JARDIM EUROPA;;;;
@@ -32621,6 +32887,7 @@ cep;lon;lat;logradouro;bairro
 78643000|LOTEAMENTO RESIDENCIAL DAS ACACIAS;;;;
 78643000|LOTEAMENTO RESIDENCIAL GREENVILLE;;;;
 78643000|LOTEAMENTO RESIDENCIAL GREENVILLE I;;;;
+78643000|LOTEAMENTO RESIDENCIAL GREENVILLE II;;;;Loteamento Residencial Greenville Ii
 78643000|LOTEAMENTO RESIDENCIAL PLANALTO;;;;
 78643000|LOTEAMENTO TRES AMERICAS;;;;
 78643000|MORADA DO SL;;;;
@@ -32692,10 +32959,12 @@ cep;lon;lat;logradouro;bairro
 78643000|PROJETO QUERENCIA I;;;;
 78643000|PROJETO QUERENCIA L;;;;
 78643000|PROJETO QUERENCIAI;;;;
+78643000|QD05 LT 29 BOSQUES DA EMAS;;;;Qd05 Lt 29 Bosques da Emas
 78643000|QUADRA 30 LOTE 01;;;;
 78643000|QUERANCIA;;;;
 78643000|QUERENCIA;;;;
 78643000|QUERENCIA I;;;;
+78643000|QURENCIA;;;;Qurencia
 78643000|REDENCIAL GREENVILE II;;;;
 78643000|RES GREENVILLE I;;;;
 78643000|RES PARQ DAS TORRES;;;;
@@ -32761,6 +33030,7 @@ cep;lon;lat;logradouro;bairro
 78643000|SETOR DAS TORRES II;;;;
 78643000|SETOR DE CHACARAS;;;;
 78643000|SETOR E;;;;
+78643000|SETOR E KITNET 01;;;;Setor e Kitnet 01
 78643000|SETOR EXPANSAO INDUSTRIAL;;;;
 78643000|SETOR EXPANSAO URBANA;;;;
 78643000|SETOR F;;;;
@@ -32811,10 +33081,12 @@ cep;lon;lat;logradouro;bairro
 78643000|TERRITORIO INDIGENA DO XINGU;;;;
 78643000|TERRITORIO INDIGENA XINGU;;;;
 78643000|TORRE DOIS;;;;
+78643000|TORRES 2;;;;Torres 2
 78643000|TROPICAL;;;;
 78643000|VILA;;;;
 78643000|VILA PINGO DAGUA;;;;
 78643000|VILA RURAL;;;;
+78643000|VISTA ALEGRE;;;;Vista Alegre
 78643000|VISTA BELA;;;;
 78643000|ZONA DE EXPANSAO URBANA;;;;
 78643000|ZONA RUAL;;;;
@@ -32939,6 +33211,7 @@ cep;lon;lat;logradouro;bairro
 78645000|SETOR OESTEQ;;;;
 78645000|SETOR RESIDENCIAL UIRAPURU;;;;
 78645000|SETOR SAO FRANCISCO;;;;
+78645000|SETOR SUEL;;;;Setor Suel
 78645000|SETOR SUL;;;;
 78645000|SETOR SUL DISTRITO SEDE;;;;
 78645000|SETORSUL;;;;
@@ -33075,6 +33348,7 @@ cep;lon;lat;logradouro;bairro
 78650000|ZONA RURAL P A PORTO VELHO;;;;
 78650000|ZONA RURAL P A PRESIDENTE;;;;
 78650000|ZONA RURAL PA PORTO VELHO;;;;
+78650000|ZONA RURAL REUNIDAS II;;;;Zona Rural Reunidas Ii
 78650000|ZONA SUBURBANA;;;;
 78650000|ZONA UR;;;;
 78650970;-56.02009;-15.63195;Avenida Dez, 471;Centro
@@ -33110,6 +33384,7 @@ cep;lon;lat;logradouro;bairro
 78652000|ARCOS IRIS II;;;;
 78652000|ASS SAO VICENTE;;;;
 78652000|ASSENTAMENTO P A BRIDAO BRASILEIRO;;;;
+78652000|BABINKS;;;;Babinks
 78652000|BABINSK;;;;
 78652000|BABINSKI;;;;
 78652000|BABINSKI 2;;;;
@@ -33156,6 +33431,7 @@ cep;lon;lat;logradouro;bairro
 78652000|COLINAS PARCK;;;;
 78652000|COLINAS PARK;;;;
 78652000|CONFRESA;;;;
+78652000|DENTRO;;;;Dentro
 78652000|DESTRITO AVERANOPOLIS;;;;
 78652000|DIST VERONOPOLIS;;;;
 78652000|DISTRITO;;;;
@@ -33261,6 +33537,7 @@ cep;lon;lat;logradouro;bairro
 78652000|JOCKEY CLUB;;;;
 78652000|JOCKEY CLUBE;;;;
 78652000|JOCKEYCLUBE;;;;
+78652000|JOKEN CLUB;;;;Joken Club
 78652000|JOKEY CLUB;;;;
 78652000|JOQUEI CLUB;;;;
 78652000|KM 147;;;;
@@ -33313,6 +33590,7 @@ cep;lon;lat;logradouro;bairro
 78652000|PA CORREGO DA ONCA;;;;
 78652000|PA FARTURA;;;;
 78652000|PA INDEPENDENTE I;;;;
+78652000|PA INDEPENDENTE II;;;;Pa Independente Ii
 78652000|PA INDEPENTE I;;;;
 78652000|PA JACARE VALENTE;;;;
 78652000|PA JACARE VALENTE I;;;;
@@ -33413,11 +33691,13 @@ cep;lon;lat;logradouro;bairro
 78652000|SETOR CHACARAS;;;;
 78652000|SETOR CIDADE NOVA;;;;
 78652000|SETOR COINA PARK;;;;
+78652000|SETOR COLINA PARK;;;;Setor Colina Park
 78652000|SETOR COLINAS PARCK;;;;
 78652000|SETOR COLINAS PARK;;;;
 78652000|SETOR COMERCIAL;;;;
 78652000|SETOR DA SAUDE;;;;
 78652000|SETOR DOS BURITIS;;;;
+78652000|SETOR DRACULA;;;;Setor Dracula
 78652000|SETOR E;;;;
 78652000|SETOR ECO PARK;;;;
 78652000|SETOR ECOPARCK;;;;
@@ -33522,6 +33802,7 @@ cep;lon;lat;logradouro;bairro
 78652000|UNIVERSITARIO II EXPO;;;;
 78652000|UNIVERSITARIO LL;;;;
 78652000|UNIVERSITARIO SAUDE;;;;
+78652000|UNIVESITARIO;;;;Univesitario
 78652000|VERANOPILIS 1;;;;
 78652000|VERANOPOLIS;;;;
 78652000|VIL DOIS MIL;;;;
@@ -33559,6 +33840,7 @@ cep;lon;lat;logradouro;bairro
 78652000|VILA VERANOPOLIS;;;;
 78652000|VILA2000;;;;
 78652000|VILAREJO 3 FLECHAS;;;;
+78652000|VILO 2000;;;;Vilo 2000
 78652000|VITORIA;;;;
 78652000|VITORIA CONFRESA;;;;
 78652000|VL 2000;;;;
@@ -33587,6 +33869,7 @@ cep;lon;lat;logradouro;bairro
 78655000|BAIRRO SANTOS DRUMOND;;;;
 78655000|BARRA DO GARCAS;;;;
 78655000|BOA ESPERANCA;-51.64263;-10.87716;Rua dos Lírios;Boa Esperança do Norte
+78655000|BURIRI;;;;Buriri
 78655000|BURITI;;;;
 78655000|BURITIS;;;;
 78655000|CENTRAL;;;;
@@ -33683,6 +33966,7 @@ cep;lon;lat;logradouro;bairro
 78655000|SETRO AEROPORTO;;;;
 78655000|SOL NASCENTE;;;;
 78655000|STOR BURITI;;;;
+78655000|STR BOA ESPERANCA;;;;Str Boa Esperanca
 78655000|STR BURITIS;;;;
 78655000|STR DOS ESPORTES;;;;
 78655000|SUBURBANA;;;;
@@ -33700,6 +33984,7 @@ cep;lon;lat;logradouro;bairro
 78655000|VILA RURAL NOVA;;;;
 78655000|VILA RURAL NOVA FLORESTA;;;;
 78655000|VILA RURAL NOVA FLORESTA CENTRO;;;;
+78655000|VILA RURAL NOVA FLORESTA ZONA RURAL;;;;Vila Rural Nova Floresta Zona Rural
 78655000|VILA SAO JOSE;;;;
 78655000|VILA SAO JOSE DO FONTOURA;;;;
 78655000|ZONA RUARAL;;;;
@@ -33808,6 +34093,7 @@ cep;lon;lat;logradouro;bairro
 78663000|BURRISTIS;;;;
 78663000|BURRITIS;;;;
 78663000|CENTO;;;;
+78663000|CENTRI;;;;Centri
 78663000|CENTRO;-52.74905;-10.79861;Avenida Juaranês Pereira Sales, 177;Centro
 78663000|CENTRO DISTRITO DE SANTO ANTONIO DO FONTOURA;;;;
 78663000|CENTRO DISTRITO SANTO ANTONIO FONTOURA;;;;
@@ -33917,6 +34203,7 @@ cep;lon;lat;logradouro;bairro
 78664000|VILA UNI;;;;
 78664000|VILA UNIAO;;;;
 78664000|VILA UNIAO RESIDENCIAL;;;;
+78664000|XINGU;;;;Xingu
 78664000|ZONA RURAL;;;;
 78664971;-52.39182;-10.15571;Avenida dos Imigrantes, 176;Centro
 78665000;-51.37859;-11.67376;;
@@ -33930,6 +34217,7 @@ cep;lon;lat;logradouro;bairro
 78665000|BANDDEIRANTES;;;;
 78665000|BANDEIRANTE;;;;
 78665000|BANDEIRANTES;;;;
+78665000|BANDER;;;;Bander
 78665000|BANDERANTES;;;;
 78665000|BURITIS;;;;
 78665000|CAMPINAS;;;;
@@ -33981,6 +34269,7 @@ cep;lon;lat;logradouro;bairro
 78665000|SETOR MAE MARIA;;;;
 78665000|SETOR PLANALTO;;;;
 78665000|SETOR PRIMAVERA;;;;
+78665000|SETOR RECANTO DOS PASSAROS;;;;Setor Recanto dos Passaros
 78665000|SETOR RODOVIARIA;;;;
 78665000|SETOR RURAL;;;;
 78665000|SETOR SECATTO;;;;
@@ -33989,6 +34278,7 @@ cep;lon;lat;logradouro;bairro
 78665000|SETOR SOL NASCENTES;;;;
 78665000|SETOR VILA REAL;;;;
 78665000|SETOR VOLA REAL;;;;
+78665000|SETRO BANDEIRANTE;;;;Setro Bandeirante
 78665000|SOL NACENTE;;;;
 78665000|SOL NASCENTE;;;;
 78665000|SOLNASCENTE;;;;
@@ -34015,6 +34305,7 @@ cep;lon;lat;logradouro;bairro
 78668000|SETOR AEROPORTO;;;;
 78668000|SETOR COHAB;;;;
 78668000|SETOR COHAN;;;;
+78668000|SETOR JARDIM AEROPORTO;;;;Setor Jardim Aeroporto
 78668000|SETOR SUCUPIRA;;;;
 78668000|SUCUPIRA;;;;
 78668000|ZONA RURAL;;;;
@@ -34030,6 +34321,7 @@ cep;lon;lat;logradouro;bairro
 78670000|AMAZONAS;;;;
 78670000|AREA RURAL;;;;
 78670000|ASSENTAMENTO TIA IRENE;;;;
+78670000|ASSENTAMENTO ZECA DA DOCA;;;;Assentamento Zeca da Doca
 78670000|AV ARAGUAIA;;;;
 78670000|AV DOM PEDRO CASALDALIGA;;;;
 78670000|AV ESPIGAO CENTRO;;;;
@@ -34076,6 +34368,7 @@ cep;lon;lat;logradouro;bairro
 78670000|FAZENDA RIO MANSO;;;;
 78670000|FAZENDA TATUIBI;;;;
 78670000|FAZENDA TRES RODAS DA BARRA;;;;
+78670000|FONTOURA;;;;Fontoura
 78670000|GLEBA AZULONA GAMELEIRA;;;;
 78670000|GLEBA CHAPADINHA;;;;
 78670000|INDEFINIDO;;;;
@@ -34176,6 +34469,7 @@ cep;lon;lat;logradouro;bairro
 78670000|VILA SAO JOAO;;;;
 78670000|VILA SAO JOSE;;;;
 78670000|VILA SAO SEBASTIAO;;;;
+78670000|VILA SAO SEBASTIAO CHAPADINHA;;;;Vila Sao Sebastiao Chapadinha
 78670000|VILA SAOJOSE;;;;
 78670000|VILA SESBASTIAO;;;;
 78670000|VILA SO JOSE;;;;
@@ -34201,6 +34495,7 @@ cep;lon;lat;logradouro;bairro
 78674000|DISTRITO;;;;
 78674000|MATA AZUL;;;;
 78674000|NOVA TRINDADE;;;;
+78674000|PARQUE ESTADUAL DO ARAGUAIA;;;;Parque Estadual do Araguaia
 78674000|PRINCIPAL;;;;
 78674000|RUA JOSE PEREIRA DE BRITO;;;;
 78674000|RURAL;;;;
@@ -34358,6 +34653,7 @@ cep;lon;lat;logradouro;bairro
 78678000|EMILIO DA SILVA JORDE;;;;
 78678000|ENTRO;;;;
 78678000|FLOR DO ARAGUAIA;;;;
+78678000|LOBATO;;;;Lobato
 78678000|LOT RESIDENCIAL SOLAR FLOR DO ARAGUAIA;;;;
 78678000|LOTEAMENTO PLANALTO;;;;
 78678000|LOTEAMENTO PLANALTO DO ARAGUAI;;;;
@@ -34458,6 +34754,7 @@ cep;lon;lat;logradouro;bairro
 78680000|RESIDENCIAL PIRACEMA;;;;
 78680000|ROTEIRO 3;;;;
 78680000|RURAL;;;;
+78680000|SANTA LETICIA 1;;;;Santa Leticia 1
 78680000|SB;;;;
 78680000|SETOR ALTO COCALINHO;;;;
 78680000|SETOR CENTRAL;;;;
@@ -34593,6 +34890,7 @@ cep;lon;lat;logradouro;bairro
 78690000|CENTRO XAVANTINA VELHA;;;;
 78690000|CENTROAO LADO DA MARY CIONFECCOES;;;;
 78690000|CHACARA AO LADO PESQUE PAG;;;;
+78690000|CIDADE VELHA;;;;Cidade Velha
 78690000|COABE;;;;
 78690000|COHAB;;;;
 78690000|COLNAGRO HENRY 02;;;;
@@ -34661,6 +34959,7 @@ cep;lon;lat;logradouro;bairro
 78690000|MARIO DO HENRI 01;;;;
 78690000|MARIO DUILIO HENRY;;;;
 78690000|MARIO DULIO HENRY;;;;
+78690000|MARIO DULLIO HENRY;;;;Mario Dullio Henry
 78690000|MEU LAR;;;;
 78690000|MONTE CLAROS;;;;
 78690000|MONTES CLARO;;;;
@@ -34819,6 +35118,7 @@ cep;lon;lat;logradouro;bairro
 78698000|ASSENTAMENTO PRO SOL ZONA RURAL;;;;
 78698000|BAIRRO JOAO ROCHA;;;;
 78698000|BAIRRO LUZIA MARIA DE MORAES;;;;
+78698000|BURITIS;;;;Buritis
 78698000|CENTRAL;;;;
 78698000|CENTRO;-52.28279;-15.89476;Rua O, s/n;Centro
 78698000|CFENTRO;;;;
@@ -35013,7 +35313,6 @@ cep;lon;lat;logradouro;bairro
 78700523;-54.65869;-16.45946;Rua Projetada I;Loteamento Jambalaia I
 78700524;-54.62196;-16.46626;Rua José Barriga;Loteamento Jambalaia I
 78700526;-54.65869;-16.45946;Rua Projetada II;Loteamento Jambalaia I
-78700528;-54.63766;-16.46769;Rua Maria Josefa Pereira da Silva;Loteamento Jambalaia I
 78700531;-54.62808;-16.47052;Avenida Marechal Rondon;Loteamento Jambalaia II
 78700533;-54.65102;-16.47293;Travessa Projetada I;Loteamento Jambalaia II
 78700534;-54.62060;-16.46650;Rua Brasília;Loteamento Jambalaia II
@@ -35170,6 +35469,7 @@ cep;lon;lat;logradouro;bairro
 78705284;-54.63883;-16.43400;Rua E;Vila da Amizade
 78705285;-54.63220;-16.45053;Rua José Fim;Vila da Amizade
 78705286;-54.63220;-16.45053;Rua D;Vila da Amizade
+78705287;-54.64688;-16.47809;Avenida Rio Vermelho;Vila da Amizade
 78705288;-54.64569;-16.47772;Rua João Araujo;Vila da Amizade
 78705289;-54.61078;-16.45510;Travessa Dois;Vila da Amizade
 78705290;-54.63766;-16.46769;Rua Inácio Gonçalves Loiola;Vila da Amizade
@@ -36043,6 +36343,7 @@ cep;lon;lat;logradouro;bairro
 78715898;-54.61339;-16.46542;Rua B;Residencial Padre Lothar
 78715899;-54.63173;-16.45167;Rua A;Residencial Padre Lothar
 78716000|PARQUE RESIDENCIAL BURITI;-54.63872;-16.46548;Rua Amélia Fraga;Parque Residencial Buriti
+78716000|PQ RES BURITI;;;;Pq Res Buriti
 78716000|PQ RESIDENCIAL BURITI;;;;
 78716000|RESIDENCIAL BURITI;-54.63872;-16.46548;Rua Amélia Fraga;Parque Residencial Buriti
 78716005;-54.62215;-16.47184;Rua Leopoldina Carvalho;Parque Residencial Buriti
@@ -36457,6 +36758,7 @@ cep;lon;lat;logradouro;bairro
 78720585;-54.62521;-16.45100;Avenida Bahia;Vila Operária
 78720586;-54.62713;-16.45722;Avenida João Ponce de Arruda;Vila Operária
 78720587;-54.62527;-16.45826;Avenida Bandeirantes;Vila Operária
+78720590;-54.62115;-16.44449;Rua Geraldo José de Almeida;Vila Operária
 78720598;-54.62431;-16.44522;Avenida Deputado Emanuel Pinheiro;Vila Operária
 78720600;-54.62245;-16.43679;Rua Campo Limpo;Vila Operária
 78720605;-54.62379;-16.44208;Rua Filinto Müller;Vila Operária
@@ -36714,6 +37016,7 @@ cep;lon;lat;logradouro;bairro
 78725318;-54.63766;-16.46769;Rua Sabino Romão da Silva;Jardim Ipiranga III
 78725319;-54.63872;-16.46548;Rua Deputado Ulisses Guimarães;Jardim Ipiranga III
 78725320;-54.61200;-16.44410;Avenida Antonio Vieira;Jardim Ipiranga III
+78725325;-54.67251;-16.45559;Rua Três;Jardim Ipiranga III
 78725328;-54.63766;-16.46769;Avenida Josias de Freitas;Jardim Ipiranga III
 78725330;-54.63766;-16.46769;Avenida Rio Moreno;Vila Ipiranga
 78725334;-54.63766;-16.46769;Avenida Damião Lopes de Siqueira;Vila Ipiranga
@@ -37124,6 +37427,7 @@ cep;lon;lat;logradouro;bairro
 78734050;-54.65987;-16.45226;Rua Pedro Rosa de Lima;Residencial Paraíso
 78734055;-54.57462;-16.47724;Rua Matildes Costa Souza;Residencial Paraíso
 78734060;-54.58961;-16.48202;Rua Três;Residencial Paraíso
+78734065;-54.60848;-16.46230;Rua A;Residencial Paraíso
 78734072;-54.58484;-16.49398;Rua Neuza Maria Silveiro Borges;Chácaras Paraíso
 78734074;-54.58484;-16.49398;Travessa 1-A;Chácaras Paraíso
 78734076;-54.63872;-16.46548;Avenida Tadeu Orchel;Chácaras Paraíso
@@ -37205,6 +37509,7 @@ cep;lon;lat;logradouro;bairro
 78734570;-54.60562;-16.49288;Rua Três;Chácaras Nossa Senhora da Guia
 78734572;-54.60161;-16.49709;Rua Quatro;Chácaras Nossa Senhora da Guia
 78734574;-54.58880;-16.48307;Rua Pastor José Lino de Amorim;Chácaras Nossa Senhora da Guia
+78734576;-54.63872;-16.46548;Avenida Bruno Lima Nascimento;Chácaras Nossa Senhora da Guia
 78734578;-54.60621;-16.49283;Rua das Mangueiras;Chácaras Nossa Senhora da Guia
 78734580;-54.64229;-16.47730;Travessa Um;Chácaras Nossa Senhora da Guia
 78734582;-54.64317;-16.50305;Rua Maria Cardoso de Jesus;Chácaras Nossa Senhora da Guia
@@ -37402,6 +37707,7 @@ cep;lon;lat;logradouro;bairro
 78735573;-54.60410;-16.47784;Rua Ramiro das Neves;Residencial Santa Marina
 78735574;-54.60851;-16.47788;Rua Durval Chaves Itacaramby;Residencial Santa Marina
 78735575;-54.59879;-16.47273;Avenida Governador Julio José de Campos;Residencial Santa Marina
+78735577;-54.63766;-16.46769;Avenida Wilson Kanascilo;Residencial Santa Marina
 78735581;-54.63766;-16.46769;Avenida Firmino José da Mata;Residencial Santa Marina
 78735587;-54.60808;-16.47985;Rua A-28;Residencial Mariela
 78735589;-54.58384;-16.47586;Rua A-41;Residencial Mariela
@@ -37482,6 +37788,7 @@ cep;lon;lat;logradouro;bairro
 78735797;-54.61502;-16.44958;Rua Franca;Jardim Europa
 78735799;-54.63766;-16.46769;Rua Atenas;Jardim Europa
 78735801;-54.63766;-16.46769;Rua Áustria;Jardim Europa
+78735803;-54.63766;-16.46769;Rua Islândia;Jardim Europa
 78735804;-54.63766;-16.46769;Rua Finlândia;Jardim Europa
 78735805;-54.59220;-16.47815;Rua Portugal;Jardim Europa
 78735806;-54.57382;-16.47086;Avenida Alemanha;Jardim Europa
@@ -38383,6 +38690,7 @@ cep;lon;lat;logradouro;bairro
 78756000|POVOADO TRES PONTES;;;;
 78756000|TRES PONTES;;;;
 78756000|ZONA RURAL;;;;
+78757000|JARDIM CALIFORNIA;;;;Jardim California
 78757000|VILA BOENO;;;;
 78758000|VILA MINEIRA;-54.63766;-16.46769;Rua Marcelino Pereira;Residencial Vila Mineira
 78758000|VILA OPERARIA;-54.62044;-16.43424;Rua Mato Grosso (Vila Clarion);Vila Operária
@@ -38403,6 +38711,7 @@ cep;lon;lat;logradouro;bairro
 78760000|BOA ESPERANCA;;;;
 78760000|BOA VISTA;;;;
 78760000|CAIXA DAGUA;;;;
+78760000|CENTOR;;;;Centor
 78760000|CENTRO;-53.75649;-16.35108;Avenida Rio Branco, 339;Centro
 78760000|COAHAB GARCA BRANCA;;;;
 78760000|COHAB;;;;
@@ -38486,6 +38795,7 @@ cep;lon;lat;logradouro;bairro
 78768000|ZONA RURAL;;;;
 78770000;-53.52806;-16.94389;;
 78770000|ALTO GARCA;;;;
+78770000|ALTO GARCAS;;;;Alto Garcas
 78770000|AV PETRILIO ABILIO ALVES;;;;
 78770000|AV XV DE NOVEMBRO NO 469;;;;
 78770000|BAIRRO BOA ESPERANCA;;;;
@@ -38496,6 +38806,7 @@ cep;lon;lat;logradouro;bairro
 78770000|BOA ESPERACA;;;;
 78770000|BOA ESPERANCA;;;;
 78770000|BOA ESPERANCA I;;;;
+78770000|BOA ESPERNACA;;;;Boa Espernaca
 78770000|BOA ESPERNCA;;;;
 78770000|BOM SUCESSO;;;;
 78770000|BONITO;;;;
@@ -38682,6 +38993,7 @@ cep;lon;lat;logradouro;bairro
 78780000|COHAB 2;;;;
 78780000|COHAB I;;;;
 78780000|COHAB II;;;;
+78780000|DEMELAS;;;;Demelas
 78780000|DEMELLAS;;;;
 78780000|DIST INDUSTRIAL;;;;
 78780000|DISTR INDUSTRIAL;;;;
@@ -38703,6 +39015,7 @@ cep;lon;lat;logradouro;bairro
 78780000|JARDIM NOVA ARAGUAIA;;;;
 78780000|JARDIM NOVO ARAGUAIA;;;;
 78780000|JARDIN NOVO AEROPORTO 2;;;;
+78780000|JD ATLANTICO;;;;Jd Atlantico
 78780000|JD NOVO ARAGUAIA;;;;
 78780000|LOTEAMENTO DEMELLAS;;;;
 78780000|LOTEAMENTO NOSSA SENHORA APARECIDA;;;;
@@ -38731,6 +39044,7 @@ cep;lon;lat;logradouro;bairro
 78780000|PROF MARIA DAS GRACAS S PINTO;;;;
 78780000|PROF MARIA DAS GRACAS SOUZA PINTO;;;;
 78780000|PROF MARIA GRACAS S PINTO;;;;
+78780000|PROFESSORA MARIA DAS GRACA DE SOUZA PINTO;;;;Professora Maria das Graca de Souza Pinto
 78780000|PROFESSORA MARIA DAS GRACAS;;;;
 78780000|PROFESSORA MARIA DAS GRACAS DE SOUZA PINTO;;;;
 78780000|PROFESSORA MARIA DAS GRACAS SOUZA;;;;
@@ -38772,6 +39086,7 @@ cep;lon;lat;logradouro;bairro
 78780000|ZONA INDUSTRIAL;;;;
 78780000|ZONA RURAKL;;;;
 78780000|ZONA RURAL;;;;
+78780000|ZONA RURAL FAZENDA SANTO ANGELO;;;;Zona Rural Fazenda Santo Angelo
 78780000|ZONA SUB URBANA;;;;
 78780000|ZONA SUBURBANA;;;;
 78780000|ZONA URBANA;;;;
@@ -38859,6 +39174,7 @@ cep;lon;lat;logradouro;bairro
 78785000|VILA NOVA;;;;
 78785000|ZONA RURAL;;;;
 78785000|ZONA RURAL FAZENDA FABIANO;;;;
+78785000|ZONA RURALZONA RURAL;;;;Zona Ruralzona Rural
 78785970;-53.28345;-17.82978;Avenida Coronel Macario Subtil de Oliveira, 788;Centro
 78790000;-54.15028;-17.20889;;
 78790000|ALTINO TEODORO RIBEIRO;;;;
@@ -39032,6 +39348,7 @@ cep;lon;lat;logradouro;bairro
 78795000|DISTRITO VILA GARCA BRANCA;;;;
 78795000|ESQUINA RUA B;;;;
 78795000|ESTANCIA SAO JOAO;;;;
+78795000|ESTRADA NOVA GALILEIA;;;;Estrada Nova Galileia
 78795000|GARCA BRANCA;-54.46550;-16.61612;Rua Principal, s/n;Garça Branca
 78795000|INDEFINIDO;;;;
 78795000|INDEPENDENTE;;;;
@@ -39165,9 +39482,11 @@ cep;lon;lat;logradouro;bairro
 78798000|VILA PRODOESTE;;;;
 78800000;-54.38917;-15.83722;;
 78800000|ALAMEDA;;;;
+78800000|ALAMEDA MACHAO DOURADO;;;;Alameda Machao Dourado
 78800000|ALAMEDA MANCHAO DOURADO;;;;
 78800000|ALAMEDA MONCHAO DOURADO;;;;
 78800000|ALAMEDA MOUCHAO DOURADO;;;;
+78800000|ALDEIA BOA ESPERANCA;;;;Aldeia Boa Esperanca
 78800000|ALDEIA DOM BOSCO;;;;
 78800000|ALDEIA ETEARE;;;;
 78800000|ALDEIA MARIBU;;;;
@@ -39270,6 +39589,7 @@ cep;lon;lat;logradouro;bairro
 78800000|DOM JOSE SELVA II;;;;
 78800000|DOM JOSE SELVA LL;;;;
 78800000|ESTRADA RURAL;;;;
+78800000|ESTRADA RURAL SITIO SOMBRA DA TARDE RURAL POXO;;;;Estrada Rural Sitio Sombra da Tarde Rural Poxo
 78800000|ETE ARE;;;;
 78800000|FAZENDA SANTO ANTONIO;;;;
 78800000|FURNAS DA TAMIL;;;;
@@ -39328,6 +39648,7 @@ cep;lon;lat;logradouro;bairro
 78800000|JOAHNESBURGO;;;;
 78800000|JOANESBURGO;;;;
 78800000|JOAO PESSOA;;;;
+78800000|JOHANESBURGO JARUDORE;;;;Johanesburgo Jarudore
 78800000|JONESBRUGO DISTRITO;;;;
 78800000|JONESBURGOS;;;;
 78800000|KM 082;;;;
@@ -39387,6 +39708,7 @@ cep;lon;lat;logradouro;bairro
 78800000|RAIZINHA;;;;
 78800000|RUA EMILIO MENDES N 04;;;;
 78800000|RURAL;;;;
+78800000|RURAL DE POXOREU;;;;Rural de Poxoreu
 78800000|RURAL MANGUEIA;;;;
 78800000|SANTA LUIZA;;;;
 78800000|SANTA LUZIA;;;;
@@ -39412,6 +39734,7 @@ cep;lon;lat;logradouro;bairro
 78800000|VALE VERDE 4;;;;
 78800000|VALE VERDE DISTRITO DA NOVA POXOREU;;;;
 78800000|VALE VERDE DISTRITO NOVA POXOREU;;;;
+78800000|VALE VERDE I;;;;Vale Verde I
 78800000|VALE VERDE NOVA POXOREO;;;;
 78800000|VALE VERDE NOVA POXOREU;;;;
 78800000|VILA BELA VISTA;;;;
@@ -39452,6 +39775,7 @@ cep;lon;lat;logradouro;bairro
 78810000|ARE RURAL;;;;
 78810000|AREA RURAL;;;;
 78810000|ASSENTAMENTO;;;;
+78810000|ASSENTAMENTO P A EGIDIO BRUNETO ZONA RURAL;;;;Assentamento P A Egidio Bruneto Zona Rural
 78810000|AVENIDA;;;;
 78810000|BAIRRO INDUSTRIAL;;;;
 78810000|BEIRA RIO;;;;
@@ -39522,6 +39846,7 @@ cep;lon;lat;logradouro;bairro
 78810000|RECANTO DO LAGO;;;;
 78810000|RESIDENCIAL QUEIROZ;;;;
 78810000|ROTEIRO;;;;
+78810000|RUI BARBOSA;;;;Rui Barbosa
 78810000|RURAL;;;;
 78810000|SANTA ELVIRA;;;;
 78810000|SAO LORENCO DE FATIMA;;;;
@@ -39592,6 +39917,7 @@ cep;lon;lat;logradouro;bairro
 78820000|COAB SAO LOURENCO;;;;
 78820000|COABE;;;;
 78820000|COABE SAO LORENCO;;;;
+78820000|COHAB;;;;Cohab
 78820000|COHAB S LOURENCO;;;;
 78820000|COHAB SAO LOURENCO;;;;
 78820000|COHAB SOA LOURENCO;;;;
@@ -39647,6 +39973,7 @@ cep;lon;lat;logradouro;bairro
 78820000|JARDIM SAO LOURENCO;;;;
 78820000|JARDIM SAO NICOLAU;;;;
 78820000|JARDIM VITORIA;;;;
+78820000|JARDIN LEBLON;;;;Jardin Leblon
 78820000|JD AEROPORTO;;;;
 78820000|JD AEROPORTO 2;;;;
 78820000|JD AEROPORTO II;;;;
@@ -39743,10 +40070,12 @@ cep;lon;lat;logradouro;bairro
 78820000|ZON ARURAL;;;;
 78820000|ZONA RUAL;;;;
 78820000|ZONA RURAL;;;;
+78820000|ZONA RURAL JACIARA MT;;;;Zona Rural Jaciara Mt
 78820000|ZONA RURAL JARDIM SAO NICOLAU;;;;
 78820000|ZONA RURAL SITIO NOVA CONQUISTA;;;;
 78820000|ZONA SUBURBANA;;;;
 78820000|ZORA RURAL;;;;
+78820959;-54.97129;-15.96138;Avenida Antônio Ferreira Sobrinho, 2011;Centro
 78820970;-54.97787;-15.94957;Avenida Antônio Ferreira Sobrinho, 2011;Centro
 78828000|CELMA;;;;
 78828000|ZONA RURAL;;;;
@@ -39789,6 +40118,7 @@ cep;lon;lat;logradouro;bairro
 78830000|DISTRITO INDUSTRIAL;;;;
 78830000|DISTRITO INDUSTRIARIO;;;;
 78830000|DOM AQUINO;;;;
+78830000|DON AQUINO;;;;Don Aquino
 78830000|ENTRE RIOS;;;;
 78830000|ENTRE RIOS DISTRITO DE DOM AQUINO;;;;
 78830000|ESPORTIVA;;;;
@@ -39801,6 +40131,7 @@ cep;lon;lat;logradouro;bairro
 78830000|ITUBERADA;;;;
 78830000|JAO DE BARRO;;;;
 78830000|JARDIM DAS ARARAS;;;;
+78830000|JARDIM IPANEMA;;;;Jardim Ipanema
 78830000|JARDIM ROSA;;;;
 78830000|JARDIM VITORIA;;;;
 78830000|JOAO DE BARRO;;;;
@@ -40209,6 +40540,7 @@ cep;lon;lat;logradouro;bairro
 78840100;-55.16228;-15.54655;Avenida Vitória;Centro
 78840102;-55.16122;-15.54634;Rua Porto Seguro;Centro
 78840104;-55.16357;-15.54821;Avenida Brasília;Centro
+78840106;-55.15973;-15.54582;Avenida Ouro Preto;Centro
 78840108;-55.16396;-15.54248;Avenida Marino Cattani;Centro
 78840110;-55.16258;-15.54170;Avenida Marechal Cândido Rondon;Centro
 78840120;-55.16258;-15.54170;Avenida Marechal Cândido Rondon;Loteamento Campo Real III
@@ -40424,6 +40756,7 @@ cep;lon;lat;logradouro;bairro
 78844002;-55.16518;-15.55387;Rua Pernambuco;São Lourenço
 78844004;-55.16454;-15.55379;Rua Amapá;São Lourenço
 78844006;-55.16420;-15.55411;Rua Tocantins;São Lourenço
+78844008;-55.16435;-15.55308;Rua Espírito Santo;São Lourenço
 78844010;-55.16164;-15.55482;Avenida Deputado Ulisses Guimarães;São Lourenço
 78844012;-55.16415;-15.55481;Rua São Luiz;São Lourenço
 78844014;-55.16352;-15.55475;Rua Minas Gerais;São Lourenço
@@ -40641,6 +40974,7 @@ cep;lon;lat;logradouro;bairro
 78850000|BAIRRO CENTRO LESTE RUA ROSA ZULSKE;;;;
 78850000|BAIRRO CIDADE PRIMAVERA II;;;;
 78850000|BAIRRO ELDORADO;;;;
+78850000|BAIRRO GUTERRES;;;;Bairro Guterres
 78850000|BAIRRO INDUSTRIAL;;;;
 78850000|BAIRRO JARDIM BELA VISTA;;;;
 78850000|BAIRRO JARDIM EUROPA 3;;;;
@@ -40692,6 +41026,7 @@ cep;lon;lat;logradouro;bairro
 78850000|BURITIS LL;;;;
 78850000|BURITIS LLL;;;;
 78850000|BURITIS PRIMAVERA;;;;
+78850000|BURITIS PRIMAVERA 2;;;;Buritis Primavera 2
 78850000|BURITIS PRIMAVERA I;;;;
 78850000|BURITIS PRIMAVERA II;;;;
 78850000|BURITIS PRIMAVERA III;;;;
@@ -40746,6 +41081,7 @@ cep;lon;lat;logradouro;bairro
 78850000|CENTRO LETE;;;;
 78850000|CENTRO O LESTE;;;;
 78850000|CENTRO OESTE;;;;
+78850000|CENTRO SUL;;;;Centro Sul
 78850000|CHACARA FONTANA;;;;
 78850000|CHACARA NOVA ESPERANCA;;;;
 78850000|CHACARA SOSSEGO;;;;
@@ -40756,6 +41092,7 @@ cep;lon;lat;logradouro;bairro
 78850000|CHACARAS PERIMETRO URBANO;;;;
 78850000|CIADADE PRIMAVERA I;;;;
 78850000|CIADADE PRIMAVERA II;;;;
+78850000|CIADADE SATELITE PRIMAVERA I;;;;Ciadade Satelite Primavera I
 78850000|CIADADE SATELITE PRIMAVERA II;;;;
 78850000|CIADADE SATELITE PRIMAVERA III;;;;
 78850000|CIDAADE PRIMAVERA I;;;;
@@ -40803,6 +41140,7 @@ cep;lon;lat;logradouro;bairro
 78850000|CIDADE SATELITE PRIMA VERA 3;;;;
 78850000|CIDADE SATELITE PRIMAVERA;;;;
 78850000|CIDADE SATELITE PRIMAVERA 3;;;;
+78850000|CIDADE SATELITE PRIMAVERA I;;;;Cidade Satelite Primavera I
 78850000|CIDADE SATELITE PRIMAVERA II;;;;
 78850000|CIDADE SATELITE PRIMAVERA III;;;;
 78850000|CIDADE SATELITE PRIMAVERA IIIE;;;;
@@ -40816,6 +41154,7 @@ cep;lon;lat;logradouro;bairro
 78850000|CNTRO;;;;
 78850000|COAB JAIME CAMPOS;;;;
 78850000|COAB JAYME V DE CAMPOS;;;;
+78850000|COAB TANCREDO NEVES;;;;Coab Tancredo Neves
 78850000|COABE JAIME CAMPOS;;;;
 78850000|COAHB JAYME V DE CAMPOS;;;;
 78850000|CODOMINIO RESIDENCIAL TUIUIU;;;;
@@ -40986,6 +41325,7 @@ cep;lon;lat;logradouro;bairro
 78850000|GENOATO;;;;
 78850000|GNOATO;;;;
 78850000|GNOATTO;;;;
+78850000|GUTERES;;;;Guteres
 78850000|GUTERRES;;;;
 78850000|GUTERRES TUIUIU;;;;
 78850000|GUTERREZ;;;;
@@ -41007,6 +41347,7 @@ cep;lon;lat;logradouro;bairro
 78850000|JARDIM 3 AMERICAS;;;;
 78850000|JARDIM AMERICA;;;;
 78850000|JARDIM AMERICA III;;;;
+78850000|JARDIM ARIVA;;;;Jardim Ariva
 78850000|JARDIM ATLANTICO SUL;;;;
 78850000|JARDIM BELA VISTA;;;;
 78850000|JARDIM BURITIS UNIVERSSITARIO 2;;;;
@@ -41042,6 +41383,7 @@ cep;lon;lat;logradouro;bairro
 78850000|JARDIM EUROPA IV;;;;
 78850000|JARDIM FLORENCA;;;;
 78850000|JARDIM INDUSTRIAL;;;;
+78850000|JARDIM IPE;;;;Jardim Ipe
 78850000|JARDIM ITALIA;-54.30195;-15.55069;Alameda Primavera do Leste;Jardim Itália
 78850000|JARDIM LUCIANA;;;;
 78850000|JARDIM LUCIANA 2;;;;
@@ -41062,6 +41404,7 @@ cep;lon;lat;logradouro;bairro
 78850000|JARDIM POGRESSO;;;;
 78850000|JARDIM PONCHE VERDE III;;;;
 78850000|JARDIM PONCHO;;;;
+78850000|JARDIM PONCHO VEDE I;;;;Jardim Poncho Vede I
 78850000|JARDIM PONCHO VEDE III;;;;
 78850000|JARDIM PONCHO VERDE;;;;
 78850000|JARDIM PONCHO VERDE 2;;;;
@@ -41134,6 +41477,7 @@ cep;lon;lat;logradouro;bairro
 78850000|JOSE ALENCAR G DA SILVA DIST;;;;
 78850000|JOSE ALENCAR G DA SILVA DIST INDUSTRIAL;;;;
 78850000|JOSE ALENCAR G DA SILVA DIST INDUSTRIAL II;;;;
+78850000|JOSE ALENCAR G DA SILVA DIST INDUSTRIALII;;;;Jose Alencar G da Silva Dist Industrialii
 78850000|JOSE ALENCAR G DA SILVA DISTRITO;;;;
 78850000|JOSE ALENCAR G DA SILVA DISTRITO IND II;;;;
 78850000|JOSE ALENCAR G DA SILVA DISTRITO INDUS;;;;
@@ -41179,6 +41523,7 @@ cep;lon;lat;logradouro;bairro
 78850000|LOTEAMENTO RESIDENCIA GUTERRES;;;;
 78850000|LOTEAMENTO RESIDENCIAL BURITIS PRIMAVERA;;;;
 78850000|LOTEAMENTO RESIDENCIAL BURITIS V;;;;
+78850000|LOTEAMENTO RESIDENCIAL BURITIS VI;;;;Loteamento Residencial Buritis Vi
 78850000|LOTEAMENTO RESIDENCIAL GUTERRES;;;;
 78850000|LOTEAMENTO SANTA FELICIDADE;;;;
 78850000|LOTEAMENTO SANTA FELICIDADE II;;;;
@@ -41307,6 +41652,7 @@ cep;lon;lat;logradouro;bairro
 78850000|PRIMAVERA 2;;;;
 78850000|PRIMAVERA 22;;;;
 78850000|PRIMAVERA 3;;;;
+78850000|PRIMAVERA 4;;;;Primavera 4
 78850000|PRIMAVERA DO II;;;;
 78850000|PRIMAVERA DO LESTE;;;;
 78850000|PRIMAVERA DO LESTE 2;;;;
@@ -41411,9 +41757,11 @@ cep;lon;lat;logradouro;bairro
 78850000|RESIDENCIAL BURITIS PRIMNAVERA IV;;;;
 78850000|RESIDENCIAL BURITIS PRIMVERA;;;;
 78850000|RESIDENCIAL BURITIS PRMAVERA IV;;;;
+78850000|RESIDENCIAL BURITIS UNIVERSIARIO I;;;;Residencial Buritis Universiario I
 78850000|RESIDENCIAL BURITIS UNIVERSITARIO;;;;
 78850000|RESIDENCIAL BURITIS UNIVERSITARIO I;;;;
 78850000|RESIDENCIAL BURITIS UNIVERSITARIO II;;;;
+78850000|RESIDENCIAL BURITIS UNIVERSSITARIO II;;;;Residencial Buritis Universsitario Ii
 78850000|RESIDENCIAL BURITIS V;;;;
 78850000|RESIDENCIAL BURITISPRIMAVERA;;;;
 78850000|RESIDENCIAL BURITISPRIMAVERA II;;;;
@@ -41427,6 +41775,7 @@ cep;lon;lat;logradouro;bairro
 78850000|RESIDENCIAL FRIENZE;;;;
 78850000|RESIDENCIAL GUTERRES;;;;
 78850000|RESIDENCIAL JARDIM DOS IPES;;;;
+78850000|RESIDENCIAL PADRE ERNESTO COSTA;;;;Residencial Padre Ernesto Costa
 78850000|RESIDENCIAL PADRE HONESTO COSTA;;;;
 78850000|RESIDENCIAL PADRE ONESTO;;;;
 78850000|RESIDENCIAL PADRE ONESTO COSTA;;;;
@@ -41452,6 +41801,7 @@ cep;lon;lat;logradouro;bairro
 78850000|RESIDENSIAL BURITIS PRIMAVERA III;;;;
 78850000|RESIENCIAL BURITIS PRIMAVERA II;;;;
 78850000|RESINDECIAL BURITIS II;;;;
+78850000|RESPADRE HONESTO COSTA;;;;Respadre Honesto Costa
 78850000|RIVA;-54.30779;-15.55435;Avenida David Riva, 1215;Jardim Riva
 78850000|RIVA 2;;;;
 78850000|ROSA CASARIM;;;;
@@ -41467,6 +41817,7 @@ cep;lon;lat;logradouro;bairro
 78850000|SANTA FELICIDADE;;;;
 78850000|SANTA FELICIDADE 2;;;;
 78850000|SANTA FELICIDADE 3;;;;
+78850000|SANTA FELICIDADE DOIS;;;;Santa Felicidade Dois
 78850000|SANTA FELICIDADE II;;;;
 78850000|SANTA FELICIDADE III;;;;
 78850000|SANTA MARIA;;;;
@@ -41544,9 +41895,11 @@ cep;lon;lat;logradouro;bairro
 78850971;-54.30779;-15.55435;Avenida David Riva, 1215;Jardim Riva
 78855000;-54.77561;-14.66281;;
 78855000|AMAZONAS;;;;
+78855000|BAIRRO NOSSA SENHORA APARECIDA;;;;Bairro Nossa Senhora Aparecida
 78855000|CASA;;;;
 78855000|CENTRO;-54.77538;-14.65983;Rua Serra Azul, 1091;Centro
 78855000|ESTRADA RURAL LUZ PARA TODOS;;;;
+78855000|FLORADA DA SERRA;;;;Florada da Serra
 78855000|GLEBA MARITACA;;;;
 78855000|INDEFINIDO;;;;
 78855000|LOTEAMENTO RIO MANSO;;;;
@@ -41599,6 +41952,7 @@ cep;lon;lat;logradouro;bairro
 78860000|PIARARA;;;;
 78860000|PLANALTO DA SERRA;;;;
 78860000|RECANTO DOS PASSAROS;;;;
+78860000|RESIDENCIAL;;;;Residencial
 78860000|RESIDENCIAL MORADA DOS VENTOS;;;;
 78860000|RODOVIA MT 140;;;;
 78860000|RURAL;;;;
@@ -41711,6 +42065,7 @@ cep;lon;lat;logradouro;bairro
 78870000|DISTRITO INDUSTRIAL;;;;
 78870000|DISTRITO SALTO DA ALEGRIA;;;;
 78870000|DISTRITO SANTIAGO DO NORTE;;;;
+78870000|ESQUEDA DO RIBEIRAO PIRANHA;;;;Esqueda do Ribeirao Piranha
 78870000|ESTRADA MUNICIPAL;;;;
 78870000|ESTRADA VICINAL;;;;
 78870000|FAZ COLUMBIA;;;;
@@ -41788,6 +42143,7 @@ cep;lon;lat;logradouro;bairro
 78870000|MACUCO 1;;;;
 78870000|MACUCO I;;;;
 78870000|MACUCO II;;;;
+78870000|MORO PELADO;;;;Moro Pelado
 78870000|MT 020 KM 16;;;;
 78870000|MT 130;;;;
 78870000|NOVO HORIZ0NTE;;;;
@@ -41811,12 +42167,14 @@ cep;lon;lat;logradouro;bairro
 78870000|RESIDENCIAL VIDA NOVA;;;;
 78870000|RETIRO JATOBA;;;;
 78870000|RODOVIA;;;;
+78870000|ROTEIRO 1 142;;;;Roteiro 1 142
 78870000|RUA ANASTACIA;;;;
 78870000|RUA BARBOSA;;;;
 78870000|RUI BARBOSA;;;;
 78870000|RUI BARBOZA;;;;
 78870000|RURAL;;;;
 78870000|RURAL DISTRITO DO SALTO DA ALEGRIA;;;;
+78870000|SALDO DA ALEGRIA;;;;Saldo da Alegria
 78870000|SALTO ALEGRIA;;;;
 78870000|SALTO ALGREIA;;;;
 78870000|SALTO DA ALEGRIA;;;;
@@ -41872,6 +42230,7 @@ cep;lon;lat;logradouro;bairro
 78870000|VILA SANTIAGO DO NORTE;;;;
 78870000|VILA SANTO ANTONIO;;;;
 78870000|VILANOVA;;;;
+78870000|VILLA NOVA 2;;;;Villa Nova 2
 78870000|VILLA NOVA II;;;;
 78870000|VILSTA ALEGRE;;;;
 78870000|VISTA ALEGRE;;;;
@@ -41962,6 +42321,7 @@ cep;lon;lat;logradouro;bairro
 78875000|MENEGATE;;;;
 78875000|MENEGATH;;;;
 78875000|MENEGATI;;;;
+78875000|MENEGATT;;;;Menegatt
 78875000|MENEGATT 2;;;;
 78875000|MENEGUETE;;;;
 78875000|MMM;;;;
@@ -42089,6 +42449,7 @@ cep;lon;lat;logradouro;bairro
 78880000|PRACA 13 DE MAIO;;;;
 78880000|PRINCESA ISABEL;;;;
 78880000|PRINCESA IZABEL;;;;
+78880000|ROSA;;;;Rosa
 78880000|RURAL;;;;
 78880000|SETOR 06;;;;
 78880000|SETOR INDUSTRIAL;;;;
@@ -42333,6 +42694,7 @@ cep;lon;lat;logradouro;bairro
 78888000|PARQUE AGUA LIMPA BAIRRO INDUSTRIAL;;;;
 78888000|PERIMETRO URBANO;;;;
 78888000|PIRATININGA;;;;
+78888000|PORTO BELO;;;;Porto Belo
 78888000|PRACA 2;;;;
 78888000|PRIMAVERA;;;;
 78888000|PROJETO ASSENTAMENTO PIRATININGA;;;;
@@ -42598,6 +42960,7 @@ cep;lon;lat;logradouro;bairro
 78890000|PINHEIROS;-55.75209;-12.53792;Rua Olides Perin;Pinheiros
 78890000|PINHEIROS 1;;;;
 78890000|PINHEIROS 2;;;;
+78890000|PINHEIROS 3;;;;Pinheiros 3
 78890000|PINHEIROS I;;;;
 78890000|PINHEIROS II;;;;
 78890000|PINHEIROS III;-55.75721;-12.54219;Rua Graciliano Ramos;Pinheiros III
@@ -42880,6 +43243,7 @@ cep;lon;lat;logradouro;bairro
 78890437;-55.70990;-12.51619;Rua Lírio Branco;Jardim dos Ipês
 78890441;-55.71216;-12.51328;Rua Nereu Campos;Jardim dos Ipês
 78890442;-55.70865;-12.51437;Rua Animais Silvestres;Jardim dos Ipês
+78890444;-55.70793;-12.51012;Rua Gérbera;Jardim dos Ipês
 78890446;-55.71214;-12.51241;Rua Anis;Jardim dos Ipês
 78890465;-55.71256;-12.51821;Rua Proteção das Águas;Jardim dos Ipês
 78890467;-55.70672;-12.51223;Rua das Nascentes;Jardim dos Ipês
@@ -43063,6 +43427,7 @@ cep;lon;lat;logradouro;bairro
 78891472;-55.73910;-12.55457;Avenida dos Imigrantes;Reserva Jardim
 78891474;-55.73787;-12.52400;Rua Bom Jardim;Reserva Jardim
 78891475;-55.72903;-12.52865;Rua Império das Flores;Reserva Jardim
+78891476;-55.73716;-12.52214;Rua Campos Verdes;Reserva Jardim
 78891477;-55.73787;-12.52400;Rua Pádova;Reserva Jardim
 78891480;-55.70903;-12.58603;Avenida 13 de Maio;Europark
 78891481;-55.71517;-12.54956;Rua Pádova;Europark
@@ -43085,6 +43450,7 @@ cep;lon;lat;logradouro;bairro
 78891514;-55.71517;-12.54956;Rua Viena;Europark
 78891515;-55.71517;-12.54956;Rua Nantes;Europark
 78891521;-55.74708;-12.55043;Rua Campinas;Mont Serrat
+78891523;-55.74708;-12.55043;Rua Botucatu;Mont Serrat
 78891524;-55.74708;-12.55043;Rua Jacareí;Mont Serrat
 78891526;-55.74708;-12.55043;Rua Taubaté;Mont Serrat
 78891537;-55.74606;-12.52045;Rua Jundiai;
@@ -43238,6 +43604,7 @@ cep;lon;lat;logradouro;bairro
 78892410;-55.75424;-12.55117;Rua São Rafael;Bell Valle
 78892412;-55.75396;-12.55071;Rua Santo Amaro;Bell Valle
 78892414;-55.74964;-12.55272;Rua São Tomé;Bell Valle
+78892416;-55.75334;-12.54977;Rua São Nicolau;Bell Valle
 78892418;-55.75072;-12.55069;Rua Santa Anastácia;Bell Valle
 78892420;-55.75045;-12.55023;Rua Santa Rita;Bell Valle
 78892422;-55.74843;-12.55082;Rua São Benedito;Bell Valle
@@ -43654,7 +44021,6 @@ cep;lon;lat;logradouro;bairro
 78894449;-55.74723;-12.57346;Alameda Jânio da Silva Quadros;Loteamento Monte Líbano II
 78894452;-55.76199;-12.54305;Rua Aselio Garcia dos Anjos;Loteamento Victória
 78894453;-55.75123;-12.55239;Rua Caetano Balvedi;Loteamento Victória
-78894454;-55.71517;-12.54956;Rua João Ferlin;Loteamento Victória
 78894464;-55.71517;-12.54956;Rua Corbélia;Loteamento Victória
 78894503;-55.70706;-12.57073;Rua Paraíso Azul;Jardim Paraíso
 78894505;-55.73474;-12.52595;Rua da Sabedoria;Jardim Paraíso
@@ -43676,9 +44042,11 @@ cep;lon;lat;logradouro;bairro
 78894536;-55.71517;-12.54956;Rua da Humildade;Jardim Paraíso
 78894540;-55.71517;-12.54956;Alameda José Isaías de Noronha;Jardim Paraíso
 78894542;-56.15676;-15.74191;Rua do Amor;Jardim Paraíso
+78894543;;;;
 78894545;-55.74475;-12.57549;Avenida Novo Horizonte;Jardim Paraíso
 78894550;-55.74577;-12.58010;Avenida Inivaldo Bedin;Parque dos Poderes
 78894551;-55.74577;-12.58010;Avenida Inivaldo Bedin;Parque dos Poderes
+78894553;-55.71517;-12.54956;Alameda Nilo Procópio Peçanha;Parque dos Poderes
 78894555;-55.72268;-12.54072;Alameda José Isaías de Noronha;Parque dos Poderes
 78894557;-55.74818;-12.57016;Alameda Humberto Castelo Branco;Parque dos Poderes
 78894559;-55.75029;-12.57369;Alameda Ernesto Geisel;Parque dos Poderes
@@ -43903,6 +44271,7 @@ cep;lon;lat;logradouro;bairro
 78895515;;;;
 78895516;;;;
 78895559;;;;
+78895561;;;;
 78895600;-55.70507;-12.53282;Avenida Idemar Riedi;Cidade Nova
 78895603;-55.71803;-12.54383;Rua Adelina Guindani Granetto;Cidade Nova
 78895606;-55.71517;-12.54956;Avenida Luiz Debona;Cidade Nova
@@ -43916,6 +44285,7 @@ cep;lon;lat;logradouro;bairro
 78895628;-55.71803;-12.54383;Rua Roberta Fantin Betiato;Cidade Nova
 78895634;-55.71803;-12.54383;Rua Ademir Pedro;Cidade Nova
 78895635;-55.75591;-12.54827;Rua Antônio Santo Cappellari;Cidade Nova
+78895652;-55.72445;-12.58055;Avenida do Comércio;Cidade Nova
 78895682;-55.71045;-12.57750;Rua Ulisses Guimarães;
 78895683;-55.70755;-12.57647;Rua Tamboril;
 78895686;-55.71517;-12.54956;Rua Brígida;
@@ -44141,6 +44511,8 @@ cep;lon;lat;logradouro;bairro
 78897255;-55.69856;-12.55613;Rua Pacari;Morada do Bosque II
 78897256;-56.09127;-13.84266;Rua dos Marmeleiros;Morada do Bosque II
 78897258;-55.73756;-12.52227;Avenida Jaime Barichello;Morada do Bosque II
+78897274;-55.74800;-12.54911;Rua São José;
+78897290;-55.72268;-12.54072;Rua das Alpinas;
 78897294;-55.70087;-12.55997;Rua das Gardênias;
 78897296;-55.70094;-12.56043;Rua das Alamandas;
 78897300;-55.72268;-12.54072;Rua das Bonina;
@@ -44338,7 +44710,6 @@ cep;lon;lat;logradouro;bairro
 78898365;-55.70765;-12.58308;Avenida Zilda Arns;Novo Horizonte III
 78898384;-55.69222;-12.57904;Rua John Kay;
 78898386;-55.94702;-13.06878;Rua Robert Fulton;
-78898388;-55.94702;-13.06878;Rua Thomas Newcomen;
 78898392;-55.94702;-13.06878;Rua Westminster;
 78898394;-55.94702;-13.06878;Avenida Karl Benz;
 78898899;-55.15342;-13.50752;Área Rural;Área Rural de Sorriso
