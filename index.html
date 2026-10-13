@@ -859,6 +859,28 @@
   .rel-not-card:hover{border-color:var(--wa-primary);}
   .rel-not-card input{margin:2px 0 0;width:16px;height:16px;accent-color:var(--wa-primary);flex:0 0 auto;cursor:pointer;}
   .rel-not-card:has(input:checked){border-color:var(--wa-primary);background:var(--wa-primary-soft);}
+  /* Inadimplência: tabela no estilo do Explorador do Windows (pastas Ano > Mês > documentos) */
+  .inad-trilha{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:13px;color:var(--wa-text-muted);min-width:0;}
+  .inad-trilha button{border:none;background:none;font:inherit;font-weight:600;color:var(--wa-primary);cursor:pointer;padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;}
+  .inad-trilha button:hover{background:var(--wa-primary-soft);}
+  .inad-trilha button[aria-current="page"]{color:var(--wa-text);cursor:default;background:none;}
+  .inad-trilha button svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;}
+  .inad-trilha .inad-sep{color:#94A3B8;}
+  .inad-tabela tr.inad-pasta, .inad-tabela tr.inad-subir{cursor:pointer;}
+  .inad-tabela tr.inad-pasta:hover td, .inad-tabela tr.inad-subir:hover td{background:#F1F7FF;}
+  .inad-tabela tr.inad-pasta:focus-visible td, .inad-tabela tr.inad-subir:focus-visible td{background:#EAF2FF;outline:none;}
+  .inad-nome{display:flex;align-items:center;gap:10px;min-width:0;}
+  .inad-nome > svg{width:20px;height:20px;flex:0 0 auto;}
+  .inad-nome .inad-ic-pasta{fill:#F4C542;stroke:#D9A21B;stroke-width:1.2;}
+  .inad-nome .inad-ic-arq{fill:none;stroke:#DA0000;stroke-width:1.8;}
+  .inad-nome .inad-ic-subir{fill:none;stroke:var(--wa-text-muted);stroke-width:2;}
+  .inad-nome-txt{min-width:0;}
+  .inad-nome-txt strong{font-weight:600;color:var(--wa-text);}
+  .inad-abr{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .inad-abr.cuiaba{background:#EAF2FF;color:#1D4ED8;}
+  .inad-abr.mt{background:#EAF6E6;color:#2F6F27;}
+  .inad-abr.brasil{background:#FFF7E0;color:#92400E;}
+  .inad-abrs{display:flex;flex-wrap:wrap;gap:4px;}
   .rel-sel-box{margin-top:12px;}
   .rel-sel-box textarea{min-height:150px;font-family:inherit;resize:vertical;}
   .rel-sel-acoes{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;}
@@ -2514,9 +2536,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">  <circle cx="9" cy="7" r="4" /> <path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />   </svg>
         <span>Usuários</span>
       </button>
-      <button class="nav-item" data-page="configuracoes" data-title="Configurações" data-desc="Ajuste preferências e parâmetros gerais do sistema.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.29 1.29L3 12l5.8 1.9a2 2 0 0 1 1.29 1.29L12 21l1.9-5.8a2 2 0 0 1 1.29-1.29L21 12l-5.8-1.9a2 2 0 0 1-1.29-1.29Z"></path></svg>
-        <span>Configurações</span>
+      <!-- Seção Inadimplência (chave interna "configuracoes", mantida para as permissões de seção já cadastradas) -->
+      <button class="nav-item" data-page="configuracoes" data-title="Inadimplência" data-desc="Documentação de inadimplência emitida pelo SPC Brasil (Cuiabá, Mato Grosso e Brasil).">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg>
+        <span>Inadimplência</span>
       </button>
       <button class="nav-item" data-page="estoque" data-title="Controle de Estoque" data-desc="Cadastre produtos e controle entradas e saídas por código de barras.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
@@ -2642,6 +2665,7 @@
             <option value="pnad">IBGE: PNAD</option>
             <option value="ivs">Stone (IVS)</option>
             <option value="icva">Cielo (ICVA)</option>
+            <option value="inadimplencia">SPC: Inadimplência</option>
           </select>
           <select class="filter-select" id="stkMesFiltro" title="Mês (substitui o período acima)">
             <option value="">Mês</option>
@@ -4274,11 +4298,116 @@
 
       </section>
 
+      <!-- INADIMPLÊNCIA (chave "configuracoes"): documentos do SPC Brasil em pastas Ano > Mês, mesma base da seção
+           Relatórios (tabela inadimplencia_arquivos + bucket privado "inadimplencia" — supabase/schema_inadimplencia.sql).
+           Base do indicador "Inadimplência" do Dashboard › Panorama Econômico. -->
       <section class="page" id="page-configuracoes">
-        <div class="empty-state">
-          <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
-          <div class="empty-title">Nenhuma configuração pendente</div>
-          <div class="empty-subtitle">Integração com APIs do sistema em desenvolvimento.</div>
+        <div class="wa-supabase-banner" id="inadSupabaseBanner" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <div><strong>Supabase não configurado.</strong> Exibindo documentos de exemplo em memória — nada será enviado nem salvo.</div>
+        </div>
+
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="inadBusca" placeholder="Buscar documento em todas as pastas..." autocomplete="off">
+          </div>
+          <select class="filter-select" id="inadAbrFiltro" title="Abrangência">
+            <option value="">Abrangência</option>
+            <option value="Cuiabá">Cuiabá</option>
+            <option value="Mato Grosso">Mato Grosso</option>
+            <option value="Brasil">Brasil</option>
+          </select>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="inadLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="wa-btn wa-btn-primary" id="inadNovoBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Novo Arquivo
+          </button>
+        </div>
+
+        <!-- Caminho da pasta (como no Explorador do Windows): Inadimplência › Ano › Mês -->
+        <div class="wa-sort-row">
+          <nav class="inad-trilha" id="inadTrilha" aria-label="Pasta atual"></nav>
+          <div class="wa-clip-count" id="inadContagem">0 documentos</div>
+        </div>
+
+        <div class="wa-card">
+          <div class="wa-table-wrap">
+            <table class="wa-table inad-tabela">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Abrangência</th>
+                  <th>Data de modificação</th>
+                  <th>Tipo</th>
+                  <th style="text-align:right;">Tamanho</th>
+                  <th class="wa-table-actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="inadTabela"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===== MODAL: NOVO ARQUIVO (etapa única) ===== -->
+        <div class="wa-modal-overlay" id="inadModal">
+          <div class="wa-modal" style="max-width:640px;">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg></div>
+                <div>
+                  <div class="wa-modal-title">Novo Arquivo</div>
+                  <div class="wa-modal-sub">Documento de inadimplência emitido pelo SPC Brasil</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" data-inad-fechar>&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <div class="wa-field">
+                <label>Abrangência</label>
+                <div class="rel-not-grid" id="inadAbrOpcoes" role="radiogroup" aria-label="Abrangência">
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Cuiabá"><span><span class="rel-ind-nome">Cuiabá</span><span class="rel-ind-info" style="display:block;">Capital</span></span></label>
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Mato Grosso"><span><span class="rel-ind-nome">Mato Grosso</span><span class="rel-ind-info" style="display:block;">Estado</span></span></label>
+                  <label class="rel-not-card"><input type="radio" name="inadAbr" value="Brasil"><span><span class="rel-ind-nome">Brasil</span><span class="rel-ind-info" style="display:block;">Nacional</span></span></label>
+                </div>
+              </div>
+              <div class="wa-form-grid">
+                <div class="wa-field">
+                  <label for="inadMes">Mês de referência</label>
+                  <select id="inadMes"></select>
+                </div>
+                <div class="wa-field">
+                  <label for="inadAno">Ano</label>
+                  <select id="inadAno"></select>
+                </div>
+              </div>
+              <div class="wa-field">
+                <label for="inadTitulo">Título</label>
+                <input type="text" id="inadTitulo" placeholder="Preenchido pela abrangência e pelo mês (pode editar)">
+              </div>
+              <div class="wa-field" style="margin-bottom:0;">
+                <label for="inadArquivoNome">Arquivo (PDF do SPC Brasil)</label>
+                <div class="wa-input-with-btn">
+                  <input type="text" id="inadArquivoNome" placeholder="Nenhum arquivo selecionado" readonly style="cursor:pointer;">
+                  <button type="button" class="wa-btn wa-btn-outline" id="inadArquivoBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Selecionar
+                  </button>
+                </div>
+                <input type="file" id="inadArquivo" accept="application/pdf,.pdf" hidden>
+              </div>
+            </div>
+            <div class="wa-modal-footer">
+              <span class="vb-ed-msg" id="inadMsg"></span>
+              <button class="wa-btn wa-btn-outline" type="button" data-inad-fechar>Cancelar</button>
+              <button class="wa-btn wa-btn-primary" type="button" id="inadSalvarBtn">Enviar Arquivo</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -4917,7 +5046,7 @@
     { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'campanhas', label: 'Campanhas' },
     { key: 'usuarios', label: 'Usuários' },
-    { key: 'configuracoes', label: 'Configurações' },
+    { key: 'configuracoes', label: 'Inadimplência' },   // antiga "Configurações" (chave mantida)
     { key: 'estoque', label: 'Estoque' }
   ];
   let currentUser = null;
@@ -10966,6 +11095,263 @@ ${clipPlayerPills(n)}
     });
 
     // ==================================================================
+    // Inadimplência (seção de chave "configuracoes") — documentos do SPC Brasil.
+    // Mesmo processo da seção Relatórios (tabela + bucket privado, link assinado para abrir/baixar), sem o
+    // gerador de relatório e só com a visão de tabela, navegada como uma pasta do Windows: Ano > Mês > arquivos.
+    // Cadastro em etapa única: abrangência (Cuiabá | Mato Grosso | Brasil), mês de referência, título e PDF.
+    // supabase/schema_inadimplencia.sql. Os documentos são a base do indicador "Inadimplência" do Panorama.
+    // ==================================================================
+    const INAD_BUCKET = 'inadimplencia';
+    const INAD_ABR = ['Cuiabá', 'Mato Grosso', 'Brasil'];
+    const INAD_ABR_CLS = { 'Cuiabá': 'cuiaba', 'Mato Grosso': 'mt', 'Brasil': 'brasil' };
+    const INAD_ABR_SIGLA = { 'Cuiabá': 'Cuiabá', 'Mato Grosso': 'MT', 'Brasil': 'Brasil' };
+    const INAD_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const INAD_SVG = {
+      pasta: '<svg class="inad-ic-pasta" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5a2 2 0 0 1 2-2h4.6l2 2.2h8.4a2 2 0 0 1 2 2v9.8a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2Z"></path></svg>',
+      arq: '<svg class="inad-ic-arq" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>',
+      subir: '<svg class="inad-ic-subir" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>',
+      casa: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg>'
+    };
+    const inadEl = id => document.getElementById(id);
+    let inadArquivos = [], inadCarregado = false, inadErro = null, inadAno = null, inadMesSel = null, inadCargaProm = null;
+    const inadRef = r => String(r.referencia || '').slice(0, 7);          // 'AAAA-MM'
+    const inadAbrPill = a => `<span class="inad-abr ${INAD_ABR_CLS[a] || ''}">${esc(a)}</span>`;
+    const inadPodeRemover = () => window.__podeEditar('configuracoes');
+
+    // Lista de documentos (também usada pelo indicador do Panorama). Sem Supabase: exemplos em memória.
+    function inadCarregar(forcar){
+      if(inadCargaProm && !forcar) return inadCargaProm;
+      if(!supabaseReady){
+        if(!inadCarregado){
+          const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
+          const ref = `${ant.getFullYear()}-${String(ant.getMonth() + 1).padStart(2, '0')}-01`;
+          inadArquivos = INAD_ABR.map((a, i) => ({ id: 'demo-' + i, titulo: `Inadimplência · ${a} · ${INAD_MESES[ant.getMonth()]}/${ant.getFullYear()}`, abrangencia: a,
+            referencia: ref, arquivo_nome: `spc_inadimplencia_${INAD_ABR_CLS[a]}.pdf`, arquivo_path: null, tamanho_bytes: 480000 + i * 52000, usuario_email: null, created_at: new Date().toISOString() }));
+        }
+        inadCarregado = true; inadErro = null;
+        return (inadCargaProm = Promise.resolve(inadArquivos));
+      }
+      inadCargaProm = supabaseClient.from('inadimplencia_arquivos')
+        .select('id,titulo,abrangencia,referencia,arquivo_nome,arquivo_path,tamanho_bytes,usuario_email,created_at')
+        .order('referencia', { ascending: false }).order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if(error) throw error;
+          inadArquivos = data || []; inadCarregado = true; inadErro = null;
+          return inadArquivos;
+        })
+        .catch(e => { inadErro = e; inadCargaProm = null; inadArquivos = []; inadCarregado = true; throw e; });
+      return inadCargaProm;
+    }
+
+    function inadFiltrados(){
+      const abr = inadEl('inadAbrFiltro').value;
+      return inadArquivos.filter(r => !abr || r.abrangencia === abr);
+    }
+    function inadTrilha(buscando){
+      const passos = [['', 'Inadimplência', INAD_SVG.casa]];
+      if(!buscando && inadAno) passos.push([inadAno, inadAno]);
+      if(!buscando && inadAno && inadMesSel) passos.push([inadAno + '-' + inadMesSel, INAD_MESES[Number(inadMesSel) - 1]]);
+      if(buscando) passos.push(['', `Resultados da busca`]);
+      inadEl('inadTrilha').innerHTML = passos.map(([alvo, rot, ic], i) => `${i ? '<span class="inad-sep" aria-hidden="true">›</span>' : ''}<button type="button" data-inad-ir="${esc(alvo)}"${i === passos.length - 1 ? ' aria-current="page"' : ''}>${ic || ''}${esc(rot)}</button>`).join('');
+    }
+    const inadQtd = n => `${n} ${n === 1 ? 'item' : 'itens'}`;
+    const inadUltimo = lista => lista.reduce((m, r) => (r.created_at || '') > m ? r.created_at : m, '');
+    function inadLinhaPasta(alvo, nome, lista){
+      const abrs = INAD_ABR.filter(a => lista.some(r => r.abrangencia === a));
+      return `<tr class="inad-pasta" data-inad-ir="${esc(alvo)}" tabindex="0" title="Abrir a pasta ${esc(nome)}">
+          <td class="wa-td-name"><span class="inad-nome">${INAD_SVG.pasta}<span class="inad-nome-txt"><strong>${esc(nome)}</strong></span></span></td>
+          <td><span class="inad-abrs">${abrs.map(a => `<span class="inad-abr ${INAD_ABR_CLS[a]}">${esc(INAD_ABR_SIGLA[a])} · ${lista.filter(r => r.abrangencia === a).length}</span>`).join('')}</span></td>
+          <td style="white-space:nowrap;">${fmtDateTimeBR(inadUltimo(lista))}</td>
+          <td>Pasta de arquivos</td>
+          <td class="wa-td-num" style="font-weight:400;color:var(--wa-text-muted);">${inadQtd(lista.length)}</td>
+          <td class="wa-table-actions"></td>
+        </tr>`;
+    }
+    function inadLinhaArquivo(r, caminho){
+      const ext = (String(r.arquivo_nome).match(/\.([a-z0-9]+)$/i) || [])[1];
+      return `<tr>
+          <td class="wa-td-name"><span class="inad-nome">${INAD_SVG.arq}<span class="inad-nome-txt"><strong>${esc(r.titulo)}</strong>
+            <div class="wa-td-sub">${esc(r.arquivo_nome)}${caminho ? ` · ${esc(r.referencia.slice(0, 4))} › ${esc(INAD_MESES[Number(r.referencia.slice(5, 7)) - 1])}` : ''}${r.usuario_email ? ` · enviado por ${esc(r.usuario_email)}` : ''}</div></span></span></td>
+          <td>${inadAbrPill(r.abrangencia)}</td>
+          <td style="white-space:nowrap;">${fmtDateTimeBR(r.created_at)}</td>
+          <td>${ext ? 'Documento ' + esc(ext.toUpperCase()) : 'Arquivo'}</td>
+          <td class="wa-td-num" style="font-weight:400;color:var(--wa-text-muted);">${fmtBytes(r.tamanho_bytes)}</td>
+          <td class="wa-table-actions">
+            <button class="wa-icon-btn" title="Visualizar" data-inad-ver="${esc(r.id)}">${ICON_EYE}</button>
+            <button class="wa-icon-btn" title="Baixar" data-inad-baixar="${esc(r.id)}">${ICON_DOWNLOAD}</button>
+            ${inadPodeRemover() ? `<button class="wa-icon-btn danger" title="Remover" data-inad-remover="${esc(r.id)}">${ICON_TRASH}</button>` : ''}
+          </td>
+        </tr>`;
+    }
+    function inadRender(){
+      const q = inadEl('inadBusca').value.trim(), qn = stkNormTxt(q);
+      const lista = inadFiltrados();
+      const corpo = inadEl('inadTabela'), vazio = txt => `<tr class="wa-empty-row"><td colspan="6">${txt}</td></tr>`;
+      if(inadErro){
+        inadTrilha(false);
+        corpo.innerHTML = vazio(/inadimplencia_arquivos/.test(inadErro.message || '') || inadErro.code === '42P01' || inadErro.code === 'PGRST205'
+          ? 'A tabela de documentos ainda não existe no banco: rode supabase/schema_inadimplencia.sql no Supabase.'
+          : 'Não foi possível carregar os documentos: ' + esc(inadErro.message || String(inadErro)));
+        inadEl('inadContagem').textContent = '';
+        return;
+      }
+      // A pasta escolhida deixou de existir (filtro/remoção): volta para o nível de cima.
+      if(inadAno && !lista.some(r => inadRef(r).startsWith(inadAno))){ inadAno = null; inadMesSel = null; }
+      if(inadMesSel && !lista.some(r => inadRef(r) === inadAno + '-' + inadMesSel)) inadMesSel = null;
+      inadTrilha(!!q);
+      let linhas = '', n = 0;
+      const subir = `<tr class="inad-subir" data-inad-ir="${inadMesSel ? esc(inadAno) : ''}" tabindex="0" title="Voltar para a pasta anterior">
+          <td class="wa-td-name" colspan="6"><span class="inad-nome">${INAD_SVG.subir}<span class="inad-nome-txt"><strong>..</strong></span></span></td></tr>`;
+      if(q){
+        const achados = lista.filter(r => stkNormTxt(`${r.titulo} ${r.arquivo_nome} ${r.abrangencia}`).includes(qn));
+        n = achados.length;
+        linhas = achados.length ? achados.map(r => inadLinhaArquivo(r, true)).join('') : vazio(`Nenhum documento com “${esc(q)}”.`);
+      } else if(!inadAno){
+        const anos = [...new Set(lista.map(r => inadRef(r).slice(0, 4)))].sort().reverse();
+        n = lista.length;
+        linhas = anos.length ? anos.map(a => inadLinhaPasta(a, a, lista.filter(r => inadRef(r).startsWith(a)))).join('')
+          : vazio(inadArquivos.length ? 'Nenhum documento com essa abrangência.' : 'Nenhum documento enviado ainda. Clique em "Novo Arquivo" para anexar o primeiro PDF do SPC Brasil.');
+      } else if(!inadMesSel){
+        const doAno = lista.filter(r => inadRef(r).startsWith(inadAno));
+        const meses = [...new Set(doAno.map(r => inadRef(r).slice(5, 7)))].sort().reverse();
+        n = doAno.length;
+        linhas = subir + meses.map(m => inadLinhaPasta(inadAno + '-' + m, INAD_MESES[Number(m) - 1], doAno.filter(r => inadRef(r).slice(5, 7) === m))).join('');
+      } else {
+        const doMes = lista.filter(r => inadRef(r) === inadAno + '-' + inadMesSel)
+          .sort((a, b) => INAD_ABR.indexOf(a.abrangencia) - INAD_ABR.indexOf(b.abrangencia) || (b.created_at || '').localeCompare(a.created_at || ''));
+        n = doMes.length;
+        linhas = subir + doMes.map(r => inadLinhaArquivo(r, false)).join('');
+      }
+      corpo.innerHTML = linhas;
+      inadEl('inadContagem').textContent = `${n} documento${n === 1 ? '' : 's'}`;
+    }
+    const stkNormTxt = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    function inadIr(alvo){
+      inadEl('inadBusca').value = '';
+      [inadAno, inadMesSel] = alvo ? [alvo.slice(0, 4), alvo.slice(5, 7) || null] : [null, null];
+      inadRender();
+    }
+    function inadAbrirSecao(){
+      inadEl('inadSupabaseBanner').hidden = supabaseReady;
+      inadRender();
+      inadCarregar(true).catch(e => console.error('Erro ao carregar documentos de inadimplência:', e)).finally(inadRender);
+    }
+
+    // ---- Cadastro (etapa única) ----
+    function inadTituloSugerido(){
+      const a = (document.querySelector('input[name="inadAbr"]:checked') || {}).value;
+      return a ? `Inadimplência · ${a} · ${INAD_MESES[Number(inadEl('inadMes').value) - 1]}/${inadEl('inadAno').value}` : '';
+    }
+    let inadTituloAuto = '';
+    function inadAtualizarTitulo(){
+      const t = inadEl('inadTitulo');
+      if(!t.value.trim() || t.value === inadTituloAuto){ inadTituloAuto = inadTituloSugerido(); t.value = inadTituloAuto; }
+    }
+    function inadMensagem(txt, cls){ const m = inadEl('inadMsg'); m.textContent = txt || ''; m.className = 'vb-ed-msg' + (cls ? ' ' + cls : ''); }
+    function inadAbrirModal(){
+      const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
+      const anoAtual = new Date().getFullYear();
+      inadEl('inadMes').innerHTML = INAD_MESES.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m}</option>`).join('');
+      inadEl('inadAno').innerHTML = Array.from({ length: anoAtual - 2019 }, (_, k) => anoAtual - k).map(a => `<option value="${a}">${a}</option>`).join('');
+      // Dentro de uma pasta: já vem com o ano/mês dela; fora, o mês anterior (o SPC publica o mês fechado).
+      inadEl('inadMes').value = inadMesSel || String(ant.getMonth() + 1).padStart(2, '0');
+      inadEl('inadAno').value = inadAno || String(ant.getFullYear());
+      document.querySelectorAll('input[name="inadAbr"]').forEach(r => { r.checked = false; });
+      const abrF = inadEl('inadAbrFiltro').value;
+      if(abrF) document.querySelector(`input[name="inadAbr"][value="${abrF}"]`).checked = true;
+      inadEl('inadTitulo').value = ''; inadTituloAuto = '';
+      inadEl('inadArquivo').value = ''; inadEl('inadArquivoNome').value = '';
+      inadAtualizarTitulo();
+      inadMensagem('');
+      inadEl('inadModal').classList.add('open');
+    }
+    const inadFecharModal = () => inadEl('inadModal').classList.remove('open');
+    function inadPath(ref, abr, nome){
+      const safe = String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
+      return `${ref.slice(0, 4)}/${ref.slice(5, 7)}/${INAD_ABR_CLS[abr]}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safe}`;
+    }
+    async function inadSalvar(){
+      const abr = (document.querySelector('input[name="inadAbr"]:checked') || {}).value;
+      const file = inadEl('inadArquivo').files[0];
+      const titulo = inadEl('inadTitulo').value.trim() || inadTituloSugerido();
+      const ref = `${inadEl('inadAno').value}-${inadEl('inadMes').value}-01`;
+      if(!abr) return inadMensagem('Escolha a abrangência: Cuiabá, Mato Grosso ou Brasil.', 'erro');
+      if(!file) return inadMensagem('Selecione o PDF emitido pelo SPC Brasil.', 'erro');
+      if(!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return inadMensagem('O arquivo precisa ser um PDF.', 'erro');
+      const dup = inadArquivos.find(r => r.abrangencia === abr && inadRef(r) === ref.slice(0, 7));
+      const btn = inadEl('inadSalvarBtn');
+      if(!supabaseReady){
+        inadArquivos.unshift({ id: 'demo-' + Date.now(), titulo, abrangencia: abr, referencia: ref, arquivo_nome: file.name, arquivo_path: null,
+          tamanho_bytes: file.size, usuario_email: currentUserEmail(), created_at: new Date().toISOString() });
+        inadFecharModal(); inadIr(ref.slice(0, 7)); return;
+      }
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      inadMensagem(dup ? `Já existe um documento de ${abr} para este mês; este será adicionado ao lado dele.` : '');
+      try {
+        const path = inadPath(ref, abr, file.name);
+        const up = await supabaseClient.storage.from(INAD_BUCKET).upload(path, file, { upsert: false, contentType: 'application/pdf' });
+        if(up.error) throw up.error;
+        const { error } = await supabaseClient.from('inadimplencia_arquivos').insert({ titulo, abrangencia: abr, referencia: ref,
+          arquivo_nome: file.name, arquivo_path: path, tamanho_bytes: file.size, usuario_email: currentUserEmail() });
+        if(error){ await supabaseClient.storage.from(INAD_BUCKET).remove([path]); throw error; }
+        await inadCarregar(true);
+        inadFecharModal();
+        inadIr(ref.slice(0, 7));   // abre a pasta do mês enviado
+      } catch(e){
+        console.error('Erro ao enviar documento de inadimplência:', e);
+        inadMensagem('Não foi possível enviar: ' + (e && e.message || e), 'erro');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Enviar Arquivo';
+      }
+    }
+    async function inadLink(id, baixar){
+      const r = inadArquivos.find(x => x.id === id);
+      if(!r) return;
+      if(!supabaseReady || !r.arquivo_path) return alert('Modo de demonstração: este documento não tem um arquivo real armazenado.');
+      const { data, error } = await supabaseClient.storage.from(INAD_BUCKET).createSignedUrl(r.arquivo_path, 60, baixar ? { download: r.arquivo_nome } : undefined);
+      if(error || !data) return alert('Erro ao gerar o link: ' + (error ? error.message : ''));
+      window.open(data.signedUrl, '_blank', 'noopener');
+    }
+    async function inadRemover(id){
+      if(!window.__exigirEdicao('configuracoes', 'remover documentos de inadimplência')) return;
+      if(!confirm('Deseja remover este documento? O arquivo será apagado definitivamente.')) return;
+      const r = inadArquivos.find(x => x.id === id);
+      if(!supabaseReady){ inadArquivos = inadArquivos.filter(x => x.id !== id); return inadRender(); }
+      const { error } = await supabaseClient.from('inadimplencia_arquivos').delete().eq('id', id);
+      if(error) return alert('Erro ao remover o documento: ' + error.message);
+      if(r && r.arquivo_path) await supabaseClient.storage.from(INAD_BUCKET).remove([r.arquivo_path]);
+      await inadCarregar(true).catch(() => null);
+      inadRender();
+    }
+
+    inadEl('inadNovoBtn').addEventListener('click', inadAbrirModal);
+    inadEl('inadSalvarBtn').addEventListener('click', inadSalvar);
+    inadEl('inadModal').addEventListener('click', ev => { if(ev.target === inadEl('inadModal') || ev.target.closest('[data-inad-fechar]')) inadFecharModal(); });
+    inadEl('inadArquivoBtn').addEventListener('click', () => inadEl('inadArquivo').click());
+    inadEl('inadArquivoNome').addEventListener('click', () => inadEl('inadArquivo').click());
+    inadEl('inadArquivo').addEventListener('change', () => { const f = inadEl('inadArquivo').files[0]; inadEl('inadArquivoNome').value = f ? f.name : ''; inadMensagem(''); });
+    ['inadMes', 'inadAno'].forEach(id => inadEl(id).addEventListener('change', inadAtualizarTitulo));
+    inadEl('inadAbrOpcoes').addEventListener('change', () => { inadAtualizarTitulo(); inadMensagem(''); });
+    inadEl('inadBusca').addEventListener('input', inadRender);
+    inadEl('inadAbrFiltro').addEventListener('change', inadRender);
+    inadEl('inadLimpar').addEventListener('click', () => { inadEl('inadBusca').value = ''; inadEl('inadAbrFiltro').value = ''; inadIr(''); });
+    inadEl('inadTrilha').addEventListener('click', ev => { const b = ev.target.closest('[data-inad-ir]'); if(b && !b.hasAttribute('aria-current')) inadIr(b.dataset.inadIr); });
+    inadEl('inadTabela').addEventListener('click', ev => {
+      const ver = ev.target.closest('[data-inad-ver]'), baixar = ev.target.closest('[data-inad-baixar]'), rem = ev.target.closest('[data-inad-remover]');
+      if(ver) return inadLink(ver.dataset.inadVer, false);
+      if(baixar) return inadLink(baixar.dataset.inadBaixar, true);
+      if(rem) return inadRemover(rem.dataset.inadRemover);
+      const tr = ev.target.closest('tr[data-inad-ir]');
+      if(tr) inadIr(tr.dataset.inadIr);
+    });
+    inadEl('inadTabela').addEventListener('keydown', ev => {
+      const tr = ev.target.closest('tr[data-inad-ir]');
+      if(tr && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); inadIr(tr.dataset.inadIr); }
+      if(ev.key === 'Backspace' && inadAno){ ev.preventDefault(); inadIr(inadMesSel ? inadAno : ''); }
+    });
+    document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && inadEl('inadModal').classList.contains('open')) inadFecharModal(); });
+
+    // ==================================================================
     // Dashboard — dois painéis (Estoque / Clipping News), mesma infra
     // visual (--stk-* tokens, dbKpi/rosca/gráficos/tooltip). Cada um lê
     // os dados já carregados pelo próprio módulo, sem fetch novo.
@@ -10973,7 +11359,7 @@ ${clipPlayerPills(n)}
     const stkPainelEl = document.getElementById('stkPainelFiltro');
     // Painel efetivo: EMPRESAS (CNPJ), Sefaz MT, IPCA-15, PMC, PNAD, Stone (IVS) e Cielo (ICVA) ficam dentro do Panorama Econômico
     // (filtro Indicador), mas continuam sendo painéis próprios no restante do código.
-    const STK_INDICADOR_PAINEL = ['empresas', 'sefaz', 'ipca15', 'pmc', 'pnad', 'ivs', 'icva'];
+    const STK_INDICADOR_PAINEL = ['empresas', 'sefaz', 'ipca15', 'pmc', 'pnad', 'ivs', 'icva', 'inadimplencia'];
     const stkPainel = () => {
       const ind = document.getElementById('stkIndicadorFiltro').value;
       return stkPainelEl.value === 'panorama' && STK_INDICADOR_PAINEL.includes(ind) ? ind : stkPainelEl.value;
@@ -11223,12 +11609,13 @@ ${clipPlayerPills(n)}
       const ibge = stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad';
       const viab = stkPainel() === 'viabilidades';
       const emp = stkPainel() === 'empresas';
-      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp;
+      const inad = stkPainel() === 'inadimplencia';
+      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
-      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp;
+      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad;
       stkMesEl.hidden = viab;
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
@@ -11790,7 +12177,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' || painel === 'inadimplencia' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -11806,6 +12193,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'sefaz') return sefRender();
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad') return ibgeRender();
       if(stkPainel() === 'viabilidades') return viabRender();
+      if(stkPainel() === 'inadimplencia') return inadPainelRender();
       return stkRenderEstoque();
     }
 
@@ -12807,6 +13195,57 @@ ${clipPlayerPills(n)}
       if(cagUltimo && cagAtivo()) cagDesenhar(cagUltimo); else stkRender();
     });
 
+
+    // ===== Inadimplência (SPC Brasil) — indicador do Panorama, mesma estrutura do CAGED =====
+    // Base: documentos do SPC Brasil anexados na seção Inadimplência (Cuiabá, Mato Grosso e Brasil, por mês).
+    // Enquanto a extração dos números dos PDFs não existe, o painel mostra a estrutura final (5 KPIs + 2 linhas,
+    // como o CAGED) com os indicadores "aguardando dados", e o quadro de documentos já lê a tabela de verdade.
+    let inadPainelSeq = 0;
+    function inadPainelRender(){
+      const seq = ++inadPainelSeq;
+      stkPreencherFiltros();
+      if(!inadCarregado){
+        stkGrid.classList.add('cd-carregando');
+        inadCarregar().catch(() => null).then(() => { if(seq === inadPainelSeq && stkPainel() === 'inadimplencia') inadPainelRender(); });
+        if(!stkGrid.querySelector('.cd-tela')) inadPainelDesenhar();
+        return;
+      }
+      inadPainelDesenhar();
+    }
+    function inadPainelDesenhar(){
+      const docs = inadArquivos.slice().sort((a, b) => (b.referencia || '').localeCompare(a.referencia || '') || INAD_ABR.indexOf(a.abrangencia) - INAD_ABR.indexOf(b.abrangencia));
+      const ultRef = docs.length ? docs[0].referencia.slice(0, 7) : '';
+      const rotRef = ultRef ? `${PAN_MES_CURTO[Number(ultRef.slice(5, 7)) - 1]}/${ultRef.slice(0, 4)}` : '';
+      const espera = { cls: 'neu', txt: 'aguardando dados' };
+      const ref = docs.length ? `SPC Brasil · ${docs.length} documento${docs.length === 1 ? '' : 's'} recebido${docs.length === 1 ? '' : 's'}` : 'SPC Brasil · nenhum documento ainda';
+      const kInad = cdKpiCard('pessoas', 'azul', 'Consumidores inadimplentes', '—', espera, ref, 'Pessoas físicas com contas em atraso e registradas no SPC Brasil · Cuiabá');
+      const kVar = cdKpiCard('percent', 'amarelo', 'Variação anual', '—', espera, ref, 'Número de inadimplentes contra o mesmo mês do ano anterior');
+      const kDiv = cdKpiCard('banco', 'vermelho', 'Dívidas em atraso', '—', espera, ref, 'Quantidade de dívidas em atraso registradas no SPC Brasil');
+      const kMed = cdKpiCard('caixa', 'azul', 'Dívida média por pessoa', '—', espera, ref, 'Valor médio devido por consumidor inadimplente');
+      const kEmp = cdKpiCard('predio', 'verde', 'Empresas inadimplentes', '—', espera, ref, 'Pessoas jurídicas com contas em atraso registradas no SPC Brasil');
+      const aguarda = txt => `<div class="stk-vazio">${esc(txt)}<br><small>Os números entram quando a leitura dos PDFs do SPC Brasil estiver pronta.</small></div>`;
+      const wEvol = cdCard('Evolução da inadimplência', 'Consumidores inadimplentes por mês · ano atual × anterior', aguarda('Linha mensal de inadimplentes (ano atual e anterior).'));
+      const wAbr = cdCard('Inadimplência por abrangência', 'Cuiabá × Mato Grosso × Brasil', aguarda('Comparativo da variação anual nas três abrangências.'));
+      const wSetor = cdCard('Dívidas por setor credor', 'Bancos, comércio, comunicação, água e luz', aguarda('Participação de cada setor credor nas dívidas em atraso.'));
+      const wIdade = cdCard('Inadimplentes por faixa etária', 'Participação de cada faixa de idade', aguarda('Faixas etárias dos consumidores inadimplentes.'));
+      const wValor = cdCard('Dívidas por faixa de valor', 'Quantidade de dívidas por valor devido', aguarda('Distribuição das dívidas por faixa de valor.'));
+      // Documentos recebidos (dado real da seção Inadimplência): último mês de cada abrangência.
+      const porAbr = INAD_ABR.map(a => [a, docs.find(r => r.abrangencia === a)]);
+      const wDocs = cdCard('Documentos do SPC Brasil', inadErro ? 'Sem acesso à seção Inadimplência' : rotRef ? `Último mês recebido: ${rotRef}` : 'Nenhum documento recebido', inadErro
+        ? '<div class="stk-vazio">Os documentos ficam na seção Inadimplência (peça acesso a um Administrador).</div>'
+        : `<ul class="cd-dest">${porAbr.map(([a, r]) => {
+            const rot = r ? `${PAN_MES_CURTO[Number(r.referencia.slice(5, 7)) - 1]}/${r.referencia.slice(0, 4)}` : '';
+            const qtd = docs.filter(x => x.abrangencia === a).length;
+            return `<li><div title="${esc(a)}${r ? ` · último documento: ${esc(r.titulo)}` : ' · nenhum documento'}"><span class="cd-dest-ic ${r ? 'verde' : 'amarelo'}">${stkIcone(r ? 'setaCima' : 'alerta')}</span>
+              <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(a)} · ${r ? 'até ' + esc(rot) : 'aguardando o 1º PDF'}</span><span class="cd-dest-meta">${qtd} documento${qtd === 1 ? '' : 's'} na seção Inadimplência</span></span></div></li>`;
+          }).join('')}</ul>`);
+      stkGrid.classList.add('cd-fit');
+      stkGrid.classList.remove('cd-carregando');
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kInad}${kVar}${kDiv}${kMed}${kEmp}</div>`
+        + `<div class="cd-row cd-row-a">${wEvol}${wAbr}${wSetor}</div>`
+        + `<div class="cd-row cd-row-b">${wIdade}${wValor}${wDocs}</div></div>`;
+      cdAjustarListas();
+    }
 
     // ===== EMPRESAS (CNPJ) — indicador do Panorama, mesma estrutura do CAGED =====
     // Dados: assets/data/cnpj_empresas.js (scripts/cnpj_extrair.py, dados abertos do CNPJ da Receita Federal,
@@ -14972,7 +15411,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -15003,7 +15442,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -15079,6 +15518,18 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
+      // Inadimplência: enquanto a base do SPC não chega, exporta a lista de documentos recebidos.
+      if(stkPainel() === 'inadimplencia'){
+        const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const linhas = [['Ano', 'Mês', 'Abrangência', 'Título', 'Arquivo', 'Tamanho (bytes)', 'Enviado em', 'Enviado por']]
+          .concat(inadArquivos.map(r => [r.referencia.slice(0, 4), INAD_MESES[Number(r.referencia.slice(5, 7)) - 1], r.abrangencia, r.titulo, r.arquivo_nome, r.tamanho_bytes, r.created_at, r.usuario_email || '']));
+        const url = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'inadimplencia_documentos_spc.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       if(stkPainel() === 'viabilidades'){
         if(!viabUltimo) return;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
@@ -15286,6 +15737,8 @@ ${clipPlayerPills(n)}
         else if(window.matchMedia('(pointer: fine)').matches) setTimeout(() => waScanInput.focus(), 50);
       } else if(currentPage === 'relatorios'){
         loadReports();
+      } else if(currentPage === 'configuracoes'){
+        inadAbrirSecao();
       } else if(currentPage === 'dashboard'){
         stkAbrir();
       } else if(currentPage === 'clipping'){
