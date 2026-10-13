@@ -1618,6 +1618,54 @@
   .sm-link .sm-copiar svg{width:14px;height:14px;stroke-width:2;}
   .sm-link .sm-copiar.sm-copiado{color:#3D8B37;}
   .sm-link-vazio{color:var(--cd-muted, #64748B);}
+  /* Ações: QR Code do link de resposta (coletor) */
+  .sm-qr-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .sm-qr-arte{display:flex;justify-content:center;padding:6px 0 14px;}
+  .sm-qr-arte img{width:240px;height:240px;image-rendering:pixelated;border:1px solid var(--wa-border);border-radius:12px;background:#fff;}
+  .sm-qr-url{font-size:12.5px;text-align:center;word-break:break-all;color:var(--wa-text);margin-bottom:10px;}
+  .sm-qr-url a{color:var(--wa-primary);}
+  .sm-qr-nota{font-size:11.5px;line-height:1.5;color:var(--wa-text-muted);margin:0;text-align:center;}
+  .sm-qr-nota.alerta{color:#B45309;font-weight:600;margin-bottom:6px;}
+  .sm-qr-acoes{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+  /* Acessos: usuário → formulários → pré-visualização, tudo na mesma tela (mesmo visual do "Editar" da Viabilidade) */
+  .sm-ac-grid{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.25fr) minmax(0,1fr);gap:16px;}
+  @media (max-width:900px){ .sm-ac-grid{grid-template-columns:1fr;} }
+  .sm-ac-col{display:flex;flex-direction:column;min-width:0;border:1px solid var(--wa-border);border-radius:10px;overflow:hidden;}
+  .sm-ac-cab{padding:10px 12px;background:#F8FAFC;border-bottom:1px solid var(--wa-border);}
+  .sm-ac-cab h4{margin:0;font-size:13px;font-weight:700;color:var(--wa-text);display:flex;align-items:center;gap:8px;}
+  .sm-ac-cab h4 b{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--wa-primary);color:#fff;font-size:11px;}
+  .sm-ac-cab small{display:block;margin-top:2px;font-size:11.5px;color:var(--wa-text-muted);}
+  .sm-ac-ferr{display:flex;gap:8px;padding:10px 12px 0;flex-wrap:wrap;}
+  .sm-ac-ferr input, .sm-ac-ferr select{flex:1 1 140px;min-width:0;height:34px;box-sizing:border-box;padding:0 10px;border:1px solid var(--wa-border);border-radius:8px;font:inherit;font-size:12.5px;color:var(--wa-text);background:#fff;}
+  .sm-ac-ferr input:focus, .sm-ac-ferr select:focus{outline:none;border-color:var(--wa-primary);}
+  .sm-ac-modo{display:flex;gap:4px;margin:10px 12px 0;padding:3px;border-radius:9px;background:#F1F5F9;}
+  .sm-ac-modo button{flex:1;border:none;background:none;border-radius:7px;padding:7px 8px;font:inherit;font-size:12px;font-weight:600;color:var(--wa-text-muted);cursor:pointer;}
+  .sm-ac-modo button.ativo{background:#fff;color:var(--wa-primary);box-shadow:0 1px 3px rgba(15,23,42,.12);}
+  .sm-ac-modo button:disabled{cursor:not-allowed;opacity:.5;}
+  .sm-ac-topo{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px;font-size:11.5px;color:var(--wa-text-muted);}
+  .sm-ac-topo button{border:none;background:none;color:var(--wa-primary);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;padding:2px 4px;}
+  .sm-ac-topo button:disabled{color:var(--wa-text-muted);cursor:not-allowed;}
+  .sm-ac-lista{list-style:none;margin:0;padding:4px 6px 8px;overflow-y:auto;height:min(52vh,460px);}
+  .sm-ac-lista li{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:8px;font-size:12.5px;color:var(--wa-text);}
+  .sm-ac-lista li.clicavel{cursor:pointer;}
+  .sm-ac-lista li.clicavel:hover, .sm-ac-lista li.clicavel:focus-visible{background:#F1F5F9;outline:none;}
+  .sm-ac-lista li.sel{background:#EAF2FF;box-shadow:inset 3px 0 0 var(--wa-primary);}
+  .sm-ac-lista li.inativo{opacity:.55;cursor:default;}
+  .sm-ac-lista input[type="checkbox"]{width:15px;height:15px;margin:0;flex:0 0 auto;accent-color:#0056D2;cursor:pointer;}
+  .sm-ac-lista input[type="checkbox"]:disabled{cursor:not-allowed;}
+  .sm-ac-nome{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .sm-ac-nome strong{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sm-ac-nome span{font-size:11px;color:var(--wa-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sm-ac-tag{flex:0 0 auto;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#F1F5F9;color:#475569;white-space:nowrap;}
+  .sm-ac-tag.todos{background:#EAF6E6;color:#2F6F27;}
+  .sm-ac-tag.parcial{background:#EAF2FF;color:#1D4ED8;}
+  .sm-ac-tag.nenhum{background:#FDECEC;color:#B91C1C;}
+  .sm-ac-tag.pend{background:#FFFBEB;color:#92400E;}
+  .sm-ac-vazio{padding:28px 14px;text-align:center;font-size:12.5px;color:var(--wa-text-muted);}
+  .sm-ac-resumo{padding:10px 12px 0;font-size:12px;color:var(--wa-text);}
+  .sm-ac-resumo.alerta{color:#B45309;}
+  .sm-ac-lista .sm-ac-rem{flex:0 0 auto;border:none;background:none;color:#94A3B8;font-size:17px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px;}
+  .sm-ac-lista .sm-ac-rem:hover{color:#B91C1C;background:#FDECEC;}
   /* Survey: paginação da Resposta individual — por página à esquerda, passagem de página à direita. */
   .sm-pag{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--cd-borda);}
   .sm-pag-qtd{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--cd-muted);}
@@ -1737,7 +1785,8 @@
   .vb-ferr-filtro[hidden]{display:none;}
   .vb-ferr-filtro > .filter-select{width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .vb-ferr-filtro > .filter-select.ativo{background-color:#EAF2FF;color:var(--stk-primary);font-weight:600;}
-  #page-dashboard .vb-ferr-filtro .stk-busca-lista{left:0;right:auto;min-width:min(320px,calc(100vw - 48px));}
+  /* A barra de filtros corta o que passa da altura dela (overflow hidden): a lista abre fixa na tela, logo abaixo do botão. */
+  #page-dashboard .vb-ferr-filtro .stk-busca-lista{position:fixed;right:auto;z-index:95;min-width:min(320px,calc(100vw - 32px));max-height:min(420px,calc(100vh - 120px));}
   .vb-ferr-logo{width:16px;height:16px;flex:0 0 auto;display:inline-flex;}
   .vb-ferr-logo svg{width:16px;height:16px;}
   #stkViabPrioridadeFiltro.ativo{background-color:#EAF2FF;color:var(--stk-primary);font-weight:600;}
@@ -3281,6 +3330,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             <span class="btn-label">Limpar</span>
           </button>
+          <!-- Acessos: formulários liberados por usuário (só Administrador) -->
+          <button class="btn btn-clear" id="smAcessos" title="Acessos: formulários liberados por usuário" aria-label="Acessos aos formulários" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span class="btn-label">Acessos</span>
+          </button>
           <button class="btn btn-export" id="smExportar" title="Exportar formulários (CSV)" aria-label="Exportar formulários (CSV)">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
             <span class="btn-label">Exportar</span>
@@ -3316,6 +3370,83 @@
                 </thead>
                 <tbody id="smTabela"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== MODAL: QR CODE DO FORMULÁRIO (link do coletor) ===== -->
+        <div class="wa-modal-overlay" id="smQrModal">
+          <div class="wa-modal wa-modal-sm" style="max-width:440px;">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h.01"></path><path d="M17 21h4v-4"></path></svg></div>
+                <div>
+                  <div class="wa-modal-title">QR Code do formulário</div>
+                  <div class="wa-modal-sub" id="smQrSub"></div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" data-sm-qr-fechar>&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <div class="sm-qr-arte" id="smQrArte"></div>
+              <div class="sm-qr-url" id="smQrUrl"></div>
+              <p class="sm-qr-nota alerta" id="smQrAlerta" hidden>Coletor encerrado: o link não recebe mais respostas.</p>
+              <p class="sm-qr-nota">Gerado a partir do link de resposta do coletor, sincronizado do Survey Monkey: abre o mesmo endereço do QR Code do Survey Monkey. A API do Survey Monkey não entrega a imagem do QR Code, só o link.</p>
+            </div>
+            <div class="wa-modal-footer">
+              <button class="wa-btn wa-btn-outline" type="button" data-sm-qr-fechar>Fechar</button>
+              <div class="sm-qr-acoes">
+                <button class="wa-btn wa-btn-outline" type="button" id="smQrCopiar">Copiar link</button>
+                <button class="wa-btn wa-btn-primary" type="button" id="smQrBaixar">Baixar PNG</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== MODAL: ACESSOS AOS FORMULÁRIOS (usuário → formulários → pré-visualização) ===== -->
+        <div class="wa-modal-overlay" id="smAcessoModal">
+          <div class="wa-modal wa-modal-lg" style="max-width:1180px;">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg></div>
+                <div>
+                  <div class="wa-modal-title">Acessos aos formulários</div>
+                  <div class="wa-modal-sub">Selecione o usuário, marque os formulários liberados e confira a pré-visualização do que ele verá</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" type="button" data-sm-ac-fechar>&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <div class="sm-ac-grid">
+                <section class="sm-ac-col" aria-labelledby="smAcT1">
+                  <div class="sm-ac-cab"><h4 id="smAcT1"><b>1</b>Usuário</h4><small>Quem tem a seção Survey liberada</small></div>
+                  <div class="sm-ac-ferr"><input type="search" id="smAcUsuarioBusca" placeholder="Buscar por nome ou e-mail..." autocomplete="off"></div>
+                  <ul class="sm-ac-lista" id="smAcUsuarios" role="listbox" aria-label="Usuários"></ul>
+                </section>
+                <section class="sm-ac-col" aria-labelledby="smAcT2">
+                  <div class="sm-ac-cab"><h4 id="smAcT2"><b>2</b>Formulários</h4><small id="smAcT2Sub">Escolha um usuário</small></div>
+                  <div class="sm-ac-modo" role="group" aria-label="Tipo de acesso">
+                    <button type="button" data-sm-ac-modo="todos">Todos os formulários</button>
+                    <button type="button" data-sm-ac-modo="lista">Somente selecionados</button>
+                  </div>
+                  <div class="sm-ac-ferr">
+                    <input type="search" id="smAcFormBusca" placeholder="Buscar formulário..." autocomplete="off">
+                    <select id="smAcPasta" aria-label="Pasta"><option value="">Todas as pastas</option></select>
+                  </div>
+                  <div class="sm-ac-topo"><span id="smAcFormCont"></span><span><button type="button" data-sm-ac-marcar="1">Marcar visíveis</button><button type="button" data-sm-ac-marcar="0">Desmarcar visíveis</button></span></div>
+                  <ul class="sm-ac-lista" id="smAcForms" aria-label="Formulários" style="padding-top:0;"></ul>
+                </section>
+                <section class="sm-ac-col" aria-labelledby="smAcT3">
+                  <div class="sm-ac-cab"><h4 id="smAcT3"><b>3</b>Pré-visualização</h4><small>Formulários que o usuário verá (lista, painel e respostas)</small></div>
+                  <div class="sm-ac-resumo" id="smAcResumo"></div>
+                  <ul class="sm-ac-lista" id="smAcPrevia" aria-label="Formulários permitidos"></ul>
+                </section>
+              </div>
+            </div>
+            <div class="wa-modal-footer">
+              <span class="vb-ed-msg" id="smAcMsg"></span>
+              <button class="wa-btn wa-btn-outline" type="button" data-sm-ac-fechar>Fechar</button>
+              <button class="wa-btn wa-btn-primary" type="button" id="smAcSalvar">Salvar</button>
             </div>
           </div>
         </div>
@@ -4948,8 +5079,17 @@
     const el = id => document.getElementById(id);
     const busca = el('smBusca'), fPasta = el('smPastaFiltro'), fStatus = el('smStatusFiltro'), fAno = el('smAnoFiltro');
 
+    // Formulários liberados ao usuário logado (Acessos): null = todos. O RLS já filtra os dados ao vivo;
+    // aqui vale também para o retrato fixo, que está no próprio app.
+    function permitidos(){
+      const cu = window.__getCurrentUser && window.__getCurrentUser();
+      return !cu || cu.cargo === 'Administrador' || !Array.isArray(cu.survey) ? null : new Set(cu.survey.map(String));
+    }
+    const visiveis = () => { const p = permitidos(); return p ? forms.filter(f => p.has(f.id)) : forms; };
+
     // Pastas em ordem alfabética, "Sem pasta" por último; anos do mais recente ao mais antigo (mantém a escolha).
     function montarFiltros(){
+      const forms = visiveis();
       const vP = fPasta.value, vA = fAno.value;
       fPasta.innerHTML = '<option value="">Pasta</option>' + Object.keys(pastas)
         .filter(id => id !== '0' || forms.some(f => f.folder_id === '0'))
@@ -4964,7 +5104,7 @@
 
     function filtrados(){
       const q = semAcento(busca.value.trim());
-      return forms.filter(f =>
+      return visiveis().filter(f =>
         (!q || semAcento(f.title).includes(q)) &&
         (!fPasta.value || f.folder_id === fPasta.value) &&
         (!fStatus.value || f.survey_state === fStatus.value) &&
@@ -5000,7 +5140,7 @@
       const pastas = new Set(lista.map(f => f.folder_id));
       const semPasta = lista.filter(f => f.folder_id === '0').length;
       el('smKpis').innerHTML =
-        kpi('form', '', 'Formulários', num(lista.length), `de ${num(forms.length)} na conta`) +
+        kpi('form', '', 'Formulários', num(lista.length), permitidos() ? `de ${num(visiveis().length)} liberados para você` : `de ${num(forms.length)} na conta`) +
         kpi('resp', 'verde', 'Respostas', num(total), 'soma dos formulários') +
         kpi('media', '', 'Média por formulário', num(lista.length ? Math.round(total / lista.length) : 0), 'respostas') +
         kpi('aberto', 'amarelo', 'Coletando', num(abertos.length), `${num(abertos.reduce((s, f) => s + f.response_count, 0))} respostas até agora`) +
@@ -5025,7 +5165,8 @@
             <td class="wa-td-num">${num(f.response_count)}</td>
             <td>${dataBR(f.date_modified)}</td>
             <td class="sm-td-link">${celulaLink(f)}</td>
-            <td class="wa-table-actions"><button type="button" class="wa-icon-btn" title="Abrir dashboard">${ICONE_PAINEL}</button></td>
+            <td class="wa-table-actions"><button type="button" class="wa-icon-btn sm-qr-btn" data-qr="${esc(f.id)}"${f.link ? '' : ' disabled'}
+              title="${f.link ? 'QR Code do formulário' : fonte === 'vivo' ? 'QR Code indisponível: link de resposta ainda não sincronizado' : 'QR Code: disponível com a sincronização ao vivo'}" aria-label="QR Code do formulário">${ICONE_QR}</button></td>
           </tr>`).join('') : '<tr class="wa-empty-row"><td colspan="7">Nenhum formulário encontrado com esses filtros.</td></tr>';
     }
 
@@ -5195,6 +5336,7 @@
     // Dados: assets/data/surveymonkey_resumos.js (somente agregados, lido pelo MCP). As respostas
     // individuais NÃO entram no retrato público (nome, CPF, telefone...): chegam com a sincronização
     // ao vivo, protegidas por login. Quando existirem, basta preencher SM_RESUMOS[id].respostas.
+    const ICONE_QR = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h.01"></path><path d="M17 21h4v-4"></path></svg>';
     const ICONE_PAINEL = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>';
     const ICONE_CADEADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
     // Paleta do guia de estilo (azul --stk-/--cd-azul e verde --cd-verde), alternando azul e verde em tons
@@ -5437,9 +5579,11 @@
         return;
       }
       if(ev.target.closest('.sm-link a')) return;
+      const qr = ev.target.closest('[data-qr]');
+      if(qr){ ev.stopPropagation(); if(!qr.disabled) abrirQr(qr.dataset.qr); return; }
       const tr = ev.target.closest('tr.sm-linha'); if(tr) abrirFormulario(tr.dataset.id);
     });
-    el('smTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && !ev.target.closest('.sm-link') && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrirFormulario(tr.dataset.id); } });
+    el('smTabela').addEventListener('keydown', ev => { const tr = ev.target.closest('tr.sm-linha'); if(tr && !ev.target.closest('.sm-link') && !ev.target.closest('[data-qr]') && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); abrirFormulario(tr.dataset.id); } });
     el('smVoltar').addEventListener('click', fecharFormulario);
     el('smVisao').addEventListener('click', ev => { const b = ev.target.closest('.wa-view-toggle-btn'); if(b){ visao = b.dataset.visao; mostrarVisao(); } });
     el('smOrdem').addEventListener('click', ev => {
@@ -5462,6 +5606,233 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
+
+    // ================= QR Code do formulário =================
+    // A API do Survey Monkey não entrega a imagem do QR Code do coletor, só o link (survey_coletores.url).
+    // O QR é gerado aqui com esse mesmo link (coletor aberto ou, sem nenhum aberto, o último criado):
+    // aponta para o mesmo endereço do QR Code do Survey Monkey. Biblioteca carregada só ao abrir.
+    let qrLibProm = null, qrAtual = null;
+    const carregarQrLib = () => window.qrcode ? Promise.resolve() : (qrLibProm = qrLibProm || new Promise((ok, falha) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+      sc.integrity = 'sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k';
+      sc.crossOrigin = 'anonymous';
+      sc.onload = ok;
+      sc.onerror = () => { qrLibProm = null; falha(new Error('qrcode-generator')); };
+      document.head.appendChild(sc);
+    }));
+    // PNG nítido: 10 px por módulo + margem de 4 módulos (padrão do QR).
+    function qrPng(url){
+      const qr = window.qrcode(0, 'M');
+      qr.addData(url); qr.make();
+      const n = qr.getModuleCount(), cel = 10, margem = 4, lado = (n + margem * 2) * cel;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = lado;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, lado, lado);
+      ctx.fillStyle = '#000';
+      for(let r = 0; r < n; r++) for(let c = 0; c < n; c++) if(qr.isDark(r, c)) ctx.fillRect((c + margem) * cel, (r + margem) * cel, cel, cel);
+      return cv.toDataURL('image/png');
+    }
+    function abrirQr(id){
+      const f = forms.find(x => x.id === id);
+      if(!f || !f.link) return;
+      qrAtual = { f, png: null };
+      el('smQrSub').textContent = f.title;
+      el('smQrUrl').innerHTML = `<a href="${esc(f.link.url)}" target="_blank" rel="noopener">${esc(f.link.url)}</a>`;
+      el('smQrAlerta').hidden = !!f.link.aberto;
+      el('smQrArte').innerHTML = '<div class="sm-ac-vazio">Gerando QR Code…</div>';
+      el('smQrBaixar').disabled = true;
+      el('smQrModal').classList.add('open');
+      carregarQrLib().then(() => {
+        if(!qrAtual || qrAtual.f !== f) return;
+        qrAtual.png = qrPng(f.link.url);
+        el('smQrArte').innerHTML = `<img src="${qrAtual.png}" alt="QR Code de ${esc(f.title)}">`;
+        el('smQrBaixar').disabled = false;
+      }).catch(() => { el('smQrArte').innerHTML = '<div class="sm-ac-vazio">Não foi possível carregar o gerador de QR Code. Verifique a conexão e tente de novo.</div>'; });
+    }
+    const fecharQr = () => { el('smQrModal').classList.remove('open'); qrAtual = null; };
+    el('smQrModal').addEventListener('click', ev => { if(ev.target === el('smQrModal') || ev.target.closest('[data-sm-qr-fechar]')) fecharQr(); });
+    el('smQrCopiar').addEventListener('click', () => {
+      if(!qrAtual) return;
+      const b = el('smQrCopiar'), url = qrAtual.f.link.url;
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => {
+        b.textContent = 'Link copiado!'; setTimeout(() => { b.textContent = 'Copiar link'; }, 1600);
+      }, () => window.prompt('Copie o link:', url));
+    });
+    el('smQrBaixar').addEventListener('click', () => {
+      if(!qrAtual || !qrAtual.png) return;
+      const a = document.createElement('a');
+      a.href = qrAtual.png;
+      a.download = 'qrcode_' + semAcento(qrAtual.f.title).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60) + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
+
+    // ================= Acessos: formulários liberados por usuário =================
+    // Só Administrador. Tudo na mesma tela: 1) usuário  2) formulários (todos ou só os marcados)  3) pré-visualização.
+    // Grava usuarios.survey_formularios_permitidos (null = todos; lista de ids = só esses) —
+    // supabase/schema_surveymonkey_acesso.sql; o RLS das tabelas survey_* aplica a mesma regra.
+    // Alterações de vários usuários ficam pendentes e são gravadas juntas em Salvar.
+    const acModal = el('smAcessoModal'), acMsg = el('smAcMsg'), acSalvarBtn = el('smAcSalvar');
+    let acUsuarios = [], acSel = null;
+    const acPend = new Map();   // id do usuário → null | [ids]
+    const acValor = u => acPend.has(u.id) ? acPend.get(u.id) : (Array.isArray(u.survey_formularios_permitidos) ? u.survey_formularios_permitidos.map(String) : null);
+    const acTemSecao = u => u.cargo === 'Administrador' || (Array.isArray(u.secoes_permitidas) ? u.secoes_permitidas : []).includes('surveymonkey');
+    function acMensagem(txt, cls){ acMsg.textContent = txt || ''; acMsg.className = 'vb-ed-msg' + (cls ? ' ' + cls : ''); }
+    function acTag(u){
+      if(u.cargo === 'Administrador') return '<span class="sm-ac-tag todos">Administrador · todos</span>';
+      const v = acValor(u), pend = acPend.has(u.id) ? '<span class="sm-ac-tag pend" title="Alteração ainda não salva">não salvo</span>' : '';
+      return pend + (v === null ? '<span class="sm-ac-tag todos">Todos</span>' : v.length ? `<span class="sm-ac-tag parcial">${num(v.length)} formulário${v.length === 1 ? '' : 's'}</span>` : '<span class="sm-ac-tag nenhum">Nenhum</span>');
+    }
+    function acRenderUsuarios(){
+      const q = semAcento(el('smAcUsuarioBusca').value.trim());
+      const lista = acUsuarios.filter(u => !q || semAcento(u.nome || '').includes(q) || semAcento(u.email || '').includes(q));
+      el('smAcUsuarios').innerHTML = lista.length ? lista.map(u => {
+        const admin = u.cargo === 'Administrador', aviso = !acTemSecao(u) ? ' · sem a seção Survey' : u.status !== 'Ativo' ? ' · inativo' : '';
+        return `<li class="${admin ? 'inativo' : 'clicavel'}${u.id === acSel ? ' sel' : ''}" ${admin ? 'title="Administrador vê todos os formulários"' : `data-ac-usuario="${esc(u.id)}" tabindex="0" role="option" aria-selected="${u.id === acSel}"`}>
+          <span class="sm-ac-nome"><strong>${esc(u.nome || u.email)}</strong><span>${esc(u.email)}${esc(aviso)}</span></span>${acTag(u)}</li>`; }).join('')
+        : '<li class="sm-ac-vazio">Nenhum usuário encontrado.</li>';
+    }
+    function acRenderForms(){
+      const u = acUsuarios.find(x => x.id === acSel), v = u ? acValor(u) : null, todos = v === null;
+      const q = semAcento(el('smAcFormBusca').value.trim()), pasta = el('smAcPasta').value;
+      const lista = forms.filter(f => (!q || semAcento(f.title).includes(q)) && (!pasta || f.folder_id === pasta))
+        .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+      const marcados = new Set(v || []);
+      el('smAcT2Sub').textContent = u ? `Liberados para ${u.nome || u.email}` : 'Escolha um usuário';
+      acModal.querySelectorAll('[data-sm-ac-modo]').forEach(b => { b.disabled = !u; b.classList.toggle('ativo', !!u && (b.dataset.smAcModo === 'todos') === todos); });
+      acModal.querySelectorAll('[data-sm-ac-marcar]').forEach(b => { b.disabled = !u || todos || !lista.length; });
+      el('smAcFormCont').textContent = !u ? '' : todos ? `Todos os ${num(forms.length)} formulários liberados` : `${num(marcados.size)} de ${num(forms.length)} marcados${q || pasta ? ` · ${num(lista.length)} na busca` : ''}`;
+      el('smAcForms').innerHTML = !u ? '<li class="sm-ac-vazio">Selecione um usuário na coluna 1.</li>'
+        : !lista.length ? '<li class="sm-ac-vazio">Nenhum formulário encontrado.</li>'
+        : lista.map(f => `<li><label class="sm-ac-nome" style="flex-direction:row;align-items:center;gap:9px;cursor:${todos ? 'not-allowed' : 'pointer'};">
+            <input type="checkbox" data-ac-form="${esc(f.id)}"${todos || marcados.has(f.id) ? ' checked' : ''}${todos ? ' disabled' : ''}>
+            <span class="sm-ac-nome"><strong title="${esc(f.title)}">${esc(f.title)}</strong><span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} respostas · ${esc(statusTxt[f.survey_state] || f.survey_state)}</span></span></label></li>`).join('');
+    }
+    function acRenderPrevia(){
+      const u = acUsuarios.find(x => x.id === acSel), v = u ? acValor(u) : null;
+      const resumo = el('smAcResumo');
+      resumo.classList.remove('alerta');
+      if(!u){ resumo.textContent = ''; el('smAcPrevia').innerHTML = '<li class="sm-ac-vazio">A pré-visualização aparece ao escolher o usuário.</li>'; return; }
+      const lista = (v === null ? forms : forms.filter(f => v.includes(f.id))).slice().sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+      const fora = v === null ? 0 : v.filter(id => !forms.some(f => f.id === id)).length;
+      const resp = lista.reduce((s, f) => s + f.response_count, 0);
+      resumo.textContent = (v === null ? `Vê todos os ${num(lista.length)} formulários` : `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} liberado${lista.length === 1 ? '' : 's'}`)
+        + ` · ${num(resp)} respostas` + (fora ? ` · ${num(fora)} que não estão mais na conta` : '')
+        + (!acTemSecao(u) ? ' · atenção: a seção Survey não está liberada para este usuário (libere em Usuários)' : '');
+      if(!acTemSecao(u)) resumo.classList.add('alerta');
+      el('smAcPrevia').innerHTML = lista.length ? lista.map(f => `<li>
+          <span class="sm-ac-nome"><strong title="${esc(f.title)}">${esc(f.title)}</strong><span>${esc(pastaNome(f.folder_id))} · ${num(f.response_count)} respostas · ${dataBR(f.date_modified)}</span></span>
+          <span class="wa-badge ${statusCls[f.survey_state] || 'sm-badge-encerrado'}">${esc(statusTxt[f.survey_state] || f.survey_state)}</span>
+          ${v === null ? '' : `<button type="button" class="sm-ac-rem" data-ac-remover="${esc(f.id)}" title="Remover o acesso a este formulário" aria-label="Remover">&times;</button>`}</li>`).join('')
+        : '<li class="sm-ac-vazio">Nenhum formulário liberado: o usuário verá a lista vazia.</li>';
+    }
+    function acRender(){
+      acRenderUsuarios(); acRenderForms(); acRenderPrevia();
+      acSalvarBtn.textContent = acPend.size ? `Salvar (${acPend.size} usuário${acPend.size === 1 ? '' : 's'})` : 'Salvar';
+      acSalvarBtn.disabled = !acPend.size;
+    }
+    function acDefinir(valor){
+      const u = acUsuarios.find(x => x.id === acSel);
+      if(!u) return;
+      const orig = Array.isArray(u.survey_formularios_permitidos) ? u.survey_formularios_permitidos.map(String) : null;
+      const igual = (a, b) => a === b || (Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every(x => b.includes(x)));
+      if(igual(valor, orig)) acPend.delete(u.id); else acPend.set(u.id, valor);
+      acMensagem(acPend.size ? 'Alterações pendentes · confirme em Salvar.' : '');
+      acRender();
+    }
+    async function acCarregar(){
+      const sb = window.CDL_SB;
+      if(!sb) throw new Error('Sem conexão com o Supabase.');
+      const { data, error } = await sb.from('usuarios').select('id,nome,email,cargo,status,secoes_permitidas,survey_formularios_permitidos').order('nome');
+      if(error) throw error;
+      acUsuarios = data || [];
+    }
+    async function acAbrir(){
+      if(!window.__exigirAdmin('definir os acessos aos formulários')) return;
+      acPend.clear(); acSel = null;
+      el('smAcUsuarioBusca').value = el('smAcFormBusca').value = '';
+      el('smAcPasta').innerHTML = '<option value="">Todas as pastas</option>' + Object.keys(pastas)
+        .sort((a, b) => (a === '0') - (b === '0') || pastaNome(a).localeCompare(pastaNome(b), 'pt-BR'))
+        .map(id => `<option value="${esc(id)}">${esc(pastaNome(id))}</option>`).join('');
+      acUsuarios = [];
+      acMensagem('Carregando usuários…');
+      acRender();
+      acModal.classList.add('open');
+      try {
+        await acCarregar();
+        acMensagem(fonte === 'vivo' ? '' : 'Lista de formulários do retrato fixo: os ids são os mesmos do Survey Monkey.');
+      } catch(e){
+        acMensagem(/survey_formularios_permitidos/.test(e && e.message || '')
+          ? 'Falta a coluna de acessos no banco: rode supabase/schema_surveymonkey_acesso.sql no Supabase.'
+          : 'Não foi possível carregar os usuários: ' + (e && e.message || e), 'erro');
+      }
+      acRender();
+      setTimeout(() => el('smAcUsuarioBusca').focus(), 50);
+    }
+    async function acSalvar(){
+      if(!acPend.size || !window.__exigirAdmin('definir os acessos aos formulários')) return;
+      const sb = window.CDL_SB;
+      acSalvarBtn.disabled = true;
+      acMensagem('Salvando…');
+      try {
+        for(const [id, valor] of acPend){
+          const { error } = await sb.from('usuarios').update({ survey_formularios_permitidos: valor }).eq('id', id);
+          if(error) throw error;
+        }
+        const n = acPend.size;
+        acPend.clear();
+        await acCarregar();
+        acMensagem(`Acessos salvos (${n} usuário${n === 1 ? '' : 's'}). Valem no próximo acesso à seção Survey.`, 'ok');
+      } catch(e){
+        acMensagem('Não foi possível salvar: ' + (e && e.message || e), 'erro');
+      }
+      acRender();
+    }
+    const acFechar = () => acModal.classList.remove('open');
+    el('smAcessos').addEventListener('click', acAbrir);
+    acSalvarBtn.addEventListener('click', acSalvar);
+    acModal.addEventListener('click', ev => {
+      if(ev.target === acModal || ev.target.closest('[data-sm-ac-fechar]')) return acFechar();
+      const us = ev.target.closest('[data-ac-usuario]');
+      if(us){ acSel = us.dataset.acUsuario; acRender(); return; }
+      const modo = ev.target.closest('[data-sm-ac-modo]');
+      if(modo && !modo.disabled){
+        const u = acUsuarios.find(x => x.id === acSel), v = u ? acValor(u) : null;
+        if(modo.dataset.smAcModo === 'todos') acDefinir(null);
+        else if(v === null) acDefinir([]);
+        return;
+      }
+      const marcar = ev.target.closest('[data-sm-ac-marcar]');
+      if(marcar && !marcar.disabled){
+        const u = acUsuarios.find(x => x.id === acSel), v = new Set(acValor(u) || []);
+        el('smAcForms').querySelectorAll('[data-ac-form]').forEach(cb => { if(marcar.dataset.smAcMarcar === '1') v.add(cb.dataset.acForm); else v.delete(cb.dataset.acForm); });
+        acDefinir([...v]);
+        return;
+      }
+      const rem = ev.target.closest('[data-ac-remover]');
+      if(rem){ const u = acUsuarios.find(x => x.id === acSel); acDefinir((acValor(u) || []).filter(id => id !== rem.dataset.acRemover)); }
+    });
+    acModal.addEventListener('keydown', ev => { const us = ev.target.closest('[data-ac-usuario]'); if(us && (ev.key === 'Enter' || ev.key === ' ')){ ev.preventDefault(); acSel = us.dataset.acUsuario; acRender(); } });
+    acModal.addEventListener('change', ev => {
+      const cb = ev.target.closest('[data-ac-form]');
+      if(!cb) return;
+      const u = acUsuarios.find(x => x.id === acSel), v = new Set(acValor(u) || []);
+      if(cb.checked) v.add(cb.dataset.acForm); else v.delete(cb.dataset.acForm);
+      acDefinir([...v]);
+    });
+    el('smAcUsuarioBusca').addEventListener('input', acRenderUsuarios);
+    el('smAcFormBusca').addEventListener('input', acRenderForms);
+    el('smAcPasta').addEventListener('change', acRenderForms);
+    document.addEventListener('keydown', ev => { if(ev.key !== 'Escape') return; if(el('smQrModal').classList.contains('open')) fecharQr(); else if(acModal.classList.contains('open')) acFechar(); });
+
+    // Ao abrir a seção: botão Acessos só para Administrador; lista refeita com os formulários liberados ao usuário.
+    document.addEventListener('cdload:pagechange', ev => {
+      if(ev.detail.page !== 'surveymonkey') return;
+      el('smAcessos').hidden = !window.__isAdmin();
+      montarFiltros(); render();
+    });
+    document.addEventListener('cdload:surveyacesso', () => { montarFiltros(); render(); });
     render();
   })();
 
@@ -7772,10 +8143,12 @@
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
       const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : normalizarSecoes(row.secoes_permitidas);
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
+      // Survey: formulários liberados (Acessos); null = todos.
+      const survey = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.survey_formularios_permitidos) ? null : row.survey_formularios_permitidos.map(String);
       registrarAcesso(row);
       const restrito = !isAdminEmail && row.cargo !== 'Administrador' && !!row.restrito;
       const edicao = !restrito && row.cargo !== 'Administrador' && !!row.edicao;
-      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis, restrito, edicao } };
+      return { ok: true, user: { email: row.email, nome: row.nome, cargo: row.cargo, status: row.status, secoes, paineis, survey, restrito, edicao } };
     }
 
     async function resolveIdentity(rawEmail, rawSenha){
@@ -13318,8 +13691,15 @@ ${clipPlayerPills(n)}
     function viabFerrAbrir(abrir){
       stkViabFerrLista.hidden = !abrir;
       stkViabFerrBtn.setAttribute('aria-expanded', String(abrir));
-      if(abrir) viabFerrAtualizar();
+      if(!abrir) return;
+      viabFerrAtualizar();
+      const r = stkViabFerrBtn.getBoundingClientRect(), larg = stkViabFerrLista.offsetWidth;
+      stkViabFerrLista.style.top = Math.round(r.bottom + 6) + 'px';
+      stkViabFerrLista.style.left = Math.round(Math.max(16, Math.min(r.left, window.innerWidth - larg - 16))) + 'px';
     }
+    // Lista fixa na tela: rolar a página ou redimensionar fecha (não fica solta longe do botão).
+    window.addEventListener('resize', () => { if(!stkViabFerrLista.hidden) viabFerrAbrir(false); });
+    document.addEventListener('scroll', ev => { if(!stkViabFerrLista.hidden && !stkViabFerrLista.contains(ev.target)) viabFerrAbrir(false); }, true);
     stkViabFerrBtn.addEventListener('click', () => viabFerrAbrir(stkViabFerrLista.hidden));
     stkViabFerrLista.addEventListener('change', ev => {
       const cb = ev.target.closest('[data-vb-ferr]');
@@ -14961,8 +15341,12 @@ ${clipPlayerPills(n)}
         const restrito = !!data.restrito, edicao = !restrito && !!data.edicao;
         if(restrito !== !!cu.restrito || edicao !== !!cu.edicao){ cu.restrito = restrito; cu.edicao = edicao; renderTemplates(); }
       }
+      // Survey: formulários liberados também passam a valer na sessão aberta.
+      const survey = !data || cu.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || data.cargo === 'Administrador' || !Array.isArray(data.survey_formularios_permitidos)
+        ? null : data.survey_formularios_permitidos.map(String);
+      if(JSON.stringify(survey) !== JSON.stringify(cu.survey ?? null)){ cu.survey = survey; document.dispatchEvent(new CustomEvent('cdload:surveyacesso')); }
     }
-    document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home') atualizarPaineisLiberados(); });
+    document.addEventListener('cdload:pagechange', (e) => { if(e.detail.page === 'home' || e.detail.page === 'surveymonkey') atualizarPaineisLiberados(); });
     document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') atualizarPaineisLiberados(); });
     window.addEventListener('focus', atualizarPaineisLiberados);
 

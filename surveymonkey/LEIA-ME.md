@@ -1,5 +1,9 @@
 # Integração CDLoad × Survey Monkey
 
+> **Atualização (13/10/2026) — Acessos e QR Code:**
+> - **Acessos** (barra da seção, só Administrador): na mesma tela, escolha o usuário, marque os formulários (ou "Todos") e confira a pré-visualização do que ele verá. Requer [supabase/schema_surveymonkey_acesso.sql](../supabase/schema_surveymonkey_acesso.sql); o RLS aplica a lista também aos dados ao vivo e ao tempo real.
+> - **QR Code** (coluna Ações): a API v3 do Survey Monkey **não fornece a imagem do QR Code** do coletor, só o link (`survey_coletores.url`). O CDLoad gera o QR com esse mesmo link — mesmo destino do QR do Survey Monkey — com opção de copiar o link e baixar PNG. Sem link sincronizado (ou no retrato fixo), o botão fica desabilitado.
+
 > **Atualização (11/10/2026) — correção + tempo real:**
 > - **Correção:** a sincronização falhava em toda execução (`null value in column "qtd_formularios" of relation "survey_pastas"`), então as tabelas `survey_*` ficavam vazias e a seção mostrava só o retrato fixo, sem respostas individuais. Rodar [supabase/schema_surveymonkey_tempo_real.sql](../supabase/schema_surveymonkey_tempo_real.sql) destrava a função já publicada.
 > - **Tempo real:** cada resposta enviada no Survey Monkey dispara um **webhook** (`response_completed`) para a Edge Function, que grava só aquela resposta; o app recebe pelo **Supabase Realtime** e atualiza lista, painel e tabela de respostas sozinho (resposta nova no topo, destacada). A sincronização a cada 15 min continua como reserva (respostas parciais, edições, formulários novos).
