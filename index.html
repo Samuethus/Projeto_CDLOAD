@@ -5440,6 +5440,7 @@
       const verm = [0xE5, 0x48, 0x4D], cinza = [0xCB, 0xD5, 0xE1], verde = [0x3D, 0x8B, 0x37];
       return t < .5 ? mix(verm, cinza, t * 2) : mix(cinza, verde, (t - .5) * 2);
     };
+    const SATISF_NOMES = { 5: 'Excelente', 4: 'Bom', 3: 'Regular', 2: 'Pouco importante', 1: 'Irrelevante' };
     function cardSatisfacao(q, pos){
       const itens = q.c.map((c, i) => ({ nota: Number(c[0]), v: c[1], rot: (q.rot || [])[i] || '', cor: corSatisf(i, q.c.length) }));
       const total = itens.reduce((s, x) => s + x.v, 0), min = itens[0].nota, max = itens[itens.length - 1].nota, meio = (min + max) / 2;
@@ -5452,11 +5453,13 @@
         const p = total ? x.v / total * 100 : 0, f = `<circle cx="21" cy="21" r="15.915" fill="none" stroke="${x.cor}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${(25 - acum).toFixed(3)}"><title>Nota ${x.nota}: ${num(x.v)} (${pct(x.v, total)})</title></circle>`;
         acum += p; return f;
       }).join('');
-      const nome = x => `${x.nota}${x.rot ? ' · ' + x.rot : ''}${x.nota === max ? ' · alta' : x.nota === min ? ' · baixa' : ''}`;
+      // Escala de 1 a 5: nomes fixos da avaliação; outras escalas: rótulo da opção (quando houver) e alta/baixa nas pontas.
+      const nome = x => min === 1 && max === 5 && itens.length === 5 ? `${x.nota} · ${SATISF_NOMES[x.nota]}`
+        : `${x.nota}${x.rot ? ' · ' + x.rot : ''}${x.nota === max ? ' · alta' : x.nota === min ? ' · baixa' : ''}`;
       const corpo = `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><svg class="sm-rosca-svg" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#EEF2F7" stroke-width="6"></circle>${fatias}</svg>
             <div class="cd-rosca-centro"><strong>${media.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong><span>média de ${max}</span></div></div>
-          <ul class="cd-rosca-legenda">${itens.slice().reverse().map(x => `<li title="Nota ${esc(nome(x))}: ${num(x.v)} (${pct(x.v, total)})"><i style="background:${x.cor}"></i><span>${esc(nome(x))}</span><strong>${pct(x.v, total)}</strong></li>`).join('')}</ul>
+          <ul class="cd-rosca-legenda">${itens.slice().reverse().map(x => `<li title="${esc(nome(x))}: ${num(x.v)} resposta${x.v === 1 ? '' : 's'}"><i style="background:${x.cor}"></i><span>${esc(nome(x))}</span></li>`).join('')}</ul>
         </div>`;
       const sub = `${subResp(q)} · <span class="sm-satisf alta">alta (${faixa(alta)}) ${pct(soma(alta), total)}</span> · <span class="sm-satisf baixa">baixa (${faixa(baixa)}) ${pct(soma(baixa), total)}</span>`;
       return card(q.t, sub, corpo, pos);
