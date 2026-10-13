@@ -8,6 +8,7 @@
 // Ações atuais:
 //   ping           → confirma login + permissão e informa se os secrets existem
 //   uazapi_teste   → (só Administrador) GET /instance/all com o admintoken; fecha a Etapa 0
+//   instancia_sincronizar · instancia_registrar · instancia_conectar · instancia_status · instancia_desconectar
 // Publicar: npx supabase functions deploy whatsapp-api
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -100,11 +101,28 @@ const acoes: Record<string, Acao> = {
 
   // As instâncias são criadas no painel da UAZAPI. Aqui elas são importadas (com o token)
   // para wa_instancias / wa_instancia_tokens; os cartões aparecem sozinhos pelo Realtime.
+  // No servidor de demonstração (/instance/all desligado) só atualiza as já registradas, pelo token de cada uma.
   async instancia_sincronizar() {
-    const lista = await uazapi('/instance/all', { adminToken: true });
+    const db = admin();
+    // deno-lint-ignore no-explicit-any
+    let lista: any;
+    try {
+      lista = await uazapi('/instance/all', { adminToken: true });
+    } catch {
+      const { data: tokens } = await db.from('wa_instancia_tokens').select('instancia_id,token');
+      const agora = new Date().toISOString();
+      for (const t of tokens ?? []) {
+        try {
+          const s = interpretarStatus(await uazapi('/instance/status', { token: t.token }));
+          const dados: Record<string, unknown> = { status: s.status, ultimo_status_em: agora };
+          if (s.telefone) dados.telefone = s.telefone;
+          await db.from('wa_instancias').update(dados).eq('id', t.instancia_id);
+        } catch { /* instância removida na UAZAPI ou fora do ar: mantém o último status */ }
+      }
+      return json({ ok: true, modo: 'status', total: (tokens ?? []).length, novas: 0 });
+    }
     // deno-lint-ignore no-explicit-any
     const itens: any[] = Array.isArray(lista) ? lista : (lista?.instances ?? []);
-    const db = admin();
     const { data: existentes } = await db.from('wa_instancias').select('id,uazapi_nome');
     const porNome = new Map<string, string>((existentes ?? []).map((i: { id: string; uazapi_nome: string }) => [i.uazapi_nome, i.id]));
     const agora = new Date().toISOString();
@@ -127,7 +145,33 @@ const acoes: Record<string, Acao> = {
       }
       await db.from('wa_instancia_tokens').upsert({ instancia_id: id, token });
     }
-    return json({ ok: true, total: itens.length, novas });
+    return json({ ok: true, modo: 'lista', total: itens.length, novas });
+  },
+
+  // Registra uma instância pelo token dela (copiado do painel da UAZAPI). Necessário no
+  // servidor de demonstração, onde /instance/all está desligado.
+  async instancia_registrar({ entrada }) {
+    const token = String(entrada.token ?? '').trim();
+    if (token.length < 10) return json({ ok: false, erro: 'Cole o token da instância.' }, 400);
+    let r;
+    try {
+      r = await uazapi('/instance/status', { token });
+    } catch {
+      return json({ ok: false, erro: 'Token não reconhecido pela UAZAPI.' }, 400);
+    }
+    const nomeUazapi = String(r?.instance?.name ?? r?.name ?? '').trim() || `instancia-${token.slice(0, 6)}`;
+    const s = interpretarStatus(r);
+    const db = admin();
+    const { data: inst, error } = await db.from('wa_instancias')
+      .upsert({
+        nome: String(entrada.nome ?? '').trim() || String(r?.instance?.profileName || nomeUazapi),
+        uazapi_nome: nomeUazapi, telefone: s.telefone, status: s.status, ultimo_status_em: new Date().toISOString(),
+      }, { onConflict: 'uazapi_nome' })
+      .select('id').single();
+    if (error) throw new Error(error.message);
+    const { error: erroToken } = await db.from('wa_instancia_tokens').upsert({ instancia_id: inst.id, token });
+    if (erroToken) throw new Error(erroToken.message);
+    return json({ ok: true, id: inst.id, status: s.status });
   },
 
   // Sem `telefone` gera QR code; com `telefone` gera código de pareamento.
