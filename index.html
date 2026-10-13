@@ -2718,6 +2718,11 @@
           <select class="filter-select" id="stkMunicipioFiltro" title="Município de Mato Grosso" hidden>
             <option value="">Município</option>
           </select>
+          <select class="filter-select" id="stkInadLocalFiltro" title="Abrangência do relatório do SPC Brasil" hidden>
+            <option value="mt" selected>Mato Grosso</option>
+            <option value="br">Brasil</option>
+            <option value="cuiaba">Cuiabá</option>
+          </select>
           <select class="filter-select" id="stkIbgeLocalFiltro" title="Local" hidden>
             <option value="">Local</option>
           </select>
@@ -11449,7 +11454,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set(), inadimplencia: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -11672,6 +11677,7 @@ ${clipPlayerPills(n)}
       document.getElementById('stkViabEditar').hidden = !viab || !window.__podeEditar('dashboard');
       document.getElementById('stkViabPrioridadeFiltro').hidden = !viab;
       document.getElementById('stkViabFerrFiltro').hidden = !viab;
+      document.getElementById('stkInadLocalFiltro').hidden = stkPainel() !== 'inadimplencia';
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -11699,6 +11705,13 @@ ${clipPlayerPills(n)}
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
+      if(stkPainel() === 'inadimplencia'){
+        // Inadimplência: anos com edição do SPC Brasil (sem ano-base: os relatórios já trazem a variação anual).
+        const anosInad = [...new Set((window.SPC_INAD ? window.SPC_INAD.meses : []).map(m => m.slice(0, 4)))].sort().reverse();
+        stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosInad.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        if(anosInad.includes(curAno)) stkAnoEl.value = curAno;
+        return;
+      }
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad' || stkPainel() === 'empresas'){
         // EMPRESAS, IPCA-15, PNAD, Stone (IVS) e Cielo (ICVA): o 1º ano é base; PMC: os 2 primeiros (o painel compara a variação do ano anterior).
         const D = ibgeDados(), base = stkPainel() === 'pmc' ? 2 : 1;
@@ -13246,54 +13259,206 @@ ${clipPlayerPills(n)}
 
 
     // ===== Inadimplência (SPC Brasil) — indicador do Panorama, mesma estrutura do CAGED =====
-    // Base: documentos do SPC Brasil anexados na seção Inadimplência (Cuiabá, Mato Grosso e Brasil, por mês).
-    // Enquanto a extração dos números dos PDFs não existe, o painel mostra a estrutura final (5 KPIs + 2 linhas,
-    // como o CAGED) com os indicadores "aguardando dados", e o quadro de documentos já lê a tabela de verdade.
-    let inadPainelSeq = 0;
+    // Dados: assets/data/spc_inadimplencia.js — números dos relatórios do SPC Brasil anexados na seção Inadimplência
+    // (Mato Grosso e Brasil/regiões; Cuiabá quando o SPC enviar). Uma "edição" por mês de referência dos relatórios.
+    // Filtros: Abrangência (Mato Grosso | Brasil | Cuiabá) e Mês/Ano (a edição mais recente até a data escolhida).
+    // KPIs comparam com a edição anterior disponível. Subir é ruim (inadimplência): alta em vermelho.
+    const stkInadLocalEl = document.getElementById('stkInadLocalFiltro');
+    stkInadLocalEl.addEventListener('change', stkRender);
+    let inadPainelSeq = 0, inadPainelUltimo = null;
+    const INAD_VALOR_CURTO = ['Até R$ 500', 'R$ 500 a 1 mil', 'R$ 1 a 2,5 mil', 'R$ 2,5 a 7,5 mil', 'Acima de 7,5 mil'];
+    const INAD_SETOR_COR = { 'Bancos': CD_COR.azul, 'Comércio': CD_COR.verde, 'Água e Luz': '#E3AE1F', 'Comunicação': CD_COR.azulClaro, 'Outros': '#64748B' };
+    function inadEdicao(D){
+      const ano = stkAnoEl.value, mes = stkMesEl.value;
+      let c = D.meses.slice().sort();
+      if(ano && mes) c = c.filter(m => m <= `${ano}-${mes}`);      // a mais recente publicada até o mês escolhido
+      else if(ano) c = c.filter(m => m.startsWith(ano));
+      else if(mes) c = c.filter(m => m.slice(5) === mes);
+      return c.length ? c[c.length - 1] : null;
+    }
     function inadPainelRender(){
       const seq = ++inadPainelSeq;
-      stkPreencherFiltros();
-      if(!inadCarregado){
+      const pend = [];
+      if(!window.SPC_INAD) pend.push(ibgeCarregar('inadimplencia'));
+      if(!inadCarregado) pend.push(inadCarregar().catch(() => null));   // documentos da seção (status de Cuiabá)
+      if(pend.length){
         stkGrid.classList.add('cd-carregando');
-        inadCarregar().catch(() => null).then(() => { if(seq === inadPainelSeq && stkPainel() === 'inadimplencia') inadPainelRender(); });
-        if(!stkGrid.querySelector('.cd-tela')) inadPainelDesenhar();
+        Promise.all(pend).then(() => { if(seq === inadPainelSeq && stkPainel() === 'inadimplencia') inadPainelRender(); }).catch(() => {
+          stkGrid.classList.remove('cd-fit', 'cd-carregando');
+          stkGrid.innerHTML = '<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar os dados do SPC Brasil (assets/data/spc_inadimplencia.js).</div></div>';
+        });
         return;
       }
-      inadPainelDesenhar();
+      stkPreencherFiltros();
+      inadPainelDesenhar(window.SPC_INAD);
     }
-    function inadPainelDesenhar(){
-      const docs = inadArquivos.slice().sort((a, b) => inadData(b).localeCompare(inadData(a)) || INAD_ABR.indexOf(a.abrangencia) - INAD_ABR.indexOf(b.abrangencia));
-      const ultRef = docs.length ? inadRef(docs[0]) : '';
-      const rotRef = ultRef ? `${PAN_MES_CURTO[Number(ultRef.slice(5, 7)) - 1]}/${ultRef.slice(0, 4)}` : '';
-      const espera = { cls: 'neu', txt: 'aguardando dados' };
-      const ref = docs.length ? `SPC Brasil · ${docs.length} documento${docs.length === 1 ? '' : 's'} recebido${docs.length === 1 ? '' : 's'}` : 'SPC Brasil · nenhum documento ainda';
-      const kInad = cdKpiCard('pessoas', 'azul', 'Consumidores inadimplentes', '—', espera, ref, 'Pessoas físicas com contas em atraso e registradas no SPC Brasil · Cuiabá');
-      const kVar = cdKpiCard('percent', 'amarelo', 'Variação anual', '—', espera, ref, 'Número de inadimplentes contra o mesmo mês do ano anterior');
-      const kDiv = cdKpiCard('banco', 'vermelho', 'Dívidas em atraso', '—', espera, ref, 'Quantidade de dívidas em atraso registradas no SPC Brasil');
-      const kMed = cdKpiCard('caixa', 'azul', 'Dívida média por pessoa', '—', espera, ref, 'Valor médio devido por consumidor inadimplente');
-      const kEmp = cdKpiCard('predio', 'verde', 'Empresas inadimplentes', '—', espera, ref, 'Pessoas jurídicas com contas em atraso registradas no SPC Brasil');
-      const aguarda = txt => `<div class="stk-vazio">${esc(txt)}<br><small>Os números entram quando a leitura dos PDFs do SPC Brasil estiver pronta.</small></div>`;
-      const wEvol = cdCard('Evolução da inadimplência', 'Consumidores inadimplentes por mês · ano atual × anterior', aguarda('Linha mensal de inadimplentes (ano atual e anterior).'));
-      const wAbr = cdCard('Inadimplência por abrangência', 'Cuiabá × Mato Grosso × Brasil', aguarda('Comparativo da variação anual nas três abrangências.'));
-      const wSetor = cdCard('Dívidas por setor credor', 'Bancos, comércio, comunicação, água e luz', aguarda('Participação de cada setor credor nas dívidas em atraso.'));
-      const wIdade = cdCard('Inadimplentes por faixa etária', 'Participação de cada faixa de idade', aguarda('Faixas etárias dos consumidores inadimplentes.'));
-      const wValor = cdCard('Dívidas por faixa de valor', 'Quantidade de dívidas por valor devido', aguarda('Distribuição das dívidas por faixa de valor.'));
-      // Documentos recebidos (dado real da seção Inadimplência): último mês de cada abrangência.
-      const porAbr = INAD_ABR.map(a => [a, docs.find(r => r.abrangencia === a)]);
-      const wDocs = cdCard('Documentos do SPC Brasil', inadErro ? 'Sem acesso à seção Inadimplência' : rotRef ? `Último mês recebido: ${rotRef}` : 'Nenhum documento recebido', inadErro
-        ? '<div class="stk-vazio">Os documentos ficam na seção Inadimplência (peça acesso a um Administrador).</div>'
-        : `<ul class="cd-dest">${porAbr.map(([a, r]) => {
-            const rot = r ? `${PAN_MES_CURTO[Number(inadRef(r).slice(5, 7)) - 1]}/${inadRef(r).slice(0, 4)}` : '';
-            const qtd = docs.filter(x => x.abrangencia === a).length;
-            return `<li><div title="${esc(a)}${r ? ` · último documento: ${esc(r.titulo)}` : ' · nenhum documento'}"><span class="cd-dest-ic ${r ? 'verde' : 'amarelo'}">${stkIcone(r ? 'setaCima' : 'alerta')}</span>
-              <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(a)} · ${r ? 'até ' + esc(rot) : 'aguardando o 1º PDF'}</span><span class="cd-dest-meta">${qtd} documento${qtd === 1 ? '' : 's'} na seção Inadimplência</span></span></div></li>`;
-          }).join('')}</ul>`);
+    function inadPainelDesenhar(D){
+      const ref = inadEdicao(D), loc = stkInadLocalEl.value || 'mt', nomeLoc = D.locais[loc];
+      const ordem = D.meses.slice().sort(), iE = ordem.indexOf(ref), refAnt = iE > 0 ? ordem[iE - 1] : null;
+      const X = ref ? (D.edicoes[ref] || {})[loc] : null, A = refAnt ? (D.edicoes[refAnt] || {})[loc] : null;
+      const rotM = m => m ? `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}` : '';
+      const rotLongo = m => `${REL_MES_LONGO[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}`;
+      const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+      const pctS = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + dec(Math.abs(v), 2) + '%';   // variação
+      const pctP = v => dec(v, 2) + '%';                                                                  // participação
+      const reais = v => 'R$ ' + dec(v, 2);
+      const vsAnt = txt => A ? `vs. ${rotM(refAnt)} (${txt})` : 'sem edição anterior';
+      // Variações já em %: diferença em p.p. contra a edição anterior (alta = ruim).
+      const dTaxa = (v, a) => cdDelta(v / 100, (a == null ? 0 : a) / 100, true, a == null, true);
+      const dQtd = (v, a) => cdDelta(v, a || 0, false, a == null, true);
+      const fonte = ref ? `SPC Brasil · ${rotM(ref)}` : 'SPC Brasil';
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+
+      // Sem relatório para a abrangência (Cuiabá ainda não recebido) ou sem edição no período.
+      if(!X){
+        const docsCuiaba = inadArquivos.filter(r => r.abrangencia === nomeLoc).length;
+        const msg = !ref ? 'Nenhuma edição do SPC Brasil no período escolhido. Limpe o Mês/Ano para ver a mais recente.'
+          : `O SPC Brasil ainda não tem relatório de ${nomeLoc} nesta base${docsCuiaba ? ` (${docsCuiaba} documento${docsCuiaba === 1 ? '' : 's'} recebido${docsCuiaba === 1 ? '' : 's'} na seção Inadimplência, aguardando a leitura dos números)` : ''}. Veja Mato Grosso ou Brasil.`;
+        const vazio = { cls: 'neu', txt: '—' };
+        const k = (ic, tom, rot) => cdKpiCard(ic, tom, rot, '—', vazio, fonte, msg);
+        const card = t => cdCard(t, nomeLoc, `<div class="stk-vazio">${esc(msg)}</div>`);
+        stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
+        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${k('pessoas', 'azul', 'Inadimplentes · variação anual')}${k('documento', 'vermelho', 'Dívidas em atraso · variação anual')}${k('banco', 'amarelo', 'Dívida média por inadimplente')}${k('layers', 'azul', 'Dívidas por inadimplente')}${k('alerta', 'verde', 'Tempo médio de atraso')}</div>`
+          + `<div class="cd-row cd-row-a">${card('Variação anual')}${card('Inadimplentes por faixa etária')}${card('Dívidas por setor credor')}</div>`
+          + `<div class="cd-row cd-row-b">${card('Valor total das dívidas')}${card('Tempo de atraso')}${card('Destaques')}</div></div>`;
+        inadPainelUltimo = null;
+        return;
+      }
+
+      // ---- KPIs ----
+      const kDev = cdKpiCard('pessoas', 'azul', 'Inadimplentes · variação anual', pctS(X.devedores.anual), dTaxa(X.devedores.anual, A && A.devedores.anual),
+        vsAnt(pctS(A && A.devedores.anual)), `Consumidores negativados em ${rotLongo(ref)} contra o mesmo mês do ano anterior · mês a mês: ${pctS(X.devedores.mensal)} · ${nomeLoc}`);
+      const kDiv = cdKpiCard('documento', 'vermelho', 'Dívidas em atraso · variação anual', pctS(X.dividas.anual), dTaxa(X.dividas.anual, A && A.dividas.anual),
+        vsAnt(pctS(A && A.dividas.anual)), `Número de dívidas em atraso em ${rotLongo(ref)} contra o mesmo mês do ano anterior · mês a mês: ${pctS(X.dividas.mensal)} · ${nomeLoc}`);
+      const kMed = cdKpiCard('banco', 'amarelo', 'Dívida média por inadimplente', reais(X.dividaMedia), dQtd(X.dividaMedia, A && A.dividaMedia),
+        vsAnt(A ? reais(A.dividaMedia) : ''), `Soma de todas as dívidas de cada consumidor negativado, em média · ${nomeLoc}`);
+      const kQtd = cdKpiCard('layers', 'azul', 'Dívidas por inadimplente', dec(X.dividasPorDevedor, loc === 'br' ? 2 : 3), dQtd(X.dividasPorDevedor, A && A.dividasPorDevedor),
+        vsAnt(A ? dec(A.dividasPorDevedor, loc === 'br' ? 2 : 3) : ''), loc === 'br' ? 'Empresas credoras por consumidor negativado, em média · Brasil' : `Dívidas em atraso por consumidor negativado, em média · ${nomeLoc}`);
+      const kAtr = cdKpiCard('alerta', 'verde', 'Tempo médio de atraso', `${dec(X.atrasoMeses, 1)}<span class="cd-kpi-un"> meses</span>`, dQtd(X.atrasoMeses, A && A.atrasoMeses),
+        vsAnt(A ? dec(A.atrasoMeses, 1) + ' meses' : ''), `Tempo médio desde o vencimento das dívidas dos negativados (${dec(X.atrasoMeses / 12, 1)} anos) · ${nomeLoc}`);
+
+      // ---- Linha A, 1º quadro: comparativo (Mato Grosso) ou evolução de 10 anos (Brasil) ----
+      let wComp, linhas10 = null;
+      if(loc === 'br' && X.historico){
+        const H = X.historico;
+        linhas10 = { categorias: H.meses.map(m => m.slice(0, 4)), series: [
+          { nome: 'Inadimplentes', cor: CD_COR.azul, valores: H.devedores },
+          { nome: 'Dívidas', cor: CD_COR.azulClaro, valores: H.dividas }] };
+        wComp = cdCard('Variação mensal no mesmo mês', `${PAN_MES_CURTO[Number(ref.slice(5, 7)) - 1]} de cada ano contra o mês anterior · últimos 10 anos · %`, '<div id="stkFluxoGraf"></div>', legendaDots(linhas10.series));
+      } else {
+        const comp = [[nomeLoc, { devedoresAnual: X.devedores.anual, dividasAnual: X.dividas.anual, devedoresMensal: X.devedores.mensal, dividasMensal: X.dividas.mensal }]]
+          .concat(Object.entries(X.comparativo || {}));
+        const clara = c => stkMisturarCor(c, '#FFFFFF', 0.45);
+        const itens = [].concat(
+          comp.map(([n, c], i) => ({ nome: n, valor: Math.max(0, c.devedoresAnual), rotulo: pctS(c.devedoresAnual), cor: i ? clara(CD_COR.azul) : CD_COR.azul,
+            dica: `Inadimplentes: ${pctS(c.devedoresAnual)} no ano · ${pctS(c.devedoresMensal)} no mês` })),
+          comp.map(([n, c], i) => ({ nome: n, valor: Math.max(0, c.dividasAnual), rotulo: pctS(c.dividasAnual), cor: i ? clara('#64748B') : '#64748B',
+            dica: `Dívidas em atraso: ${pctS(c.dividasAnual)} no ano · ${pctS(c.dividasMensal)} no mês` })));
+        wComp = cdCard('Variação anual', `${rotLongo(ref)} contra o mesmo mês do ano anterior`, cdBarras(itens, 'Variação anual', 'Sem comparativo nesta edição.'),
+          legendaDots([{ nome: 'Inadimplentes', cor: CD_COR.azul }, { nome: 'Dívidas', cor: '#64748B' }]));
+      }
+
+      // ---- Linha A, 2º quadro: faixa etária (Mato Grosso) ou regiões (Brasil) ----
+      let wMeio;
+      if(loc === 'br' && X.regioes){
+        const regs = Object.entries(X.regioes).sort((a, b) => b[1].devedoresAnual - a[1].devedoresAnual);
+        wMeio = cdCard('Variação anual por região', `Inadimplentes · ${rotLongo(ref)} contra o ano anterior (Brasil ${pctS(X.devedores.anual)})`,
+          cdBarras(regs.map(([n, r], i) => ({ nome: n, valor: Math.max(0, r.devedoresAnual), rotulo: pctS(r.devedoresAnual),
+            cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', regs.length > 1 ? i / (regs.length - 1) : 0),
+            dica: `Inadimplentes ${pctS(r.devedoresAnual)} no ano, ${pctS(r.devedoresMensal)} no mês · dívidas ${pctS(r.dividasAnual)} · ${dec(r.negativadosMi, 2)} mi negativados (${pctP(r.popAdulta)} da população adulta)` })), 'Variação anual por região', 'Sem dados por região.'));
+      } else {
+        wMeio = inadCardFaixa(D, X, nomeLoc, pctP, dec);
+      }
+
+      // ---- Linha A, 3º quadro: setor credor (rosca, como a do CAGED) ----
+      const setores = Object.entries(X.setor).sort((a, b) => b[1] - a[1]);
+      const dadosSetor = setores.map(([n, v]) => ({ nome: n, sigla: n, cor: INAD_SETOR_COR[n] || CD_COR.cinza, valor: v }));
+      const wSetor = cdCard('Dívidas por setor credor', `Participação no número de dívidas em atraso · ${nomeLoc}`, `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${dec(setores[0][1], 1)}%</strong><span>${esc(setores[0][0])}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${setores.map(([n, v]) => `<li title="${esc(n)}: ${esc(pctP(v))} das dívidas${X.setorAnual && X.setorAnual[n] != null ? ` · ${esc(pctS(X.setorAnual[n]))} no ano` : ''}"><i style="background:${INAD_SETOR_COR[n] || CD_COR.cinza}"></i><span>${esc(n)}</span><strong>${dec(v, 1)}%</strong></li>`).join('')}</ul>
+        </div>`);
+
+      // ---- Linha B ----
+      const wValor = cdCard('Valor total das dívidas', `Inadimplentes por faixa de valor devido · até R$ 1.000: ${pctP(X.valor[0] + X.valor[1])}`,
+        cdBarras(D.valores.map((n, i) => ({ nome: INAD_VALOR_CURTO[i], valor: X.valor[i], rotulo: pctP(X.valor[i]), cor: stkMisturarCor('#C9DDF8', CD_COR.azul, i / (D.valores.length - 1)),
+          dica: `${pctP(X.valor[i])} dos inadimplentes devem ${n.toLowerCase()} no total` })), 'Valor total das dívidas', 'Sem dados.'));
+      const wAtraso = cdCard('Tempo de atraso', `Inadimplentes por tempo desde o vencimento · média de ${dec(X.atrasoMeses, 1)} meses`,
+        cdBarras(D.atrasos.map((n, i) => ({ nome: n, valor: X.atraso[i], rotulo: pctP(X.atraso[i]), cor: stkMisturarCor('#F3D9A4', '#B7791F', i / (D.atrasos.length - 1)),
+          dica: `${pctP(X.atraso[i])} dos inadimplentes${X.atrasoAnual ? ` · ${pctS(X.atrasoAnual[i])} no ano` : ''}` })), 'Tempo de atraso', 'Sem dados.'));
+      const wFaixaBr = loc === 'br' ? inadCardFaixa(D, X, nomeLoc, pctP, dec) : null;
+
+      // ---- Destaques ----
+      const dest = [];
+      const tomVar = v => v > 0 ? ['setaCima', 'vermelho'] : v < 0 ? ['setaBaixo', 'verde'] : ['pontos', 'azul'];
+      if(loc === 'mt' && X.comparativo){
+        const co = X.comparativo['Centro-Oeste'], br = X.comparativo['Brasil'];
+        const [ic, tom] = tomVar(X.devedores.anual - br.devedoresAnual);
+        dest.push({ ic, tom, tit: `Inadimplentes ${pctS(X.devedores.anual)} em 12 meses`, meta: `${X.devedores.anual > br.devedoresAnual ? 'Acima' : 'Abaixo'} do Brasil (${pctS(br.devedoresAnual)}) · Centro-Oeste ${pctS(co.devedoresAnual)}` });
+      }
+      if(loc === 'br' && X.regioes){
+        const regs = Object.entries(X.regioes), alta = regs.slice().sort((a, b) => b[1].devedoresAnual - a[1].devedoresAnual)[0];
+        const maisNeg = regs.slice().sort((a, b) => b[1].popAdulta - a[1].popAdulta)[0];
+        dest.push({ ic: 'pessoas', tom: 'azul', tit: `${dec(X.estimativa.negativadosMi, 2)} milhões de negativados`, meta: `${pctP(X.estimativa.popAdulta)} da população adulta · ${maisNeg[0]} tem a maior proporção (${pctP(maisNeg[1].popAdulta)})` });
+        dest.push({ ic: 'setaCima', tom: 'vermelho', tit: `Maior alta: ${alta[0]} ${pctS(alta[1].devedoresAnual)}`, meta: `Inadimplentes em 12 meses · Brasil ${pctS(X.devedores.anual)}` });
+      }
+      if(A) { const v = (X.dividaMedia / A.dividaMedia - 1) * 100, [ic, tom] = tomVar(v);
+        dest.push({ ic, tom, tit: `Dívida média de ${reais(X.dividaMedia)}`, meta: `${pctS(v)} contra ${rotM(refAnt)} (${reais(A.dividaMedia)})` }); }
+      const iF = X.faixaEtaria.indexOf(Math.max(...X.faixaEtaria));
+      dest.push({ ic: 'pessoas', tom: 'azul', tit: `${D.faixas[iF]} concentram ${pctP(X.faixaEtaria[iF])}`, meta: `Idade média de ${dec(X.idadeMedia, 1)} anos · ${pctP(X.sexo.homens)} homens e ${pctP(X.sexo.mulheres)} mulheres` });
+      if(X.setorAnual){ const s = Object.entries(X.setorAnual).sort((a, b) => b[1] - a[1])[0];
+        dest.push({ ic: 'trendUp', tom: 'vermelho', tit: `Dívidas com ${s[0]}: ${pctS(s[1])} no ano`, meta: `Setor credor que mais cresceu · ${setores[0][0]} concentram ${pctP(setores[0][1])}` }); }
+      else dest.push({ ic: 'banco', tom: 'azul', tit: `${setores[0][0]}: ${pctP(setores[0][1])} das dívidas`, meta: `Seguido por ${setores[1][0]} (${pctP(setores[1][1])})` });
+      const iA = X.atraso.indexOf(Math.max(...X.atraso));
+      dest.push({ ic: 'alerta', tom: 'amarelo', tit: `${pctP(X.atraso[iA])} com atraso de ${D.atrasos[iA].toLowerCase()}`, meta: `${pctP(X.valor[0] + X.valor[1])} devem até R$ 1.000 no total` });
+      // Cuiabá: o SPC ainda não manda o relatório do município — o painel avisa enquanto não houver.
+      const temCuiaba = Object.values(D.edicoes).some(e => e.cuiaba);
+      if(!temCuiaba) dest.push({ ic: 'documento', tom: 'amarelo', tit: 'Cuiabá: aguardando relatório do SPC Brasil', meta: `${inadArquivos.filter(r => r.abrangencia === 'Cuiabá').length} documento(s) de Cuiabá na seção Inadimplência` });
+      const wDest = cdCard('Destaques', `${nomeLoc} · ${rotLongo(ref)}`, `<ul class="cd-dest">${dest.slice(0, 6).map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
+          <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
+          <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`);
+
       stkGrid.classList.add('cd-fit');
       stkGrid.classList.remove('cd-carregando');
-      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kInad}${kVar}${kDiv}${kMed}${kEmp}</div>`
-        + `<div class="cd-row cd-row-a">${wEvol}${wAbr}${wSetor}</div>`
-        + `<div class="cd-row cd-row-b">${wIdade}${wValor}${wDocs}</div></div>`;
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kDev}${kDiv}${kMed}${kQtd}${kAtr}</div>`
+        + `<div class="cd-row cd-row-a">${wComp}${wMeio}${wSetor}</div>`
+        + `<div class="cd-row cd-row-b">${loc === 'br' ? wFaixaBr + wValor : wValor + wAtraso}${wDest}</div></div>`;
+      stkDesenharRoscaCd(dadosSetor, 'Dívidas por setor credor', 196);
+      const graf = document.getElementById('stkFluxoGraf');
+      if(graf && linhas10) stkDesenharLinhasFluxo(graf, linhas10.categorias, linhas10.series, cdAlturaLivre(graf, 200), v => pctS(v));
       cdAjustarListas();
+
+      // ---- Exportar (CSV): todos os números da edição e abrangência ----
+      const L = [['Indicador', 'Item', 'Valor', 'Unidade']];
+      const add = (ind, item, v, un) => L.push([ind, item, v == null ? '' : String(v).replace('.', ','), un]);
+      add('Inadimplentes', 'Variação anual', X.devedores.anual, '%'); add('Inadimplentes', 'Variação mensal', X.devedores.mensal, '%');
+      add('Dívidas em atraso', 'Variação anual', X.dividas.anual, '%'); add('Dívidas em atraso', 'Variação mensal', X.dividas.mensal, '%');
+      add('Dívida média por inadimplente', '', X.dividaMedia, 'R$'); add(loc === 'br' ? 'Empresas credoras por inadimplente' : 'Dívidas por inadimplente', '', X.dividasPorDevedor, '');
+      add('Tempo médio de atraso', '', X.atrasoMeses, 'meses'); add('Idade média', '', X.idadeMedia, 'anos');
+      add('Sexo', 'Homens', X.sexo.homens, '%'); add('Sexo', 'Mulheres', X.sexo.mulheres, '%');
+      D.faixas.forEach((n, i) => add('Faixa etária (participação)', n, X.faixaEtaria[i], '%'));
+      D.valores.forEach((n, i) => add('Valor total das dívidas (participação)', n, X.valor[i], '%'));
+      D.atrasos.forEach((n, i) => add('Tempo de atraso (participação)', n, X.atraso[i], '%'));
+      if(X.atrasoAnual) D.atrasos.forEach((n, i) => add('Tempo de atraso (variação anual)', n, X.atrasoAnual[i], '%'));
+      setores.forEach(([n, v]) => add('Setor credor (participação nas dívidas)', n, v, '%'));
+      if(X.setorAnual) Object.entries(X.setorAnual).forEach(([n, v]) => add('Setor credor (variação anual)', n, v, '%'));
+      Object.entries(X.comparativo || {}).forEach(([n, c]) => { add('Comparativo · inadimplentes (anual)', n, c.devedoresAnual, '%'); add('Comparativo · inadimplentes (mensal)', n, c.devedoresMensal, '%');
+        add('Comparativo · dívidas (anual)', n, c.dividasAnual, '%'); add('Comparativo · dívidas (mensal)', n, c.dividasMensal, '%'); add('Comparativo · dívidas por inadimplente', n, c.dividasPorDevedor, ''); });
+      Object.entries(X.regioes || {}).forEach(([n, r]) => { add('Região · inadimplentes (anual)', n, r.devedoresAnual, '%'); add('Região · inadimplentes (mensal)', n, r.devedoresMensal, '%');
+        add('Região · dívidas (anual)', n, r.dividasAnual, '%'); add('Região · dívidas (mensal)', n, r.dividasMensal, '%'); add('Região · negativados (estimativa)', n, r.negativadosMi, 'milhões'); add('Região · % da população adulta', n, r.popAdulta, '%'); });
+      if(X.estimativa){ add('Negativados no Brasil (estimativa)', '', X.estimativa.negativadosMi, 'milhões'); add('Negativados no Brasil (% da população adulta)', '', X.estimativa.popAdulta, '%');
+        D.faixas.forEach((n, i) => { add('Estimativa por faixa etária', n, X.estimativa.faixaEtaria[i][0], 'milhões'); add('Estimativa por faixa etária (% da população da faixa)', n, X.estimativa.faixaEtaria[i][1], '%'); }); }
+      if(X.historico) X.historico.meses.forEach((m, i) => { add('Variação mensal no mesmo mês · inadimplentes', rotM(m), X.historico.devedores[i], '%'); add('Variação mensal no mesmo mês · dívidas', rotM(m), X.historico.dividas[i], '%'); });
+      L.push([], ['Fonte', `SPC Brasil · ${X.arquivo || ''}`, rotLongo(ref), '']);
+      inadPainelUltimo = { linhas: L, arquivo: `spc_inadimplencia_${loc}_${ref}.csv` };
+    }
+    // Faixa etária: participação nos inadimplentes (no Brasil, também a estimativa de negativados e o % da população da faixa).
+    function inadCardFaixa(D, X, nomeLoc, pctP, dec){
+      const iF = X.faixaEtaria.indexOf(Math.max(...X.faixaEtaria));
+      return cdCard('Inadimplentes por faixa etária', `Participação no total · idade média ${dec(X.idadeMedia, 1)} anos · ${nomeLoc}`,
+        cdBarras(D.faixas.map((n, i) => ({ nome: n, valor: X.faixaEtaria[i], rotulo: pctP(X.faixaEtaria[i]),
+          cor: i === iF ? CD_COR.azul : '#C9DDF8',
+          dica: X.estimativa ? `${pctP(X.faixaEtaria[i])} dos inadimplentes · ${dec(X.estimativa.faixaEtaria[i][0], 2)} mi negativados (${pctP(X.estimativa.faixaEtaria[i][1])} da população da faixa)` : `${pctP(X.faixaEtaria[i])} dos inadimplentes` })),
+          'Inadimplentes por faixa etária', 'Sem dados.'));
     }
 
     // ===== EMPRESAS (CNPJ) — indicador do Panorama, mesma estrutura do CAGED =====
@@ -14777,6 +14942,7 @@ ${clipPlayerPills(n)}
       // EMPRESAS · Mapa: CNPJs de MT pelo CEP registrado.
       empCeps: ['assets/data/cnpj_ceps.js', 'CNPJ_CEPS'], empRamos: ['assets/data/cnpj_ramos.js', 'CNPJ_RAMOS'],
       empAmostras: ['assets/data/cnpj_amostras.js', 'CNPJ_AMOSTRAS'],   // Exportar filtrado (baixado só ao exportar)
+      inadimplencia: ['assets/data/spc_inadimplencia.js', 'SPC_INAD'],   // SPC Brasil (PDFs da seção Inadimplência)
       munGeo: ['assets/data/municipios_geo.js', 'MUNICIPIOS_GEO'] };   // TEMPORÁRIO: sede dos municípios enquanto não há CEP
     // Quem publica os dados de cada painel (mensagens de carregamento/sem dados).
     const ibgeFonte = painel => painel === 'ivs' ? ['da Stone', 'A Stone'] : painel === 'icva' ? ['da Cielo', 'A Cielo'] : ['do IBGE', 'O IBGE'];
@@ -15413,7 +15579,7 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar();
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt';
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -15426,7 +15592,7 @@ ${clipPlayerPills(n)}
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar();
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt';
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -15567,14 +15733,13 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
-      // Inadimplência: enquanto a base do SPC não chega, exporta a lista de documentos recebidos.
+      // Inadimplência: todos os números da edição e abrangência escolhidas (SPC Brasil), um por linha.
       if(stkPainel() === 'inadimplencia'){
+        if(!inadPainelUltimo) return;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-        const linhas = [['Ano', 'Mês', 'Data de publicação', 'Abrangência', 'Título', 'Arquivo', 'Tamanho (bytes)', 'Enviado em', 'Enviado por']]
-          .concat(inadArquivos.map(r => [inadRef(r).slice(0, 4), INAD_MESES[Number(inadRef(r).slice(5, 7)) - 1], r.data_publicacao ? fmtDateBR(r.data_publicacao) : '', r.abrangencia, r.titulo, r.arquivo_nome, r.tamanho_bytes, r.created_at, r.usuario_email || '']));
-        const url = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const url = URL.createObjectURL(new Blob(['\ufeff' + inadPainelUltimo.linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
-        a.href = url; a.download = 'inadimplencia_documentos_spc.csv';
+        a.href = url; a.download = inadPainelUltimo.arquivo;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return;
