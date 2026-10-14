@@ -11798,7 +11798,9 @@ ${clipPlayerPills(n)}
       const curAno = stkAnoEl.value;
       if(stkPainel() === 'inadimplencia'){
         // Inadimplência: anos com edição do SPC Brasil (sem ano-base: os relatórios já trazem a variação anual).
-        const anosInad = [...new Set((window.SPC_INAD ? window.SPC_INAD.meses : []).map(m => m.slice(0, 4)))].sort().reverse();
+        // Na visão Gráfico, também os anos lidos dos PDFs Brasil da seção.
+        const mesesInad = window.SPC_INAD ? (inadVisao === 'graf' ? [...inadRegSerie(window.SPC_INAD).keys()] : window.SPC_INAD.meses) : [];
+        const anosInad = [...new Set(mesesInad.map(m => m.slice(0, 4)))].sort().reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosInad.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
         if(anosInad.includes(curAno)) stkAnoEl.value = curAno;
         return;
@@ -13360,9 +13362,9 @@ ${clipPlayerPills(n)}
     let inadPainelSeq = 0, inadPainelUltimo = null;
     const INAD_VALOR_CURTO = ['Até R$ 500', 'R$ 500 a 1 mil', 'R$ 1 a 2,5 mil', 'R$ 2,5 a 7,5 mil', 'Acima de 7,5 mil'];
     const INAD_SETOR_COR = { 'Bancos': CD_COR.azul, 'Comércio': CD_COR.verde, 'Água e Luz': '#E3AE1F', 'Comunicação': CD_COR.azulClaro, 'Outros': '#64748B' };
-    function inadEdicao(D){
+    function inadEdicao(D, lista){   // lista: meses disponíveis (padrão: os de D)
       const ano = stkAnoEl.value, mes = stkMesEl.value;
-      let c = D.meses.slice().sort();
+      let c = (lista || D.meses).slice().sort();
       if(ano && mes) c = c.filter(m => m <= `${ano}-${mes}`);      // a mais recente publicada até o mês escolhido
       else if(ano) c = c.filter(m => m.startsWith(ano));
       else if(mes) c = c.filter(m => m.slice(5) === mes);
@@ -13391,9 +13393,75 @@ ${clipPlayerPills(n)}
     // Cores do gráfico de linhas original da visão Dashboard: região em azul, Brasil em azul claro.
     const INAD_REGIOES = ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'];
     const INAD_REGIAO_PADRAO = 'Centro-Oeste';
+
+    // Leitura automática do Gráfico 12 ("Estimativa de inadimplentes") nos PDFs de abrangência Brasil da seção
+    // Inadimplência: o pdf.js extrai o texto do mapa ("Norte: 6,86 milhões (48,45% da população adulta)") e o total do
+    // país ("havia 74,80 milhões ... representa 44,62% da população adulta"), sem API externa. Mês = "(ref. jun/2026)"
+    // do gráfico ou, sem ele, o mês de referência do cadastro. Cada PDF é baixado uma vez por navegador: o resultado
+    // fica no IndexedDB (cache das miniaturas, chave "inad-regioes|id|caminho"). Sem acesso ao arquivo, vale o transcrito
+    // em assets/data/spc_inadimplencia.js — que também cobre o mesmo mês quando os dois existem (o PDF prevalece).
+    const inadRegPdf = new Map();   // id do arquivo → { mes, regioes, brasil } | { semDados } | 'lendo' | 'erro'
+    let inadRegFila = null;
+    const INAD_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const inadNumBR = t => Number(String(t).replace(/\./g, '').replace(',', '.'));
+    function inadLerTextoGrafico12(texto){
+      const t = texto.replace(/\s+/g, ' ').replace(/\s*-\s*/g, '-');
+      const regioes = {};
+      const re = /(Norte|Nordeste|Centro-Oeste|Sudeste|Sul)\s*:\s*([\d.,]+)\s*milh\S*\s*\(\s*([\d.,]+)\s*%\s*da popula/g;
+      let m;
+      while((m = re.exec(t))) regioes[m[1]] = { negativadosMi: inadNumBR(m[2]), popAdulta: inadNumBR(m[3]) };
+      if(!INAD_REGIOES.every(n => regioes[n] && isFinite(regioes[n].popAdulta))) return null;
+      const b = t.match(/havia\s+([\d.,]+)\s*milh.*?representa\s+([\d.,]+)\s*%/);
+      const r = t.match(/\(ref\.?\s*([a-zç]{3})[a-zç]*\/(\d{4})\)/i), iM = r ? INAD_MES_ABREV.indexOf(r[1].toLowerCase()) : -1;
+      return { mes: iM >= 0 ? `${r[2]}-${String(iM + 1).padStart(2, '0')}` : null, regioes,
+        brasil: b ? { negativadosMi: inadNumBR(b[1]), popAdulta: inadNumBR(b[2]) } : null };
+    }
+    async function inadLerPdfRegioes(r){
+      const chave = `inad-regioes|${r.id}|${r.arquivo_path}`;
+      const cache = await thumbCache('get', chave);
+      if(cache) return cache;
+      const pdfjs = await loadPdfJs();
+      const { data, error } = await supabaseClient.storage.from(INAD_BUCKET).createSignedUrl(r.arquivo_path, 300);
+      if(error) throw error;
+      const pdf = await pdfjs.getDocument({ url: data.signedUrl, isEvalSupported: false }).promise;
+      let achado = null;
+      try{
+        // O Gráfico 12 fica no fim do relatório: lê de trás para frente e para no primeiro encontrado.
+        for(let p = pdf.numPages; p >= 1 && !achado; p--){
+          const tc = await (await pdf.getPage(p)).getTextContent();
+          achado = inadLerTextoGrafico12(tc.items.map(i => i.str).join(' '));
+        }
+      } finally {
+        pdf.destroy();
+      }
+      const res = achado ? { ...achado, mes: achado.mes || inadRef(r) } : { semDados: true };
+      thumbCache('set', chave, res);   // PDF sem o gráfico também fica no cache (não é baixado de novo)
+      return res;
+    }
+    // Lê, um por vez, os PDFs Brasil ainda não lidos; ao terminar redesenha o Gráfico (se ainda estiver aberto).
+    function inadRegLerPendentes(){
+      if(inadRegFila || !supabaseReady) return;
+      const pend = inadArquivos.filter(r => r.abrangencia === 'Brasil' && r.arquivo_path && !inadRegPdf.has(r.id));
+      if(!pend.length) return;
+      pend.forEach(r => inadRegPdf.set(r.id, 'lendo'));
+      inadRegFila = pend.reduce((p, r) => p.then(() => inadLerPdfRegioes(r).then(v => inadRegPdf.set(r.id, v))
+          .catch(e => { console.warn('[Inadimplência] leitura do Gráfico 12 em', r.arquivo_nome, e); inadRegPdf.set(r.id, 'erro'); })), Promise.resolve())
+        .finally(() => { inadRegFila = null; if(stkPainel() === 'inadimplencia' && inadVisao === 'graf') stkRender(); });
+    }
+    // Série por mês: transcrito (spc_inadimplencia.js) + lido dos PDFs Brasil da seção (prevalece no mesmo mês).
+    function inadRegSerie(D){
+      const porMes = new Map();
+      D.meses.forEach(m => { const B = D.edicoes[m] && D.edicoes[m].br;
+        if(B && B.regioes) porMes.set(m, { regioes: B.regioes, brasil: B.estimativa || null, arquivo: B.arquivo }); });
+      inadArquivos.filter(r => r.abrangencia === 'Brasil').forEach(r => { const v = inadRegPdf.get(r.id);
+        if(v && v.regioes && v.mes) porMes.set(v.mes, { regioes: v.regioes, brasil: v.brasil, arquivo: r.arquivo_nome }); });
+      return porMes;
+    }
     function inadGraficoDesenhar(D){
-      const ref = inadEdicao(D), reg = stkInadRegiaoEl.value;
-      const meses = D.meses.slice().sort().filter(m => (!ref || m <= ref) && D.edicoes[m] && D.edicoes[m].br && D.edicoes[m].br.regioes);
+      inadRegLerPendentes();
+      const porMes = inadRegSerie(D), lendo = [...inadRegPdf.values()].filter(v => v === 'lendo').length;
+      const ref = inadEdicao(D, [...porMes.keys()]), reg = stkInadRegiaoEl.value;
+      const meses = [...porMes.keys()].sort().filter(m => !ref || m <= ref);
       const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
       const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
       const pctP = v => dec(v, 2) + '%';
@@ -13409,12 +13477,12 @@ ${clipPlayerPills(n)}
       // Uma região: azul (como "Inadimplentes" no original) e o Brasil em azul claro. Todas: tons de azul do escuro ao claro, Brasil em cinza.
       const nomes = reg ? [reg] : INAD_REGIOES;
       const tons = reg ? [CD_COR.azul] : ['#0B2E6B', CD_COR.azul, '#4F86E0', '#7FA8EA', CD_COR.azulClaro];
-      const series = nomes.map((n, i) => ({ nome: n, cor: tons[i], valores: meses.map(m => D.edicoes[m].br.regioes[n].popAdulta) }));
-      if(meses.every(m => D.edicoes[m].br.estimativa))
-        series.push({ nome: 'Brasil', cor: reg ? CD_COR.azulClaro : '#64748B', valores: meses.map(m => D.edicoes[m].br.estimativa.popAdulta) });
+      const series = nomes.map((n, i) => ({ nome: n, cor: tons[i], valores: meses.map(m => porMes.get(m).regioes[n].popAdulta) }));
+      if(meses.every(m => porMes.get(m).brasil))
+        series.push({ nome: 'Brasil', cor: reg ? CD_COR.azulClaro : '#64748B', valores: meses.map(m => porMes.get(m).brasil.popAdulta) });
       const legenda = `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       const wLinhas = cdCard('Taxa de inadimplência por região',
-        `% da população adulta negativada · ${meses.length === 1 ? `1 edição do SPC Brasil (${rotM(ult)})` : `${meses.length} edições do SPC Brasil (${rotM(meses[0])} a ${rotM(ult)})`}`,
+        `% da população adulta negativada · ${meses.length === 1 ? `1 edição do SPC Brasil (${rotM(ult)})` : `${meses.length} edições do SPC Brasil (${rotM(meses[0])} a ${rotM(ult)})`}${lendo ? ` · lendo ${lendo} PDF${lendo === 1 ? '' : 's'} da seção Inadimplência…` : ''}`,
         '<div id="stkFluxoGraf"></div>', legenda);
 
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${wLinhas}</div></div>`;
@@ -13426,11 +13494,11 @@ ${clipPlayerPills(n)}
       const L = [['Edição', 'Região', 'Negativados (milhões)', '% da população adulta']];
       const num = v => v == null ? '' : String(v).replace('.', ',');
       meses.forEach(m => {
-        const B = D.edicoes[m].br;
+        const B = porMes.get(m);
         INAD_REGIOES.filter(n => !reg || n === reg).forEach(n => L.push([rotM(m), n, num(B.regioes[n].negativadosMi), num(B.regioes[n].popAdulta)]));
-        if(B.estimativa) L.push([rotM(m), 'Brasil', num(B.estimativa.negativadosMi), num(B.estimativa.popAdulta)]);
+        if(B.brasil) L.push([rotM(m), 'Brasil', num(B.brasil.negativadosMi), num(B.brasil.popAdulta)]);
       });
-      L.push([], ['Fonte', `SPC Brasil · ${meses.map(m => D.edicoes[m].br.arquivo).join(' · ')}`, '', '']);
+      L.push([], ['Fonte', `SPC Brasil · ${meses.map(m => porMes.get(m).arquivo).join(' · ')}`, '', '']);
       inadPainelUltimo = { linhas: L, arquivo: `spc_inadimplencia_regioes_${ult}${reg ? '_' + stkNorm(reg).replace(/\W+/g, '-') : ''}.csv` };
     }
     function inadPainelDesenhar(D){
