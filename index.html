@@ -13555,8 +13555,8 @@ ${clipPlayerPills(n)}
         if(sa.valores[k] == null || sb.valores[k] == null) return [];
         const d = sb.valores[k] - sa.valores[k];
         return [{ valor: pp(d), rotulo: 'variação', corValor: d > 0.005 ? '#F87171' : d < -0.005 ? '#4ADE80' : '' }]; } : null;
-      // Com 3 anos, só as linhas (sem o degradê, que embaralha as áreas sobrepostas).
-      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', series.length > 2, dicaVar);
+      // Linhas com a área em degradê (layout do gráfico original), também com os três anos.
+      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', false, dicaVar);
       cdAjustarListas();
 
       // Exportar (CSV): mês a mês por ano, com a fonte de cada número.
