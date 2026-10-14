@@ -11548,7 +11548,7 @@ ${clipPlayerPills(n)}
     // Tooltip flutuante compartilhado por todos os gráficos do painel.
     function stkMostrarDica(ev, titulo, linhas){
       stkTip.innerHTML = (titulo ? `<div class="stk-tip-tit">${esc(titulo)}</div>` : '')
-        + linhas.map(l => `<div class="stk-tip-linha">${l.cor ? `<i style="background:${l.cor}"></i>` : ''}<strong>${esc(l.valor)}</strong><span>${esc(l.rotulo)}</span></div>`).join('');
+        + linhas.map(l => `<div class="stk-tip-linha">${l.cor ? `<i style="background:${l.cor}"></i>` : ''}<strong${l.corValor ? ` style="color:${l.corValor}"` : ''}>${esc(l.valor)}</strong><span>${esc(l.rotulo)}</span></div>`).join('');
       stkTip.hidden = false;
       const px = ev.clientX !== undefined ? ev.clientX : (ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect().left : 0);
       const py = ev.clientY !== undefined ? ev.clientY : (ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect().top : 0);
@@ -13402,7 +13402,7 @@ ${clipPlayerPills(n)}
     // ---- Visão Gráfico: taxa de inadimplência por região — comparativo ano a ano ----
     // % da população adulta negativada, mês a mês (jan–dez), uma linha por ano: o mais recente em azul, o anterior em azul
     // claro (cores do gráfico de linhas original da visão Dashboard) e o 3º em cinza. Filtro Região (Centro-Oeste por padrão;
-    // vazio = Brasil, total do país) e Ano (o escolhido x o anterior; sem Ano, os três mais recentes). Fontes, lidas sozinhas dos
+    // vazio = Brasil, total do país) e Ano (o escolhido e os dois anteriores; sem Ano, os três mais recentes). Fontes, lidas sozinhas dos
     // PDFs da seção Inadimplência (pdf.js no navegador, sem API; cache no IndexedDB, chave "inad-v2|id|caminho"):
     //   1. Tabela mensal ("Inadimplência Mensal 2025 · Janeiro Centro-Oeste 45,78% ..."), ex.: Inadimplencia_2025_Centro-Oeste.pdf.
     //   2. Gráfico 12 "Estimativa de inadimplentes" dos relatórios Brasil do SPC ("Norte: 6,86 milhões (48,45% da população
@@ -13515,7 +13515,7 @@ ${clipPlayerPills(n)}
       const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
       const anosDisp = [...new Set(Object.keys(P).map(m => m.slice(0, 4)))].sort();
       const anoSel = stkAnoEl.value;
-      const anos = anoSel ? [String(Number(anoSel) - 1), anoSel].filter(a => anosDisp.includes(a)) : anosDisp.slice(-3);
+      const anos = anoSel ? [String(Number(anoSel) - 2), String(Number(anoSel) - 1), anoSel].filter(a => anosDisp.includes(a)) : anosDisp.slice(-3);
       const titulo = 'Taxa de inadimplência por região';
       const lendoTxt = lendo ? `lendo ${lendo} PDF${lendo === 1 ? '' : 's'} da seção Inadimplência…` : '';
       stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
@@ -13549,10 +13549,12 @@ ${clipPlayerPills(n)}
 
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard(titulo, sub, '<div id="stkFluxoGraf"></div>', legenda)}</div></div>`;
       const graf = document.getElementById('stkFluxoGraf');
-      // Tooltip: além do valor de cada ano, a variação de cada ano contra o anterior no mês (em p.p.), do mais recente para trás.
-      const dicaVar = series.length >= 2 ? k => series.slice(1).map((sb, i) => [series[i], sb]).reverse()
-        .filter(([sa, sb]) => sa.valores[k] != null && sb.valores[k] != null)
-        .map(([sa, sb]) => ({ valor: pp(sb.valores[k] - sa.valores[k]), rotulo: `variação ${sb.nome.slice(2)} x ${sa.nome.slice(2)}` })) : null;
+      // Tooltip: além do valor de cada ano, a variação do ano mais recente contra o anterior no mês (em p.p.) — vermelho se a
+      // inadimplência subiu, verde se caiu (tons claros, legíveis no fundo escuro do tooltip).
+      const dicaVar = series.length >= 2 ? k => { const [sa, sb] = series.slice(-2);
+        if(sa.valores[k] == null || sb.valores[k] == null) return [];
+        const d = sb.valores[k] - sa.valores[k];
+        return [{ valor: pp(d), rotulo: 'variação', corValor: d > 0.005 ? '#F87171' : d < -0.005 ? '#4ADE80' : '' }]; } : null;
       // Com 3 anos, só as linhas (sem o degradê, que embaralha as áreas sobrepostas).
       if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', series.length > 2, dicaVar);
       cdAjustarListas();
