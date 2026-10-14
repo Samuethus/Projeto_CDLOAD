@@ -10803,6 +10803,62 @@ ${clipPlayerPills(n)}
     const reportThumbs = new Map();
     let reportThumbQueue = Promise.resolve();
 
+    // Cache persistente das miniaturas (IndexedDB do navegador): cada arquivo é baixado do Storage
+    // uma única vez por navegador, e não a cada visita à galeria — economiza egress do Supabase.
+    // Chave = id + caminho do arquivo (um novo envio gera outro caminho, então a miniatura é refeita).
+    // Sem IndexedDB (aba anônima, bloqueio de dados), tudo segue funcionando, só sem o cache.
+    const THUMB_DB = 'cdload-miniaturas', THUMB_STORE = 'relatorios';
+    let thumbDbPromise = null;
+    function thumbDb(){
+      if(!thumbDbPromise){
+        thumbDbPromise = new Promise((resolve, reject) => {
+          const req = indexedDB.open(THUMB_DB, 1);
+          req.onupgradeneeded = () => req.result.createObjectStore(THUMB_STORE);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        }).catch(err => { console.warn('Cache de miniaturas indisponível:', err); return null; });
+      }
+      return thumbDbPromise;
+    }
+    async function thumbCache(modo, chave, valor){
+      try{
+        const db = await thumbDb();
+        if(!db) return null;
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(THUMB_STORE, modo === 'get' ? 'readonly' : 'readwrite');
+          const st = tx.objectStore(THUMB_STORE);
+          const req = modo === 'get' ? st.get(chave) : modo === 'set' ? st.put(valor, chave) : st.delete(chave);
+          req.onsuccess = () => resolve(modo === 'get' ? (req.result || null) : null);
+          req.onerror = () => reject(req.error);
+        });
+      } catch(err){ return null; }
+    }
+    const thumbKey = r => r.id + '|' + r.arquivo_path;
+    // Reduz a imagem para a mesma largura das miniaturas de PDF (480 px, JPEG): o cache guarda
+    // poucos KB por relatório em vez do arquivo original.
+    async function imageThumbDataURL(blob){
+      const src = URL.createObjectURL(blob);
+      try{
+        const img = await new Promise((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = () => reject(new Error('Imagem inválida'));
+          i.src = src;
+        });
+        const escala = Math.min(1, 480 / (img.naturalWidth || 480));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * escala));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * escala));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.85);
+      } finally {
+        URL.revokeObjectURL(src);
+      }
+    }
+
     const ICON_FILE_LG = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
 
     function reportExt(name){
@@ -10845,12 +10901,17 @@ ${clipPlayerPills(n)}
     async function buildReportThumb(r){
       reportThumbs.set(r.id, 'loading');
       try{
-        let url;
+        let url = await thumbCache('get', thumbKey(r));
+        if(url){
+          reportThumbs.set(r.id, url);
+          paintReportThumb(r);
+          return;
+        }
         if(reportKind(r.arquivo_nome) === 'image'){
           // A CSP só aceita imagens data:/blob:, então o arquivo é baixado antes.
           const { data, error } = await supabaseClient.storage.from(REPORTS_BUCKET).download(r.arquivo_path);
           if(error) throw error;
-          url = URL.createObjectURL(data);
+          url = await imageThumbDataURL(data);
         } else {
           const pdfjs = await loadPdfJs();
           const { data: signed, error } = await supabaseClient.storage.from(REPORTS_BUCKET).createSignedUrl(r.arquivo_path, 300);
@@ -10873,6 +10934,7 @@ ${clipPlayerPills(n)}
           }
         }
         reportThumbs.set(r.id, url);
+        thumbCache('set', thumbKey(r), url);
       } catch(err){
         console.error('Erro ao gerar pré-visualização do relatório:', err);
         reportThumbs.set(r.id, 'error');
@@ -11100,6 +11162,7 @@ ${clipPlayerPills(n)}
       const thumb = reportThumbs.get(id);
       if(thumb && thumb.startsWith('blob:')) URL.revokeObjectURL(thumb);
       reportThumbs.delete(id);
+      if(r && r.arquivo_path) thumbCache('delete', thumbKey(r));
       await loadReports();
     };
 
