@@ -11905,7 +11905,8 @@ ${clipPlayerPills(n)}
     // eixo = 'auto': eixo Y começa perto do menor valor (séries de estoque, sempre altas), em vez de 0.
     // semArea: só as linhas, sem o degradê (muitas séries sobrepostas, ex.: regiões da Inadimplência).
     // Valor null = mês sem dado: a linha é interrompida ali (ponto isolado vira um marcador) e a dica mostra "—".
-    function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt, eixo, semArea){
+    // dicaExtra(i): linhas a mais no tooltip do ponto i ([{ valor, rotulo }]), ex.: variação entre anos da Inadimplência.
+    function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt, eixo, semArea, dicaExtra){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const todos = series.flatMap(s => s.valores).filter(v => v != null);
       const maxSerie = Math.max(1, ...todos.map(Math.abs)), temNeg = todos.some(v => v < 0);
@@ -11968,7 +11969,7 @@ ${clipPlayerPills(n)}
         pontos.forEach(p => { const v = series[p.dataset.k].valores[atual]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', v == null ? 0 : y(v)); p.setAttribute('visibility', v == null ? 'hidden' : 'visible'); });
         const r = alvo.getBoundingClientRect();
         const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
-        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: s.valores[atual] == null ? '—' : (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })));
+        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: s.valores[atual] == null ? '—' : (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })).concat(dicaExtra ? dicaExtra(atual) : []));
       };
       const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); stkEsconderDica(); };
       alvo.addEventListener('pointermove', ev => {
@@ -13407,8 +13408,8 @@ ${clipPlayerPills(n)}
     //   2. Gráfico 12 "Estimativa de inadimplentes" dos relatórios Brasil do SPC ("Norte: 6,86 milhões (48,45% da população
     //      adulta)" + total do país; mês = "(ref. jun/2026)" ou o mês de referência do cadastro).
     // Sem acesso aos PDFs, vale o transcrito em assets/data/spc_inadimplencia.js (edicoes[mês].br.regioes e mensal).
-    // No mesmo mês, a tabela mensal prevalece sobre o Gráfico 12 (série do ano na mesma base); quando os dois divergem, ou
-    // quando o gráfico mistura as duas fontes, o painel avisa acima do gráfico.
+    // No mesmo mês, a tabela mensal prevalece sobre o Gráfico 12 (série do ano na mesma base). Tooltip: valor de cada ano
+    // e a variação entre eles em p.p.
     const INAD_REGIOES = ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'];
     const INAD_REGIAO_PADRAO = 'Centro-Oeste';
     const INAD_MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -13481,17 +13482,12 @@ ${clipPlayerPills(n)}
         .finally(() => { inadRegFila = null; if(stkPainel() === 'inadimplencia' && inadVisao === 'graf') stkRender(); });
     }
     // Pontos por local ('Norte'…, 'Brasil' ou 'Mato Grosso') e mês: { v: % da população adulta, fonte: 'mensal' | 'g12', arquivo }.
-    // subst: meses em que a tabela mensal e o Gráfico 12 trazem números diferentes (vale a tabela) — para o aviso.
     function inadRegSerie(D){
-      const pts = {}, subst = [];
+      const pts = {};
       const por = (loc, mes, v, fonte, arquivo) => {
         if(v == null || !isFinite(v)) return;
         const L = pts[loc] = pts[loc] || {}, atual = L[mes];
-        if(atual && atual.fonte !== fonte){
-          const [tab, g12] = fonte === 'mensal' ? [v, atual.v] : [atual.v, v];
-          if(Math.abs(tab - g12) >= 0.05 && !subst.some(d => d.loc === loc && d.mes === mes)) subst.push({ loc, mes, mensal: tab, g12 });
-          if(fonte !== 'mensal') return;   // a tabela mensal prevalece
-        }
+        if(atual && atual.fonte === 'mensal' && fonte !== 'mensal') return;   // a tabela mensal prevalece
         L[mes] = { v, fonte, arquivo };
       };
       const g12 = (mes, regioes, brasil, arquivo) => {
@@ -13506,12 +13502,12 @@ ${clipPlayerPills(n)}
         if(!v || typeof v !== 'object') return;
         if(v.regioes && v.mes) g12(v.mes, v.regioes, v.brasil, r.arquivo_nome);
         if(v.mensal) mensal(v.mensal, r.arquivo_nome); });
-      return { pts, subst };
+      return { pts };
     }
     function inadGraficoDesenhar(D){
       inadRegLerPendentes();
       const lendo = [...inadRegPdf.values()].filter(v => v === 'lendo').length;
-      const { pts, subst } = inadRegSerie(D);
+      const { pts } = inadRegSerie(D);
       const loc = stkInadRegiaoEl.value || 'Brasil', P = pts[loc] || {};
       const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
       const pctP = v => dec(v, 2) + '%';
@@ -13550,15 +13546,12 @@ ${clipPlayerPills(n)}
       const sub = `% da população adulta negativada · ${loc} · ${partes.join(' · ')}${lendo ? ' · ' + lendoTxt : ''}`;
       const legenda = `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
 
-      // Aviso: gráfico misturando tabela mensal e Gráfico 12 do SPC (bases diferentes), com os meses em que divergem.
-      const fontes = new Set(series.flatMap(s => s.valores.map((v, k) => v == null ? null : P[inadMesChave(s.nome, k)].fonte)).filter(Boolean));
-      const div = subst.filter(d => d.loc === loc && anos.includes(d.mes.slice(0, 4)));
-      const aviso = fontes.size > 1 || div.length ? `<div class="stk-tema-aviso">${stkIcone('alerta')}<span>Fontes com bases diferentes: tabela mensal anexada e relatório do SPC Brasil (Gráfico 12).${div.length
-        ? ` No mesmo mês: ${div.slice(0, 2).map(d => `${rotM(d.mes)} tabela ${pctP(d.mensal)} x SPC ${pctP(d.g12)}`).join('; ')} (o gráfico usa a tabela).` : ''} A diferença entre os anos pode refletir a base, e não só a inadimplência.</span></div>` : '';
-
-      stkGrid.innerHTML = `<div class="cd-tela">${aviso}<div class="cd-row cd-row-unica">${cdCard(titulo, sub, '<div id="stkFluxoGraf"></div>', legenda)}</div></div>`;
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard(titulo, sub, '<div id="stkFluxoGraf"></div>', legenda)}</div></div>`;
       const graf = document.getElementById('stkFluxoGraf');
-      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto');
+      // Tooltip: além do valor de cada ano, a variação do ano mais recente contra o anterior no mês (em p.p.).
+      const dicaVar = series.length === 2 ? k => { const [sa, sb] = series;
+        return sa.valores[k] != null && sb.valores[k] != null ? [{ valor: pp(sb.valores[k] - sa.valores[k]), rotulo: `variação ${sb.nome.slice(2)} x ${sa.nome.slice(2)}` }] : []; } : null;
+      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', false, dicaVar);
       cdAjustarListas();
 
       // Exportar (CSV): mês a mês por ano, com a fonte de cada número.
