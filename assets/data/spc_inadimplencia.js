@@ -24,6 +24,8 @@
 //                O Gráfico também LÊ SOZINHO esse mapa em todo PDF de abrangência Brasil anexado na seção Inadimplência
 //                (pdf.js no navegador, sem API; cache no IndexedDB) — basta anexar o PDF para a edição entrar na linha.
 //                O que está transcrito aqui vale quando o PDF não pode ser lido (sem acesso à seção, PDF fora do padrão).
+//   mensal       (visão Gráfico) tabelas mensais anexadas na seção ("Inadimplência Mensal 2025 · Janeiro Centro-Oeste 45,78%"),
+//                também lidas sozinhas dos PDFs; aqui ficam como reserva. Comparativo jan–dez de um ano contra o anterior.
 //   estimativa   (Brasil) negativados no país e por faixa etária [milhões, % da população da faixa]
 //   historico    (Brasil) variação mensal do mesmo mês nos últimos 10 anos (devedores e dívidas)
 window.SPC_INAD = {
@@ -34,6 +36,15 @@ window.SPC_INAD = {
   valores: ['Até R$ 500', 'R$ 500,01 a R$ 1.000', 'R$ 1.000,01 a R$ 2.500', 'R$ 2.500,01 a R$ 7.500', 'Acima de R$ 7.500'],
   atrasos: ['Até 90 dias', '91 dias a 1 ano', '1 a 3 anos', '3 a 4 anos', '4 a 5 anos'],
   meses: ['2025-11', '2026-06'],
+  // Séries mensais de % da população adulta negativada (visão Gráfico, comparativo ano a ano). Reserva do que o painel lê
+  // sozinho da tabela mensal anexada na seção Inadimplência. Atenção: a tabela de 2025 usa base de 2.608.340 adultos
+  // (ordem de grandeza de Mato Grosso, não do Centro-Oeste) e difere do SPC Brasil em nov/2025 (45,00% x 47,08%);
+  // dezembro foi digitado à mão na planilha de origem (Dados_Inadimplência_2025.xlsx). Usada como Centro-Oeste por decisão do usuário.
+  mensal: [
+    { local: 'Centro-Oeste', arquivo: 'Inadimplencia_2025_Centro-Oeste.pdf', meses: {
+      '2025-01': 45.78, '2025-02': 45.77, '2025-03': 46.95, '2025-04': 46.93, '2025-05': 46.55, '2025-06': 46.33,
+      '2025-07': 43.81, '2025-08': 43.87, '2025-09': 44.22, '2025-10': 44.68, '2025-11': 45.00, '2025-12': 45.80 } }
+  ],
   edicoes: {
     '2025-11': {
       mt: {

@@ -2730,7 +2730,7 @@
           </select>
           <!-- INADIMPLÊNCIA › Gráfico: região do relatório Brasil do SPC (estimativa de inadimplentes, Gráfico 12 do PDF) -->
           <select class="filter-select" id="stkInadRegiaoFiltro" title="Região (visão Gráfico)" hidden>
-            <option value="">Região · Todas</option>
+            <option value="">Brasil (total)</option>
             <option value="Norte">Norte</option>
             <option value="Nordeste">Nordeste</option>
             <option value="Centro-Oeste" selected>Centro-Oeste</option>
@@ -11755,7 +11755,7 @@ ${clipPlayerPills(n)}
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
       stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad;
-      stkMesEl.hidden = viab;
+      stkMesEl.hidden = viab || (inad && inadVisao === 'graf');   // Gráfico da Inadimplência: jan–dez de cada ano, sem Mês
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
       stkLicencasEl.hidden = !viab;
@@ -11799,7 +11799,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'inadimplencia'){
         // Inadimplência: anos com edição do SPC Brasil (sem ano-base: os relatórios já trazem a variação anual).
         // Na visão Gráfico, também os anos lidos dos PDFs Brasil da seção.
-        const mesesInad = window.SPC_INAD ? (inadVisao === 'graf' ? [...inadRegSerie(window.SPC_INAD).keys()] : window.SPC_INAD.meses) : [];
+        const mesesInad = window.SPC_INAD ? (inadVisao === 'graf' ? Object.values(inadRegSerie(window.SPC_INAD).pts).flatMap(Object.keys) : window.SPC_INAD.meses) : [];
         const anosInad = [...new Set(mesesInad.map(m => m.slice(0, 4)))].sort().reverse();
         stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosInad.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
         if(anosInad.includes(curAno)) stkAnoEl.value = curAno;
@@ -11904,13 +11904,15 @@ ${clipPlayerPills(n)}
     // fmt (opcional): formata o valor da dica ao passar o mouse (ex.: stkMoeda para R$).
     // eixo = 'auto': eixo Y começa perto do menor valor (séries de estoque, sempre altas), em vez de 0.
     // semArea: só as linhas, sem o degradê (muitas séries sobrepostas, ex.: regiões da Inadimplência).
+    // Valor null = mês sem dado: a linha é interrompida ali (ponto isolado vira um marcador) e a dica mostra "—".
     function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt, eixo, semArea){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
-      const maxSerie = Math.max(1, ...series.flatMap(s => s.valores.map(Math.abs))), temNeg = series.some(s => s.valores.some(v => v < 0));
+      const todos = series.flatMap(s => s.valores).filter(v => v != null);
+      const maxSerie = Math.max(1, ...todos.map(Math.abs)), temNeg = todos.some(v => v < 0);
       const m = { t: 10, r: 10, b: 26, l: Math.max(36, stkNum(Math.ceil(maxSerie / stkPasso(maxSerie)) * stkPasso(maxSerie)).length * 6.6 + 12 + (temNeg ? 7 : 0)) };
       const iw = W - m.l - m.r, ih = H - m.t - m.b, n = categorias.length;
-      const max = Math.max(1, ...series.flatMap(s => s.valores));
-      const minDados = Math.min(...series.flatMap(s => s.valores));
+      const max = Math.max(1, ...todos);
+      const minDados = Math.min(...todos);
       const min = eixo === 'auto' && minDados > 0 ? minDados - (max - minDados) * 0.15 : Math.min(0, minDados);
       const passo = stkPasso(max - min);
       const topo = Math.ceil(max / passo) * passo, piso = Math.floor(min / passo) * passo;
@@ -11927,21 +11929,31 @@ ${clipPlayerPills(n)}
         svg += `<text class="stk-eixo" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${esc(categorias[i])}</text>`;
       });
       const base = y(Math.max(0, piso));
+      // Trechos contínuos de cada série (sem null): cada um vira uma linha (e uma área).
+      const trechos = s => s.valores.reduce((acc, v, i) => {
+        if(v == null) return acc;
+        const ult = acc[acc.length - 1];
+        if(ult && ult[ult.length - 1].i === i - 1) ult.push({ i, x: x(i), y: y(v) }); else acc.push([{ i, x: x(i), y: y(v) }]);
+        return acc;
+      }, []);
       if(!semArea) series.forEach((s, si) => {
-        const pontos = s.valores.map((v, i) => ({ x: x(i), y: y(v) }));
-        const linha = stkCurvaSuave(pontos);
         const gradId = `stkGrad-${el.id}-${si}`;
-        const area = `${linha} L${pontos[n - 1].x.toFixed(1)},${base.toFixed(1)} L${pontos[0].x.toFixed(1)},${base.toFixed(1)} Z`;
         svg += `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="${s.cor}" stop-opacity="0.24"></stop>
           <stop offset="100%" stop-color="${s.cor}" stop-opacity="0"></stop>
         </linearGradient></defs>`;
-        svg += `<path d="${area}" fill="url(#${gradId})" stroke="none"></path>`;
+        trechos(s).filter(t => t.length > 1).forEach(pontos => {
+          const area = `${stkCurvaSuave(pontos)} L${pontos[pontos.length - 1].x.toFixed(1)},${base.toFixed(1)} L${pontos[0].x.toFixed(1)},${base.toFixed(1)} Z`;
+          svg += `<path d="${area}" fill="url(#${gradId})" stroke="none"></path>`;
+        });
       });
       series.forEach(s => {
-        const linha = stkCurvaSuave(s.valores.map((v, i) => ({ x: x(i), y: y(v) })));
-        svg += `<path d="${linha}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
-        svg += `<circle cx="${x(n - 1).toFixed(1)}" cy="${y(s.valores[n - 1]).toFixed(1)}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
+        trechos(s).forEach(pontos => {
+          if(pontos.length > 1) svg += `<path d="${stkCurvaSuave(pontos)}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
+          else svg += `<circle cx="${pontos[0].x.toFixed(1)}" cy="${pontos[0].y.toFixed(1)}" r="6" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
+        });
+        let iU = n - 1; while(iU > 0 && s.valores[iU] == null) iU--;
+        if(s.valores[iU] != null) svg += `<circle cx="${x(iU).toFixed(1)}" cy="${y(s.valores[iU]).toFixed(1)}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2"></circle>`;
       });
       svg += `<line class="stk-cruz" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"></line>`;
       series.forEach((s, k) => { svg += `<circle class="stk-ponto" data-k="${k}" r="4" fill="${s.cor}" stroke="#fff" stroke-width="2" visibility="hidden"></circle>`; });
@@ -11953,10 +11965,10 @@ ${clipPlayerPills(n)}
       const marcar = (i, ev) => {
         atual = Math.max(0, Math.min(n - 1, i));
         cruz.setAttribute('x1', x(atual)); cruz.setAttribute('x2', x(atual)); cruz.setAttribute('visibility', 'visible');
-        pontos.forEach(p => { const s = series[p.dataset.k]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', y(s.valores[atual])); p.setAttribute('visibility', 'visible'); });
+        pontos.forEach(p => { const v = series[p.dataset.k].valores[atual]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', v == null ? 0 : y(v)); p.setAttribute('visibility', v == null ? 'hidden' : 'visible'); });
         const r = alvo.getBoundingClientRect();
         const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
-        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })));
+        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: s.valores[atual] == null ? '—' : (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })));
       };
       const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); stkEsconderDica(); };
       alvo.addEventListener('pointermove', ev => {
@@ -13386,24 +13398,25 @@ ${clipPlayerPills(n)}
       stkPreencherFiltros();
       inadPainelDesenhar(window.SPC_INAD);
     }
-    // ---- Visão Gráfico: taxa de inadimplência por região ----
-    // "Estimativa de inadimplentes" do relatório Brasil (Gráfico 12 do PDF): % da população adulta negativada por região
-    // (edicoes[mês].br.regioes) — uma linha ao longo das edições, até a escolhida em Mês/Ano, com o Brasil de referência.
-    // Só este gráfico, ocupando a tela. Filtro Região: Centro-Oeste por padrão; "Todas" mostra as 5 regiões.
-    // Cores do gráfico de linhas original da visão Dashboard: região em azul, Brasil em azul claro.
+    // ---- Visão Gráfico: taxa de inadimplência por região — comparativo ano a ano ----
+    // % da população adulta negativada, mês a mês (jan–dez), uma linha por ano: o ano mais recente em azul e o anterior em
+    // azul claro (cores do gráfico de linhas original da visão Dashboard). Filtro Região (Centro-Oeste por padrão; vazio =
+    // Brasil, total do país) e Ano (o escolhido x o anterior; sem Ano, os dois mais recentes). Fontes, lidas sozinhas dos
+    // PDFs da seção Inadimplência (pdf.js no navegador, sem API; cache no IndexedDB, chave "inad-v2|id|caminho"):
+    //   1. Tabela mensal ("Inadimplência Mensal 2025 · Janeiro Centro-Oeste 45,78% ..."), ex.: Inadimplencia_2025_Centro-Oeste.pdf.
+    //   2. Gráfico 12 "Estimativa de inadimplentes" dos relatórios Brasil do SPC ("Norte: 6,86 milhões (48,45% da população
+    //      adulta)" + total do país; mês = "(ref. jun/2026)" ou o mês de referência do cadastro).
+    // Sem acesso aos PDFs, vale o transcrito em assets/data/spc_inadimplencia.js (edicoes[mês].br.regioes e mensal).
+    // No mesmo mês, a tabela mensal prevalece sobre o Gráfico 12 (série do ano na mesma base); quando os dois divergem, ou
+    // quando o gráfico mistura as duas fontes, o painel avisa acima do gráfico.
     const INAD_REGIOES = ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'];
     const INAD_REGIAO_PADRAO = 'Centro-Oeste';
-
-    // Leitura automática do Gráfico 12 ("Estimativa de inadimplentes") nos PDFs de abrangência Brasil da seção
-    // Inadimplência: o pdf.js extrai o texto do mapa ("Norte: 6,86 milhões (48,45% da população adulta)") e o total do
-    // país ("havia 74,80 milhões ... representa 44,62% da população adulta"), sem API externa. Mês = "(ref. jun/2026)"
-    // do gráfico ou, sem ele, o mês de referência do cadastro. Cada PDF é baixado uma vez por navegador: o resultado
-    // fica no IndexedDB (cache das miniaturas, chave "inad-regioes|id|caminho"). Sem acesso ao arquivo, vale o transcrito
-    // em assets/data/spc_inadimplencia.js — que também cobre o mesmo mês quando os dois existem (o PDF prevalece).
-    const inadRegPdf = new Map();   // id do arquivo → { mes, regioes, brasil } | { semDados } | 'lendo' | 'erro'
+    const INAD_MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const inadRegPdf = new Map();   // id do arquivo → { mes, regioes, brasil, mensal } | {} (nada reconhecido) | 'lendo' | 'erro'
     let inadRegFila = null;
     const INAD_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const inadNumBR = t => Number(String(t).replace(/\./g, '').replace(',', '.'));
+    const inadMesChave = (ano, k) => `${ano}-${String(k + 1).padStart(2, '0')}`;
     function inadLerTextoGrafico12(texto){
       const t = texto.replace(/\s+/g, ' ').replace(/\s*-\s*/g, '-');
       const regioes = {};
@@ -13413,93 +13426,143 @@ ${clipPlayerPills(n)}
       if(!INAD_REGIOES.every(n => regioes[n] && isFinite(regioes[n].popAdulta))) return null;
       const b = t.match(/havia\s+([\d.,]+)\s*milh.*?representa\s+([\d.,]+)\s*%/);
       const r = t.match(/\(ref\.?\s*([a-zç]{3})[a-zç]*\/(\d{4})\)/i), iM = r ? INAD_MES_ABREV.indexOf(r[1].toLowerCase()) : -1;
-      return { mes: iM >= 0 ? `${r[2]}-${String(iM + 1).padStart(2, '0')}` : null, regioes,
+      return { mes: iM >= 0 ? inadMesChave(r[2], iM) : null, regioes,
         brasil: b ? { negativadosMi: inadNumBR(b[1]), popAdulta: inadNumBR(b[2]) } : null };
     }
+    // Tabela mensal: "Inadimplência Mensal 2025" (ou "Mês (2025)") e linhas "Janeiro Centro-Oeste 45,78%".
+    // → { 'Centro-Oeste': { '2025-01': 45.78, ... } } (região, "Brasil" ou "Mato Grosso").
+    function inadLerTextoMensal(texto){
+      const t = texto.replace(/\s+/g, ' ').replace(/\s*-\s*/g, '-');
+      const a = t.match(/Mensal\s+(\d{4})/i) || t.match(/M[êe]s\s*\(\s*(\d{4})\s*\)/i);
+      if(!a) return null;
+      const out = {};
+      const re = /(Janeiro|Fevereiro|Março|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)\s+(Norte|Nordeste|Centro-Oeste|Sudeste|Sul|Brasil|Mato Grosso)\s+([\d.,]+)\s*%/gi;
+      let m;
+      while((m = re.exec(t))){
+        const iM = INAD_MESES_LONGOS.indexOf(m[1].toLowerCase());
+        const nome = INAD_REGIOES.concat(['Brasil', 'Mato Grosso']).find(n => n.toLowerCase() === m[2].toLowerCase());
+        (out[nome] = out[nome] || {})[inadMesChave(a[1], iM)] = inadNumBR(m[3]);
+      }
+      return Object.keys(out).length ? out : null;
+    }
     async function inadLerPdfRegioes(r){
-      const chave = `inad-regioes|${r.id}|${r.arquivo_path}`;
+      const chave = `inad-v2|${r.id}|${r.arquivo_path}`;
       const cache = await thumbCache('get', chave);
       if(cache) return cache;
       const pdfjs = await loadPdfJs();
       const { data, error } = await supabaseClient.storage.from(INAD_BUCKET).createSignedUrl(r.arquivo_path, 300);
       if(error) throw error;
       const pdf = await pdfjs.getDocument({ url: data.signedUrl, isEvalSupported: false }).promise;
-      let achado = null;
+      const res = {};
       try{
-        // O Gráfico 12 fica no fim do relatório: lê de trás para frente e para no primeiro encontrado.
-        for(let p = pdf.numPages; p >= 1 && !achado; p--){
+        // O Gráfico 12 fica no fim do relatório e a tabela mensal numa página só: lê de trás para frente e para no 1º achado.
+        for(let p = pdf.numPages; p >= 1 && !res.regioes && !res.mensal; p--){
           const tc = await (await pdf.getPage(p)).getTextContent();
-          achado = inadLerTextoGrafico12(tc.items.map(i => i.str).join(' '));
+          const texto = tc.items.map(i => i.str).join(' ');
+          const g = inadLerTextoGrafico12(texto);
+          if(g) Object.assign(res, g, { mes: g.mes || inadRef(r) });
+          const mensal = inadLerTextoMensal(texto);
+          if(mensal) res.mensal = mensal;
         }
       } finally {
         pdf.destroy();
       }
-      const res = achado ? { ...achado, mes: achado.mes || inadRef(r) } : { semDados: true };
-      thumbCache('set', chave, res);   // PDF sem o gráfico também fica no cache (não é baixado de novo)
+      thumbCache('set', chave, res);   // PDF sem nada reconhecido também fica no cache (não é baixado de novo)
       return res;
     }
-    // Lê, um por vez, os PDFs Brasil ainda não lidos; ao terminar redesenha o Gráfico (se ainda estiver aberto).
+    // Lê, um por vez, os PDFs da seção ainda não lidos (qualquer abrangência); ao terminar redesenha o Gráfico.
     function inadRegLerPendentes(){
       if(inadRegFila || !supabaseReady) return;
-      const pend = inadArquivos.filter(r => r.abrangencia === 'Brasil' && r.arquivo_path && !inadRegPdf.has(r.id));
+      const pend = inadArquivos.filter(r => r.arquivo_path && /\.pdf$/i.test(r.arquivo_nome || r.arquivo_path) && !inadRegPdf.has(r.id));
       if(!pend.length) return;
       pend.forEach(r => inadRegPdf.set(r.id, 'lendo'));
       inadRegFila = pend.reduce((p, r) => p.then(() => inadLerPdfRegioes(r).then(v => inadRegPdf.set(r.id, v))
-          .catch(e => { console.warn('[Inadimplência] leitura do Gráfico 12 em', r.arquivo_nome, e); inadRegPdf.set(r.id, 'erro'); })), Promise.resolve())
+          .catch(e => { console.warn('[Inadimplência] leitura do PDF', r.arquivo_nome, e); inadRegPdf.set(r.id, 'erro'); })), Promise.resolve())
         .finally(() => { inadRegFila = null; if(stkPainel() === 'inadimplencia' && inadVisao === 'graf') stkRender(); });
     }
-    // Série por mês: transcrito (spc_inadimplencia.js) + lido dos PDFs Brasil da seção (prevalece no mesmo mês).
+    // Pontos por local ('Norte'…, 'Brasil' ou 'Mato Grosso') e mês: { v: % da população adulta, fonte: 'mensal' | 'g12', arquivo }.
+    // subst: meses em que a tabela mensal e o Gráfico 12 trazem números diferentes (vale a tabela) — para o aviso.
     function inadRegSerie(D){
-      const porMes = new Map();
-      D.meses.forEach(m => { const B = D.edicoes[m] && D.edicoes[m].br;
-        if(B && B.regioes) porMes.set(m, { regioes: B.regioes, brasil: B.estimativa || null, arquivo: B.arquivo }); });
-      inadArquivos.filter(r => r.abrangencia === 'Brasil').forEach(r => { const v = inadRegPdf.get(r.id);
-        if(v && v.regioes && v.mes) porMes.set(v.mes, { regioes: v.regioes, brasil: v.brasil, arquivo: r.arquivo_nome }); });
-      return porMes;
+      const pts = {}, subst = [];
+      const por = (loc, mes, v, fonte, arquivo) => {
+        if(v == null || !isFinite(v)) return;
+        const L = pts[loc] = pts[loc] || {}, atual = L[mes];
+        if(atual && atual.fonte !== fonte){
+          const [tab, g12] = fonte === 'mensal' ? [v, atual.v] : [atual.v, v];
+          if(Math.abs(tab - g12) >= 0.05 && !subst.some(d => d.loc === loc && d.mes === mes)) subst.push({ loc, mes, mensal: tab, g12 });
+          if(fonte !== 'mensal') return;   // a tabela mensal prevalece
+        }
+        L[mes] = { v, fonte, arquivo };
+      };
+      const g12 = (mes, regioes, brasil, arquivo) => {
+        INAD_REGIOES.forEach(n => regioes[n] && por(n, mes, regioes[n].popAdulta, 'g12', arquivo));
+        if(brasil) por('Brasil', mes, brasil.popAdulta, 'g12', arquivo);
+      };
+      const mensal = (M, arquivo) => Object.entries(M).forEach(([loc, meses]) => Object.entries(meses).forEach(([mes, v]) => por(loc, mes, v, 'mensal', arquivo)));
+      // Transcrito (reserva) primeiro; o lido dos PDFs sobrescreve no mesmo mês e mesma fonte.
+      D.meses.forEach(m => { const B = D.edicoes[m] && D.edicoes[m].br; if(B && B.regioes) g12(m, B.regioes, B.estimativa, B.arquivo); });
+      (D.mensal || []).forEach(t => mensal({ [t.local]: t.meses }, t.arquivo));
+      inadArquivos.forEach(r => { const v = inadRegPdf.get(r.id);
+        if(!v || typeof v !== 'object') return;
+        if(v.regioes && v.mes) g12(v.mes, v.regioes, v.brasil, r.arquivo_nome);
+        if(v.mensal) mensal(v.mensal, r.arquivo_nome); });
+      return { pts, subst };
     }
     function inadGraficoDesenhar(D){
       inadRegLerPendentes();
-      const porMes = inadRegSerie(D), lendo = [...inadRegPdf.values()].filter(v => v === 'lendo').length;
-      const ref = inadEdicao(D, [...porMes.keys()]), reg = stkInadRegiaoEl.value;
-      const meses = [...porMes.keys()].sort().filter(m => !ref || m <= ref);
-      const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
+      const lendo = [...inadRegPdf.values()].filter(v => v === 'lendo').length;
+      const { pts, subst } = inadRegSerie(D);
+      const loc = stkInadRegiaoEl.value || 'Brasil', P = pts[loc] || {};
       const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
       const pctP = v => dec(v, 2) + '%';
+      const pp = v => (v > 0 ? '+' : v < 0 ? '−' : '') + dec(Math.abs(v), 2) + ' p.p.';
+      const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
+      const anosDisp = [...new Set(Object.keys(P).map(m => m.slice(0, 4)))].sort();
+      const anoSel = stkAnoEl.value;
+      const anos = anoSel ? [String(Number(anoSel) - 1), anoSel].filter(a => anosDisp.includes(a)) : anosDisp.slice(-2);
+      const titulo = 'Taxa de inadimplência por região';
+      const lendoTxt = lendo ? `lendo ${lendo} PDF${lendo === 1 ? '' : 's'} da seção Inadimplência…` : '';
       stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
-      if(!ref || !meses.length){
-        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard('Taxa de inadimplência por região', 'SPC Brasil',
-          '<div class="stk-vazio">Nenhuma edição do SPC Brasil com dados por região no período escolhido. Limpe o Mês/Ano para ver a mais recente.</div>')}</div></div>`;
+      if(!anos.length){
+        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard(titulo, `${loc} · SPC Brasil`,
+          `<div class="stk-vazio">${lendo ? lendoTxt : `Sem dados de ${esc(loc)}${anoSel ? ` em ${esc(anoSel)}` : ''}. Limpe o Ano ou escolha outra região.`}</div>`)}</div></div>`;
         inadPainelUltimo = null;
         return;
       }
-      const ult = meses[meses.length - 1];
 
-      // Uma região: azul (como "Inadimplentes" no original) e o Brasil em azul claro. Todas: tons de azul do escuro ao claro, Brasil em cinza.
-      const nomes = reg ? [reg] : INAD_REGIOES;
-      const tons = reg ? [CD_COR.azul] : ['#0B2E6B', CD_COR.azul, '#4F86E0', '#7FA8EA', CD_COR.azulClaro];
-      const series = nomes.map((n, i) => ({ nome: n, cor: tons[i], valores: meses.map(m => porMes.get(m).regioes[n].popAdulta) }));
-      if(meses.every(m => porMes.get(m).brasil))
-        series.push({ nome: 'Brasil', cor: reg ? CD_COR.azulClaro : '#64748B', valores: meses.map(m => porMes.get(m).brasil.popAdulta) });
+      // Uma linha por ano (jan–dez); mês sem dado fica em branco. Mais recente em azul, anterior em azul claro.
+      const tons = anos.length === 2 ? [CD_COR.azulClaro, CD_COR.azul] : [CD_COR.azul];
+      const series = anos.map((a, i) => ({ nome: a, cor: tons[i], valores: PAN_MES_CURTO.map((_, k) => { const p = P[inadMesChave(a, k)]; return p ? p.v : null; }) }));
+
+      // Análise: média de cada ano (meses com dado) e o último mês com dado nos dois anos (ano contra ano, em p.p.).
+      const partes = series.map(s => { const v = s.valores.filter(x => x != null);
+        return v.length ? `média ${s.nome}: ${pctP(v.reduce((a, b) => a + b, 0) / v.length)} (${v.length} ${v.length === 1 ? 'mês' : 'meses'})` : ''; }).filter(Boolean);
+      if(series.length === 2){
+        const [sa, sb] = series;
+        let k = 11; while(k >= 0 && !(sb.valores[k] != null && sa.valores[k] != null)) k--;
+        if(k >= 0) partes.push(`${PAN_MES_CURTO[k]}/${sb.nome.slice(2)} x ${PAN_MES_CURTO[k]}/${sa.nome.slice(2)}: ${pctP(sb.valores[k])} x ${pctP(sa.valores[k])} (${pp(sb.valores[k] - sa.valores[k])})`);
+        else partes.push(`sem mês em comum entre ${sa.nome} e ${sb.nome}`);
+      }
+      const sub = `% da população adulta negativada · ${loc} · ${partes.join(' · ')}${lendo ? ' · ' + lendoTxt : ''}`;
       const legenda = `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const wLinhas = cdCard('Taxa de inadimplência por região',
-        `% da população adulta negativada · ${meses.length === 1 ? `1 edição do SPC Brasil (${rotM(ult)})` : `${meses.length} edições do SPC Brasil (${rotM(meses[0])} a ${rotM(ult)})`}${lendo ? ` · lendo ${lendo} PDF${lendo === 1 ? '' : 's'} da seção Inadimplência…` : ''}`,
-        '<div id="stkFluxoGraf"></div>', legenda);
 
-      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${wLinhas}</div></div>`;
+      // Aviso: gráfico misturando tabela mensal e Gráfico 12 do SPC (bases diferentes), com os meses em que divergem.
+      const fontes = new Set(series.flatMap(s => s.valores.map((v, k) => v == null ? null : P[inadMesChave(s.nome, k)].fonte)).filter(Boolean));
+      const div = subst.filter(d => d.loc === loc && anos.includes(d.mes.slice(0, 4)));
+      const aviso = fontes.size > 1 || div.length ? `<div class="stk-tema-aviso">${stkIcone('alerta')}<span>Fontes com bases diferentes: tabela mensal anexada e relatório do SPC Brasil (Gráfico 12).${div.length
+        ? ` No mesmo mês: ${div.slice(0, 2).map(d => `${rotM(d.mes)} tabela ${pctP(d.mensal)} x SPC ${pctP(d.g12)}`).join('; ')} (o gráfico usa a tabela).` : ''} A diferença entre os anos pode refletir a base, e não só a inadimplência.</span></div>` : '';
+
+      stkGrid.innerHTML = `<div class="cd-tela">${aviso}<div class="cd-row cd-row-unica">${cdCard(titulo, sub, '<div id="stkFluxoGraf"></div>', legenda)}</div></div>`;
       const graf = document.getElementById('stkFluxoGraf');
-      if(graf) stkDesenharLinhasFluxo(graf, meses.map(rotM), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', series.length > 2);
+      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto');
       cdAjustarListas();
 
-      // Exportar (CSV): série completa por região e edição.
-      const L = [['Edição', 'Região', 'Negativados (milhões)', '% da população adulta']];
-      const num = v => v == null ? '' : String(v).replace('.', ',');
-      meses.forEach(m => {
-        const B = porMes.get(m);
-        INAD_REGIOES.filter(n => !reg || n === reg).forEach(n => L.push([rotM(m), n, num(B.regioes[n].negativadosMi), num(B.regioes[n].popAdulta)]));
-        if(B.brasil) L.push([rotM(m), 'Brasil', num(B.brasil.negativadosMi), num(B.brasil.popAdulta)]);
-      });
-      L.push([], ['Fonte', `SPC Brasil · ${meses.map(m => porMes.get(m).arquivo).join(' · ')}`, '', '']);
-      inadPainelUltimo = { linhas: L, arquivo: `spc_inadimplencia_regioes_${ult}${reg ? '_' + stkNorm(reg).replace(/\W+/g, '-') : ''}.csv` };
+      // Exportar (CSV): mês a mês por ano, com a fonte de cada número.
+      const L = [['Mês', 'Ano', 'Local', '% da população adulta', 'Fonte']];
+      series.forEach(s => s.valores.forEach((v, k) => { if(v == null) return;
+        const p = P[inadMesChave(s.nome, k)];
+        L.push([PAN_MES_CURTO[k], s.nome, loc, String(v).replace('.', ','), `${p.fonte === 'mensal' ? 'Tabela mensal' : 'SPC Brasil · Gráfico 12'} · ${p.arquivo || ''}`]); }));
+      inadPainelUltimo = { linhas: L, arquivo: `spc_inadimplencia_${stkNorm(loc).replace(/\W+/g, '-')}_${anos.join('x')}.csv` };
     }
     function inadPainelDesenhar(D){
       if(inadVisao === 'graf') return inadGraficoDesenhar(D);
