@@ -13539,7 +13539,11 @@ ${clipPlayerPills(n)}
         return v.length ? `média ${s.nome}: ${pctP(v.reduce((a, b) => a + b, 0) / v.length)} (${v.length} ${v.length === 1 ? 'mês' : 'meses'})` : ''; }).filter(Boolean);
       if(series.length === 2){
         const [sa, sb] = series;
-        let k = 11; while(k >= 0 && !(sb.valores[k] != null && sa.valores[k] != null)) k--;
+        // Último mês com dado nos dois anos, de preferência da mesma fonte (mesma base) nos dois.
+        const fonteDe = (s, k) => (P[inadMesChave(s.nome, k)] || {}).fonte;
+        const comum = k => sb.valores[k] != null && sa.valores[k] != null;
+        let k = 11; while(k >= 0 && !(comum(k) && fonteDe(sa, k) === fonteDe(sb, k))) k--;
+        if(k < 0){ k = 11; while(k >= 0 && !comum(k)) k--; }
         if(k >= 0) partes.push(`${PAN_MES_CURTO[k]}/${sb.nome.slice(2)} x ${PAN_MES_CURTO[k]}/${sa.nome.slice(2)}: ${pctP(sb.valores[k])} x ${pctP(sa.valores[k])} (${pp(sb.valores[k] - sa.valores[k])})`);
         else partes.push(`sem mês em comum entre ${sa.nome} e ${sb.nome}`);
       }
