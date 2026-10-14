@@ -13400,9 +13400,9 @@ ${clipPlayerPills(n)}
       inadPainelDesenhar(window.SPC_INAD);
     }
     // ---- Visão Gráfico: taxa de inadimplência por região — comparativo ano a ano ----
-    // % da população adulta negativada, mês a mês (jan–dez), uma linha por ano: o ano mais recente em azul e o anterior em
-    // azul claro (cores do gráfico de linhas original da visão Dashboard). Filtro Região (Centro-Oeste por padrão; vazio =
-    // Brasil, total do país) e Ano (o escolhido x o anterior; sem Ano, os dois mais recentes). Fontes, lidas sozinhas dos
+    // % da população adulta negativada, mês a mês (jan–dez), uma linha por ano: o mais recente em azul, o anterior em azul
+    // claro (cores do gráfico de linhas original da visão Dashboard) e o 3º em cinza. Filtro Região (Centro-Oeste por padrão;
+    // vazio = Brasil, total do país) e Ano (o escolhido x o anterior; sem Ano, os três mais recentes). Fontes, lidas sozinhas dos
     // PDFs da seção Inadimplência (pdf.js no navegador, sem API; cache no IndexedDB, chave "inad-v2|id|caminho"):
     //   1. Tabela mensal ("Inadimplência Mensal 2025 · Janeiro Centro-Oeste 45,78% ..."), ex.: Inadimplencia_2025_Centro-Oeste.pdf.
     //   2. Gráfico 12 "Estimativa de inadimplentes" dos relatórios Brasil do SPC ("Norte: 6,86 milhões (48,45% da população
@@ -13515,7 +13515,7 @@ ${clipPlayerPills(n)}
       const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
       const anosDisp = [...new Set(Object.keys(P).map(m => m.slice(0, 4)))].sort();
       const anoSel = stkAnoEl.value;
-      const anos = anoSel ? [String(Number(anoSel) - 1), anoSel].filter(a => anosDisp.includes(a)) : anosDisp.slice(-2);
+      const anos = anoSel ? [String(Number(anoSel) - 1), anoSel].filter(a => anosDisp.includes(a)) : anosDisp.slice(-3);
       const titulo = 'Taxa de inadimplência por região';
       const lendoTxt = lendo ? `lendo ${lendo} PDF${lendo === 1 ? '' : 's'} da seção Inadimplência…` : '';
       stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
@@ -13526,21 +13526,22 @@ ${clipPlayerPills(n)}
         return;
       }
 
-      // Uma linha por ano (jan–dez); mês sem dado fica em branco. Mais recente em azul, anterior em azul claro.
-      const tons = anos.length === 2 ? [CD_COR.azulClaro, CD_COR.azul] : [CD_COR.azul];
+      // Uma linha por ano (jan–dez); mês sem dado fica em branco. Mais recente em azul, anterior em azul claro, 3º em cinza.
+      const tons = [CD_COR.cinza, CD_COR.azulClaro, CD_COR.azul].slice(-anos.length);
       const series = anos.map((a, i) => ({ nome: a, cor: tons[i], valores: PAN_MES_CURTO.map((_, k) => { const p = P[inadMesChave(a, k)]; return p ? p.v : null; }) }));
 
-      // Análise: média de cada ano (meses com dado) e o último mês com dado nos dois anos (ano contra ano, em p.p.).
-      const partes = series.map(s => { const v = s.valores.filter(x => x != null);
-        return v.length ? `média ${s.nome}: ${pctP(v.reduce((a, b) => a + b, 0) / v.length)} (${v.length} ${v.length === 1 ? 'mês' : 'meses'})` : ''; }).filter(Boolean);
-      if(series.length === 2){
-        const [sa, sb] = series;
+      // Análise: média de cada ano (meses com dado) e, entre os dois mais recentes, o último mês com dado nos dois (em p.p.).
+      const medias = series.map(s => { const v = s.valores.filter(x => x != null);
+        return v.length ? `${s.nome} ${pctP(v.reduce((a, b) => a + b, 0) / v.length)}${v.length < 12 ? ` (${v.length} ${v.length === 1 ? 'mês' : 'meses'})` : ''}` : ''; }).filter(Boolean);
+      const partes = medias.length ? [`média ${medias.join(', ')}`] : [];
+      if(series.length >= 2){
+        const [sa, sb] = series.slice(-2);
         // Último mês com dado nos dois anos, de preferência da mesma fonte (mesma base) nos dois.
         const fonteDe = (s, k) => (P[inadMesChave(s.nome, k)] || {}).fonte;
         const comum = k => sb.valores[k] != null && sa.valores[k] != null;
         let k = 11; while(k >= 0 && !(comum(k) && fonteDe(sa, k) === fonteDe(sb, k))) k--;
         if(k < 0){ k = 11; while(k >= 0 && !comum(k)) k--; }
-        if(k >= 0) partes.push(`${PAN_MES_CURTO[k]}/${sb.nome.slice(2)} x ${PAN_MES_CURTO[k]}/${sa.nome.slice(2)}: ${pctP(sb.valores[k])} x ${pctP(sa.valores[k])} (${pp(sb.valores[k] - sa.valores[k])})`);
+        if(k >= 0) partes.push(`${PAN_MES_CURTO[k]}/${sb.nome.slice(2)} x ${PAN_MES_CURTO[k]}/${sa.nome.slice(2)}: ${pp(sb.valores[k] - sa.valores[k])}`);
         else partes.push(`sem mês em comum entre ${sa.nome} e ${sb.nome}`);
       }
       const sub = `% da população adulta negativada · ${loc} · ${partes.join(' · ')}${lendo ? ' · ' + lendoTxt : ''}`;
@@ -13548,10 +13549,12 @@ ${clipPlayerPills(n)}
 
       stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard(titulo, sub, '<div id="stkFluxoGraf"></div>', legenda)}</div></div>`;
       const graf = document.getElementById('stkFluxoGraf');
-      // Tooltip: além do valor de cada ano, a variação do ano mais recente contra o anterior no mês (em p.p.).
-      const dicaVar = series.length === 2 ? k => { const [sa, sb] = series;
-        return sa.valores[k] != null && sb.valores[k] != null ? [{ valor: pp(sb.valores[k] - sa.valores[k]), rotulo: `variação ${sb.nome.slice(2)} x ${sa.nome.slice(2)}` }] : []; } : null;
-      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', false, dicaVar);
+      // Tooltip: além do valor de cada ano, a variação de cada ano contra o anterior no mês (em p.p.), do mais recente para trás.
+      const dicaVar = series.length >= 2 ? k => series.slice(1).map((sb, i) => [series[i], sb]).reverse()
+        .filter(([sa, sb]) => sa.valores[k] != null && sb.valores[k] != null)
+        .map(([sa, sb]) => ({ valor: pp(sb.valores[k] - sa.valores[k]), rotulo: `variação ${sb.nome.slice(2)} x ${sa.nome.slice(2)}` })) : null;
+      // Com 3 anos, só as linhas (sem o degradê, que embaralha as áreas sobrepostas).
+      if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', series.length > 2, dicaVar);
       cdAjustarListas();
 
       // Exportar (CSV): mês a mês por ano, com a fonte de cada número.

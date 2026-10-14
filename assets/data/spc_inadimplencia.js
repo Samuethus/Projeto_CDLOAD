@@ -41,6 +41,9 @@ window.SPC_INAD = {
   // (ordem de grandeza de Mato Grosso, não do Centro-Oeste) e difere do SPC Brasil em nov/2025 (45,00% x 47,08%);
   // dezembro foi digitado à mão na planilha de origem (Dados_Inadimplência_2025.xlsx). Usada como Centro-Oeste por decisão do usuário.
   mensal: [
+    { local: 'Centro-Oeste', arquivo: 'Inadimplencia_2024_Centro-Oeste.pdf', meses: {   // pasta Janeiro 2024 da seção
+      '2024-01': 44.76, '2024-02': 46.14, '2024-03': 46.03, '2024-04': 45.31, '2024-05': 43.82, '2024-06': 43.38,
+      '2024-07': 43.83, '2024-08': 43.78, '2024-09': 43.85, '2024-10': 44.57, '2024-11': 45.01, '2024-12': 45.05 } },
     { local: 'Centro-Oeste', arquivo: 'Inadimplencia_2025_Centro-Oeste.pdf', meses: {
       '2025-01': 45.78, '2025-02': 45.77, '2025-03': 46.95, '2025-04': 46.93, '2025-05': 46.55, '2025-06': 46.33,
       '2025-07': 43.81, '2025-08': 43.87, '2025-09': 44.22, '2025-10': 44.68, '2025-11': 45.00, '2025-12': 45.80 } },
