@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DATALOAD · Cenas dos vídeos curtos</title>
+<!-- Gerador dos vídeos demonstrativos (1080x1920, até 20 s) de landing/videos curtos/.
+     Interface redesenhada com dados FICTÍCIOS e marca DATALOAD (sem nenhuma referência à entidade real).
+     Cada quadro é desenhado por renderFrame(t) — determinístico, para o render.cjs capturar quadro a quadro.
+     Abra no navegador com ?v=<id>&play=1 para pré-visualizar. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2545; --side:#0A2A57; --azul:#1D5FD3; --azul2:#A9C8F5; --azulbg:#E8F0FD; --verde:#4FA845; --verdebg:#E7F5E4;
+    --verm:#E5484D; --vermbg:#FDECEC; --amar:#E3AE1F; --amarbg:#FDF4DC; --txt:#0F172A; --sub:#64748B; --borda:#E6EBF2; --fundo:#F4F6FA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:#D3D7DE;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--txt)}
+  #stage{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#E9EBEF 0%,#D6DAE1 60%,#C9CED7 100%)}
+  /* Janela (coordenadas lógicas 1280 x 904: barra do navegador 44 + app 860) */
+  #cam{position:absolute;left:0;top:0;width:1280px;height:904px;transform-origin:0 0}
+  #win{position:absolute;inset:0;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 40px 90px rgba(15,23,42,.28),0 8px 24px rgba(15,23,42,.12)}
+  .chrome{position:absolute;left:0;top:0;right:0;height:44px;background:#EEF1F5;border-bottom:1px solid #E1E5EB;display:flex;align-items:center;padding:0 16px}
+  .chrome i{width:12px;height:12px;border-radius:50%;margin-right:8px;display:inline-block}
+  .url{position:absolute;left:50%;top:9px;transform:translateX(-50%);width:300px;height:26px;border-radius:8px;background:#fff;font-size:13px;color:#64748B;display:flex;align-items:center;justify-content:center;gap:6px}
+  .side{position:absolute;left:0;top:44px;bottom:0;width:210px;background:var(--side);color:#C9D6EA;padding:18px 14px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .logo b{width:36px;height:36px;border-radius:10px;background:#fff;color:var(--side);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;letter-spacing:-.5px}
+  .logo span{font-weight:800;color:#fff;font-size:16px;letter-spacing:.5px;line-height:1.1}
+  .logo small{display:block;font-weight:500;color:#8FB0E0;font-size:10px;letter-spacing:.2px}
+  .nav{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 10px;border-radius:9px;margin-bottom:3px;font-weight:500}
+  .nav i{width:15px;height:15px;border-radius:5px;border:2px solid currentColor;opacity:.75}
+  .nav.on{background:var(--azul);color:#fff}
+  .head{position:absolute;left:210px;right:0;top:44px;height:70px;padding:16px 26px;border-bottom:1px solid var(--borda);background:#fff}
+  .head h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  .head p{font-size:12.5px;color:var(--sub);margin-top:3px}
+  .head .user{position:absolute;right:24px;top:18px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+  .head .user b{width:32px;height:32px;border-radius:50%;background:var(--azulbg);color:var(--azul);display:flex;align-items:center;justify-content:center;font-size:12px}
+  .content{position:absolute;left:210px;top:114px;width:1070px;height:790px;background:var(--fundo);overflow:hidden}
+  .lay{position:absolute;inset:0;padding:20px 24px}
+  .modal-bg{position:absolute;inset:0;background:rgba(15,23,42,.42);display:flex;align-items:center;justify-content:center}
+  .modal{background:#fff;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.3);overflow:hidden}
+  .mh{padding:18px 22px;border-bottom:1px solid var(--borda);display:flex;align-items:center;gap:12px}
+  .mh .ic{width:38px;height:38px;border-radius:10px;background:var(--azulbg);color:var(--azul);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .mh h3{font-size:16px} .mh p{font-size:12px;color:var(--sub);margin-top:2px}
+  .mb{padding:20px 22px} .mf{padding:14px 22px;border-top:1px solid var(--borda);display:flex;justify-content:flex-end;gap:10px;background:#F8FAFC}
+  /* componentes */
+  .bar{display:flex;gap:10px;align-items:center;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:16px}
+  .busca{flex:0 0 230px;height:36px;border-radius:9px;background:#F1F3F6;display:flex;align-items:center;padding:0 12px;font-size:12.5px;color:#94A3B8;gap:8px}
+  .busca.on{color:var(--txt);box-shadow:0 0 0 2px var(--azul) inset;background:#fff}
+  .chip{height:36px;border-radius:9px;background:#F1F3F6;padding:0 13px;display:flex;align-items:center;font-size:12.5px;color:#475569;white-space:nowrap;font-weight:500}
+  .chip.sel{background:var(--azulbg);color:var(--azul);font-weight:600}
+  .btn{height:36px;border-radius:9px;padding:0 15px;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;background:#E9ECF1;color:#334155;white-space:nowrap}
+  .btn.pri{background:var(--azul);color:#fff} .btn.ok{background:var(--verde);color:#fff}
+  .sp{flex:1}
+  .card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.05);padding:16px 18px;position:relative;overflow:hidden}
+  .card h4{font-size:13.5px;font-weight:700} .card .cs{font-size:11.5px;color:var(--sub);margin-top:2px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  .kpi .l{font-size:12.5px;font-weight:600;color:#334155}
+  .kpi .v{font-size:30px;font-weight:800;letter-spacing:-.8px;margin-top:6px}
+  .kpi .d{font-size:11.5px;font-weight:600;margin-top:4px}
+  .up{color:var(--verde)} .dn{color:var(--verm)} .az{color:var(--azul)}
+  .badge{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:11px;font-size:11px;font-weight:600}
+  .b-ok{background:var(--verdebg);color:#2F8A26} .b-az{background:var(--azulbg);color:var(--azul)} .b-am{background:var(--amarbg);color:#A87A07} .b-ve{background:var(--vermbg);color:#C53035} .b-ci{background:#EEF1F5;color:#64748B}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#64748B;font-weight:700;padding:10px 12px;border-bottom:1px solid var(--borda)}
+  td{padding:11px 12px;border-bottom:1px solid #F0F2F6;color:#334155}
+  .cursor{position:absolute;width:28px;height:28px;pointer-events:none;z-index:50}
+  .ring{position:absolute;border-radius:50%;border:3px solid var(--azul);pointer-events:none;z-index:49}
+  .toast{position:absolute;left:50%;translate:-50% 0;bottom:28px;white-space:nowrap;background:var(--navy);color:#fff;border-radius:12px;padding:14px 18px;font-size:13px;font-weight:600;display:flex;gap:10px;align-items:center;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+  .toast i{width:22px;height:22px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px}
+  .field{margin-bottom:14px} .field label{display:block;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+  .inp{height:40px;border-radius:9px;background:#F4F5F7;padding:0 12px;display:flex;align-items:center;font-size:13.5px;color:var(--txt)}
+  .inp.on{box-shadow:0 0 0 2px var(--azul) inset;background:#fff}
+  .steps{display:flex;gap:8px;margin-bottom:18px}
+  .steps span{flex:1;height:6px;border-radius:3px;background:#E3E8EF} .steps span.on{background:var(--azul)}
+  .chk{width:18px;height:18px;border-radius:5px;border:2px solid #CBD5E1;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex:0 0 auto}
+  .chk.on{background:var(--azul);border-color:var(--azul)}
+  .sw{width:40px;height:22px;border-radius:11px;background:#CBD5E1;position:relative;flex:0 0 auto}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:none}
+  .sw.on{background:var(--azul)} .sw.on::after{left:21px}
+  /* sobreposições do palco */
+  #topo{position:absolute;left:0;right:0;top:0;height:540px;background:linear-gradient(#E3E6EB 0%,#E3E6EB 70%,#E3E6EB00 100%);padding:120px 80px 0}
+  #base{position:absolute;left:0;right:0;bottom:0;height:380px;background:linear-gradient(#CDD2DA00 0%,#CDD2DAEE 45%,#CDD2DA 100%)}
+  .marca{display:flex;align-items:center;gap:16px}
+  .marca b{width:64px;height:64px;border-radius:18px;background:var(--navy);color:#fff;font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;letter-spacing:-.5px}
+  .marca span{font-weight:800;font-size:30px;letter-spacing:3px;color:var(--navy)}
+  #tit{font-size:76px;font-weight:800;letter-spacing:-2px;color:var(--navy);margin-top:44px;line-height:1.02}
+  #sub{font-size:32px;color:#475569;margin-top:16px;font-weight:500;line-height:1.3}
+  #pill{position:absolute;left:50%;bottom:250px;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:38px;font-weight:700;padding:22px 40px;border-radius:60px;white-space:nowrap;box-shadow:0 18px 40px rgba(11,37,69,.3)}
+  #dots{position:absolute;left:50%;bottom:190px;transform:translateX(-50%);display:flex;gap:12px}
+  #dots i{width:12px;height:12px;border-radius:6px;background:#9AA6B8} #dots i.on{width:40px;background:var(--navy)}
+  #fim{position:absolute;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  #fim b{width:150px;height:150px;border-radius:40px;background:#fff;color:var(--navy);font-weight:800;font-size:54px;display:flex;align-items:center;justify-content:center;letter-spacing:-1px}
+  #fim h2{font-size:96px;font-weight:800;letter-spacing:6px;margin-top:46px}
+  #fim p{font-size:34px;color:#8FB0E0;margin-top:18px;font-weight:600}
+  #fim small{position:absolute;bottom:170px;font-size:30px;color:#C9D6EA;font-weight:500}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cam"><div id="win"></div></div>
+  <div id="topo"><div class="marca"><b>DL</b><span>DATALOAD</span></div><div id="tit"></div><div id="sub"></div></div>
+  <div id="base"></div>
+  <div id="pill"></div>
+  <div id="dots"></div>
+  <div id="fim"><b>DL</b><h2>DATALOAD</h2><p>Inteligência de dados para decisões</p><small id="fimsec"></small></div>
+</div>
+<script>
+// ======================================================================= utilitários
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const eio = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;   // ease in-out cúbico
+const eout = p => 1 - Math.pow(1 - p, 3);
+const prog = (t, a, b) => eout(clamp((t - a) / (b - a)));                     // 0→1 entre a e b
+const fmt = (v, c = 0) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+const cnt = (v, p, c = 0) => fmt(v * p, c);
+const typed = (txt, t, a, cps = 14) => txt.slice(0, Math.max(0, Math.floor((t - a) * cps)));
+const caret = t => (Math.floor(t * 2.4) % 2 ? '' : '<span style="display:inline-block;width:2px;height:16px;background:#1D5FD3;margin-left:1px;vertical-align:middle"></span>');
+const NAV = ['Home', 'Dashboard', 'Clipping News', 'Relatórios', 'Banco de dados', 'Pesquisas', 'WhatsApp', 'Campanhas', 'Usuários', 'Inadimplência', 'Estoque'];
+const MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+// Barras verticais (valores 0..max), crescendo com p; destaque nas últimas `hi` barras.
+function barras(vals, w, h, p, hi = 3, cor = '#1D5FD3', claro = '#A9C8F5', rot = MES) {
+  const max = Math.max(...vals) * 1.08, n = vals.length, gap = w / n, bw = gap * .62;
+  let s = `<svg width="${w}" height="${h + 22}" viewBox="0 0 ${w} ${h + 22}">`;
+  for (let k = 0; k < 4; k++) s += `<line x1="0" x2="${w}" y1="${h * k / 4}" y2="${h * k / 4}" stroke="#EEF1F5"/>`;
+  vals.forEach((v, i) => {
+    const pp = clamp(p * 1.6 - i * .05), bh = v / max * h * eout(pp);
+    s += `<rect x="${i * gap + (gap - bw) / 2}" y="${h - bh}" width="${bw}" height="${bh}" rx="5" fill="${i >= n - hi ? cor : claro}"/>`;
+    if (rot) s += `<text x="${i * gap + gap / 2}" y="${h + 16}" font-size="10.5" fill="#94A3B8" text-anchor="middle">${rot[i % rot.length]}</text>`;
+  });
+  return s + '</svg>';
+}
+// Barras horizontais com rótulo e valor.
+function hbarras(itens, w, p, cor = '#1D5FD3') {
+  const max = Math.max(...itens.map(i => i[1]));
+  return itens.map(([n, v, c], i) => `<div style="display:flex;align-items:center;gap:10px;margin:9px 0;font-size:12px">
+    <span style="width:120px;color:#475569">${n}</span>
+    <span style="flex:1;height:14px;background:#F1F3F6;border-radius:7px;overflow:hidden"><span style="display:block;height:100%;width:${v / max * 100 * eout(clamp(p * 1.4 - i * .08))}%;background:${c || cor};border-radius:7px"></span></span>
+    <b style="width:52px;text-align:right;color:#0F172A">${fmt(v * eout(clamp(p * 1.4 - i * .08)), 1)}%</b></div>`).join('');
+}
+// Rosca: segs = [[valor, cor]], desenhada com p.
+function rosca(segs, size, p, centro = '', sub = '') {
+  const r = size / 2 - 14, c = 2 * Math.PI * r, tot = segs.reduce((a, s) => a + s[0], 0);
+  let acc = 0, s = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)">`;
+  s += `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#F1F3F6" stroke-width="26"/>`;
+  segs.forEach(([v, cor]) => {
+    const len = v / tot * c * eout(p);
+    s += `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="26" stroke-dasharray="${len} ${c}" stroke-dashoffset="${-acc * eout(p)}"/>`;
+    acc += v / tot * c;
+  });
+  s += '</svg>';
+  return `<div style="position:relative;width:${size}px;height:${size}px">${s}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-size:${size / 7}px">${centro}</b><span style="font-size:11px;color:#64748B">${sub}</span></div></div>`;
+}
+// Linhas (séries [{v:[], cor}]) desenhadas progressivamente.
+function linhas(series, w, h, p, rot) {
+  const all = series.flatMap(s => s.v), max = Math.max(...all) * 1.1, min = Math.min(0, ...all);
+  let s = `<svg width="${w}" height="${h + 20}" viewBox="0 0 ${w} ${h + 20}">`;
+  for (let k = 0; k < 4; k++) s += `<line x1="0" x2="${w}" y1="${h * k / 4}" y2="${h * k / 4}" stroke="#EEF1F5"/>`;
+  series.forEach(se => {
+    const n = se.v.length, pts = se.v.map((v, i) => [i / (n - 1) * w, h - (v - min) / (max - min) * h]);
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < n; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], mx = (x0 + x1) / 2; d += ` C${mx},${y0} ${mx},${y1} ${x1},${y1}`; }
+    s += `<path d="${d}" fill="none" stroke="${se.cor}" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="${1 - eout(p)}"/>`;
+  });
+  if (rot) rot.forEach((r, i) => { s += `<text x="${i / (rot.length - 1) * w}" y="${h + 16}" font-size="10.5" fill="#94A3B8" text-anchor="${i === 0 ? 'start' : i === rot.length - 1 ? 'end' : 'middle'}">${r}</text>`; });
+  return s + '</svg>';
+}
+const kpi = (l, v, d, cls, cor = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${cor ? 'color:' + cor : ''}">${v}</div><div class="d ${cls}">${d}</div></div>`;
+const ico = (txt, bg, fg) => `<span style="width:34px;height:34px;border-radius:9px;background:${bg};color:${fg};display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:0 0 auto">${txt}</span>`;
+const pop = (t, a, d = .35) => { const p = prog(t, a, a + d); return `opacity:${p};transform:translateY(${(1 - p) * 18}px) scale(${.96 + .04 * p})`; };
+
+// ======================================================================= vídeos
+// Cada vídeo: titulo, sub, nav (índice no menu), cenas [{d, cap, head:[título, descrição], view(t), cam:[[t, zoom, fx, fy]], cur:[[t, x, y, clique?]]}]
+// Coordenadas fx/fy/x/y na janela lógica (1280 x 904): conteúdo começa em x 210, y 114.
+const X0 = 210, Y0 = 114;
+const VIDEOS = {};
+
+// ---------------------------------------------------------------- 01 · Home
+(() => {
+  const tiles = [['Painel de Indicadores', 'b'], ['Radar de Mercado', 'b'], ['Pesquisas', 'b'], ['Gestão à Vista', 'g'], ['Observatório de Obras', 'b'], ['Ofícios', 'b'], ['Relatório Mensal', 'b'], ['Certificado Digital', 'g']];
+  const grid = (t, opt = {}) => `<div class="lay"><h2 style="font-size:22px;letter-spacing:-.4px">Bem-vindo ao DATALOAD</h2><p style="font-size:13px;color:#64748B;margin:4px 0 18px">Acesse os painéis e módulos liberados para o seu perfil.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">${tiles.map(([n, c], i) => {
+      const lock = opt.lock && [2, 5, 7].includes(i), hov = opt.hover === i;
+      return `<div class="card" style="padding:0;${pop(t, .1 + i * .08)};${hov ? 'box-shadow:0 16px 36px rgba(29,95,211,.28);outline:3px solid #1D5FD3;' : ''}${lock ? 'opacity:' + (1 - .55 * opt.lock) : ''}">
+        <div style="height:120px;background:linear-gradient(135deg,${c === 'g' ? '#2E7D32,#66BB6A' : '#0B3A82,#2F6FDB'});display:flex;align-items:flex-end;padding:16px;gap:6px">${[38, 58, 30, 70, 50].map(h => `<span style="width:12px;height:${h}%;background:#fff;opacity:.9;border-radius:3px"></span>`).join('')}
+        ${lock ? `<span style="margin-left:auto;background:#fff;color:#0B2545;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;opacity:${opt.lock}">🔒 Sem acesso</span>` : ''}</div>
+        <div style="padding:14px 16px"><b style="font-size:14px">${n}</b><div style="font-size:11.5px;color:#64748B;margin-top:3px">Painel interativo · atualizado hoje</div></div></div>`;
+    }).join('')}</div></div>`;
+  const embed = t => `<div class="lay" style="padding:0"><div style="position:absolute;inset:0;background:#fff;${pop(t, 0, .45)}">
+    <div style="padding:16px 24px;border-bottom:1px solid #E6EBF2;display:flex;align-items:center;gap:12px"><span class="btn">← Voltar</span><b style="font-size:16px">Radar de Mercado</b><span class="badge b-ok">Ao vivo</span></div>
+    <div style="padding:20px 24px;display:grid;grid-template-columns:2fr 1fr;gap:16px">
+      <div class="card"><h4>Faturamento do varejo · índice</h4><div class="cs">Base fictícia · 2026</div><div style="margin-top:12px">${linhas([{ v: [40, 46, 44, 52, 58, 55, 63, 70, 68, 76, 82, 88], cor: '#1D5FD3' }, { v: [30, 34, 33, 38, 40, 43, 45, 47, 50, 53, 55, 58], cor: '#4FA845' }], 600, 250, prog(t, .3, 1.8), MES)}</div></div>
+      <div class="card"><h4>Participação por setor</h4><div style="display:flex;justify-content:center;margin-top:18px">${rosca([[46, '#1D5FD3'], [28, '#4FA845'], [26, '#A9C8F5']], 210, prog(t, .4, 1.6), '46%', 'Varejo')}</div></div>
+    </div></div></div>`;
+  VIDEOS.home = { titulo: 'Home', sub: 'Todos os módulos da plataforma em uma tela inicial.', nav: 0, cenas: [
+    { d: 3.4, cap: 'Todos os módulos em um só lugar', head: ['Home', 'Painéis e módulos liberados para você.'], view: t => grid(t), cam: [[0, 1, 640, 452], [3.4, 1.18, 700, 420]] },
+    { d: 3.4, cap: 'Acesso rápido aos painéis', head: ['Home', 'Painéis e módulos liberados para você.'], view: t => grid(9, { hover: t > 1.2 ? 1 : -1 }), cam: [[1.2, 2.1, 640, 300], [3.4, 2.1, 640, 300]], cur: [[0, 1000, 700], [1.2, 610, 300], [3.0, 610, 300, 1]] },
+    { d: 3.2, cap: 'Permissões por perfil de usuário', head: ['Home', 'Painéis e módulos liberados para você.'], view: t => grid(9, { lock: prog(t, .3, 1.2) }), cam: [[1, 1.25, 740, 430], [3.2, 1.35, 760, 440]] },
+    { d: 3.6, cap: 'Painéis abrem direto na plataforma', head: ['Radar de Mercado', 'Painel interativo incorporado.'], view: t => embed(t), cam: [[1, 1.7, 560, 380], [3.6, 1.15, 640, 452]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 02 · Dashboard
+(() => {
+  const CID = ['Cidade Modelo', 'Vila Exemplo', 'Porto Fictício', 'Serra Teste'];
+  const filtros = (t, cid, abre) => `<div class="bar"><span class="busca">⌕ Buscar atividade econômica...</span><span class="chip sel">Painel · Panorama</span><span class="chip sel">Indicador: Empresas</span><span class="chip sel">Mês: Ago</span><span class="chip sel">Ano: 2026</span>
+    <span class="chip sel" style="position:relative">Cidade: ${cid}${abre ? `<div style="position:absolute;top:42px;left:0;width:200px;background:#fff;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.18);padding:6px;z-index:5;${pop(abre, 0, .25)}">${CID.map((c, i) => `<div style="padding:9px 10px;border-radius:8px;color:#334155;font-weight:500;${(abre > 1.1 && i === 1) || (abre <= 1.1 && c === cid) ? 'background:#E8F0FD;color:#1D5FD3;font-weight:600' : ''}">${c}</div>`).join('')}</div>` : ''}</span>
+    <span class="sp"></span><span class="btn pri">⤓ Exportar</span></div>`;
+  const dash = (t, k = 1, cid = 'Cidade Modelo', abre = 0) => {
+    const p = prog(t, .1, 1.4);
+    const v = [312, 330, 318, 352, 371, 360, 395, 382, 410, 428, 405, 452].map(x => x * k);
+    return `<div class="lay">${filtros(t, cid, abre)}<div class="kpis">
+      ${kpi('Empresas ativas', cnt(9840 * k, p), '▲ 4,1% vs. ano anterior', 'up', '#1D5FD3')}${kpi('Aberturas', cnt(1085 * k, p), '▲ 8,2% vs. ano anterior', 'up', '#4FA845')}
+      ${kpi('Fechamentos', cnt(642 * k, p), '▼ 3,1% vs. ano anterior', 'dn', '#E5484D')}${kpi('Saldo do período', '+' + cnt(443 * k, p), 'Aberturas − fechamentos', 'up', '#1D5FD3')}</div>
+      <div style="display:grid;grid-template-columns:1.9fr 1fr;gap:14px"><div class="card"><h4>Evolução da quantidade de empresas</h4><div class="cs">${cid} · últimos 12 meses</div><div style="margin-top:14px">${barras(v, 610, 330, prog(t, .2, 1.8))}</div></div>
+      <div class="card"><h4>Perfil das empresas</h4><div class="cs">Por porte e regime tributário</div><div style="display:flex;justify-content:center;margin:26px 0 18px">${rosca([[52, '#1D5FD3'], [28, '#4FA845'], [20, '#A9C8F5']], 210, prog(t, .3, 1.6), cnt(52, prog(t, .3, 1.6)) + '%', 'MEI')}</div>
+      <div style="font-size:12px;color:#475569;line-height:2">● <b style="color:#1D5FD3">MEI</b> 52% &nbsp; ● <b style="color:#4FA845">Simples</b> 28% &nbsp; ● Outros 20%</div></div></div></div>`;
+  };
+  const mapa = t => {
+    const pts = [[260, 300, 152], [520, 420, 208], [420, 600, 104], [760, 280, 120], [860, 560, 64], [640, 210, 47]];
+    let s = `<div class="lay" style="padding:0;background:#EEF2F6">
+      <svg width="1070" height="790" style="position:absolute;inset:0">${[[0, 120, 1070, 700], [0, 640, 1070, 90], [150, 0, 820, 790], [600, 0, 380, 790], [0, 380, 1070, 330], [900, 0, 1000, 790]].map(l => `<line x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}" stroke="#fff" stroke-width="10"/>`).join('')}
+      <path d="M0,500 C200,470 380,560 560,500 S900,420 1070,470" fill="none" stroke="#BCD3F2" stroke-width="22"/></svg>`;
+    pts.forEach(([x, y, n], i) => { const p = prog(t, .2 + i * .15, .7 + i * .15), r = 20 + n / 7; s += `<div style="position:absolute;left:${x - r}px;top:${y - r}px;width:${2 * r}px;height:${2 * r}px;border-radius:50%;background:rgba(79,168,69,.22);transform:scale(${p});display:flex;align-items:center;justify-content:center"><span style="width:${r * 1.25}px;height:${r * 1.25}px;border-radius:50%;background:#4FA845;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:3px solid #fff">${Math.round(n * p)}</span></div>`; });
+    return s + `<div class="card" style="position:absolute;left:24px;top:22px;width:300px;${pop(t, .1)}"><div class="cs">Pontos de negócio · Óticas</div><div style="font-size:34px;font-weight:800;color:#1D5FD3;margin-top:4px">${cnt(214, prog(t, .3, 1.5))}</div><div class="cs" style="margin-top:6px">● CEPs com estabelecimentos do ramo · Vila Exemplo</div></div></div>`;
+  };
+  const head = ['Dashboard · Panorama econômico', 'Quantidade de empresas, aberturas e fechamentos.'];
+  VIDEOS.dashboard = { titulo: 'Dashboard', sub: 'Indicadores econômicos com filtros inteligentes e mapa.', nav: 1, cenas: [
+    { d: 3.6, cap: 'Indicadores atualizados', head, view: t => dash(t), cam: [[0, 1, 640, 452], [1.4, 1, 640, 452], [3.6, 1.95, 560, 250]] },
+    { d: 3.8, cap: 'Filtros inteligentes', head, view: t => dash(t < 2 ? 9 : 9 + (t - 2), t < 2 ? 1 : lerp(1, .62, prog(t, 2, 2.6)), t < 2 ? 'Cidade Modelo' : 'Vila Exemplo', t > .7 && t < 2 ? t - .7 : 0), cam: [[.6, 2.3, 740, 150], [2.4, 2.3, 760, 230], [3.8, 1.25, 640, 400]], cur: [[0, 900, 600], [.7, 760, 150, 1], [1.9, 740, 263, 1], [3.8, 760, 300]] },
+    { d: 3.6, cap: 'Mapa da concorrência na região', head: ['Dashboard · Mapa', 'Pontos de negócio por ramo e CEP.'], view: t => mapa(t), cam: [[.3, 1.15, 640, 452], [3.6, 2.1, 700, 500]] },
+    { d: 3.2, cap: 'Exportação com um clique', head, view: t => dash(9, .62, 'Vila Exemplo') + (t > 1.5 ? `<div class="toast" style="${pop(t, 1.5)}"><i>✓</i>panorama_vila_exemplo.csv gerado</div>` : ''), cam: [[.4, 2.2, 1150, 160], [1.6, 2.2, 1150, 160], [3.2, 1.6, 1050, 700]], cur: [[0, 900, 400], [1.2, 1205, 157, 1], [3.2, 1180, 260]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 03 · Clipping News
+(() => {
+  const N = [['Comércio', 'Varejo local projeta alta nas vendas do segundo semestre', 'Portal Exemplo A', 'Positivo', '#C9DDF8'], ['Economia', 'Associação lança painel de indicadores para o comércio', 'Portal Exemplo B', 'Positivo', '#CFEACB'],
+    ['Varejo', 'Pequenos negócios ampliam presença no ambiente digital', 'Rádio Fictícia', 'Neutro', '#E0D8F5'], ['Serviços', 'Setor de serviços registra novo ciclo de contratações', 'Jornal Modelo', 'Positivo', '#CDEFF0'],
+    ['Varejo', 'Feira de varejo reúne lojistas da região', 'Portal Exemplo A', 'Neutro', '#FCE7C8'], ['Economia', 'Juros altos pressionam crédito no varejo', 'TV Exemplo', 'Negativo', '#F8D3D3']];
+  const SENT = { Positivo: 'b-ok', Neutro: 'b-ci', Negativo: 'b-ve' };
+  const lista = (t, q = '', foco = -1) => `<div class="lay"><div class="bar"><span class="busca${q !== null && foco >= 0 ? ' on' : ''}">⌕ ${q ? q + caret(t) : (foco >= 0 ? caret(t) : 'Buscar por título...')}</span><span class="chip sel">Entidade: Entidade A</span><span class="chip">Período: 30 dias</span><span class="chip">Categoria</span><span class="chip">Portal</span><span class="sp"></span>${q.length > 4 ? `<span class="badge b-az" style="height:30px;font-size:12px">4 resultados</span>` : ''}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${N.map(([c, ti, f, s, cor], i) => { const fora = q.length > 4 && !/arejo|omércio/.test(ti + c); return `<div class="card" style="padding:0;${pop(t, .1 + i * .09)};${fora ? 'opacity:.22' : ''}"><div style="height:96px;background:linear-gradient(135deg,${cor},#fff)"></div><div style="padding:12px 14px"><div style="display:flex;justify-content:space-between"><span class="badge b-az">${c}</span><span class="badge ${SENT[s]}">${s}</span></div><b style="display:block;font-size:13.5px;margin-top:9px;line-height:1.35;height:38px">${ti}</b><div class="cs" style="margin-top:8px">${f} · 0${3 + i}/09/2026</div></div></div>`; }).join('')}</div></div>`;
+  const painel = t => `<div class="lay"><div class="kpis">${kpi('Notícias no período', cnt(186, prog(t, .1, 1.3)), '▲ 12% vs. ano anterior', 'up', '#1D5FD3')}${kpi('Positivas', cnt(58, prog(t, .1, 1.3)) + '%', '▲ 6 p.p.', 'up', '#4FA845')}${kpi('Neutras', cnt(31, prog(t, .1, 1.3)) + '%', '— estável', 'az')}${kpi('Negativas', cnt(11, prog(t, .1, 1.3)) + '%', '▼ 4 p.p.', 'up', '#E5484D')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1.9fr;gap:14px"><div class="card"><h4>Sentimento das notícias</h4><div class="cs">Entidade A · últimos 30 dias</div><div style="display:flex;justify-content:center;margin:26px 0">${rosca([[58, '#4FA845'], [31, '#CBD5E1'], [11, '#E5484D']], 220, prog(t, .2, 1.5), '58%', 'positivas')}</div></div>
+    <div class="card"><h4>Volume de notícias · Entidade A x Entidade B</h4><div class="cs">Comparativo mensal · 2026</div><div style="margin-top:16px">${linhas([{ v: [12, 15, 14, 19, 22, 18, 24, 27, 25, 31, 29, 34], cor: '#1D5FD3' }, { v: [10, 11, 13, 12, 15, 16, 15, 18, 20, 19, 22, 23], cor: '#4FA845' }], 600, 300, prog(t, .3, 2.2), MES)}</div><div style="font-size:12px;color:#475569;margin-top:6px">● <b style="color:#1D5FD3">Entidade A</b> &nbsp; ● <b style="color:#4FA845">Entidade B</b></div></div></div></div>`;
+  const head = ['Clipping News', 'Acompanhe as notícias do setor.'];
+  VIDEOS.clipping = { titulo: 'Clipping News', sub: 'Notícias do setor monitoradas, filtradas e analisadas.', nav: 2, cenas: [
+    { d: 3.4, cap: 'Notícias monitoradas automaticamente', head, view: t => lista(t), cam: [[0, 1, 640, 452], [3.4, 1.3, 640, 480]] },
+    { d: 3.8, cap: 'Busca por tema', head, view: t => lista(9 + t, typed('varejo', t, .8, 8), 0), cam: [[.6, 2.4, 380, 150], [2.2, 2.4, 380, 150], [3.8, 1.35, 640, 470]], cur: [[0, 700, 500], [.6, 330, 150, 1], [3.8, 330, 160]] },
+    { d: 3.4, cap: 'Análise de sentimento', head: ['Clipping News · Painel', 'Sentimento e volume de notícias.'], view: t => painel(t), cam: [[.2, 1.1, 640, 452], [3.4, 2.05, 400, 560]] },
+    { d: 3.4, cap: 'Comparativo entre entidades', head: ['Clipping News · Painel', 'Sentimento e volume de notícias.'], view: t => painel(4 + t), cam: [[1.2, 1.8, 900, 560], [3.4, 1.3, 760, 500]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 04 · Relatórios
+(() => {
+  const R = [['Relatório mensal', 'Ago/2026', '#1D5FD3'], ['Boletim do varejo', 'Jul/2026', '#4FA845'], ['Pesquisa de conjuntura', '2º tri/2026', '#E3AE1F'], ['Indicadores do comércio', 'Jun/2026', '#1D5FD3'], ['Panorama regional', '1º sem/2026', '#4FA845'], ['Relatório de eventos', 'Mai/2026', '#E3AE1F']];
+  const gal = (t, clique) => `<div class="lay"><div class="bar"><span class="busca">⌕ Buscar relatório...</span><span class="chip sel">Ano: 2026</span><span class="chip">Categoria</span><span class="sp"></span><span class="btn pri" style="${clique ? 'box-shadow:0 0 0 4px #A9C8F5' : ''}">＋ Gerar relatório</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${R.map(([n, p, c], i) => `<div class="card" style="padding:0;${pop(t, .1 + i * .08)}"><div style="height:120px;background:#F8FAFC;border-bottom:1px solid #EEF1F5;padding:14px 18px">${linhas([{ v: [3, 5, 4, 6, 7, 6, 8, 9].map(x => x + i), cor: c }], 280, 80, prog(t, .3 + i * .08, 1.4 + i * .08))}</div><div style="padding:12px 16px;display:flex;align-items:center;gap:10px">${ico('PDF', '#FDECEC', '#C53035')}<div><b style="font-size:13.5px">${n}</b><div class="cs">${p} · publicado</div></div></div></div>`).join('')}</div></div>`;
+  const IND = ['Empresas ativas', 'Aberturas e fechamentos', 'Inflação do período', 'Vendas do varejo', 'Notícias do setor', 'Pesquisas de satisfação'];
+  const wiz = (t, passo) => `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div class="modal" style="width:620px;${pop(t, 0, .4)}"><div class="mh"><span class="ic">▤</span><div><h3>Gerar relatório</h3><p>Etapa ${passo} de 3</p></div></div><div class="mb">
+    <div class="steps">${[1, 2, 3].map(i => `<span class="${i <= passo ? 'on' : ''}"></span>`).join('')}</div>
+    ${passo === 1 ? `<div class="field"><label>1. Tipo de relatório</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${['Panorama econômico', 'Boletim de notícias', 'Pesquisa', 'Personalizado'].map((x, i) => `<div style="border:2px solid ${i === 0 && t > 1 ? '#1D5FD3' : '#E6EBF2'};background:${i === 0 && t > 1 ? '#E8F0FD' : '#fff'};border-radius:12px;padding:14px;font-size:13px;font-weight:600">${x}</div>`).join('')}</div></div>`
+      : passo === 2 ? `<div class="field"><label>2. Período</label><div style="display:flex;gap:10px"><div class="inp on" style="flex:1">Agosto de 2026</div><div class="inp" style="flex:1">Comparar com 2025</div></div></div>`
+      : `<div class="field"><label>3. Indicadores</label>${IND.map((x, i) => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13.5px;border-bottom:1px solid #F0F2F6"><span class="chk ${t > .5 + i * .32 && i !== 4 ? 'on' : ''}">✓</span>${x}</div>`).join('')}</div>`}
+    </div><div class="mf"><span class="btn">Voltar</span><span class="btn pri">${passo === 3 ? 'Gerar PDF' : 'Próximo'}</span></div></div></div>`;
+  const pdf = t => `<div class="lay" style="background:#E5E9EF;display:flex;justify-content:center;padding-top:26px"><div style="width:560px;height:780px;background:#fff;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:34px 38px;${pop(t, 0, .5)}">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:34px;height:34px;border-radius:9px;background:#0B2545;color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center">DL</span><b style="letter-spacing:2px;color:#0B2545">DATALOAD</b><span style="margin-left:auto;font-size:11px;color:#64748B">Agosto/2026</span></div>
+    <h2 style="font-size:24px;margin-top:22px;letter-spacing:-.5px">Panorama econômico</h2><p style="font-size:12px;color:#64748B;margin-top:4px">Cidade Modelo · dados fictícios para demonstração</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px">${[['Empresas', '9.840', '#1D5FD3'], ['Aberturas', '1.085', '#4FA845'], ['Fechamentos', '642', '#E5484D']].map(([a, b, c]) => `<div style="background:#F8FAFC;border-radius:10px;padding:12px"><div style="font-size:10.5px;color:#64748B">${a}</div><b style="font-size:20px;color:${c}">${b}</b></div>`).join('')}</div>
+    <div style="margin-top:20px">${barras([31, 33, 32, 35, 37, 36, 39, 38, 41, 43, 40, 45], 484, 170, prog(t, .3, 1.8))}</div>
+    <p style="font-size:11.5px;color:#475569;line-height:1.7;margin-top:14px">O saldo de empresas manteve trajetória positiva no período, puxado pelo comércio varejista e pelos serviços. As aberturas superaram os fechamentos em todos os meses do semestre.</p>
+    <div style="margin-top:12px">${hbarras([['Comércio', 41.2], ['Serviços', 33.5], ['Indústria', 15.1], ['Outros', 10.2]], 480, prog(t, .6, 2))}</div></div>
+    ${t > 2 ? `<div class="toast" style="${pop(t, 2)}"><i>✓</i>relatorio_panorama_ago2026.pdf pronto</div>` : ''}</div>`;
+  const head = ['Relatórios', 'Acompanhe indicadores e históricos de desempenho.'];
+  VIDEOS.relatorios = { titulo: 'Relatórios', sub: 'Relatórios em PDF gerados em poucos cliques.', nav: 3, cenas: [
+    { d: 3.2, cap: 'Relatórios organizados', head, view: t => gal(t), cam: [[0, 1, 640, 452], [3.2, 1.3, 600, 440]], cur: [[0, 800, 600], [2.6, 1170, 158, 1]] },
+    { d: 3.4, cap: 'Gerar relatório em etapas', head, view: t => gal(9, 1) + wiz(t, t < 2.2 ? 1 : 2), cam: [[.5, 1.6, 640, 452], [3.4, 1.7, 640, 430]], cur: [[0, 1170, 158], [1, 625, 400, 1], [2.2, 1000, 650, 1]] },
+    { d: 3.6, cap: 'Escolha dos indicadores', head, view: t => gal(9, 1) + wiz(t + .4, 3), cam: [[.4, 1.85, 640, 440], [2.6, 1.85, 640, 540], [3.6, 1.6, 640, 452]] },
+    { d: 3.6, cap: 'PDF pronto para compartilhar', head: ['Relatórios · Pré-visualização', 'Relatório gerado em PDF.'], view: t => pdf(t), cam: [[.2, 1.05, 745, 500], [2, 1.9, 745, 330], [3.6, 1.5, 745, 560]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 05 · Banco de dados
+(() => {
+  const T = [['campanhas', 128], ['clipping_noticias', 4312], ['estoque_produtos', 148], ['pesquisas_respostas', 2905], ['relatorios', 64], ['usuarios', 37], ['whatsapp_envios', 18240]];
+  const ROWS = [['1', 'Campanha Exemplo · Associados', 'ativa', '02/09/2026'], ['2', 'Campanha Exemplo · Eventos', 'ativa', '28/08/2026'], ['3', 'Campanha Exemplo · Pesquisa', 'rascunho', '21/08/2026'], ['4', 'Campanha Exemplo · Fim de ano', 'agendada', '15/08/2026'], ['5', 'Campanha Exemplo · Boas-vindas', 'encerrada', '02/08/2026'], ['6', 'Campanha Exemplo · Treinamento', 'ativa', '29/07/2026'], ['7', 'Campanha Exemplo · Feira', 'encerrada', '11/07/2026']];
+  const ST = { ativa: 'b-ok', rascunho: 'b-ci', agendada: 'b-az', encerrada: 'b-am' };
+  const tela = (t, o = {}) => `<div class="lay"><div class="bar"><span class="busca${o.q ? ' on' : ''}">⌕ ${o.q ? o.q + caret(t) : 'Buscar tabela ou coluna...'}</span><span class="chip">Segurança</span><span class="sp"></span><span class="badge b-ok" style="height:30px;font-size:12px">● Conectado</span></div>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:14px"><div class="card" style="padding:8px"><div style="padding:8px 10px" class="cs">Tabelas · ${T.length}</div>${T.map(([n, c], i) => `<div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:9px;font-size:12.5px;${pop(t, .1 + i * .07)};${o.sel === i ? 'background:#E8F0FD;color:#1D5FD3;font-weight:700' : ''}">${ico('▦', '#EEF1F5', '#64748B')}<span style="flex:1">${n}</span><span style="color:#94A3B8">${fmt(c)}</span>${o.rls ? `<span class="badge b-ok" style="${pop(o.rls, i * .08)}">🛡 RLS</span>` : ''}</div>`).join('')}</div>
+    <div class="card" style="padding:0">${o.sel === undefined ? `<div style="height:560px;display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:13px">Escolha uma tabela para visualizar os dados</div>` : `<div style="padding:14px 16px;border-bottom:1px solid #E6EBF2;display:flex;align-items:center;gap:10px"><b>campanhas</b><span class="cs">${fmt(128)} linhas · somente leitura</span></div>
+      <table><tr>${['id', 'nome', 'status', 'criado_em'].map(c => `<th style="${o.q && 'status'.startsWith(o.q) && c === 'status' ? 'background:#FDF4DC;color:#A87A07' : ''}">${c}</th>`).join('')}</tr>${ROWS.map((r, i) => o.load < .4 + i * .08 ? `<tr><td colspan="4"><span style="display:block;height:12px;border-radius:6px;background:#EEF1F5;width:${60 + (i * 13) % 35}%"></span></td></tr>` : `<tr><td>${r[0]}</td><td>${r[1]}</td><td style="${o.q && 'status'.startsWith(o.q) ? 'background:#FFFBEB' : ''}"><span class="badge ${ST[r[2]]}">${r[2]}</span></td><td>${r[3]}</td></tr>`).join('')}</table>`}</div></div></div>`;
+  const head = ['Banco de dados', 'Tabelas e dados da plataforma (somente leitura).'];
+  VIDEOS.banco = { titulo: 'Banco de dados', sub: 'Todas as tabelas da plataforma, com segurança.', nav: 4, cenas: [
+    { d: 3.2, cap: 'Todas as tabelas em um só lugar', head, view: t => tela(t), cam: [[0, 1, 640, 452], [3.2, 1.9, 380, 420]] },
+    { d: 3.8, cap: 'Consulta rápida aos dados', head, view: t => tela(9, t > .9 ? { sel: 0, load: t - .9 } : {}), cam: [[.6, 1.9, 380, 280], [1.4, 1.3, 760, 440], [3.8, 1.6, 830, 420]], cur: [[0, 500, 500], [.8, 330, 268, 1], [3.8, 760, 420]] },
+    { d: 3.6, cap: 'Busca por tabela ou coluna', head, view: t => tela(9 + t, { sel: 0, load: 9, q: typed('status', t, .5, 7) }), cam: [[.5, 2.2, 400, 150], [1.8, 2.2, 400, 150], [3.6, 1.75, 900, 420]], cur: [[0, 700, 400], [.4, 340, 150, 1]] },
+    { d: 3.4, cap: 'Proteção por regras de acesso', head, view: t => tela(9, { sel: 0, load: 9, rls: Math.max(.01, t - .3) }), cam: [[.6, 2.2, 400, 450], [3.4, 1.4, 560, 452]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 06 · Pesquisas
+(() => {
+  const F = [['Pesquisa de satisfação 2026', 128, 'Aberta'], ['Avaliação de eventos', 64, 'Aberta'], ['Conjuntura do comércio', 212, 'Encerrada'], ['Pesquisa de clima', 47, 'Aberta']];
+  const lista = t => `<div class="lay"><div class="bar"><span class="busca">⌕ Buscar formulário...</span><span class="chip sel">Pasta: 2026</span><span class="chip">Situação</span><span class="sp"></span><span class="badge b-ok" style="height:30px;font-size:12px">⟳ Sincronizado agora</span></div>
+    ${F.map(([n, r, s], i) => `<div class="card" style="display:flex;align-items:center;gap:14px;margin-bottom:12px;${pop(t, .1 + i * .12)}">${ico('✎', '#E8F0FD', '#1D5FD3')}<div style="flex:1"><b style="font-size:14px">${n}</b><div class="cs">Formulário online · atualizado hoje</div></div><div style="text-align:right;margin-right:16px"><b style="font-size:22px;color:#1D5FD3">${cnt(r, prog(t, .3 + i * .12, 1.5))}</b><div class="cs">respostas</div></div><span class="badge ${s === 'Aberta' ? 'b-ok' : 'b-ci'}">${s}</span></div>`).join('')}</div>`;
+  const ESC = [['Excelente', 46, '#1D5FD3'], ['Bom', 31, '#4FA845'], ['Regular', 14, '#E3AE1F'], ['Ruim', 6, '#F08A5D'], ['Irrelevante', 3, '#CBD5E1']];
+  const res = t => `<div class="lay"><div class="kpis">${kpi('Respostas', cnt(128, prog(t, .1, 1.3)), '▲ 18 nesta semana', 'up', '#1D5FD3')}${kpi('Taxa de conclusão', cnt(87, prog(t, .1, 1.3)) + '%', '▲ 3 p.p.', 'up', '#4FA845')}${kpi('Tempo médio', cnt(4.2, prog(t, .1, 1.3), 1) + ' min', 'por resposta', 'az')}${kpi('Satisfação', cnt(77, prog(t, .1, 1.3)) + '%', 'Excelente + Bom', 'up', '#1D5FD3')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px"><div class="card"><h4>Satisfação geral</h4><div class="cs">Escala de 1 a 5</div><div style="display:flex;justify-content:center;margin:22px 0">${rosca(ESC.map(e => [e[1], e[2]]), 220, prog(t, .2, 1.5), '77%', 'satisfeitos')}</div></div>
+    <div class="card"><h4>Avaliação por item</h4><div class="cs">% de respostas Excelente</div><div style="margin-top:14px">${hbarras([['Atendimento', 62.4], ['Conteúdo', 54.8], ['Organização', 49.1], ['Local', 44.6], ['Divulgação', 38.2]], 500, prog(t, .3, 1.9))}</div></div></div></div>`;
+  const resp = t => { const n = Math.min(3, Math.floor(clamp(t - .6) * 3 + Math.max(0, t - 1.6) * 1.2)); const linhasR = []; for (let i = 0; i < 9; i++) linhasR.push(['Respondente ' + String(140 - i + n).padStart(3, '0'), `${String(12 + ((i * 7) % 11)).padStart(2, '0')}/09/2026 ${10 + i % 8}:${String((i * 17) % 60).padStart(2, '0')}`]);
+    return `<div class="lay"><div class="card" style="padding:0"><div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E6EBF2"><b>Respostas · Pesquisa de satisfação 2026</b><span class="sp"></span><span class="badge b-ok"><span style="width:8px;height:8px;border-radius:50%;background:#4FA845;margin-right:6px;opacity:${.4 + .6 * Math.abs(Math.sin(t * 4))}"></span>Ao vivo</span></div>
+    <table><tr><th>Respondente</th><th>Data</th><th>Status</th><th>Nota</th></tr>${linhasR.map((r, i) => `<tr style="${i < n ? 'background:#F1F8EF' : ''}"><td>${r[0]}</td><td>${r[1]}</td><td><span class="badge b-ok">Completa</span></td><td><b style="color:#1D5FD3">${['5', '4', '5', '3', '5', '4', '4', '5', '2'][i]}</b> / 5</td></tr>`).join('')}</table></div></div>`; };
+  const col = t => res(9) + `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div class="modal" style="width:560px;${pop(t, 0, .4)}"><div class="mh"><span class="ic">⇪</span><div><h3>Link de coleta</h3><p>Compartilhe o formulário com o público</p></div></div><div class="mb"><div class="field"><label>Link público</label><div style="display:flex;gap:10px"><div class="inp" style="flex:1">dataload.app/p/EXEMPLO-2026</div><span class="btn ${t > 1.6 ? 'ok' : 'pri'}" style="height:40px">${t > 1.6 ? '✓ Copiado!' : 'Copiar'}</span></div></div><div style="display:flex;gap:10px">${['WhatsApp', 'E-mail', 'QR Code'].map(x => `<span class="chip">${x}</span>`).join('')}</div></div></div></div>`;
+  const head = ['Pesquisas', 'Formulários e respostas das pesquisas.'];
+  VIDEOS.pesquisas = { titulo: 'Pesquisas', sub: 'Formulários, resultados e respostas em tempo real.', nav: 5, cenas: [
+    { d: 3.2, cap: 'Formulários sincronizados', head, view: t => lista(t), cam: [[0, 1, 640, 452], [3.2, 1.45, 640, 330]] },
+    { d: 3.6, cap: 'Resultados consolidados', head: ['Pesquisas · Painel', 'Pesquisa de satisfação 2026.'], view: t => res(t), cam: [[.2, 1.1, 640, 452], [3.6, 2, 420, 560]] },
+    { d: 3.4, cap: 'Respostas em tempo real', head: ['Pesquisas · Respostas', 'Pesquisa de satisfação 2026.'], view: t => resp(t), cam: [[.3, 1.45, 640, 330], [3.4, 1.6, 640, 360]] },
+    { d: 3.4, cap: 'Link de coleta para compartilhar', head: ['Pesquisas · Coletores', 'Pesquisa de satisfação 2026.'], view: t => col(t), cam: [[.5, 1.9, 640, 452], [3.4, 2.05, 790, 480]], cur: [[0, 640, 600], [1.4, 975, 490, 1], [3.4, 985, 520]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 07 · WhatsApp
+(() => {
+  const inst = t => `<div class="lay"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">${[['Instância principal', '(00) 90000-0001'], ['Instância de eventos', '(00) 90000-0002']].map(([n, f], i) => `<div class="card" style="display:flex;align-items:center;gap:14px;${pop(t, .1 + i * .15)}">${ico('◉', '#E7F5E4', '#2F8A26')}<div style="flex:1"><b>${n}</b><div class="cs">${f}</div></div><span class="badge b-ok"><span style="width:8px;height:8px;border-radius:50%;background:#4FA845;margin-right:6px;opacity:${.4 + .6 * Math.abs(Math.sin(t * 3 + i))}"></span>Conectada</span></div>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px"><div class="card"><h4>Templates</h4><div class="cs">Modelos aprovados para envio</div>${[['convite_evento', 'Marketing'], ['lembrete_pagamento', 'Utilidade'], ['boas_vindas', 'Marketing'], ['pesquisa_satisfacao', 'Marketing']].map(([n, c], i) => `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F6;font-size:13px;${pop(t, .4 + i * .12)}"><b style="flex:1">${n}</b><span class="badge b-az">${c}</span><span class="badge b-ok">Aprovado</span></div>`).join('')}</div>
+    <div class="card" style="background:#EFEAE2"><h4>Pré-visualização</h4><div style="margin-top:16px;background:#fff;border-radius:12px 12px 12px 2px;padding:14px;font-size:13px;line-height:1.5;max-width:300px;${pop(t, 1)}"><b>Convite especial 🎉</b><br>Olá, Contato! Você está convidado para o Encontro de Negócios 2026. Confirme sua presença pelo link abaixo.<div style="margin-top:10px;color:#1D5FD3;font-weight:600;border-top:1px solid #EEF1F5;padding-top:8px;text-align:center">Confirmar presença</div></div></div></div></div>`;
+  const chat = t => { const M = [[0, 'Olá! Gostaria de saber sobre o evento.'], [1, 'Olá, Contato! Segue o convite e o link de inscrição.'], [0, 'Perfeito, obrigado!'], [1, 'Inscrição confirmada ✅ Até lá!']];
+    return `<div class="lay"><div style="display:grid;grid-template-columns:300px 1fr;gap:14px;height:100%"><div class="card" style="padding:8px">${['Contato Exemplo', 'Cliente Modelo', 'Fornecedor Teste', 'Lojista Fictício', 'Parceiro Exemplo'].map((n, i) => `<div style="display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;${i === 0 ? 'background:#E8F0FD' : ''}">${ico(n[0] + n.split(' ')[1][0], '#E7F5E4', '#2F8A26')}<div style="flex:1"><b style="font-size:13px">${n}</b><div class="cs">${i === 0 ? 'digitando...' : 'Obrigado!'}</div></div><span class="cs">${10 + i}:4${i}</span></div>`).join('')}</div>
+    <div class="card" style="background:#EFEAE2;padding:22px">${M.map(([eu, m], i) => `<div style="display:flex;justify-content:${eu ? 'flex-end' : 'flex-start'};margin-bottom:14px;${pop(t, .3 + i * .7)}"><div style="background:${eu ? '#D9FDD3' : '#fff'};border-radius:12px;padding:11px 14px;font-size:13.5px;max-width:380px;box-shadow:0 1px 2px rgba(0,0,0,.08)">${m}<div style="font-size:10px;color:#94A3B8;text-align:right;margin-top:4px">10:4${i} ${eu ? '✓✓' : ''}</div></div></div>`).join('')}</div></div></div>`; };
+  const massa = t => { const p = prog(t, .3, 2.6); return `<div class="lay"><div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><h4>Envio em massa · convite_evento</h4><div class="cs">Lista: Associados ativos · ${fmt(1240)} contatos</div></div><span class="badge ${p >= 1 ? 'b-ok' : 'b-az'}">${p >= 1 ? 'Concluído' : 'Enviando...'}</span></div>
+    <div style="height:16px;border-radius:8px;background:#EEF1F5;margin-top:16px;overflow:hidden"><div style="height:100%;width:${p * 100}%;background:linear-gradient(90deg,#4FA845,#7BC86C);border-radius:8px"></div></div><div class="cs" style="margin-top:8px">${cnt(1240, p)} de ${fmt(1240)} enviados · ${cnt(100, p)}%</div></div>
+    <div class="kpis">${kpi('Enviadas', cnt(1240, p), 'mensagens', 'az', '#1D5FD3')}${kpi('Entregues', cnt(1212, p), cnt(97.7, p, 1) + '% do total', 'up', '#4FA845')}${kpi('Lidas', cnt(938, p), cnt(75.6, p, 1) + '% do total', 'up', '#4FA845')}${kpi('Falhas', cnt(28, p), 'números inválidos', 'dn', '#E5484D')}</div>
+    <div class="card"><h4>Entregas por hora</h4><div style="margin-top:12px">${barras([120, 260, 310, 280, 150, 90, 30], 960, 200, p, 2, '#4FA845', '#BFE3B8', ['08h', '09h', '10h', '11h', '12h', '13h', '14h'])}</div></div></div>`; };
+  const head = ['WhatsApp', 'Instâncias, templates e envios de mensagens.'];
+  VIDEOS.whatsapp = { titulo: 'WhatsApp', sub: 'Mensagens, templates e envios em massa integrados.', nav: 6, cenas: [
+    { d: 3.2, cap: 'Instâncias conectadas', head, view: t => inst(t), cam: [[0, 1, 640, 452], [3.2, 1.9, 640, 170]] },
+    { d: 3.4, cap: 'Templates aprovados', head, view: t => inst(9 + t), cam: [[.3, 1.75, 520, 430], [1.8, 1.75, 520, 430], [3.4, 1.9, 1000, 380]] },
+    { d: 3.6, cap: 'Conversas centralizadas', head: ['WhatsApp · Conversas', 'Atendimento em um só lugar.'], view: t => chat(t), cam: [[.2, 1.2, 640, 452], [3.6, 1.8, 820, 360]] },
+    { d: 3.6, cap: 'Envios em massa com acompanhamento', head: ['WhatsApp · Envios', 'Acompanhe cada disparo.'], view: t => massa(t), cam: [[.3, 1.9, 640, 220], [2, 1.9, 640, 220], [3.6, 1.25, 640, 452]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 08 · Campanhas
+(() => {
+  const C = [['Campanha · Associados', 'Marketing', 72, 'b-ok', 'Ativa'], ['Campanha · Encontro de Negócios', 'Evento', 45, 'b-ok', 'Ativa'], ['Campanha · Pesquisa anual', 'Pesquisa', 18, 'b-az', 'Agendada'], ['Campanha · Fim de ano', 'Marketing', 0, 'b-ci', 'Rascunho'], ['Campanha · Treinamentos', 'Educação', 88, 'b-ok', 'Ativa'], ['Campanha · Boas-vindas', 'Relacionamento', 100, 'b-am', 'Encerrada']];
+  const cards = t => `<div class="lay"><div class="bar"><span class="busca">⌕ Buscar campanha...</span><span class="chip sel">Status: Todas</span><span class="chip">Canal</span><span class="sp"></span><span class="btn pri">＋ Nova campanha</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${C.map(([n, c, p, b, s], i) => `<div class="card" style="${pop(t, .1 + i * .08)}"><div style="display:flex;justify-content:space-between"><span class="badge b-az">${c}</span><span class="badge ${b}">${s}</span></div><b style="display:block;margin-top:12px;font-size:14px">${n}</b><div class="cs">01/09 a 30/09/2026</div>
+      <div style="height:9px;border-radius:5px;background:#EEF1F5;margin-top:14px;overflow:hidden"><div style="height:100%;width:${p * prog(t, .3 + i * .08, 1.6 + i * .08)}%;background:#1D5FD3"></div></div><div class="cs" style="margin-top:6px">${cnt(p, prog(t, .3 + i * .08, 1.6 + i * .08))}% concluído</div></div>`).join('')}</div></div>`;
+  const cal = t => { const EV = { 3: ['Convite enviado', '#DCE8FB', '#1D5FD3'], 8: ['Encontro de Negócios', '#E3F4DF', '#2F8A26'], 12: ['Pesquisa anual', '#FDF1D6', '#A87A07'], 17: ['Treinamento', '#EDE5FB', '#6D4CC2'], 22: ['Lembrete', '#DCE8FB', '#1D5FD3'], 26: ['Webinar', '#E3F4DF', '#2F8A26'] };
+    let g = ''; for (let d = 1; d <= 35; d++) { const dia = d - 1, e = EV[dia]; g += `<div style="background:#fff;border-radius:8px;height:104px;padding:7px;font-size:11px;color:${dia > 0 && dia <= 30 ? '#475569' : '#CBD5E1'}">${dia > 0 && dia <= 30 ? dia : ''}${e ? `<div style="margin-top:6px;background:${e[1]};color:${e[2]};border-radius:6px;padding:5px 6px;font-weight:600;font-size:10.5px;${pop(t, .2 + Object.keys(EV).indexOf(String(dia)) * .2)}">${e[0]}</div>` : ''}</div>`; }
+    return `<div class="lay"><div class="bar"><b style="font-size:15px;margin-left:4px">Setembro de 2026</b><span class="sp"></span><span class="chip">Mês</span><span class="chip sel">Calendário</span></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => `<div style="font-size:11px;font-weight:700;color:#64748B;text-align:center">${d}</div>`).join('')}${g}</div></div>`; };
+  const nova = t => cards(9) + `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div class="modal" style="width:600px;${pop(t, 0, .4)}"><div class="mh"><span class="ic">＋</span><div><h3>Nova campanha</h3><p>Planeje a ação de comunicação</p></div></div><div class="mb">
+    <div class="field"><label>Nome da campanha</label><div class="inp on">${typed('Campanha de Fim de Ano', t, .5, 12)}${caret(t)}</div></div>
+    <div style="display:flex;gap:12px"><div class="field" style="flex:1"><label>Início</label><div class="inp">01/12/2026</div></div><div class="field" style="flex:1"><label>Fim</label><div class="inp">31/12/2026</div></div></div>
+    <div class="field"><label>Canais</label><div style="display:flex;gap:8px">${['WhatsApp', 'E-mail', 'Redes sociais', 'Site'].map((x, i) => `<span class="chip ${t > 2.2 + i * .25 && i !== 3 ? 'sel' : ''}">${x}</span>`).join('')}</div></div></div><div class="mf"><span class="btn">Cancelar</span><span class="btn pri">Salvar campanha</span></div></div></div>`;
+  const met = t => `<div class="lay"><div class="kpis">${kpi('Alcance', cnt(18430, prog(t, .1, 1.4)), '▲ 22% vs. campanha anterior', 'up', '#1D5FD3')}${kpi('Cliques', cnt(2915, prog(t, .1, 1.4)), cnt(15.8, prog(t, .1, 1.4), 1) + '% de taxa', 'up', '#4FA845')}${kpi('Inscrições', cnt(642, prog(t, .1, 1.4)), '▲ 9% vs. meta', 'up', '#4FA845')}${kpi('Custo por inscrição', 'R$ ' + cnt(3.4, prog(t, .1, 1.4), 2), '▼ 12%', 'up', '#1D5FD3')}</div>
+    <div class="card"><h4>Alcance diário · Campanha · Associados</h4><div class="cs">Setembro de 2026</div><div style="margin-top:14px">${linhas([{ v: [200, 340, 300, 520, 610, 580, 760, 820, 790, 960, 1040, 1180], cor: '#1D5FD3' }, { v: [40, 60, 55, 90, 110, 100, 130, 150, 140, 170, 185, 210], cor: '#4FA845' }], 970, 360, prog(t, .3, 2.2), ['01/09', '05/09', '10/09', '15/09', '20/09', '25/09', '30/09'])}</div></div></div>`;
+  const head = ['Campanhas', 'Planeje e monitore suas campanhas de comunicação.'];
+  VIDEOS.campanhas = { titulo: 'Campanhas', sub: 'Planejamento, calendário e resultados das ações.', nav: 7, cenas: [
+    { d: 3.2, cap: 'Campanhas organizadas', head, view: t => cards(t), cam: [[0, 1, 640, 452], [3.2, 1.7, 470, 300]] },
+    { d: 3.4, cap: 'Calendário de ações', head: ['Campanhas · Calendário', 'Todas as ações do mês.'], view: t => cal(t), cam: [[.2, 1.1, 640, 452], [3.4, 1.9, 560, 380]] },
+    { d: 3.8, cap: 'Nova campanha em minutos', head, view: t => nova(t), cam: [[.5, 1.9, 640, 330], [2, 1.9, 640, 330], [3.8, 1.8, 640, 480]] },
+    { d: 3.4, cap: 'Métricas de alcance', head: ['Campanhas · Resultados', 'Desempenho da campanha.'], view: t => met(t), cam: [[.2, 1.9, 520, 190], [1.6, 1.9, 760, 190], [3.4, 1.2, 640, 452]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 09 · Usuários
+(() => {
+  const U = [['Ana Exemplo', 'ana@exemplo.com', 'Administrador', 9], ['Bruno Teste', 'bruno@exemplo.com', 'Usuário', 5], ['Carla Modelo', 'carla@exemplo.com', 'Usuário', 3], ['Diego Fictício', 'diego@exemplo.com', 'Usuário', 4], ['Elisa Amostra', 'elisa@exemplo.com', 'Usuário', 2], ['Fábio Demo', 'fabio@exemplo.com', 'Usuário', 6]];
+  const tab = t => `<div class="lay"><div class="bar"><span class="busca">⌕ Buscar usuário...</span><span class="chip">Perfil</span><span class="chip">Status</span><span class="sp"></span><span class="btn pri">＋ Novo usuário</span></div><div class="card" style="padding:0"><table><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Seções</th></tr>
+    ${U.map(([n, e, c, s], i) => `<tr style="${pop(t, .1 + i * .08)}"><td><div style="display:flex;align-items:center;gap:10px">${ico(n.split(' ').map(x => x[0]).join(''), '#E8F0FD', '#1D5FD3')}<b>${n}</b></div></td><td>${e}</td><td><span class="badge ${c === 'Administrador' ? 'b-az' : 'b-ci'}">${c}</span></td><td><span class="badge b-ok">Ativo</span></td><td>${s} de 11</td></tr>`).join('')}</table></div></div>`;
+  const SEC = ['Dashboard', 'Clipping News', 'Relatórios', 'Banco de dados', 'Pesquisas', 'WhatsApp', 'Campanhas', 'Inadimplência', 'Estoque'];
+  const mod = (t, passo) => tab(9) + `<div class="modal-bg"><div class="modal" style="width:640px"><div class="mh"><span class="ic">👤</span><div><h3>Novo usuário</h3><p>Etapa ${passo} de 2</p></div></div><div class="mb"><div class="steps"><span class="on"></span><span class="${passo > 1 ? 'on' : ''}"></span></div>
+    ${passo === 1 ? `<div class="field"><label>Nome</label><div class="inp ${t < 1.8 ? 'on' : ''}">${typed('Gabriela Exemplo', t, .3, 12)}${t < 1.8 ? caret(t) : ''}</div></div><div class="field"><label>E-mail</label><div class="inp ${t >= 1.8 ? 'on' : ''}">${typed('gabriela@exemplo.com', t, 1.8, 14)}${t >= 1.8 ? caret(t) : ''}</div></div><div style="display:flex;gap:12px"><div class="field" style="flex:1"><label>Perfil</label><div class="inp">Usuário</div></div><div class="field" style="flex:1"><label>Setor</label><div class="inp">Comunicação</div></div></div>`
+      : `<div class="field"><label>Seções liberadas</label><div style="display:flex;flex-wrap:wrap;gap:8px">${SEC.map((s, i) => `<span class="chip ${t > .3 + i * .18 && ![3, 7].includes(i) ? 'sel' : ''}">${t > .3 + i * .18 && ![3, 7].includes(i) ? '✓ ' : ''}${s}</span>`).join('')}</div></div>
+         <div style="display:flex;gap:12px;margin-top:6px">${[['Edição', 'Edita e exclui registros', 2.3], ['Restrição', 'Acesso somente à leitura', 99]].map(([n, d, a]) => `<div style="flex:1;border:1px solid #E6EBF2;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px"><div style="flex:1"><b style="font-size:13.5px">${n}</b><div class="cs">${d}</div></div><span class="sw ${t > a ? 'on' : ''}"></span></div>`).join('')}</div>`}
+    </div><div class="mf"><span class="btn">Voltar</span><span class="btn pri">${passo === 2 ? 'Salvar usuário' : 'Próximo'}</span></div></div></div>` + (passo === 2 && t > 3 ? `<div class="toast" style="${pop(t, 3)}"><i>✓</i>Usuário salvo · convite enviado</div>` : '');
+  const head = ['Usuários', 'Gerencie usuários e permissões de acesso.'];
+  VIDEOS.usuarios = { titulo: 'Usuários', sub: 'Acessos e permissões controlados por seção.', nav: 8, cenas: [
+    { d: 3.2, cap: 'Gestão de usuários', head, view: t => tab(t), cam: [[0, 1, 640, 452], [3.2, 1.75, 600, 330]] },
+    { d: 3.6, cap: 'Cadastro em etapas', head, view: t => mod(t, 1), cam: [[.3, 2, 640, 380], [3.6, 2, 640, 440]] },
+    { d: 3.6, cap: 'Permissões por seção', head, view: t => mod(t, 2), cam: [[.3, 2.1, 640, 380], [2.2, 2.1, 640, 380], [3.6, 2, 640, 500]] },
+    { d: 3.4, cap: 'Perfis com edição e restrição', head, view: t => mod(t + 1.6, 2), cam: [[.3, 2.2, 680, 560], [3.4, 1.3, 760, 540]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 10 · Inadimplência
+(() => {
+  const PASTA = '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#F5C451"/></svg>';
+  const exp = (t, nivel) => { const linhasE = nivel === 0 ? [['2026', '8 meses'], ['2025', '12 meses'], ['2024', '12 meses']] : nivel === 1 ? [['Agosto', '3 documentos'], ['Julho', '3 documentos'], ['Junho', '3 documentos'], ['Maio', '2 documentos']] : [['Relatório · Município · Ago/2026.pdf', '412 KB', 'Município'], ['Relatório · Estado · Ago/2026.pdf', '486 KB', 'Estado'], ['Relatório · País · Ago/2026.pdf', '538 KB', 'País']];
+    const cam = ['Inadimplência'].concat(nivel > 0 ? ['2026'] : [], nivel > 1 ? ['Agosto'] : []);
+    return `<div class="lay"><div class="bar"><span style="font-size:13px;color:#475569;font-weight:600;margin-left:4px">${cam.join('  ›  ')}</span><span class="sp"></span><span class="btn pri">＋ Novo arquivo</span></div><div class="card" style="padding:0"><table><tr><th>Nome</th><th>${nivel < 2 ? 'Conteúdo' : 'Tamanho'}</th><th>${nivel < 2 ? '' : 'Abrangência'}</th></tr>
+    ${linhasE.map((r, i) => `<tr style="${pop(t, .1 + i * .1)}"><td><div style="display:flex;align-items:center;gap:10px">${nivel < 2 ? PASTA : ico('PDF', '#FDECEC', '#C53035')}<b>${r[0]}</b></div></td><td>${r[1]}</td><td>${r[2] ? `<span class="badge b-az">${r[2]}</span>` : ''}</td></tr>`).join('')}</table></div></div>`; };
+  const up = t => exp(9, 2) + `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div class="modal" style="width:600px;${pop(t, 0, .4)}"><div class="mh"><span class="ic">⇪</span><div><h3>Novo arquivo</h3><p>Anexe o documento de inadimplência</p></div></div><div class="mb"><div class="steps"><span class="on"></span><span class="${t > 1.2 ? 'on' : ''}"></span><span class="${t > 2.4 ? 'on' : ''}"></span></div>
+    <div class="field"><label>1. Data de publicação</label><div class="inp">10/09/2026</div></div>
+    <div class="field"><label>2. Documento</label><div style="border:2px dashed ${t > 1.2 ? '#4FA845' : '#A9C8F5'};border-radius:12px;padding:18px;text-align:center;font-size:13px;color:#475569;background:${t > 1.2 ? '#F1F8EF' : '#F8FAFC'}">${t > 1.2 ? `✓ relatorio_estado_set2026.pdf · ${cnt(100, prog(t, 1.2, 2.2))}%` : 'Arraste o PDF aqui ou clique para escolher'}</div></div>
+    <div class="field"><label>3. Abrangência</label><div style="display:flex;gap:8px">${['Município', 'Estado', 'País'].map((x, i) => `<span class="chip ${i === 1 && t > 2.6 ? 'sel' : ''}">${x}</span>`).join('')}</div></div></div><div class="mf"><span class="btn">Cancelar</span><span class="btn pri">Enviar</span></div></div></div>`;
+  const ind = (t, pais) => { const p = prog(t, .1, 1.4); return `<div class="lay"><div class="bar"><span class="chip sel">Painel · Panorama</span><span class="chip sel">Indicador: INADIMPLÊNCIA</span><span class="chip sel">Mês: Ago</span><span class="chip sel">Ano: 2026</span><span class="chip sel">Abrangência · ${pais ? 'País' : 'Estado'}</span><span class="sp"></span><span class="btn pri">⤓ Exportar</span></div>
+    <div class="kpis">${kpi('Inadimplentes · var. anual', '+' + cnt(pais ? 7.55 : 7.61, p, 2) + '%', '▲ 0,4 p.p. vs. mês anterior', 'dn', '#1D5FD3')}${kpi('Dívidas em atraso · var. anual', '+' + cnt(pais ? 13.3 : 12.8, p, 1) + '%', '▲ 0,7 p.p.', 'dn', '#E5484D')}${kpi('Dívida média', 'R$ ' + cnt(pais ? 5152 : 6026, p), 'por inadimplente', 'az', '#A87A07')}${kpi('Tempo médio de atraso', cnt(pais ? 29.1 : 28.5, p, 1) + ' meses', '▲ 1,1 mês', 'dn', '#4FA845')}</div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:14px"><div class="card"><h4>${pais ? 'Variação anual por região' : 'Inadimplentes por faixa etária'}</h4><div class="cs">Participação / variação · Ago/2026</div><div style="margin-top:12px">${pais ? hbarras([['Sul', 10.7], ['Norte', 8.6], ['Centro-Oeste', 6.9], ['Sudeste', 6.4], ['Nordeste', 4.0]], 500, prog(t, .2, 1.6)) : hbarras([['18 a 24 anos', 7.2], ['25 a 29 anos', 12], ['30 a 39 anos', 26.8], ['40 a 49 anos', 22.7], ['50 a 64 anos', 19.9], ['65 anos ou mais', 11.2]], 500, prog(t, .2, 1.6))}</div></div>
+    <div class="card"><h4>Dívidas por setor credor</h4><div class="cs">Participação no número de dívidas</div><div style="display:flex;justify-content:center;margin-top:18px">${rosca([[54, '#1D5FD3'], [22, '#4FA845'], [10, '#E3AE1F'], [10, '#64748B'], [4, '#A9C8F5']], 200, prog(t, .3, 1.6), '54%', 'Bancos')}</div></div></div></div>`; };
+  const head = ['Inadimplência', 'Documentação de inadimplência por abrangência.'];
+  VIDEOS.inadimplencia = { titulo: 'Inadimplência', sub: 'Documentos organizados e indicadores no dashboard.', nav: 9, cenas: [
+    { d: 3.4, cap: 'Documentos por ano e mês', head, view: t => exp(t < 1.6 ? t : t - 1.6, t < 1.6 ? 0 : t < 2.6 ? 1 : 2), cam: [[0, 1, 640, 452], [1.2, 1.8, 560, 260], [3.4, 1.8, 600, 300]], cur: [[0, 800, 500], [1.4, 300, 233, 1], [2.4, 300, 233, 1]] },
+    { d: 3.8, cap: 'Envio guiado de arquivos', head, view: t => up(t), cam: [[.4, 1.9, 640, 360], [2.2, 1.9, 640, 470], [3.8, 1.9, 640, 560]] },
+    { d: 3.4, cap: 'Indicador no dashboard', head: ['Dashboard · INADIMPLÊNCIA', 'Números dos relatórios por abrangência.'], view: t => ind(t), cam: [[.2, 1.1, 640, 452], [3.4, 1.95, 580, 250]] },
+    { d: 3.4, cap: 'Comparativo por abrangência', head: ['Dashboard · INADIMPLÊNCIA', 'Números dos relatórios por abrangência.'], view: t => ind(t > 1.1 ? t - 1.1 : 9, t > 1.1), cam: [[.3, 2.2, 900, 150], [1.4, 2.2, 900, 150], [3.4, 1.5, 560, 560]], cur: [[0, 700, 300], [1, 905, 150, 1], [3.4, 760, 400]] },
+  ] };
+})();
+
+// ---------------------------------------------------------------- 11 · Estoque
+(() => {
+  const P = [['Papel A4 · caixa', '7891000000017', 84, 'ok'], ['Caneta esferográfica', '7891000000024', 312, 'ok'], ['Toner de impressora', '7891000000031', 3, 'baixo'], ['Café em pó 500 g', '7891000000048', 26, 'ok'], ['Copo descartável', '7891000000055', 4, 'baixo'], ['Pasta suspensa', '7891000000062', 58, 'ok']];
+  const tela = (t, o = {}) => { const p = prog(t, .1, 1.4); return `<div class="lay"><div class="bar"><span class="busca">⌕ Buscar produto por nome ou código...</span><span class="chip">Setor</span><span class="chip">Período</span><span class="sp"></span><span class="btn">▦ Ler código</span><span class="btn pri">＋ Movimentação</span></div>
+    <div class="kpis">${kpi('Produtos cadastrados', cnt(148, p), 'em 3 almoxarifados', 'az', '#1D5FD3')}${kpi('Itens em estoque', cnt(3912 - (o.saida || 0), p), '▲ 6% no mês', 'up', '#4FA845')}${kpi('Valor em estoque', 'R$ ' + cnt(48320, p), 'preço de custo', 'az', '#1D5FD3')}${kpi('Abaixo do mínimo', cnt(6, p), 'reposição necessária', 'dn', '#E5484D')}</div>
+    <div class="card" style="padding:0"><table><tr><th>Produto</th><th>Código</th><th>Saldo</th><th>Situação</th></tr>${P.map(([n, c, s, st], i) => `<tr style="${pop(t, .3 + i * .07)};${o.alerta && st === 'baixo' ? 'background:rgba(229,72,77,' + (.08 + .06 * Math.abs(Math.sin(o.alerta * 4))) + ')' : ''}"><td><b>${n}</b></td><td style="font-family:monospace;color:#64748B">${c}</td><td><b>${i === 0 && o.saida ? 84 - o.saida : s}</b></td><td><span class="badge ${st === 'ok' ? 'b-ok' : 'b-ve'}">${st === 'ok' ? 'Normal' : 'Abaixo do mínimo'}</span></td></tr>`).join('')}</table></div></div>`; };
+  const scan = t => tela(9) + `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div style="width:420px;height:640px;border-radius:36px;background:#111;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,.4);${pop(t, 0, .4)}"><div style="width:100%;height:100%;border-radius:26px;background:radial-gradient(circle at 50% 45%,#5b6170,#22252c);position:relative;overflow:hidden">
+    <div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-4deg);width:250px;height:150px;background:#fff;border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center">${'<div style="display:flex;gap:2px;height:80px">' + Array.from({ length: 34 }, (_, i) => `<span style="width:${[2, 4, 1, 3][i % 4]}px;background:#111"></span>`).join('') + '</div>'}<span style="font-family:monospace;font-size:13px;margin-top:6px">7891000000017</span></div>
+    <div style="position:absolute;left:60px;right:60px;top:${200 + Math.sin(t * 3) * 70}px;height:3px;background:#E5484D;box-shadow:0 0 14px #E5484D"></div>
+    <div style="position:absolute;left:40px;right:40px;top:120px;bottom:200px;border:3px solid ${t > 1.8 ? '#4FA845' : 'rgba(255,255,255,.7)'};border-radius:18px"></div>
+    ${t > 1.8 ? `<div style="position:absolute;left:24px;right:24px;bottom:30px;background:#fff;border-radius:16px;padding:16px;${pop(t, 1.8)}"><b style="color:#2F8A26">✓ Produto encontrado</b><div style="font-size:15px;font-weight:700;margin-top:6px">Papel A4 · caixa</div><div class="cs">Saldo: 84 · Almoxarifado central</div></div>` : `<div style="position:absolute;bottom:40px;width:100%;text-align:center;color:#fff;font-size:14px">Aponte a câmera para o código</div>`}</div></div></div>`;
+  const mov = t => tela(9, { saida: t > 2.6 ? 5 : 0 }) + (t < 2.6 ? `<div class="modal-bg" style="opacity:${prog(t, 0, .3)}"><div class="modal" style="width:560px;${pop(t, 0, .4)}"><div class="mh"><span class="ic">⇅</span><div><h3>Nova movimentação</h3><p>Papel A4 · caixa · 7891000000017</p></div></div><div class="mb">
+    <div class="field"><label>Tipo</label><div style="display:flex;gap:8px"><span class="chip">Entrada</span><span class="chip sel">Saída</span><span class="chip">Transferência</span></div></div>
+    <div style="display:flex;gap:12px"><div class="field" style="flex:1"><label>Quantidade</label><div class="inp on">${t > .8 ? '5' : ''}${caret(t)}</div></div><div class="field" style="flex:1.4"><label>Setor de consumo</label><div class="inp">Administrativo</div></div></div></div><div class="mf"><span class="btn">Cancelar</span><span class="btn pri" style="${t > 1.9 ? 'box-shadow:0 0 0 4px #A9C8F5' : ''}">Registrar saída</span></div></div></div>` : `<div class="toast" style="${pop(t, 2.6)}"><i>✓</i>Saída de 5 unidades registrada</div>`);
+  const head = ['Controle de Estoque', 'Produtos, entradas e saídas por código de barras.'];
+  VIDEOS.estoque = { titulo: 'Controle de Estoque', sub: 'Produtos, movimentações e alertas na palma da mão.', nav: 10, cenas: [
+    { d: 3.2, cap: 'Controle completo do estoque', head, view: t => tela(t), cam: [[0, 1, 640, 452], [3.2, 1.85, 560, 255]] },
+    { d: 3.6, cap: 'Leitura por código de barras', head, view: t => scan(t), cam: [[.4, 1.55, 640, 470], [3.6, 1.75, 640, 520]] },
+    { d: 3.6, cap: 'Entradas e saídas registradas', head, view: t => mov(t), cam: [[.4, 2, 640, 440], [2.4, 2, 640, 480], [3.6, 1.6, 700, 520]], cur: [[0, 900, 700], [1.9, 960, 648, 1], [3.6, 940, 700]] },
+    { d: 3.4, cap: 'Alertas de estoque mínimo', head, view: t => tela(9, { saida: 5, alerta: t }), cam: [[.4, 2.1, 640, 600], [3.4, 1.3, 640, 452]] },
+  ] };
+})();
+
+const ORDEM = ['home', 'dashboard', 'clipping', 'relatorios', 'banco', 'pesquisas', 'whatsapp', 'campanhas', 'usuarios', 'inadimplencia', 'estoque'];
+
+// ======================================================================= motor
+const INTRO = 1.4, FIM = 2.3;
+const q = new URLSearchParams(location.search);
+const V = VIDEOS[q.get('v') || 'dashboard'];
+let ac = INTRO; V.cenas.forEach(c => { c.t0 = ac; ac += c.d; });
+const CORPO = ac, DUR = +(CORPO + FIM).toFixed(2);
+// Câmera e cursor: chaves globais (início do vídeo = visão geral). Zoom com fx 640 mira o centro do conteúdo (x 745).
+const KC = [[0, 1, 640, 452]], KU = [];
+V.cenas.forEach(c => { (c.cam || []).forEach(k => KC.push([c.t0 + k[0], k[1], k[2] === 640 && k[1] > 1.05 ? 745 : k[2], k[3]])); (c.cur || []).forEach(k => KU.push([c.t0 + k[0], k[1], k[2], k[3], c])); });
+KC.sort((a, b) => a[0] - b[0]);
+function interp(K, t) {
+  if (t <= K[0][0]) return K[0];
+  for (let i = 1; i < K.length; i++) if (t <= K[i][0]) { const a = K[i - 1], b = K[i], p = eio((t - a[0]) / Math.max(.001, b[0] - a[0])); return [t, lerp(a[1], b[1], p), lerp(a[2], b[2], p), lerp(a[3], b[3], p)]; }
+  return K[K.length - 1];
+}
+const S0 = 990 / 1280, CXS = 540, CYS = 1030;
+const $ = id => document.getElementById(id);
+$('tit').textContent = V.titulo; $('sub').textContent = V.sub; $('fimsec').textContent = V.titulo;
+$('dots').innerHTML = V.cenas.map(() => '<i></i>').join('');
+
+function shell(c, t) {
+  return `<div class="chrome"><i style="background:#FF6058"></i><i style="background:#FFBD2E"></i><i style="background:#28CA42"></i><div class="url">🔒 dataload.app</div></div>
+  <div class="side"><div class="logo"><b>DL</b><span>DATALOAD<small>Inteligência de dados</small></span></div>${NAV.map((n, i) => `<div class="nav ${i === V.nav ? 'on' : ''}"><i></i>${n}</div>`).join('')}</div>
+  <div class="head"><h1>${c.head[0]}</h1><p>${c.head[1]}</p><div class="user">Usuário Demo <b>UD</b></div></div>
+  <div class="content">${c.view(t)}</div>`;
+}
+function cursorHtml(t) {
+  if (!KU.length) return '';
+  // só durante a cena dona das chaves
+  const cena = V.cenas.find(c => t >= c.t0 && t < c.t0 + c.d);
+  const ks = KU.filter(k => k[4] === cena);
+  if (!ks.length) return '';
+  let x = ks[0][1], y = ks[0][2];
+  for (let i = 1; i < ks.length; i++) { if (t >= ks[i][0]) { x = ks[i][1]; y = ks[i][2]; } else { const a = ks[i - 1], p = eio(clamp((t - a[0]) / (ks[i][0] - a[0]))); x = lerp(a[1], ks[i][1], p); y = lerp(a[2], ks[i][2], p); break; } }
+  let s = '';
+  ks.filter(k => k[3]).forEach(k => { const dt = t - k[0]; if (dt >= 0 && dt < .5) { const r = 10 + dt * 70; s += `<div class="ring" style="left:${k[1] - r}px;top:${k[2] - r}px;width:${2 * r}px;height:${2 * r}px;opacity:${1 - dt / .5}"></div>`; } });
+  const ap = clamp((t - cena.t0) / .25) * clamp((cena.t0 + cena.d - t) / .2);
+  return s + `<svg class="cursor" style="left:${x - 4}px;top:${y - 2}px;opacity:${ap}" viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 7z" fill="#0F172A" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+}
+window.DURACAO = DUR;
+window.renderFrame = function (t) {
+  const i = Math.max(0, V.cenas.findIndex(c => t < c.t0 + c.d));
+  const ci = t >= CORPO ? V.cenas.length - 1 : (t < INTRO ? 0 : i);
+  const c = V.cenas[ci], lt = Math.max(0, t - c.t0);
+  let html = shell(c, Math.min(lt, c.d));
+  // transição entre cenas: a anterior some por cima
+  if (ci > 0 && lt < .35) { const a = V.cenas[ci - 1]; html += `<div style="position:absolute;inset:0;opacity:${1 - eout(lt / .35)}">${shell(a, a.d)}</div>`; }
+  html += cursorHtml(t);
+  $('win').innerHTML = html;
+  // câmera
+  const [, z, fx, fy] = interp(KC, Math.min(t, CORPO));
+  const k = S0 * z, ip = eout(clamp(t / INTRO));
+  const rot = (1 - ip) * 38, esc = .78 + .22 * ip;
+  $('cam').style.transform = `translate(${CXS - fx * k}px,${CYS - fy * k}px) translate(${fx * k}px,${fy * k}px) perspective(1600px) rotateX(${rot}deg) scale(${esc}) translate(${-fx * k}px,${-fy * k}px) scale(${k})`;
+  $('cam').style.opacity = clamp(t / .5);
+  // textos do palco
+  const ti = prog(t, .2, .9);
+  $('topo').style.opacity = ti; $('topo').style.transform = `translateY(${(1 - ti) * -30}px)`;
+  const pa = clamp((lt - .15) / .3) * clamp((c.d - lt) / .25);
+  $('pill').textContent = c.cap; $('pill').style.opacity = t < INTRO ? 0 : pa; $('pill').style.transform = `translateX(-50%) translateY(${(1 - pa) * 24}px)`;
+  [...$('dots').children].forEach((d, j) => d.className = j === ci && t >= INTRO ? 'on' : '');
+  $('dots').style.opacity = t < INTRO ? prog(t, .6, 1.2) : 1;
+  // encerramento
+  const f = prog(t, CORPO, CORPO + .6);
+  $('fim').style.opacity = f; $('fim').style.transform = `scale(${1.08 - .08 * f})`;
+  $('fim').style.display = f > 0 ? 'flex' : 'none';
+};
+renderFrame(0);
+if (q.get('play')) { const t0 = performance.now(); (function loop() { const t = ((performance.now() - t0) / 1000) % DUR; renderFrame(t); requestAnimationFrame(loop); })(); }
+</script>
+</body>
+</html>
