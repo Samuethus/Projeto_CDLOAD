@@ -18,6 +18,10 @@
 //   setor        participação no número de dívidas por setor credor · setorAnual (só Brasil)
 //   comparativo  (Mato Grosso) Centro-Oeste e Brasil no mesmo mês
 //   regioes      (Brasil) variação por região + estimativa de negativados (milhões e % da população adulta)
+//                — negativadosMi e popAdulta vêm do "Gráfico 12 - Estimativa de inadimplentes" (mapa do Brasil, pág. 5
+//                do PDF Brasil: "Norte: 6,86 milhões (48,45% da população adulta)"...). Alimentam a visão Gráfico do
+//                painel (switch Dashboard | Gráfico, filtro Região): uma linha por região ao longo das edições, então
+//                transcreva as 5 regiões em TODA edição nova — o total do Brasil do mesmo gráfico vai em estimativa.
 //   estimativa   (Brasil) negativados no país e por faixa etária [milhões, % da população da faixa]
 //   historico    (Brasil) variação mensal do mesmo mês nos últimos 10 anos (devedores e dívidas)
 window.SPC_INAD = {
