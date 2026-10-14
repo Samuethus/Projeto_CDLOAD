@@ -1389,11 +1389,8 @@
      menores, o switch Dashboard/Mapa vira só ícones abaixo de 1500px e o espaçamento/selects ficam mais justos. */
   #stkVisaoEmp .stk-seg-btn, #stkVisaoInad .stk-seg-btn{display:inline-flex;align-items:center;gap:6px;}
   #stkVisaoEmp .stk-seg-ic, #stkVisaoInad .stk-seg-ic{width:15px;height:15px;stroke-width:2;flex:0 0 auto;}
-  /* INADIMPLÊNCIA › Gráfico: linhas por região (2/3) + estimativa em milhões (1/3); região fora do filtro fica apagada. */
-  .cd-row-graf{grid-template-columns:2fr 1fr;}
-  @media (max-width:1200px){ .cd-row-graf{grid-template-columns:1fr;} }
-  .cd-kpi.cd-kpi-apagado{opacity:.4;}
-  .cd-kpi-ponto{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px;}
+  /* INADIMPLÊNCIA › Gráfico: só o gráfico de linhas, em uma coluna. */
+  .cd-row-unica{grid-template-columns:1fr;}
   .content > #page-dashboard.stk-emp > .filter-bar{column-gap:8px;}
   .content > #page-dashboard.stk-emp > .filter-bar .filter-select{min-width:56px;}
   @media (max-width:1500px){
@@ -2736,7 +2733,7 @@
             <option value="">Região · Todas</option>
             <option value="Norte">Norte</option>
             <option value="Nordeste">Nordeste</option>
-            <option value="Centro-Oeste">Centro-Oeste</option>
+            <option value="Centro-Oeste" selected>Centro-Oeste</option>
             <option value="Sudeste">Sudeste</option>
             <option value="Sul">Sul</option>
           </select>
@@ -13388,61 +13385,41 @@ ${clipPlayerPills(n)}
       inadPainelDesenhar(window.SPC_INAD);
     }
     // ---- Visão Gráfico: taxa de inadimplência por região ----
-    // "Estimativa de inadimplentes" do relatório Brasil (Gráfico 12 do PDF): negativados em milhões e % da população
-    // adulta por região (edicoes[mês].br.regioes) — uma linha por região ao longo das edições, até a escolhida em Mês/Ano.
-    // Filtro Região: mostra só aquela região (com o Brasil de referência) e apaga as demais nos KPIs e nas barras.
-    // Cores como as do mapa do SPC (Norte verde, Nordeste vermelho, Centro-Oeste amarelo, Sudeste roxo, Sul azul).
+    // "Estimativa de inadimplentes" do relatório Brasil (Gráfico 12 do PDF): % da população adulta negativada por região
+    // (edicoes[mês].br.regioes) — uma linha ao longo das edições, até a escolhida em Mês/Ano, com o Brasil de referência.
+    // Só este gráfico, ocupando a tela. Filtro Região: Centro-Oeste por padrão; "Todas" mostra as 5 regiões.
+    // Cores do gráfico de linhas original da visão Dashboard: região em azul, Brasil em azul claro.
     const INAD_REGIOES = ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'];
-    const INAD_REGIAO_COR = { 'Norte': CD_COR.verde, 'Nordeste': CD_COR.vermelho, 'Centro-Oeste': '#E3AE1F', 'Sudeste': '#8B5CF6', 'Sul': CD_COR.azul, 'Brasil': '#64748B' };
+    const INAD_REGIAO_PADRAO = 'Centro-Oeste';
     function inadGraficoDesenhar(D){
       const ref = inadEdicao(D), reg = stkInadRegiaoEl.value;
       const meses = D.meses.slice().sort().filter(m => (!ref || m <= ref) && D.edicoes[m] && D.edicoes[m].br && D.edicoes[m].br.regioes);
       const rotM = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
-      const rotLongo = m => `${REL_MES_LONGO[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}`;
       const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
       const pctP = v => dec(v, 2) + '%';
       stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
       if(!ref || !meses.length){
-        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-graf">${cdCard('Taxa de inadimplência por região', 'SPC Brasil',
+        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard('Taxa de inadimplência por região', 'SPC Brasil',
           '<div class="stk-vazio">Nenhuma edição do SPC Brasil com dados por região no período escolhido. Limpe o Mês/Ano para ver a mais recente.</div>')}</div></div>`;
         inadPainelUltimo = null;
         return;
       }
-      const ult = meses[meses.length - 1], ant = meses.length > 1 ? meses[meses.length - 2] : null;
-      const X = D.edicoes[ult].br, A = ant ? D.edicoes[ant].br : null;
+      const ult = meses[meses.length - 1];
 
-      // KPIs: uma região por card (% da população adulta negativada), variação em p.p. contra a edição anterior (alta = ruim).
-      const kpis = INAD_REGIOES.map(n => {
-        const r = X.regioes[n], a = A && A.regioes[n];
-        const k = cdKpiCard('pessoas', 'azul', n, pctP(r.popAdulta), cdDelta(r.popAdulta / 100, (a ? a.popAdulta : 0) / 100, true, !a, true),
-          a ? `vs. ${rotM(ant)} (${pctP(a.popAdulta)})` : 'sem edição anterior',
-          `${dec(r.negativadosMi, 2)} milhões de negativados em ${rotLongo(ult)} · ${pctP(r.popAdulta)} da população adulta da região`);
-        return reg && reg !== n ? k.replace('class="cd-kpi ', 'class="cd-kpi cd-kpi-apagado ') : k;
-      }).join('');
-      // Ponto com a cor da região antes do nome (a mesma das linhas e das barras).
-      const kpisCor = INAD_REGIOES.reduce((html, n) => html.replace(`<div class="cd-kpi-label">${esc(n)}</div>`,
-        `<div class="cd-kpi-label"><i class="cd-kpi-ponto" style="background:${INAD_REGIAO_COR[n]}"></i>${esc(n)}</div>`), kpis);
-
-      // Linhas: % da população adulta por edição — todas as regiões ou a escolhida, sempre com o Brasil de referência.
+      // Uma região: azul (como "Inadimplentes" no original) e o Brasil em azul claro. Todas: tons de azul do escuro ao claro, Brasil em cinza.
       const nomes = reg ? [reg] : INAD_REGIOES;
-      const series = nomes.map(n => ({ nome: n, cor: INAD_REGIAO_COR[n], valores: meses.map(m => D.edicoes[m].br.regioes[n].popAdulta) }));
+      const tons = reg ? [CD_COR.azul] : ['#0B2E6B', CD_COR.azul, '#4F86E0', '#7FA8EA', CD_COR.azulClaro];
+      const series = nomes.map((n, i) => ({ nome: n, cor: tons[i], valores: meses.map(m => D.edicoes[m].br.regioes[n].popAdulta) }));
       if(meses.every(m => D.edicoes[m].br.estimativa))
-        series.push({ nome: 'Brasil', cor: INAD_REGIAO_COR.Brasil, valores: meses.map(m => D.edicoes[m].br.estimativa.popAdulta) });
+        series.push({ nome: 'Brasil', cor: reg ? CD_COR.azulClaro : '#64748B', valores: meses.map(m => D.edicoes[m].br.estimativa.popAdulta) });
       const legenda = `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       const wLinhas = cdCard('Taxa de inadimplência por região',
         `% da população adulta negativada · ${meses.length === 1 ? `1 edição do SPC Brasil (${rotM(ult)})` : `${meses.length} edições do SPC Brasil (${rotM(meses[0])} a ${rotM(ult)})`}`,
         '<div id="stkFluxoGraf"></div>', legenda);
 
-      // Barras: estimativa de inadimplentes (milhões) na edição escolhida; região fora do filtro fica clara.
-      const regs = INAD_REGIOES.map(n => [n, X.regioes[n]]).sort((a, b) => b[1].negativadosMi - a[1].negativadosMi);
-      const wBarras = cdCard('Estimativa de inadimplentes', `Milhões de negativados · ${rotLongo(ult)}${X.estimativa ? ` · Brasil ${dec(X.estimativa.negativadosMi, 2)} mi (${pctP(X.estimativa.popAdulta)})` : ''}`,
-        cdBarras(regs.map(([n, r]) => ({ nome: n, valor: r.negativadosMi, rotulo: `${dec(r.negativadosMi, 2)} mi`,
-          cor: reg && reg !== n ? stkMisturarCor(INAD_REGIAO_COR[n], '#FFFFFF', 0.7) : INAD_REGIAO_COR[n],
-          dica: `${dec(r.negativadosMi, 2)} milhões de negativados (${pctP(r.popAdulta)} da população adulta)` })), 'Estimativa de inadimplentes', 'Sem dados por região.'));
-
-      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kpisCor}</div><div class="cd-row cd-row-graf">${wLinhas}${wBarras}</div></div>`;
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${wLinhas}</div></div>`;
       const graf = document.getElementById('stkFluxoGraf');
-      if(graf) stkDesenharLinhasFluxo(graf, meses.map(rotM), series, cdAlturaLivre(graf, 260), v => pctP(v), 'auto', series.length > 2);
+      if(graf) stkDesenharLinhasFluxo(graf, meses.map(rotM), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', series.length > 2);
       cdAjustarListas();
 
       // Exportar (CSV): série completa por região e edição.
@@ -15753,7 +15730,7 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = '';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -15766,7 +15743,7 @@ ${clipPlayerPills(n)}
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = '';
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
