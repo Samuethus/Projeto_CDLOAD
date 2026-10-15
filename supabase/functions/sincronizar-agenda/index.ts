@@ -578,7 +578,11 @@ async function pensoEnviar(metodo: 'REQUEST' | 'CANCEL', assunto: string, uid: s
 // disparar convites por conta própria, em dobro com os do SMTP. Mesmo UID do convite enviado.
 // PENSO_CALDAV_URL troca a pasta (padrão acima) ou desliga a gravação com "off".
 // Falha aqui não impede os convites: o status avisa e os e-mails seguem.
+// Nome do arquivo = UID completo (como o Zimbra nomeia). Se o Zimbra já tiver um evento com esse UID em
+// outro endereço (412 no-uid-conflict — ex.: a conta organizadora também recebeu o convite), a resposta traz
+// o endereço dele: regrava lá e guarda em agenda_sync.penso.agenda_href para editar/remover depois.
 const pensoAgendaStatus = new WeakMap<object, string>();
+const pensoAgendaHref = new WeakMap<object, string>();
 
 function pensoCalendario(): string | null {
   const conf = env('PENSO_CALDAV_URL');
@@ -586,7 +590,8 @@ function pensoCalendario(): string | null {
   const base = conf || `https://suite.penso.com.br/dav/${encodeURIComponent(env('PENSO_SMTP_USUARIO'))}/Calendar/`;
   return base.endsWith('/') ? base : base + '/';
 }
-const pensoRecurso = (uid: string) => `${pensoCalendario()}${encodeURIComponent(uid.replace(/@.*/, ''))}.ics`;
+const pensoRecurso = (uid: string, href?: string) =>
+  href ? new URL(href, pensoCalendario()!).href : `${pensoCalendario()}${encodeURIComponent(uid)}.ics`;
 const pensoAuth = () => 'Basic ' + b64Mime(`${env('PENSO_SMTP_USUARIO')}:${env('PENSO_SMTP_SENHA')}`).replace(/\r\n/g, '');
 
 function montarIcsAgenda(uid: string, ev: Evento, convidados: Participante[]): string {
@@ -597,25 +602,37 @@ function montarIcsAgenda(uid: string, ev: Evento, convidados: Participante[]): s
   return ics.split('\r\n').filter((l) => !/^(METHOD|ORGANIZER)[:;]/.test(l)).join('\r\n');
 }
 
-async function pensoAgendaGravar(uid: string, ev: Evento, convidados: Participante[]): Promise<string> {
-  if (!pensoCalendario()) return '';
+// Grava (PUT) e registra em pensoAgendaStatus/pensoAgendaHref (lidos pelo status e pelo registro do evento).
+async function pensoAgendaGravar(uid: string, ev: Evento, convidados: Participante[], href?: string): Promise<void> {
+  if (!pensoCalendario()) return;
+  const corpo = montarIcsAgenda(uid, ev, convidados);
+  const put = (url: string) => fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: pensoAuth(), 'Content-Type': 'text/calendar; charset=utf-8' },
+    body: corpo,
+  });
   try {
-    const res = await fetch(pensoRecurso(uid), {
-      method: 'PUT',
-      headers: { Authorization: pensoAuth(), 'Content-Type': 'text/calendar; charset=utf-8' },
-      body: montarIcsAgenda(uid, ev, convidados),
-    });
-    if (!res.ok) return `agenda do organizador: erro ${res.status} ${(await res.text()).slice(0, 120)}`;
-    return 'evento gravado na agenda do organizador';
+    let url = pensoRecurso(uid, href);
+    let res = await put(url);
+    if (res.status === 412) {
+      const existente = (await res.text()).match(/<(?:\w+:)?href>\s*([^<\s]+)\s*<\/(?:\w+:)?href>/i)?.[1];
+      if (!existente) throw new Error('412 sem o endereço do evento existente');
+      url = pensoRecurso(uid, existente);
+      res = await put(url);
+    }
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).replace(/\s+/g, ' ').slice(0, 120)}`);
+    pensoAgendaHref.set(ev, new URL(url).pathname);
+    pensoAgendaStatus.set(ev, 'evento gravado na agenda do organizador');
   } catch (e) {
-    return `agenda do organizador: erro ${(e as Error).message.slice(0, 120)}`;
+    if (href) pensoAgendaHref.set(ev, href);
+    pensoAgendaStatus.set(ev, `agenda do organizador: erro ${(e as Error).message.slice(0, 120)}`);
   }
 }
 
-async function pensoAgendaRemover(uid: string): Promise<void> {
+async function pensoAgendaRemover(uid: string, href?: string): Promise<void> {
   if (!pensoCalendario()) return;
   try {
-    const res = await fetch(pensoRecurso(uid), { method: 'DELETE', headers: { Authorization: pensoAuth() } });
+    const res = await fetch(pensoRecurso(uid, href), { method: 'DELETE', headers: { Authorization: pensoAuth() } });
     if (!res.ok && res.status !== 404) console.error('[sincronizar-agenda] penso caldav delete:', res.status, await res.text());
   } catch (e) {
     console.error('[sincronizar-agenda] penso caldav delete:', e);
@@ -632,11 +649,14 @@ const anteriores = (r?: Registro): Participante[] => (Array.isArray(r?.convidado
 const penso: Provedor = {
   chave: 'penso',
   configurado: () => !!(env('PENSO_SMTP_HOST') && env('PENSO_SMTP_USUARIO') && env('PENSO_SMTP_SENHA')),
-  registro: (ev) => ({ convidados: pensoDestinatarios(ev), evento: resumo(ev) }),
+  registro: (ev) => {
+    const href = pensoAgendaHref.get(ev);
+    return { convidados: pensoDestinatarios(ev), evento: resumo(ev), ...(href ? { agenda_href: href } : {}) };
+  },
   async criar(ev) {
     const uid = `cdload-${crypto.randomUUID()}@${pensoRemetente().split('@')[1] || 'cdload'}`;
     await pensoEnviar('REQUEST', `Convite: ${ev.titulo}`, uid, ev, pensoDestinatarios(ev));
-    pensoAgendaStatus.set(ev, await pensoAgendaGravar(uid, ev, pensoDestinatarios(ev)));
+    await pensoAgendaGravar(uid, ev, pensoDestinatarios(ev));
     return uid;
   },
   async atualizar(uid, ev, anterior) {
@@ -645,11 +665,11 @@ const penso: Provedor = {
     await pensoEnviar('REQUEST', `Atualizado: ${ev.titulo}`, uid, ev, agora);
     await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, sairam);
     // PUT no mesmo endereço: cria (campanha antiga, de antes da gravação na agenda) ou substitui o evento.
-    pensoAgendaStatus.set(ev, await pensoAgendaGravar(uid, ev, agora));
+    await pensoAgendaGravar(uid, ev, agora, anterior?.agenda_href);
     return true;
   },
   async cancelar(uid, anterior) {
-    await pensoAgendaRemover(uid);
+    await pensoAgendaRemover(uid, anterior?.agenda_href);
     const ev = anterior?.evento as EventoResumo | undefined;
     if (!ev) return;   // sem os dados do envio anterior não há como montar o cancelamento
     await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, anteriores(anterior));
