@@ -8158,6 +8158,7 @@
       const linha = `E-mail aos leads (Penso): ${enviadosAgora} enviado(s) agora · ${L.enviados ?? '—'} de ${L.total ?? total} já receberam`
         + (L.falhas ? ` · ${L.falhas} recusado(s) pelo servidor` : '') + (L.descadastrados ? ` · ${L.descadastrados} descadastrado(s)` : '')
         + (L.pendentes ? ` · ${L.pendentes} pendente(s)` : '')
+        + (Array.isArray(L.protocolos) && L.protocolos.length ? `\nProtocolos da Penso (para rastrear a entrega): ${L.protocolos.map(p => `${p.email} → ${p.resposta}`).join(' | ')}` : '')
         + (L.limite_atingido ? `\nLimite diário da Penso atingido (${L.usados_24h ?? '—'} de ${L.limite ?? 2000} nas últimas 24 h). Salve a campanha de novo depois de 24 h para enviar os pendentes.` : '');
       if(r && r.ok !== false) return linha;
       return `${linha}\n• erro: ${(r && r.erro) || 'erro desconhecido'}${L.pendentes ? '\nSalve a campanha de novo para enviar os pendentes (quem já recebeu não recebe de novo).' : ''}`;

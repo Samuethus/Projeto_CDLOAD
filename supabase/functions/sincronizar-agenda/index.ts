@@ -556,6 +556,7 @@ async function smtpAbrir() {
       const msg = `${rotulo}: ${r.texto}`;
       throw r.codigo >= 500 && r.codigo < 600 ? new SmtpRecusa(msg) : new Error(msg);
     }
+    return r.texto;
   };
   const fechar = async () => {
     try { await escrever('QUIT\r\n'); } catch { /* já fechada */ }
@@ -576,7 +577,9 @@ async function smtpAbrir() {
     throw e;
   }
   return {
-    async enviar(para: string[], mensagem: string) {
+    // Devolve a resposta final do servidor (ex.: "250 2.0.0 Ok: queued as 4AbC123"): o protocolo da fila,
+    // que o suporte da Penso usa para rastrear a entrega.
+    async enviar(para: string[], mensagem: string): Promise<string> {
       try {
         await comando(`MAIL FROM:<${pensoRemetente()}>`, [250], 'remetente');
         for (const email of para) await comando(`RCPT TO:<${email}>`, [250, 251], `destinatário ${email}`);
@@ -584,7 +587,7 @@ async function smtpAbrir() {
         // Ponto no início da linha é duplicado (RFC 5321 §4.5.2).
         armar();
         await escrever(mensagem.replace(/\r\n\./g, '\r\n..') + '\r\n.\r\n');
-        await comando(null, [250], 'envio');
+        return await comando(null, [250], 'envio');
       } catch (e) {
         // Recusa: limpa a transação para a próxima mensagem da mesma sessão.
         if (e instanceof SmtpRecusa) await comando('RSET', [250], 'RSET').catch(() => {});
@@ -866,13 +869,16 @@ async function enviarLeads(camp: any, deps: LeadsDeps) {
 
   const inicio = Date.now(), maximo = Math.min(LEADS_POR_CHAMADA, restante);
   let agora = 0, erroConexao: string | null = null;
+  const protocolos: { email: string; resposta: string }[] = [];   // resposta do servidor a cada e-mail aceito
   let sessao: Awaited<ReturnType<typeof smtpAbrir>> | null = null;
   try {
     sessao = await smtpAbrir();
     for (const lead of pendentes) {
       if (agora >= maximo || Date.now() - inicio > LEADS_TEMPO_MS) break;
       try {
-        await sessao.enviar([lead.email], await montarEmailLead(assunto, corpo, lead, String(camp.id)));
+        const resposta = await sessao.enviar([lead.email], await montarEmailLead(assunto, corpo, lead, String(camp.id)));
+        console.log(`[sincronizar-agenda] lead ${lead.email} aceito pela Penso: ${resposta}`);
+        if (protocolos.length < 20) protocolos.push({ email: lead.email, resposta: resposta.slice(0, 120) });
         enviados.add(lead.email);
         agora++;
       } catch (e) {
@@ -890,7 +896,7 @@ async function enviarLeads(camp: any, deps: LeadsDeps) {
 
   const erroGravar = await deps.gravar(regAtual(agora));
   const limiteAgora = usados + agora >= leadsLimiteDiario() - LEADS_FOLGA_CONVITES && aEnviar().length > 0;
-  const resumoFinal = resumoLeads({ enviados_agora: agora, ...(limiteAgora ? { limite_atingido: true, limite: leadsLimiteDiario(), usados_24h: usados + agora } : {}) });
+  const resumoFinal = resumoLeads({ enviados_agora: agora, protocolos, ...(limiteAgora ? { limite_atingido: true, limite: leadsLimiteDiario(), usados_24h: usados + agora } : {}) });
   if (erroGravar) return { ok: false, erro: msgRegistro(erroGravar, agora > 0), leads: resumoFinal };
   if (erroConexao) return { ok: false, erro: erroConexao, leads: resumoFinal };
   return { ok: true, leads: resumoFinal };
