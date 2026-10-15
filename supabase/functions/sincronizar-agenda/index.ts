@@ -20,7 +20,7 @@
 // dobro); eventos antigos do Google são cancelados na próxima sincronização da campanha.
 //
 // Ação "leads" (Campanhas › Etapa 3 › Leads): e-mail informativo individual para cada lead do CSV importado
-// (assunto = Nome da campanha, corpo = Descrição), pela mesma conta e com o mesmo remetente dos convites.
+// (assunto = Nome da campanha, corpo = Descrição), pela mesma conta dos convites, em nome de "Núcleo de Inteligência - CDL Cuiabá".
 // Em lotes (~90 s cada; o app chama de novo até acabar), respeitando o limite diário da conta. Quem já
 // recebeu não recebe de novo (requer supabase/schema_campanhas_leads.sql).
 // Passo a passo em supabase/LEIA-ME.md.
@@ -373,6 +373,9 @@ const google: Provedor = {
 
 const pensoRemetente = () => env('PENSO_REMETENTE') || env('PENSO_SMTP_USUARIO');
 const pensoNome = () => env('PENSO_REMETENTE_NOME') || 'Agenda CDL';
+// Nome do remetente nos e-mails aos leads: fixo, para não herdar o "Agenda CDL" dos convites (secret PENSO_REMETENTE_NOME).
+// Vai no From (RFC 2047, UTF-8): Gmail, Outlook e Penso mostram este nome.
+const LEADS_REMETENTE_NOME = 'Núcleo de Inteligência - CDL Cuiabá';
 // A Penso é o canal único: todos os participantes recebem o convite por ela (Penso, Outlook, Gmail…).
 const pensoDestinatarios = (ev: Evento) => ev.participantes;
 
@@ -727,8 +730,8 @@ const PROVEDORES: Provedor[] = [outlook, google, penso];
 
 // ---------------- Leads: e-mail informativo (Campanhas › Etapa 3) ----------------
 // Um e-mail individual por lead (ninguém vê o endereço dos outros): assunto = Nome da campanha, corpo = Descrição
-// ("{Nome}" no texto vira o nome do lead). Montado como o convite, que chega ao Gmail: mesmo remetente
-// (PENSO_REMETENTE_NOME, padrão "Agenda CDL"), sem rodapé nem cabeçalhos extras, e cada e-mail numa conexão SMTP
+// ("{Nome}" no texto vira o nome do lead). Montado como o convite, que chega ao Gmail: mesma conta, com o nome
+// "Núcleo de Inteligência - CDL Cuiabá" (LEADS_REMETENTE_NOME), sem rodapé nem cabeçalhos extras, e cada e-mail numa conexão SMTP
 // própria. Limite diário da conta da Penso (PENSO_LIMITE_DIARIO, padrão 2000, com 100 de folga para os convites)
 // somando as últimas 24 h de todas as campanhas; o excedente fica pendente para um envio posterior. Cada chamada
 // envia o que cabe em LEADS_TEMPO_MS; o app chama de novo enquanto houver pendentes. Progresso em agenda_sync.leads
@@ -764,7 +767,7 @@ function montarEmailLead(assunto: string, corpo: string, lead: Lead): string {
   const alt = `cdload-alt-${crypto.randomUUID()}`;
   const texto = personalizar(corpo, lead).trim();
   return [
-    `From: ${cabecalhoUtf8(pensoNome())} <${pensoRemetente()}>`,
+    `From: ${cabecalhoUtf8(LEADS_REMETENTE_NOME)} <${pensoRemetente()}>`,
     `To: ${lead.nome ? `${cabecalhoUtf8(lead.nome)} <${lead.email}>` : `<${lead.email}>`}`,
     `Subject: ${cabecalhoUtf8(assunto)}`,
     `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
