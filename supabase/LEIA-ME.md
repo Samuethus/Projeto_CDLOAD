@@ -106,10 +106,18 @@ O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`),
 3. **Certificados e segredos > Novo segredo do cliente** (anote o valor).
 4. Escolha a caixa organizadora no Exchange Online. Recomendado: restringir o app só a essa caixa com uma *Application Access Policy* do Exchange (`New-ApplicationAccessPolicy -AppId <ID do app> -PolicyScopeGroupId agenda@... -AccessRight RestrictAccess`), senão o app pode escrever em qualquer agenda do tenant.
 
-### Passo 3 — Publicar a função (Supabase CLI)
+### Passo 3 — Publicar a função
+
+**Pelo painel do Supabase (sem instalar nada):**
+1. Abra os [Secrets das Edge Functions](https://supabase.com/dashboard/project/xjexujpvnahaugizeyee/functions/secrets) e adicione `PENSO_SMTP_HOST`, `PENSO_SMTP_USUARIO` e `PENSO_SMTP_SENHA`.
+2. Copie o código da função: [sincronizar-agenda/index.ts no GitHub](https://github.com/Samuethus/Projeto_CDLOAD/blob/main/supabase/functions/sincronizar-agenda/index.ts) (botão *Copy raw file*) ou [neste repositório](functions/sincronizar-agenda/index.ts).
+3. Abra a [função sincronizar-agenda no painel](https://supabase.com/dashboard/project/xjexujpvnahaugizeyee/functions/sincronizar-agenda) > aba **Code** > cole o código > **Deploy**. Se a função ainda não existir, crie em [Edge Functions](https://supabase.com/dashboard/project/xjexujpvnahaugizeyee/functions) > **Deploy a new function** > *Via Editor*, com o nome `sincronizar-agenda`.
+4. Acompanhe os envios em [Logs da função](https://supabase.com/dashboard/project/xjexujpvnahaugizeyee/functions/sincronizar-agenda/logs).
+
+**Pelo Supabase CLI:**
 ```bash
 npx supabase login
-npx supabase link --project-ref SEU_PROJECT_REF
+npx supabase link --project-ref xjexujpvnahaugizeyee
 # Penso (convite por e-mail) — a senha vai direto para o Supabase, nunca para o GitHub
 npx supabase secrets set PENSO_SMTP_HOST=suitesmtp.penso.com.br PENSO_SMTP_USUARIO=agenda@cdlcuiaba.com.br PENSO_SMTP_SENHA='...'
 # Google (já existente; opcional)
@@ -130,7 +138,7 @@ Copia pastas, formulários, perguntas, coletores e respostas do Survey Monkey pa
 2. **Publicar a função** (sem JWT: quem chama é o pg_cron; a função ignora chamadas a menos de 5 min da anterior):
    ```bash
    npx supabase login
-   npx supabase link --project-ref SEU_PROJECT_REF
+   npx supabase link --project-ref xjexujpvnahaugizeyee
    npx supabase functions deploy surveymonkey-sincronizar --no-verify-jwt
    ```
 3. **SQL:** em [schema_surveymonkey.sql](schema_surveymonkey.sql), troque as duas ocorrências de `SEU_PROJECT_REF` pelo id do projeto (Project Settings > General > Project ID) > cole no SQL Editor > **Run**. Rode **depois** do `schema_seguranca_rls.sql`.
