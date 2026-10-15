@@ -1,3 +1,4 @@
+// @ts-nocheck — roda em Deno (Supabase); o TypeScript do VS Code não conhece Deno nem imports npm:
 // CDLoad · Edge Function "sincronizar-agenda"
 //
 // Cria, atualiza ou cancela o evento de uma campanha na agenda de todos os

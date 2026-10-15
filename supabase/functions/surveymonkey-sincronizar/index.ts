@@ -1,3 +1,4 @@
+// @ts-nocheck — roda em Deno (Supabase); o TypeScript do VS Code não conhece Deno nem imports npm:
 // CDLoad · Edge Function "surveymonkey-sincronizar"
 //
 // Copia a conta do Survey Monkey (API v3) para as tabelas survey_* do Supabase (supabase/schema_surveymonkey.sql).
