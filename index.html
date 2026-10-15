@@ -5326,6 +5326,10 @@
   (function(){
     // Fonte: 'retrato' (SM_RETRATO + surveymonkey_resumos.js) até as tabelas survey_* (sincronizadas pela Edge
     // Function surveymonkey-sincronizar) responderem; aí tudo passa a vir delas ('vivo').
+    // CONGELAMENTO TEMPORÁRIO (Egress do plano gratuito do Supabase quase no limite, renova em 18/10/2026):
+    // a seção fica no retrato fixo (SM_RETRATO + surveymonkey_resumos.js, servidos pelo GitHub Pages), sem ler as
+    // tabelas survey_* nem assinar o Realtime. Para voltar ao tempo real, desfazer este commit (git revert).
+    const SM_CONGELADO = true;
     let forms = SM_RETRATO.formularios, pastas = SM_RETRATO.pastas, fonte = 'retrato', ultimaSync = null;
     const pastaNome = id => pastas[id] || ('Pasta ' + id);
     const statusTxt = { OPEN: 'Coletando', CLOSED: 'Encerrado', DRAFT: 'Rascunho' };
@@ -5412,7 +5416,7 @@
       const linhas = [...lista].sort(ordenar[ordem]);
       const quando = fonte === 'vivo'
         ? (tempoReal ? ' · em tempo real (atualiza sozinho)' : ultimaSync ? ' · ao vivo, sincronizado em ' + new Date(ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ' · ao vivo')
-        : ' · retrato de ' + dataBR(SM_RETRATO.lido_em);
+        : ' · retrato de ' + dataBR(SM_RETRATO.lido_em) + (SM_CONGELADO ? ' (atualização ao vivo pausada temporariamente)' : '');
       el('smContagem').textContent = `${num(lista.length)} formulário${lista.length === 1 ? '' : 's'} · ${num(total)} respostas${quando}`;
       el('smTabela').innerHTML = linhas.length ? linhas.map(f => `
           <tr class="sm-linha" data-id="${f.id}" tabindex="0" title="Abrir o dashboard do formulário">
@@ -5505,7 +5509,7 @@
       } catch(e){ console.warn('[Survey Monkey] atualização em tempo real:', e); }
     }
     document.addEventListener('cdload:pagechange', ev => {
-      if(ev.detail.page !== 'surveymonkey' || vivoProm || Date.now() - vivoEm < VIVO_TTL) return;
+      if(SM_CONGELADO || ev.detail.page !== 'surveymonkey' || vivoProm || Date.now() - vivoEm < VIVO_TTL) return;
       vivoProm = carregarListaVivo().catch(e => console.warn('[Survey Monkey] dados ao vivo indisponíveis:', e)).finally(() => { vivoProm = null; });
     });
 
