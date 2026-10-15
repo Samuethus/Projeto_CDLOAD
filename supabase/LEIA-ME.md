@@ -63,12 +63,12 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 - Remover (só Administrador) uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
 - Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.
 
-## Campanhas › Participantes e agenda (convite por e-mail da Penso / Google Calendar)
+## Campanhas › Participantes e agenda (convite por e-mail da Penso)
 
 Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que envia o evento aos participantes a partir de uma **conta organizadora**:
 
-- **Penso (e-mail da CDL, Outlook, Hotmail, Apple…):** um **e-mail de convite de reunião** (iCalendar) sai da conta da Penso. O Outlook mostra **Aceitar / Recusar**; ao aceitar, o evento entra na agenda da pessoa como **Ocupado**.
-- **Gmail:** com o Google configurado, o evento é criado **direto pela API do Google Calendar** (fluxo já existente, sem mudança) e os endereços `@gmail.com` ficam fora do envio da Penso.
+- **Todos os participantes** (e-mail da CDL na Penso, Outlook, Hotmail, Gmail, Apple…) recebem **um único e-mail de convite de reunião** (iCalendar) da conta organizadora da Penso. O Outlook/Gmail mostram **Aceitar / Recusar**; ao aceitar, o evento entra na agenda da pessoa como **Ocupado**.
+- A **Penso é o canal principal**: com ela configurada, o Google Calendar fica **desligado** (evita convite em dobro). Campanha antiga que tinha evento no Google tem esse evento **cancelado na próxima edição** (o Google avisa os convidados e tira da agenda deles) e passa a ser só da Penso. Sem a Penso configurada, o Google volta a valer como reserva.
 
 - Sem horário: evento de **dia inteiro** do início ao fim da vigência. Com horário: bloqueio **diário** naquele intervalo, do início ao fim da vigência.
 - Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento — no convite por e-mail, a atualização/cancelamento chega como e-mail e o Outlook ajusta a agenda sozinho.
@@ -77,7 +77,7 @@ Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo n
 ### Passo 1 — Banco
 SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`).
 
-### Passo 2 — Configure a Penso (e, se quiser, o Google)
+### Passo 2 — Configure a Penso
 O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`), não no Microsoft 365 — por isso o caminho é o **convite por e-mail pela Penso**. O tenant Microsoft `cdlcba.onmicrosoft.com` não tem licença do Exchange, então a opção Outlook/Graph (no fim desta seção) não se aplica hoje.
 
 **Penso (convite por e-mail)** — só precisa de uma conta de e-mail da Penso para ser a organizadora (ex.: `agenda@cdlcuiaba.com.br`; os convites saem em nome dela e as respostas Aceitar/Recusar chegam nela):
@@ -86,7 +86,7 @@ O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`),
 3. Secrets no Supabase: `PENSO_SMTP_HOST`, `PENSO_SMTP_USUARIO`, `PENSO_SMTP_SENHA` (opcionais: `PENSO_SMTP_PORTA`, padrão 465; `PENSO_REMETENTE`, padrão = usuário; `PENSO_REMETENTE_NOME`, padrão "Agenda CDL").
 4. Teste: crie uma campanha com você como participante — deve chegar o e-mail "Convite: …" com Aceitar/Recusar.
 
-**Atenção com o Google ligado junto:** a API do Google envia o convite a **todos** os participantes da lista (é o fluxo atual, mantido sem mudança). Quem é da Penso recebe então **dois convites** do mesmo evento (o do Gmail organizador e o da Penso). Se isso incomodar, dá para o Google convidar só os endereços Gmail — exige mudar o fluxo do Google.
+**Reserva (não usadas com a Penso configurada):** Google Calendar e Outlook/Exchange abaixo só entram em ação se os secrets da Penso forem removidos. Os secrets do Google podem continuar no Supabase — servem para cancelar os eventos antigos do Google na migração.
 
 **Google Calendar (Gmail pessoal, @gmail.com)** — OAuth com refresh token:
 1. Google Cloud Console > projeto > **APIs e serviços > Biblioteca** > ative a **Google Calendar API**.
@@ -120,7 +120,7 @@ npx supabase login
 npx supabase link --project-ref xjexujpvnahaugizeyee
 # Penso (convite por e-mail) — a senha vai direto para o Supabase, nunca para o GitHub
 npx supabase secrets set PENSO_SMTP_HOST=suitesmtp.penso.com.br PENSO_SMTP_USUARIO=agenda@cdlcuiaba.com.br PENSO_SMTP_SENHA='...'
-# Google (já existente; opcional)
+# Google (reserva: só vale sem a Penso; mantenha para cancelar eventos antigos do Google)
 npx supabase secrets set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... GOOGLE_REFRESH_TOKEN=...
 # Outlook / Exchange Online (só se um dia houver caixa no Exchange)
 npx supabase secrets set MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... MS_ORGANIZADOR_EMAIL=...

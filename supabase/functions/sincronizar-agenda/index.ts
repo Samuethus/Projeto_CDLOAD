@@ -13,8 +13,9 @@
 //   Google Calendar (Gmail pessoal): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, [GOOGLE_CALENDAR_ID]
 //   Google Calendar (Workspace):     GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_ORGANIZADOR_EMAIL, [GOOGLE_CALENDAR_ID]
 // O convite da Penso é um e-mail de reunião padrão (iCalendar): Outlook, Gmail, Apple e afins mostram
-// Aceitar/Recusar e o evento entra na agenda da pessoa. Com o Google configurado, os endereços Gmail
-// ficam só com o Google (sincronização direta pela API) e a Penso convida os demais.
+// Aceitar/Recusar e o evento entra na agenda da pessoa. A Penso é o canal principal: com ela configurada,
+// TODOS os participantes (inclusive Gmail) recebem só por ela e o Google fica desligado (sem convite em
+// dobro); eventos antigos do Google são cancelados na próxima sincronização da campanha.
 // Passo a passo em supabase/LEIA-ME.md.
 //
 // Segurança: a função usa o login de quem chamou (nada de service_role).
@@ -361,20 +362,16 @@ const google: Provedor = {
 // afins mostram Aceitar/Recusar e, ao aceitar, o evento entra na agenda da pessoa. Editar a campanha manda a
 // atualização (mesmo UID, SEQUENCE maior) e quem saiu da lista recebe o cancelamento.
 // Porta 465 (SSL direto): o Supabase não deixa as Edge Functions abrirem as portas 25 e 587.
-// Gmail: com o Google configurado, esses endereços já recebem pela API do Google e ficam fora deste envio.
+// Canal principal da CDL: com a Penso configurada, o Google fica desligado (ver googleDesligado).
 
 const pensoRemetente = () => env('PENSO_REMETENTE') || env('PENSO_SMTP_USUARIO');
 const pensoNome = () => env('PENSO_REMETENTE_NOME') || 'Agenda CDL';
-const ehGmail = (email: string) => /@(gmail|googlemail)\.com$/i.test(email);
-
-// Participantes que recebem o convite pela Penso (sem os Gmail quando o Google já cuida deles).
-const pensoDestinatarios = (ev: Evento) =>
-  ev.participantes.filter((p) => !(google.configurado() && ehGmail(p.email)));
+// A Penso é o canal único: todos os participantes recebem o convite por ela (Penso, Outlook, Gmail…).
+const pensoDestinatarios = (ev: Evento) => ev.participantes;
 
 function pensoStatus(ev: Evento, atualizado: boolean): string {
-  const n = pensoDestinatarios(ev).length, gmail = ev.participantes.length - n;
-  const base = n ? `${atualizado ? 'atualização enviada' : 'convite enviado'} por e-mail para ${n} participante(s)` : 'nenhum convite por e-mail';
-  return gmail ? `${base} · ${gmail} Gmail sincronizado(s) pelo Google Calendar` : base;
+  const n = pensoDestinatarios(ev).length;
+  return n ? `${atualizado ? 'atualização enviada' : 'convite enviado'} por e-mail para ${n} participante(s)` : 'nenhum convite por e-mail';
 }
 
 // SEQUENCE do iCalendar precisa crescer a cada versão do mesmo evento: segundos desde 2026-01-01.
@@ -603,6 +600,71 @@ const penso: Provedor = {
 
 const PROVEDORES: Provedor[] = [outlook, google, penso];
 
+// A Penso é a ferramenta principal da CDL: com ela configurada, o Google fica desligado e todos (inclusive
+// Gmail) recebem só o convite por e-mail da Penso — sem convite em dobro. Sem a Penso, o Google volta a valer.
+const googleDesligado = () => penso.configurado();
+
+// Cria/atualiza/cancela o evento em cada provedor ativo e atualiza `sync` (campanhas.agenda_sync) no lugar.
+// Campanha antiga com evento no Google: na primeira sincronização com o Google desligado, esse evento é
+// cancelado (o Google avisa os convidados e tira da agenda deles) e o registro sai do agenda_sync.
+async function sincronizarProvedores(sync: Registro, evento: Evento | null, cancelar: boolean) {
+  const provedores: Record<string, string> = {};
+  let houveErro = false;
+
+  for (const p of PROVEDORES) {
+    const atual = sync[p.chave];
+    if (p.chave === 'google' && googleDesligado()) {
+      if (!atual?.event_id) { delete sync.google; continue; }
+      try {
+        if (google.configurado()) {
+          await google.cancelar(atual.event_id);
+          provedores.google = 'evento antigo do Google cancelado (o convite agora vai só pela Penso)';
+        }
+        delete sync.google;
+      } catch (e) {
+        houveErro = true;
+        provedores.google = 'erro ao cancelar o evento antigo do Google: ' + (e as Error).message;
+        console.error('[sincronizar-agenda] google (desligado):', e);
+      }
+      continue;
+    }
+    if (!p.configurado()) {
+      if (!cancelar) provedores[p.chave] = 'não configurado';
+      continue;
+    }
+    try {
+      if (cancelar) {
+        if (atual?.event_id) {
+          await p.cancelar(atual.event_id, atual);
+          provedores[p.chave] = 'evento cancelado nas agendas';
+        }
+        delete sync[p.chave];
+        continue;
+      }
+      const ev = evento!;
+      let id: string | null = null;
+      let status = `convite enviado para ${ev.participantes.length} participante(s)`;
+      if (atual?.event_id && atual.formato === ev.formato) {
+        if (await p.atualizar(atual.event_id, ev, atual)) {
+          id = atual.event_id;
+          status = `evento atualizado para ${ev.participantes.length} participante(s)`;
+        }
+      } else if (atual?.event_id) {
+        // Mudou de "dia inteiro" para "com horário" (ou vice-versa): recria.
+        await p.cancelar(atual.event_id, atual);
+      }
+      if (!id) id = await p.criar(ev);
+      sync[p.chave] = { ...(p.registro?.(ev) ?? {}), event_id: id, formato: ev.formato, sincronizado_em: new Date().toISOString() };
+      provedores[p.chave] = p.chave === 'penso' ? pensoStatus(ev, !!atual?.event_id && id === atual.event_id) : status;
+    } catch (e) {
+      houveErro = true;
+      provedores[p.chave] = 'erro: ' + (e as Error).message;
+      console.error(`[sincronizar-agenda] ${p.chave}:`, e);
+    }
+  }
+  return { provedores, houveErro };
+}
+
 // ---------------- Handler ----------------
 
 Deno.serve(async (req) => {
@@ -660,45 +722,7 @@ Deno.serve(async (req) => {
 
   // deno-lint-ignore no-explicit-any
   const sync: Record<string, any> = { ...(camp.agenda_sync ?? {}) };
-  const provedores: Record<string, string> = {};
-  let houveErro = false;
-
-  for (const p of PROVEDORES) {
-    const atual = sync[p.chave];
-    if (!p.configurado()) {
-      if (!cancelar) provedores[p.chave] = 'não configurado';
-      continue;
-    }
-    try {
-      if (cancelar) {
-        if (atual?.event_id) {
-          await p.cancelar(atual.event_id, atual);
-          provedores[p.chave] = 'evento cancelado nas agendas';
-        }
-        delete sync[p.chave];
-        continue;
-      }
-      const ev = evento!;
-      let id: string | null = null;
-      let status = `convite enviado para ${ev.participantes.length} participante(s)`;
-      if (atual?.event_id && atual.formato === ev.formato) {
-        if (await p.atualizar(atual.event_id, ev, atual)) {
-          id = atual.event_id;
-          status = `evento atualizado para ${ev.participantes.length} participante(s)`;
-        }
-      } else if (atual?.event_id) {
-        // Mudou de "dia inteiro" para "com horário" (ou vice-versa): recria.
-        await p.cancelar(atual.event_id, atual);
-      }
-      if (!id) id = await p.criar(ev);
-      sync[p.chave] = { ...(p.registro?.(ev) ?? {}), event_id: id, formato: ev.formato, sincronizado_em: new Date().toISOString() };
-      provedores[p.chave] = p.chave === 'penso' ? pensoStatus(ev, !!atual?.event_id && id === atual.event_id) : status;
-    } catch (e) {
-      houveErro = true;
-      provedores[p.chave] = 'erro: ' + (e as Error).message;
-      console.error(`[sincronizar-agenda] ${p.chave}:`, e);
-    }
-  }
+  const { provedores, houveErro } = await sincronizarProvedores(sync, evento, cancelar);
 
   if (!PROVEDORES.some((p) => p.configurado()) && !cancelar) {
     return json({ ok: false, erro: 'Nenhuma agenda configurada no Supabase (secrets da Penso, do Outlook ou do Google).', provedores }, 503);
