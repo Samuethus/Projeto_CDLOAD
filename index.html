@@ -11768,9 +11768,9 @@ ${clipPlayerPills(n)}
       stkVisaoInadEl.hidden = !inad;
       document.getElementById('stkInadLocalFiltro').hidden = !inad || inadVisao === 'graf';
       stkInadRegiaoEl.hidden = !inad || inadVisao !== 'graf';
-      // INADIMPLÊNCIA: números agregados dos relatórios do SPC, sem item para buscar — a barra fica só com
-      // Painel, Indicador, Mês, Ano, Abrangência, Limpar e Exportar (a busca herdada do Estoque não fazia nada).
-      stkBuscaInput.closest('.wa-clip-search').hidden = inad;
+      // INADIMPLÊNCIA: busca como nos demais painéis — no Dashboard filtra as listas (região, setor credor, faixa,
+      // valor, atraso); no Gráfico escolhe a região pelo nome ("centro" → Centro-Oeste), no lugar do filtro Região.
+      stkBuscaInput.closest('.wa-clip-search').hidden = false;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -11792,7 +11792,7 @@ ${clipPlayerPills(n)}
       document.getElementById('empMapa').hidden = !mapa;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
-      stkBuscaInput.placeholder = viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
+      stkBuscaInput.placeholder = inad ? (inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
         : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade econômica (CNAE)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
@@ -13510,7 +13510,18 @@ ${clipPlayerPills(n)}
       inadRegLerPendentes();
       const lendo = [...inadRegPdf.values()].filter(v => v === 'lendo').length;
       const { pts } = inadRegSerie(D);
-      const loc = stkInadRegiaoEl.value || 'Brasil', P = pts[loc] || {};
+      // Busca: região pelo nome ("centro" → Centro-Oeste, "brasil"), no lugar do filtro Região (como no ICVA).
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      const achado = termos.length ? INAD_REGIOES.concat(['Brasil']).find(n => ibgeCasa(n, termos)) : null;
+      if(termos.length && !achado){
+        stkGrid.classList.add('cd-fit'); stkGrid.classList.remove('cd-carregando');
+        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard('Taxa de inadimplência por região', 'SPC Brasil',
+          `<div class="stk-vazio">${esc(`Nenhuma região com “${busca}”.`)}</div>`)}</div></div>`;
+        inadPainelUltimo = null;
+        return;
+      }
+      stkInadRegiaoEl.classList.toggle('stk-filtro-ignorado', !!achado);
+      const loc = achado || stkInadRegiaoEl.value || 'Brasil', P = pts[loc] || {};
       const dec = (v, c) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
       const pctP = v => dec(v, 2) + '%';
       const pp = v => (v > 0 ? '+' : v < 0 ? '−' : '') + dec(Math.abs(v), 2) + ' p.p.';
@@ -13585,6 +13596,11 @@ ${clipPlayerPills(n)}
       const dQtd = (v, a) => cdDelta(v, a || 0, false, a == null, true);
       const fonte = ref ? `SPC Brasil · ${rotM(ref)}` : 'SPC Brasil';
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      // Busca (como nos demais painéis): filtra os itens das listas pelo nome — região, setor credor, faixa etária, valor ou atraso.
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      const casa = n => !termos.length || ibgeCasa(n, termos);
+      const semBusca = `Nenhum item com “${busca}”.`;
+      const barras = (itens, tit, vazio) => { const f = itens.filter(i => casa(i.nome)); return cdBarras(f, tit, termos.length && !f.length ? semBusca : vazio); };
 
       // Sem relatório para a abrangência (Cuiabá ainda não recebido) ou sem edição no período.
       if(!X){
@@ -13631,7 +13647,7 @@ ${clipPlayerPills(n)}
             dica: `Inadimplentes: ${pctS(c.devedoresAnual)} no ano · ${pctS(c.devedoresMensal)} no mês` })),
           comp.map(([n, c], i) => ({ nome: n, valor: Math.max(0, c.dividasAnual), rotulo: pctS(c.dividasAnual), cor: i ? clara('#64748B') : '#64748B',
             dica: `Dívidas em atraso: ${pctS(c.dividasAnual)} no ano · ${pctS(c.dividasMensal)} no mês` })));
-        wComp = cdCard('Variação anual', `${rotLongo(ref)} contra o mesmo mês do ano anterior`, cdBarras(itens, 'Variação anual', 'Sem comparativo nesta edição.'),
+        wComp = cdCard('Variação anual', `${rotLongo(ref)} contra o mesmo mês do ano anterior`, barras(itens, 'Variação anual', 'Sem comparativo nesta edição.'),
           legendaDots([{ nome: 'Inadimplentes', cor: CD_COR.azul }, { nome: 'Dívidas', cor: '#64748B' }]));
       }
 
@@ -13640,29 +13656,30 @@ ${clipPlayerPills(n)}
       if(loc === 'br' && X.regioes){
         const regs = Object.entries(X.regioes).sort((a, b) => b[1].devedoresAnual - a[1].devedoresAnual);
         wMeio = cdCard('Variação anual por região', `Inadimplentes · ${rotLongo(ref)} contra o ano anterior (Brasil ${pctS(X.devedores.anual)})`,
-          cdBarras(regs.map(([n, r], i) => ({ nome: n, valor: Math.max(0, r.devedoresAnual), rotulo: pctS(r.devedoresAnual),
+          barras(regs.map(([n, r], i) => ({ nome: n, valor: Math.max(0, r.devedoresAnual), rotulo: pctS(r.devedoresAnual),
             cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', regs.length > 1 ? i / (regs.length - 1) : 0),
             dica: `Inadimplentes ${pctS(r.devedoresAnual)} no ano, ${pctS(r.devedoresMensal)} no mês · dívidas ${pctS(r.dividasAnual)} · ${dec(r.negativadosMi, 2)} mi negativados (${pctP(r.popAdulta)} da população adulta)` })), 'Variação anual por região', 'Sem dados por região.'));
       } else {
-        wMeio = inadCardFaixa(D, X, nomeLoc, pctP, dec);
+        wMeio = inadCardFaixa(D, X, nomeLoc, pctP, dec, barras);
       }
 
       // ---- Linha A, 3º quadro: setor credor (rosca, como a do CAGED) ----
       const setores = Object.entries(X.setor).sort((a, b) => b[1] - a[1]);
-      const dadosSetor = setores.map(([n, v]) => ({ nome: n, sigla: n, cor: INAD_SETOR_COR[n] || CD_COR.cinza, valor: v }));
-      const wSetor = cdCard('Dívidas por setor credor', `Participação no número de dívidas em atraso · ${nomeLoc}`, `<div class="cd-rosca-wrap">
-          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${dec(setores[0][1], 1)}%</strong><span>${esc(setores[0][0])}</span></div></div>
-          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${setores.map(([n, v]) => `<li title="${esc(n)}: ${esc(pctP(v))} das dívidas${X.setorAnual && X.setorAnual[n] != null ? ` · ${esc(pctS(X.setorAnual[n]))} no ano` : ''}"><i style="background:${INAD_SETOR_COR[n] || CD_COR.cinza}"></i><span>${esc(n)}</span><strong>${dec(v, 1)}%</strong></li>`).join('')}</ul>
+      const setoresVis = setores.filter(([n]) => casa(n));   // busca: rosca e legenda só com os setores encontrados
+      const dadosSetor = setoresVis.map(([n, v]) => ({ nome: n, sigla: n, cor: INAD_SETOR_COR[n] || CD_COR.cinza, valor: v }));
+      const wSetor = cdCard('Dívidas por setor credor', `Participação no número de dívidas em atraso · ${nomeLoc}`, !setoresVis.length ? `<div class="stk-vazio">${esc(semBusca)}</div>` : `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${dec(setoresVis[0][1], 1)}%</strong><span>${esc(setoresVis[0][0])}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${setoresVis.map(([n, v]) => `<li title="${esc(n)}: ${esc(pctP(v))} das dívidas${X.setorAnual && X.setorAnual[n] != null ? ` · ${esc(pctS(X.setorAnual[n]))} no ano` : ''}"><i style="background:${INAD_SETOR_COR[n] || CD_COR.cinza}"></i><span>${esc(n)}</span><strong>${dec(v, 1)}%</strong></li>`).join('')}</ul>
         </div>`);
 
       // ---- Linha B ----
       const wValor = cdCard('Valor total das dívidas', `Inadimplentes por faixa de valor devido · até R$ 1.000: ${pctP(X.valor[0] + X.valor[1])}`,
-        cdBarras(D.valores.map((n, i) => ({ nome: INAD_VALOR_CURTO[i], valor: X.valor[i], rotulo: pctP(X.valor[i]), cor: stkMisturarCor('#C9DDF8', CD_COR.azul, i / (D.valores.length - 1)),
+        barras(D.valores.map((n, i) => ({ nome: INAD_VALOR_CURTO[i], valor: X.valor[i], rotulo: pctP(X.valor[i]), cor: stkMisturarCor('#C9DDF8', CD_COR.azul, i / (D.valores.length - 1)),
           dica: `${pctP(X.valor[i])} dos inadimplentes devem ${n.toLowerCase()} no total` })), 'Valor total das dívidas', 'Sem dados.'));
       const wAtraso = cdCard('Tempo de atraso', `Inadimplentes por tempo desde o vencimento · média de ${dec(X.atrasoMeses, 1)} meses`,
-        cdBarras(D.atrasos.map((n, i) => ({ nome: n, valor: X.atraso[i], rotulo: pctP(X.atraso[i]), cor: stkMisturarCor('#F3D9A4', '#B7791F', i / (D.atrasos.length - 1)),
+        barras(D.atrasos.map((n, i) => ({ nome: n, valor: X.atraso[i], rotulo: pctP(X.atraso[i]), cor: stkMisturarCor('#F3D9A4', '#B7791F', i / (D.atrasos.length - 1)),
           dica: `${pctP(X.atraso[i])} dos inadimplentes${X.atrasoAnual ? ` · ${pctS(X.atrasoAnual[i])} no ano` : ''}` })), 'Tempo de atraso', 'Sem dados.'));
-      const wFaixaBr = loc === 'br' ? inadCardFaixa(D, X, nomeLoc, pctP, dec) : null;
+      const wFaixaBr = loc === 'br' ? inadCardFaixa(D, X, nomeLoc, pctP, dec, barras) : null;
 
       // ---- Destaques ----
       const dest = [];
@@ -13729,10 +13746,10 @@ ${clipPlayerPills(n)}
       inadPainelUltimo = { linhas: L, arquivo: `spc_inadimplencia_${loc}_${ref}.csv` };
     }
     // Faixa etária: participação nos inadimplentes (no Brasil, também a estimativa de negativados e o % da população da faixa).
-    function inadCardFaixa(D, X, nomeLoc, pctP, dec){
+    function inadCardFaixa(D, X, nomeLoc, pctP, dec, barras){
       const iF = X.faixaEtaria.indexOf(Math.max(...X.faixaEtaria));
       return cdCard('Inadimplentes por faixa etária', `Participação no total · idade média ${dec(X.idadeMedia, 1)} anos · ${nomeLoc}`,
-        cdBarras(D.faixas.map((n, i) => ({ nome: n, valor: X.faixaEtaria[i], rotulo: pctP(X.faixaEtaria[i]),
+        (barras || cdBarras)(D.faixas.map((n, i) => ({ nome: n, valor: X.faixaEtaria[i], rotulo: pctP(X.faixaEtaria[i]),
           cor: i === iF ? CD_COR.azul : '#C9DDF8',
           dica: X.estimativa ? `${pctP(X.faixaEtaria[i])} dos inadimplentes · ${dec(X.estimativa.faixaEtaria[i][0], 2)} mi negativados (${pctP(X.estimativa.faixaEtaria[i][1])} da população da faixa)` : `${pctP(X.faixaEtaria[i])} dos inadimplentes` })),
           'Inadimplentes por faixa etária', 'Sem dados.'));
