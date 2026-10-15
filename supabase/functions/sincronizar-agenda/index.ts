@@ -17,6 +17,11 @@
 // Aceitar/Recusar e o evento entra na agenda da pessoa. A Penso é o canal principal: com ela configurada,
 // TODOS os participantes (inclusive Gmail) recebem só por ela e o Google fica desligado (sem convite em
 // dobro); eventos antigos do Google são cancelados na próxima sincronização da campanha.
+//
+// Ação "leads" (Campanhas › Etapa 3 › Leads): e-mail informativo individual para cada lead do CSV importado
+// (assunto = Nome da campanha, corpo = Descrição), pela mesma conta da Penso. Em lotes (cada chamada envia o que
+// couber em ~90 s); o app chama de novo até acabar. Quem já recebeu fica em agenda_sync.leads.enviados e não
+// recebe de novo (requer supabase/schema_campanhas_leads.sql).
 // Passo a passo em supabase/LEIA-ME.md.
 //
 // Segurança: a função usa o login de quem chamou (nada de service_role).
@@ -119,11 +124,11 @@ function montarEvento(camp: any): Evento {
     ['Local', local],
     ['Vigência', `${dataBR(dataInicio)} a ${dataBR(dataFim)}`],
     ['Times envolvidos', (et.times_envolvidos ?? []).join(', ')],
-    ['Descrição', pm.descricao],
+    ['Descrição', et.descricao_email || pm.descricao],
   ].filter(([, v]) => v);
 
   const descricaoHtml =
-    linhas.map(([k, v]) => `<p><b>${escHtml(k)}:</b> ${escHtml(v)}</p>`).join('') +
+    linhas.map(([k, v]) => `<p><b>${escHtml(k)}:</b> ${escHtml(v).replace(/\r?\n/g, '<br>')}</p>`).join('') +
     '<p style="color:#6b7280">Evento gerado pela plataforma CDLoad · Núcleo de Inteligência.</p>';
 
   return {
@@ -509,13 +514,18 @@ function montarEmail(metodo: 'REQUEST' | 'CANCEL', assunto: string, ev: EventoRe
   ].join('\r\n');
 }
 
-// Cliente SMTP mínimo: SSL direto (porta 465), AUTH PLAIN, um envio por conexão.
-async function smtpEnviar(para: string[], mensagem: string): Promise<void> {
+// Cliente SMTP mínimo: SSL direto (porta 465), AUTH PLAIN. Uma sessão envia várias mensagens (leads em lote);
+// destinatário recusado (5xx) vira SmtpRecusa e a sessão segue (RSET); queda de conexão interrompe tudo.
+class SmtpRecusa extends Error {}
+
+async function smtpAbrir() {
   const host = env('PENSO_SMTP_HOST'), porta = Number(env('PENSO_SMTP_PORTA') || 465);
   if (porta === 25 || porta === 587) throw new Error(`a porta ${porta} é bloqueada pelo Supabase; use a 465 (SSL).`);
   const conn = await Deno.connectTls({ hostname: host, port: porta });
   const enc = new TextEncoder(), dec = new TextDecoder();
-  const prazo = setTimeout(() => { try { conn.close(); } catch { /* já fechada */ } }, 25_000);
+  // Vigia: 30 s sem resposta do servidor fecha a conexão (rearmado a cada comando).
+  let prazo = 0;
+  const armar = () => { clearTimeout(prazo); prazo = setTimeout(() => { try { conn.close(); } catch { /* já fechada */ } }, 30_000); };
   let buf = '';
   const escrever = async (s: string) => {
     const dados = enc.encode(s);
@@ -539,25 +549,58 @@ async function smtpEnviar(para: string[], mensagem: string): Promise<void> {
   };
   // `rotulo` evita que a senha (AUTH) apareça em mensagens de erro e logs.
   const comando = async (linha: string | null, aceitos: number[], rotulo: string) => {
+    armar();
     if (linha !== null) await escrever(linha + '\r\n');
     const r = await resposta();
-    if (!aceitos.includes(r.codigo)) throw new Error(`${rotulo}: ${r.texto}`);
+    if (!aceitos.includes(r.codigo)) {
+      const msg = `${rotulo}: ${r.texto}`;
+      throw r.codigo >= 500 && r.codigo < 600 ? new SmtpRecusa(msg) : new Error(msg);
+    }
+  };
+  const fechar = async () => {
+    try { await escrever('QUIT\r\n'); } catch { /* já fechada */ }
+    clearTimeout(prazo);
+    try { conn.close(); } catch { /* já fechada */ }
   };
   try {
     await comando(null, [220], 'conexão');
     await comando('EHLO cdload', [250], 'EHLO');
     const credencial = b64Mime(`\u0000${env('PENSO_SMTP_USUARIO')}\u0000${env('PENSO_SMTP_SENHA')}`).replace(/\r\n/g, '');
-    await comando(`AUTH PLAIN ${credencial}`, [235], 'login (usuário/senha da Penso)');
-    await comando(`MAIL FROM:<${pensoRemetente()}>`, [250], 'remetente');
-    for (const email of para) await comando(`RCPT TO:<${email}>`, [250, 251], `destinatário ${email}`);
-    await comando('DATA', [354], 'DATA');
-    // Ponto no início da linha é duplicado (RFC 5321 §4.5.2).
-    await escrever(mensagem.replace(/\r\n\./g, '\r\n..') + '\r\n.\r\n');
-    await comando(null, [250], 'envio');
-    await escrever('QUIT\r\n');
+    try {
+      await comando(`AUTH PLAIN ${credencial}`, [235], 'login (usuário/senha da Penso)');
+    } catch (e) {
+      throw new Error((e as Error).message);   // login recusado não é recusa de destinatário
+    }
+  } catch (e) {
+    await fechar();
+    throw e;
+  }
+  return {
+    async enviar(para: string[], mensagem: string) {
+      try {
+        await comando(`MAIL FROM:<${pensoRemetente()}>`, [250], 'remetente');
+        for (const email of para) await comando(`RCPT TO:<${email}>`, [250, 251], `destinatário ${email}`);
+        await comando('DATA', [354], 'DATA');
+        // Ponto no início da linha é duplicado (RFC 5321 §4.5.2).
+        armar();
+        await escrever(mensagem.replace(/\r\n\./g, '\r\n..') + '\r\n.\r\n');
+        await comando(null, [250], 'envio');
+      } catch (e) {
+        // Recusa: limpa a transação para a próxima mensagem da mesma sessão.
+        if (e instanceof SmtpRecusa) await comando('RSET', [250], 'RSET').catch(() => {});
+        throw e;
+      }
+    },
+    fechar,
+  };
+}
+
+async function smtpEnviar(para: string[], mensagem: string): Promise<void> {
+  const sessao = await smtpAbrir();
+  try {
+    await sessao.enviar(para, mensagem);
   } finally {
-    clearTimeout(prazo);
-    try { conn.close(); } catch { /* já fechada */ }
+    await sessao.fechar();
   }
 }
 
@@ -678,6 +721,121 @@ const penso: Provedor = {
 
 const PROVEDORES: Provedor[] = [outlook, google, penso];
 
+// ---------------- Leads: e-mail informativo (Campanhas › Etapa 3) ----------------
+// Um e-mail individual por lead (ninguém vê o endereço dos outros): assunto = Nome da campanha, corpo = Descrição.
+// Uma sessão SMTP por chamada, até LEADS_TEMPO_MS ou LEADS_POR_CHAMADA; o app chama de novo enquanto houver
+// pendentes. Progresso em agenda_sync.leads = { enviados: [e-mails], falhas: [{email, erro}], total, atualizado_em }:
+// quem já recebeu (ou foi recusado pelo servidor) não entra de novo — editar a campanha e incluir leads novos
+// envia só para os novos.
+const LEADS_TEMPO_MS = 90_000;
+const LEADS_POR_CHAMADA = 400;
+
+type Lead = { nome: string; email: string };
+// deno-lint-ignore no-explicit-any
+function leadsDaCampanha(et: any): Lead[] {
+  const vistos = new Set<string>(), out: Lead[] = [];
+  for (const l of Array.isArray(et?.leads) ? et.leads : []) {
+    const email = String(l?.email ?? '').trim().toLowerCase();
+    if (!EMAIL_RE.test(email) || vistos.has(email)) continue;
+    vistos.add(email);
+    out.push({ nome: String(l?.nome ?? '').trim(), email });
+  }
+  return out;
+}
+
+// Texto digitado → HTML: parágrafos por linha em branco, <br> por quebra simples.
+const textoParaHtml = (t: string) =>
+  t.trim().split(/\r?\n\s*\r?\n/).map((par) => `<p>${escHtml(par).replace(/\r?\n/g, '<br>')}</p>`).join('');
+
+function montarEmailLead(assunto: string, corpo: string, lead: Lead): string {
+  const dominio = pensoRemetente().split('@')[1] || 'cdload';
+  const alt = `cdload-lead-${crypto.randomUUID()}`;
+  const para = lead.nome ? `${cabecalhoUtf8(lead.nome)} <${lead.email}>` : `<${lead.email}>`;
+  return [
+    `From: ${cabecalhoUtf8(pensoNome())} <${pensoRemetente()}>`,
+    `To: ${para}`,
+    `Subject: ${cabecalhoUtf8(assunto)}`,
+    `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
+    `Message-ID: <${crypto.randomUUID()}@${dominio}>`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${alt}"`,
+    '',
+    `--${alt}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(corpo.trim()),
+    `--${alt}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(`<html><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1f2937">${textoParaHtml(corpo)}</body></html>`),
+    `--${alt}--`,
+    '',
+  ].join('\r\n');
+}
+
+// deno-lint-ignore no-explicit-any
+async function enviarLeads(camp: any, gravar: (reg: Registro) => Promise<string | null>) {
+  const et = camp.estrutura_tecnica ?? {}, pm = camp.publico_e_midia ?? {};
+  const leads = leadsDaCampanha(et);
+  const corpo = String(et.descricao_email || pm.descricao || '').trim();
+  const assunto = String(camp.nome_campanha ?? '').trim();
+  const anterior: Registro = camp.agenda_sync?.leads ?? {};
+  const enviados = new Set<string>(Array.isArray(anterior.enviados) ? anterior.enviados : []);
+  const falhas: { email: string; erro: string }[] = Array.isArray(anterior.falhas) ? anterior.falhas : [];
+  const jaFalhou = new Set(falhas.map((f) => f.email));
+  const pendentes = leads.filter((l) => !enviados.has(l.email) && !jaFalhou.has(l.email));
+  const resumoLeads = (extra: Registro = {}) => ({
+    total: leads.length, enviados: leads.filter((l) => enviados.has(l.email)).length,
+    falhas: falhas.length, pendentes: leads.filter((l) => !enviados.has(l.email) && !jaFalhou.has(l.email)).length, ...extra,
+  });
+
+  if (!leads.length) return { ok: true, leads: resumoLeads({ enviados_agora: 0 }) };
+  if (!corpo) return { ok: false, erro: 'Preencha a Descrição da Etapa 3: ela é o corpo do e-mail enviado aos leads.' };
+  if (!assunto) return { ok: false, erro: 'A campanha não tem nome (assunto do e-mail).' };
+  if (!penso.configurado()) return { ok: false, erro: 'O envio aos leads usa a conta da Penso: configure os secrets PENSO_SMTP_* no Supabase.' };
+  if (!pendentes.length) return { ok: true, leads: resumoLeads({ enviados_agora: 0 }) };
+
+  // Sem conseguir gravar o controle não envia nada (senão os leads receberiam de novo na próxima vez).
+  const msgRegistro = (erro: string, enviou: boolean) =>
+    (enviou ? 'E-mails enviados, mas o controle de envio não foi gravado: ' : 'Nenhum e-mail enviado: não foi possível gravar o controle de envio: ') +
+    (/cdl_gravar_leads_envio|function|função/i.test(erro) ? 'rode supabase/schema_campanhas_leads.sql no Supabase.' : erro);
+  const regAtual = () => ({ enviados: [...enviados], falhas, total: leads.length, atualizado_em: new Date().toISOString() });
+  const erroAntes = await gravar(regAtual());
+  if (erroAntes) return { ok: false, erro: msgRegistro(erroAntes, false), leads: resumoLeads({ enviados_agora: 0 }) };
+
+  const inicio = Date.now();
+  let agora = 0, erroConexao: string | null = null;
+  let sessao: Awaited<ReturnType<typeof smtpAbrir>> | null = null;
+  try {
+    sessao = await smtpAbrir();
+    for (const lead of pendentes) {
+      if (agora >= LEADS_POR_CHAMADA || Date.now() - inicio > LEADS_TEMPO_MS) break;
+      try {
+        await sessao.enviar([lead.email], montarEmailLead(assunto, corpo, lead));
+        enviados.add(lead.email);
+        agora++;
+      } catch (e) {
+        if (!(e instanceof SmtpRecusa)) throw e;
+        falhas.push({ email: lead.email, erro: (e as Error).message.slice(0, 160) });
+        jaFalhou.add(lead.email);
+      }
+    }
+  } catch (e) {
+    erroConexao = `Penso (SMTP ${env('PENSO_SMTP_HOST')}): ${(e as Error).message}`;
+    console.error('[sincronizar-agenda] leads:', e);
+  } finally {
+    await sessao?.fechar();
+  }
+
+  const erroGravar = await gravar(regAtual());
+  const resumoFinal = resumoLeads({ enviados_agora: agora });
+  if (erroGravar) return { ok: false, erro: msgRegistro(erroGravar, agora > 0), leads: resumoFinal };
+  if (erroConexao) return { ok: false, erro: erroConexao, leads: resumoFinal };
+  return { ok: true, leads: resumoFinal };
+}
+
 // A Penso é a ferramenta principal da CDL: com ela configurada, o Google fica desligado e todos (inclusive
 // Gmail) recebem só o convite por e-mail da Penso — sem convite em dobro. Sem a Penso, o Google volta a valer.
 const googleDesligado = () => penso.configurado();
@@ -765,7 +923,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, erro: 'Corpo da requisição inválido.' }, 400);
   }
   const campanhaId = String(entrada?.campanha_id ?? '');
-  const acao = entrada?.acao === 'cancelar' ? 'cancelar' : 'sincronizar';
+  const acao = entrada?.acao === 'cancelar' ? 'cancelar' : entrada?.acao === 'leads' ? 'leads' : 'sincronizar';
   if (!campanhaId) return json({ ok: false, erro: 'campanha_id é obrigatório.' }, 400);
 
   const { data: camp, error: erroCampanha } = await supabase
@@ -778,6 +936,17 @@ Deno.serve(async (req) => {
     return json({ ok: false, erro: semColuna ? 'Falta a coluna agenda_sync: rode supabase/schema_agenda.sql.' : erroCampanha.message }, 500);
   }
   if (!camp) return json({ ok: false, erro: 'Campanha não encontrada.' }, 404);
+
+  // Leads: quem tem a seção dispara os pendentes (cada lead recebe uma vez só; nada é reenviado).
+  if (acao === 'leads') {
+    const r = await enviarLeads(camp, async (reg) => {
+      const { error } = await supabase.rpc('cdl_gravar_leads_envio', { p_campanha: campanhaId, p_leads: reg });
+      if (!error) return null;
+      console.error('[sincronizar-agenda] gravar leads:', error);
+      return error.message;
+    });
+    return json(r, r.ok ? 200 : 500);
+  }
 
   // Editar/remover é só do Administrador: os demais só sincronizam a campanha
   // que acabaram de criar (ainda sem evento) e nunca cancelam.

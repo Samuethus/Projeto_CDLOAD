@@ -30,6 +30,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 18. Cole o conteúdo de [schema_viabilidade.sql](schema_viabilidade.sql) > **Run** (**Dashboard › Painel · Viabilidade** editável: cria as tabelas `viabilidade_itens` — ferramentas e custos, módulos do CDLoad, planos de captação — e `viabilidade_parametros` — dias úteis por mês —, já carregadas com os valores da planilha. Lê quem tem a seção Dashboard; edita pelo botão **Editar** da barra do painel quem pode editar o Dashboard — Administrador ou usuário com Edição e a seção liberada. Rode **depois** do passo 17. Rodar de novo não apaga edições. A consulta final deve mostrar 5 ferramentas, 5 módulos e 1 plano). Sem este passo o painel continua com os valores de `assets/data/viabilidades.js` e o botão Salvar fica bloqueado.
 19. Cole o conteúdo de [schema_surveymonkey_acesso.sql](schema_surveymonkey_acesso.sql) > **Run** (**Survey › Acessos**, só Administrador: escolher, por usuário, quais formulários ele visualiza — lista, painel, coletores e respostas. Cria `usuarios.survey_formularios_permitidos` (`null` = todos, como hoje; lista de ids = só esses) e troca as regras de leitura de `survey_formularios`, `survey_perguntas`, `survey_coletores` e `survey_respostas` para respeitar a lista. Rode **depois** do `schema_surveymonkey.sql`; se aquele for rodado de novo, rode este outra vez). Sem este passo o botão Acessos avisa que falta a coluna.
 20. Cole o conteúdo de [schema_inadimplencia.sql](schema_inadimplencia.sql) > **Run** (seção **Inadimplência**, antiga Configurações — a chave da seção continua `configuracoes`, então quem já tinha acesso continua tendo: cria a tabela `inadimplencia_arquivos` e o bucket privado `inadimplencia` para os PDFs do SPC Brasil, com abrangência Cuiabá, Mato Grosso ou Brasil e mês de referência. Lê e envia quem tem a seção; remove Administrador ou quem tem Edição. Rode **depois** do passo 17). As duas consultas finais devem mostrar o bucket e as 6 regras. Esses documentos alimentam o indicador **SPC: Inadimplência** do Dashboard › Panorama.
+21. Cole o conteúdo de [schema_campanhas_leads.sql](schema_campanhas_leads.sql) > **Run** (Campanhas › Etapa 3 › **Leads**: registra quem já recebeu o e-mail informativo — só acrescenta, então ninguém recebe duas vezes. Sem ele a função não envia aos leads. Rode **depois** dos passos 5 e 17).
 
 ## Estoque › estoques centrais e setor de consumo
 
@@ -74,8 +75,18 @@ Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo n
 - Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento — no convite por e-mail, a atualização/cancelamento chega como e-mail e o Outlook ajusta a agenda sozinho.
 - Fuso: America/Cuiaba.
 
+### Leads (e-mail informativo aos associados)
+Na **Etapa 3 › Leads** anexa-se um **CSV com as colunas Nome e E-mail** (separado por `;` ou `,`, com ou sem cabeçalho; o app oferece um modelo). Ao salvar a campanha, no mesmo processo dos convites:
+- cada lead recebe um **e-mail individual** (ninguém vê o endereço dos outros) pela conta da Penso: **assunto = Nome da campanha**, **corpo = Descrição** da Etapa 3;
+- listas grandes vão em **lotes** (cada chamada da função envia o que cabe em ~90 s; o app repete e mostra o progresso no botão);
+- quem **já recebeu não recebe de novo** (`agenda_sync.leads.enviados`): editar a campanha e incluir leads novos envia só para os novos; mudar a Descrição não reenvia;
+- endereço recusado pelo servidor fica em `falhas` e não é tentado de novo;
+- se a gravação do controle falhar (ex.: SQL do passo 21 não rodado), **nada é enviado**.
+
+Limites: até 5.000 leads por campanha. Verifique com a Penso o **limite diário de envio** da conta organizadora antes de listas grandes.
+
 ### Passo 1 — Banco
-SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`).
+SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`) e depois [schema_campanhas_leads.sql](schema_campanhas_leads.sql) (envio aos leads).
 
 ### Passo 2 — Configure a Penso
 O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`), não no Microsoft 365 — por isso o caminho é o **convite por e-mail pela Penso**. O tenant Microsoft `cdlcba.onmicrosoft.com` não tem licença do Exchange, então a opção Outlook/Graph (no fim desta seção) não se aplica hoje.
