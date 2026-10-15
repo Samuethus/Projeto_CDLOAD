@@ -11907,7 +11907,8 @@ ${clipPlayerPills(n)}
     // eixo = 'auto': eixo Y começa perto do menor valor (séries de estoque, sempre altas), em vez de 0.
     // semArea: só as linhas, sem o degradê (muitas séries sobrepostas, ex.: regiões da Inadimplência).
     // Valor null = mês sem dado: a linha é interrompida ali (ponto isolado vira um marcador) e a dica mostra "—".
-    // dicaExtra(i): linhas a mais no tooltip do ponto i ([{ valor, rotulo }]), ex.: variação entre anos da Inadimplência.
+    // dicaExtra(i, linhas): devolve as linhas do tooltip do ponto i ([{ cor, valor, rotulo }]) — permite reordenar e
+    // acrescentar linhas, ex.: anos em ordem decrescente + variação entre anos da Inadimplência.
     function stkDesenharLinhasFluxo(el, categorias, series, altura, fmt, eixo, semArea, dicaExtra){
       const W = Math.max(260, Math.floor(el.clientWidth)), H = altura || 220;
       const todos = series.flatMap(s => s.valores).filter(v => v != null);
@@ -11971,7 +11972,8 @@ ${clipPlayerPills(n)}
         pontos.forEach(p => { const v = series[p.dataset.k].valores[atual]; p.setAttribute('cx', x(atual)); p.setAttribute('cy', v == null ? 0 : y(v)); p.setAttribute('visibility', v == null ? 'hidden' : 'visible'); });
         const r = alvo.getBoundingClientRect();
         const evPos = ev && ev.clientX !== undefined ? ev : { clientX: r.left + (x(atual) - m.l), clientY: r.top };
-        stkMostrarDica(evPos, categorias[atual], series.map(s => ({ cor: s.cor, valor: s.valores[atual] == null ? '—' : (fmt || stkNum)(s.valores[atual]), rotulo: s.nome })).concat(dicaExtra ? dicaExtra(atual) : []));
+        const linhas = series.map(s => ({ cor: s.cor, valor: s.valores[atual] == null ? '—' : (fmt || stkNum)(s.valores[atual]), rotulo: s.nome }));
+        stkMostrarDica(evPos, categorias[atual], dicaExtra ? dicaExtra(atual, linhas) : linhas);
       };
       const soltar = () => { cruz.setAttribute('visibility', 'hidden'); pontos.forEach(p => p.setAttribute('visibility', 'hidden')); stkEsconderDica(); };
       alvo.addEventListener('pointermove', ev => {
@@ -13564,10 +13566,14 @@ ${clipPlayerPills(n)}
       const graf = document.getElementById('stkFluxoGraf');
       // Tooltip: além do valor de cada ano, a variação do ano mais recente contra o anterior no mês (em p.p.) — vermelho se a
       // inadimplência subiu, verde se caiu (tons claros, legíveis no fundo escuro do tooltip).
-      const dicaVar = series.length >= 2 ? k => { const [sa, sb] = series.slice(-2);
-        if(sa.valores[k] == null || sb.valores[k] == null) return [];
+      // Anos em ordem decrescente (2026, 2025, 2024) e, por último, a variação.
+      const dicaVar = (k, linhas) => {
+        const out = linhas.slice().reverse();
+        if(series.length < 2) return out;
+        const [sa, sb] = series.slice(-2);
+        if(sa.valores[k] == null || sb.valores[k] == null) return out;
         const d = sb.valores[k] - sa.valores[k];
-        return [{ valor: pp(d), rotulo: 'variação', corValor: d > 0.005 ? '#F87171' : d < -0.005 ? '#4ADE80' : '' }]; } : null;
+        return out.concat([{ valor: pp(d), rotulo: 'variação', corValor: d > 0.005 ? '#F87171' : d < -0.005 ? '#4ADE80' : '' }]); };
       // Linhas com a área em degradê (layout do gráfico original), também com os três anos.
       if(graf) stkDesenharLinhasFluxo(graf, PAN_MES_CURTO.slice(), series, cdAlturaLivre(graf, 360), v => pctP(v), 'auto', false, dicaVar);
       cdAjustarListas();
