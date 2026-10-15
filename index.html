@@ -8074,17 +8074,18 @@
       }
 
       // Processo único: 1) convites aos participantes (bloqueio de agenda); 2) e-mail informativo aos leads novos.
+      // Deu certo: nada aparece na tela (o progresso fica no botão). Só erro ou limite diário viram aviso.
       const mensagens = [];
       const hadCalendarEvent = hasCalendarEvent(previous);
       if(payload.estrutura_tecnica.participantes.length || hadCalendarEvent){
         waCampNextBtn.textContent = 'Sincronizando agendas…';
         const result = await syncCampaignCalendar(saved.id, 'sincronizar');
-        mensagens.push(describeCalendarSync(result));
+        if(!result || result.ok === false) mensagens.push(describeCalendarSync(result));
       }
-      const leadsNovos = waLeadsAEnviar().length;
-      if(leadsNovos){
-        const r = await waEnviarLeads(saved.id, leadsNovos);
-        mensagens.push(r);
+      const leadsAlvo = waLeadsAEnviar().map(l => l.email);
+      if(leadsAlvo.length){
+        const r = await waEnviarLeads(saved.id, leadsAlvo);
+        if(r) mensagens.push(r);
       }
       if(mensagens.length) alert(mensagens.join('\n\n'));
 
@@ -8116,16 +8117,40 @@
     }
 
     // Leads: a função envia em lotes (~90 s cada); repete enquanto houver pendentes e o lote anterior avançou.
-    async function waEnviarLeads(campanhaId, total){
-      let r = null, enviadosAgora = 0;
-      for(let lote = 0; lote < 100; lote++){
-        waCampNextBtn.textContent = `Enviando e-mails aos leads… ${enviadosAgora}/${total}`;
-        r = await syncCampaignCalendar(campanhaId, 'leads');
-        const L = (r && r.leads) || {};
-        enviadosAgora += L.enviados_agora || 0;
-        if(!r || r.ok === false || !L.pendentes || !L.enviados_agora) break;
+    // Contagem em tempo real no botão: enquanto o lote roda, lê agenda_sync.leads.enviados (a função grava a
+    // cada e-mail) e conta quantos dos leads deste envio já receberam. Retorna aviso (texto) só em erro ou limite.
+    async function waEnviarLeads(campanhaId, emails){
+      const alvo = new Set(emails), total = alvo.size;
+      let r = null, enviadosAgora = 0, contados = 0, lendo = false;
+      const mostrar = n => {
+        contados = Math.min(total, Math.max(contados, n));
+        waCampNextBtn.textContent = `Enviando e-mails aos leads… ${contados}/${total}`;
+      };
+      const ler = async () => {
+        if(lendo) return;
+        lendo = true;
+        try{
+          const { data } = await supabaseClient.from('campanhas').select('agenda_sync').eq('id', campanhaId).maybeSingle();
+          const enviados = (data && data.agenda_sync && data.agenda_sync.leads && data.agenda_sync.leads.enviados) || [];
+          mostrar(enviados.filter(e => alvo.has(e)).length);
+        }catch(_){ /* a leitura do progresso é só visual */ }
+        finally{ lendo = false; }
+      };
+      mostrar(0);
+      const timer = setInterval(ler, 1500);
+      try{
+        for(let lote = 0; lote < 100; lote++){
+          r = await syncCampaignCalendar(campanhaId, 'leads');
+          const L = (r && r.leads) || {};
+          enviadosAgora += L.enviados_agora || 0;
+          mostrar(enviadosAgora);
+          if(!r || r.ok === false || !L.pendentes || !L.enviados_agora) break;
+        }
+      } finally {
+        clearInterval(timer);
       }
       const L = (r && r.leads) || {};
+      if(r && r.ok !== false && !L.limite_atingido) return null;
       const linha = `E-mail aos leads (Penso): ${enviadosAgora} enviado(s) agora · ${L.enviados ?? '—'} de ${L.total ?? total} já receberam`
         + (L.falhas ? ` · ${L.falhas} recusado(s) pelo servidor` : '')
         + (L.pendentes ? ` · ${L.pendentes} pendente(s)` : '')

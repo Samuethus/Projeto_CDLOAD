@@ -734,7 +734,8 @@ const PROVEDORES: Provedor[] = [outlook, google, penso];
 // "Núcleo de Inteligência - CDL Cuiabá" (LEADS_REMETENTE_NOME), sem rodapé nem cabeçalhos extras, e cada e-mail numa conexão SMTP
 // própria. Limite diário da conta da Penso (PENSO_LIMITE_DIARIO, padrão 2000, com 100 de folga para os convites)
 // somando as últimas 24 h de todas as campanhas; o excedente fica pendente para um envio posterior. Cada chamada
-// envia o que cabe em LEADS_TEMPO_MS; o app chama de novo enquanto houver pendentes. Progresso em agenda_sync.leads
+// envia o que cabe em LEADS_TEMPO_MS; o app chama de novo enquanto houver pendentes. Progresso em agenda_sync.leads,
+// gravado a cada e-mail (o app conta em tempo real)
 // (supabase/schema_campanhas_leads.sql): quem já recebeu (ou foi recusado pelo servidor) não entra de novo.
 const LEADS_TEMPO_MS = 90_000;
 const LEADS_POR_CHAMADA = 400;
@@ -846,6 +847,10 @@ async function enviarLeads(camp: any, deps: LeadsDeps) {
       console.log(`[sincronizar-agenda] lead ${lead.email} aceito pela Penso: ${resposta}`);
       enviados.add(lead.email);
       agora++;
+      // Progresso a cada e-mail (sem o lote, que só entra no fim): o app lê agenda_sync.leads.enviados
+      // durante a chamada e mostra a contagem em tempo real. Falha aqui não interrompe; a gravação final vale.
+      const erroParcial = await deps.gravar(regAtual());
+      if (erroParcial) console.error('[sincronizar-agenda] progresso dos leads:', erroParcial);
     } catch (e) {
       if (!(e instanceof SmtpRecusa)) {
         erroConexao = `Penso (SMTP ${env('PENSO_SMTP_HOST')}): ${(e as Error).message}`;
