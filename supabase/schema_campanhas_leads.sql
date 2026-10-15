@@ -11,9 +11,6 @@
 --    e não depende de "Edição": o envio de listas grandes vai em vários lotes.
 -- 2) cdl_leads_enviados_24h — e-mails a leads enviados nas últimas 24 h, somando
 --    todas as campanhas (limite diário da conta da Penso).
--- 3) leads_descadastro — quem clicou em "Não quero mais receber" no rodapé.
---    Gravada só pela Edge Function `descadastro-leads` (service role, link
---    assinado); quem tem a seção Campanhas pode ler (o envio pula esses e-mails).
 -- ============================================================================
 
 -- ---------- 1) Progresso do envio ----------
@@ -92,25 +89,11 @@ $$;
 revoke all on function public.cdl_leads_enviados_24h() from public, anon;
 grant execute on function public.cdl_leads_enviados_24h() to authenticated;
 
--- ---------- 3) Descadastros ----------
-create table if not exists public.leads_descadastro (
-  email            text primary key,
-  campanha_id      uuid,
-  campanha_nome    text,
-  descadastrado_em timestamptz not null default now()
-);
-comment on table public.leads_descadastro is
-  'Leads que pediram para não receber mais e-mails (rodapé do e-mail informativo das Campanhas). Gravada pela Edge Function descadastro-leads.';
-
-alter table public.leads_descadastro enable row level security;
-drop policy if exists leads_descadastro_select on public.leads_descadastro;
-create policy leads_descadastro_select on public.leads_descadastro
-  for select to authenticated using (public.cdl_secao('campanhas'));
--- Sem política de insert/update/delete: só a função (service role) grava.
-
 -- ---------- Conferência ----------
--- Devem aparecer as duas funções (security definer = true) e a tabela com RLS ligado.
+-- Devem aparecer as duas funções (security definer = true).
 select p.proname, p.prosecdef as security_definer
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where n.nspname = 'public' and p.proname in ('cdl_gravar_leads_envio', 'cdl_leads_enviados_24h');
-select relname, relrowsecurity from pg_class where relname = 'leads_descadastro';
+
+-- Descadastro removido do CDLoad: se a tabela leads_descadastro tiver sido criada por uma versão anterior
+-- deste arquivo, ela não é mais usada. Para apagá-la (opcional): drop table if exists public.leads_descadastro;
