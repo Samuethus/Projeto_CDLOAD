@@ -4189,7 +4189,7 @@
                   </label>
                   <div class="wa-leads-resumo" id="waCampLeadsResumo" hidden></div>
                   <div class="wa-field-hint">Cada lead recebe um e-mail individual com o Nome da campanha como assunto e a Descrição como corpo, enviado pela conta da Penso ao salvar (limite da conta: 2.000 por dia; o excedente fica pendente). Quem já recebeu ou se descadastrou não recebe.
-                    <button type="button" class="wa-hora-limpar" id="waCampLeadsModelo">Baixar modelo (.csv)</button></div>
+                    <button type="button" class="wa-hora-limpar" id="waCampLeadsModelo">Baixar modelo (.csv)</button> · <button type="button" class="wa-hora-limpar" id="waCampLeadsTeste">Testar entrega</button></div>
                 </div>
               </div>
 
@@ -7670,6 +7670,32 @@
       if(!b) return;
       if(b.dataset.acao === 'trocar') waCampLeadsArquivo.click();
       else if(confirm('Remover a lista de leads desta campanha? Quem já recebeu o e-mail não é afetado.')){ campLeads = []; campLeadsArquivo = ''; waRenderLeads(); }
+    });
+    // Teste de entrega: envia 4 versões do e-mail aos leads (da mais simples à completa) para um endereço; a que não
+    // chegar mostra o que está segurando a entrega (função sincronizar-agenda, ação "leads_teste").
+    document.getElementById('waCampLeadsTeste').addEventListener('click', async () => {
+      if(!supabaseReady){ alert('O teste de entrega precisa do Supabase configurado.'); return; }
+      let padrao = '';
+      try { const { data } = await supabaseClient.auth.getUser(); padrao = (data && data.user && data.user.email) || ''; } catch(_){}
+      const email = (prompt('Enviar as 4 versões de teste para qual e-mail? (use um Gmail que deveria receber)', padrao) || '').trim();
+      if(!email) return;
+      const btn = document.getElementById('waCampLeadsTeste');
+      btn.disabled = true; btn.textContent = 'Enviando teste…';
+      try{
+        const { data, error } = await supabaseClient.functions.invoke('sincronizar-agenda', { body: { acao: 'leads_teste', email,
+          assunto: waCampNome.value.trim(), corpo: waCampDescricaoEmail.value.trim(), campanha_id: editingCampaignId || undefined } });
+        if(error){ let d = error.message; try{ const b = await error.context.json(); if(b && b.erro) d = b.erro; }catch(_){} throw new Error(d); }
+        alert(`Teste enviado para ${data.email}. Confira a caixa de entrada e o spam e me diga quais chegaram:
+
+`
+          + data.resultados.map(r => `• ${r.versao}
+   ${r.resposta}`).join('
+'));
+      }catch(err){
+        alert('Não foi possível enviar o teste: ' + err.message + '
+
+Confira se a função sincronizar-agenda foi publicada com a versão mais recente.');
+      }finally{ btn.disabled = false; btn.textContent = 'Testar entrega'; }
     });
     document.getElementById('waCampLeadsModelo').addEventListener('click', () => {
       const csv = '﻿Nome;E-mail\r\nMaria Silva;maria.silva@exemplo.com.br\r\nJoão Souza;joao.souza@exemplo.com\r\n';
