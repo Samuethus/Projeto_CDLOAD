@@ -1032,6 +1032,23 @@
   .wa-time-row{display:flex;gap:12px;}
   .wa-time-row > div{flex:1;}
   .wa-time-row label{font-weight:600 !important;color:var(--wa-text-muted) !important;}
+  /* Campanhas › horário: texto HH:MM + lista a cada 15 min (sem a roleta do input type=time). */
+  .wa-hora-campo{position:relative;}
+  .wa-field input.wa-hora-input{padding-left:36px;font-variant-numeric:tabular-nums;cursor:pointer;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpolyline points='12 7 12 12 15 14'/%3E%3C/svg%3E") no-repeat 12px center / 16px;}
+  .wa-field input.wa-hora-input.invalido{border-color:#EF4444;box-shadow:0 0 0 2px rgba(239,68,68,.15);}
+  .wa-hora-lista{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:#fff;border:1px solid var(--wa-border);
+    border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.14);max-height:224px;overflow-y:auto;padding:4px;overscroll-behavior:contain;}
+  .wa-hora-lista.acima{top:auto;bottom:calc(100% + 4px);}
+  .wa-hora-lista[hidden]{display:none;}
+  .wa-hora-opcao{display:flex;align-items:baseline;justify-content:space-between;gap:8px;width:100%;padding:7px 10px;border:none;border-radius:7px;
+    background:transparent;font-family:inherit;font-size:13px;color:var(--wa-text);text-align:left;cursor:pointer;font-variant-numeric:tabular-nums;}
+  .wa-hora-opcao small{font-size:11.5px;color:var(--wa-text-muted);}
+  .wa-hora-opcao:hover, .wa-hora-opcao.ativa{background:var(--wa-primary-soft);}
+  .wa-hora-opcao.sel{font-weight:700;color:var(--wa-primary);}
+  .wa-hora-limpar{border:none;background:none;padding:0;margin-left:4px;font:inherit;font-size:inherit;color:var(--wa-primary);cursor:pointer;text-decoration:underline;}
+  /* Datas: o calendário abre ao clicar em qualquer ponto do campo (a digitação continua). */
+  #waCampaignModal input[type="date"]{cursor:pointer;}
   .wa-review-participants{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   .wa-review-participants span{font-size:12.5px;}
 
@@ -4052,6 +4069,27 @@
                     <input type="date" id="waCampDataFim">
                   </div>
                 </div>
+                <!-- Horário na agenda: campo de texto com máscara HH:MM + lista de horários a cada 15 min (como no Google
+                     Agenda). Digitar "830", "8:30" ou "8" também vale; o Término mostra a duração em relação ao Início. -->
+                <div class="wa-field">
+                  <label>Horário na agenda <span style="font-weight:400;color:var(--wa-text-muted);">(opcional)</span></label>
+                  <div class="wa-time-row">
+                    <div class="wa-hora-campo">
+                      <label for="waCampHoraInicio">Início</label>
+                      <input type="text" id="waCampHoraInicio" class="wa-hora-input" inputmode="numeric" maxlength="5" placeholder="--:--" autocomplete="off"
+                             role="combobox" aria-expanded="false" aria-controls="waCampHoraInicioLista" aria-autocomplete="list">
+                      <div class="wa-hora-lista" id="waCampHoraInicioLista" role="listbox" hidden></div>
+                    </div>
+                    <div class="wa-hora-campo">
+                      <label for="waCampHoraFim">Término</label>
+                      <input type="text" id="waCampHoraFim" class="wa-hora-input" inputmode="numeric" maxlength="5" placeholder="--:--" autocomplete="off"
+                             role="combobox" aria-expanded="false" aria-controls="waCampHoraFimLista" aria-autocomplete="list">
+                      <div class="wa-hora-lista" id="waCampHoraFimLista" role="listbox" hidden></div>
+                    </div>
+                  </div>
+                  <div class="wa-field-hint">Escolha na lista ou digite (ex.: 0830). Sem horário, a agenda fica bloqueada o dia inteiro durante a vigência; com horário, o bloqueio se repete diariamente nesse intervalo.
+                    <button type="button" class="wa-hora-limpar" id="waCampHoraLimpar" hidden>Remover horário (dia inteiro)</button></div>
+                </div>
               </div>
 
               <!-- ETAPA 2: Público & Mídia -->
@@ -4101,14 +4139,6 @@
                   </div>
                   <div class="wa-participant-chips" id="waCampParticipantChips"></div>
                   <div class="wa-field-hint">Ao salvar, cada participante recebe por e-mail um convite de reunião (funciona com Penso, Outlook, Gmail e outros): basta aceitar para o evento entrar na agenda. Pessoas de fora da organização: digite o e-mail e pressione Enter.</div>
-                </div>
-                <div class="wa-field">
-                  <label>Horário na agenda <span style="font-weight:400;color:var(--wa-text-muted);">(opcional)</span></label>
-                  <div class="wa-time-row">
-                    <div><label for="waCampHoraInicio">Início</label><input type="time" id="waCampHoraInicio"></div>
-                    <div><label for="waCampHoraFim">Término</label><input type="time" id="waCampHoraFim"></div>
-                  </div>
-                  <div class="wa-field-hint">Sem horário, a agenda fica bloqueada o dia inteiro durante a vigência. Com horário, o bloqueio se repete diariamente nesse intervalo.</div>
                 </div>
               </div>
 
@@ -7470,6 +7500,138 @@
     const waCampParticipantChips = document.getElementById('waCampParticipantChips');
     const waCampHoraInicio = document.getElementById('waCampHoraInicio');
     const waCampHoraFim = document.getElementById('waCampHoraFim');
+
+    // ---------------- Horário na agenda (Etapa 1) ----------------
+    // Texto com máscara HH:MM (digitação livre: "8", "830", "0830", "8:30", "8h30") + lista a cada 15 min que abre ao
+    // clicar/focar, já rolada para o horário atual (ou 08:00). Setas ↑/↓ percorrem, Enter escolhe, Esc fecha.
+    // O Término lista só horários depois do Início, com a duração ao lado; escolher o Início com o Término vazio
+    // (ou antes dele) sugere +1 h. O valor final fica em .value no formato HH:MM (o resto do código segue igual).
+    const WA_HORA_PASSO = 15;
+    const waHoraMin = h => { const m = /^(\d{2}):(\d{2})$/.exec(h || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+    const waHoraTxt = min => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+    const waHoraDuracao = min => min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60}` : ''}`;
+    // Interpreta o que foi digitado; devolve 'HH:MM', '' (vazio) ou null (inválido).
+    function waHoraNormalizar(txt){
+      const t = String(txt || '').trim().toLowerCase().replace(/h/g, ':');
+      if(!t) return '';
+      let h, m;
+      const sep = /^(\d{1,2})\s*:\s*(\d{0,2})$/.exec(t);
+      const dig = t.replace(/\D/g, '');
+      if(sep){ h = Number(sep[1]); m = Number(sep[2] || 0); if(sep[2] && sep[2].length === 1) m *= 10; }
+      else if(/^\d{1,4}$/.test(dig) && dig === t){ if(dig.length <= 2){ h = Number(dig); m = 0; } else { h = Number(dig.slice(0, -2)); m = Number(dig.slice(-2)); } }
+      else return null;
+      return h <= 23 && m <= 59 ? waHoraTxt(h * 60 + m) : null;
+    }
+    function waCampoHora(input, lista, ehFim){
+      let ativa = -1, opcoes = [], digitou = false;
+      const montar = () => {
+        const ini = ehFim ? waHoraMin(waCampHoraInicio.value) : null;
+        opcoes = [];
+        for(let min = 0; min < 24 * 60; min += WA_HORA_PASSO){
+          if(ini != null && min <= ini) continue;
+          opcoes.push({ min, txt: waHoraTxt(min), extra: ini != null ? waHoraDuracao(min - ini) : '' });
+        }
+        if(ehFim && ini != null && ini < 23 * 60 + 59) opcoes.push({ min: 23 * 60 + 59, txt: '23:59', extra: waHoraDuracao(23 * 60 + 59 - ini) });
+        const atual = waHoraMin(input.value);
+        lista.innerHTML = opcoes.map((o, i) => `<button type="button" class="wa-hora-opcao${o.min === atual ? ' sel' : ''}" role="option" data-i="${i}" tabindex="-1"><span>${o.txt}</span>${o.extra ? `<small>${o.extra}</small>` : ''}</button>`).join('');
+        // Rola até o horário atual, o mais próximo, ou 08:00 (Término: logo após o Início).
+        const alvo = atual != null ? atual : (ehFim && ini != null ? ini + 60 : 8 * 60);
+        ativa = Math.max(0, opcoes.findIndex(o => o.min >= alvo));
+        if(ativa < 0 || !opcoes.length) ativa = 0;
+        destacar(true);
+      };
+      const destacar = rolar => {
+        lista.querySelectorAll('.wa-hora-opcao').forEach((b, i) => b.classList.toggle('ativa', i === ativa));
+        const b = lista.children[ativa];
+        if(b && rolar) lista.scrollTop = b.offsetTop - lista.clientHeight / 2 + b.offsetHeight / 2;
+        else if(b) b.scrollIntoView({ block: 'nearest' });
+      };
+      const abrir = () => {
+        if(!lista.hidden) return;
+        lista.hidden = false; input.setAttribute('aria-expanded', 'true');
+        // Sem espaço abaixo (fim do modal), abre para cima.
+        const caixa = input.closest('.wa-modal-body') || document.body;
+        lista.classList.toggle('acima', input.getBoundingClientRect().bottom + 232 > Math.min(window.innerHeight, caixa.getBoundingClientRect().bottom));
+        montar();
+      };
+      const fechar = () => { lista.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+      // Início escolhido com o Término vazio ou antes dele: sugere +1 h (até 23:59).
+      const ajustarFim = () => {
+        if(ehFim) return;
+        const ini = waHoraMin(input.value), fim = waHoraMin(waCampHoraFim.value);
+        if(ini != null && (fim == null || fim <= ini)){ waCampHoraFim.value = waHoraTxt(Math.min(ini + 60, 23 * 60 + 59)); waCampHoraFim.classList.remove('invalido'); }
+      };
+      const escolher = valor => {
+        input.value = valor; input.classList.remove('invalido'); digitou = false; fechar();
+        ajustarFim();
+        waHoraAtualizar();
+      };
+      input.addEventListener('focus', abrir);
+      input.addEventListener('click', abrir);
+      input.addEventListener('input', () => {
+        // Máscara: só dígitos e ":"; "0830" → "08:30" ao chegar em 4 dígitos.
+        let v = input.value.replace(/[^\d:hH]/g, '');
+        if(/^\d{4}$/.test(v)) v = v.slice(0, 2) + ':' + v.slice(2);
+        input.value = v; input.classList.remove('invalido'); digitou = true;
+        if(lista.hidden) abrir();
+        const n = waHoraNormalizar(v);
+        if(n){ const i = opcoes.findIndex(o => o.txt >= n); if(i >= 0){ ativa = i; destacar(true); } }
+      });
+      input.addEventListener('keydown', e => {
+        if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+          e.preventDefault();
+          if(lista.hidden){ abrir(); return; }
+          digitou = false;
+          ativa = Math.max(0, Math.min(opcoes.length - 1, ativa + (e.key === 'ArrowDown' ? 1 : -1))); destacar(false);
+        } else if(e.key === 'Enter'){
+          e.preventDefault();
+          // Digitou um horário válido: vale o digitado (mesmo fora dos 15 em 15). Senão, o destacado na lista.
+          const n = waHoraNormalizar(input.value);
+          if(digitou && n !== null) escolher(n);
+          else if(!lista.hidden && opcoes[ativa]) escolher(opcoes[ativa].txt);
+          else if(n !== null) escolher(n);
+          else input.classList.add('invalido');
+        } else if(e.key === 'Escape'){ if(!lista.hidden){ e.preventDefault(); e.stopPropagation(); fechar(); } }
+        else if(e.key === 'Tab') fechar();
+      });
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if(lista.contains(document.activeElement)) return;
+          fechar();
+          const n = waHoraNormalizar(input.value);
+          if(n === null){ input.classList.add('invalido'); return; }
+          input.value = n; digitou = false;
+          ajustarFim();
+          waHoraAtualizar();
+        }, 120);
+      });
+      // mousedown: escolhe antes do blur do campo.
+      lista.addEventListener('mousedown', e => {
+        const b = e.target.closest('.wa-hora-opcao');
+        if(!b) return;
+        e.preventDefault();
+        escolher(opcoes[Number(b.dataset.i)].txt);
+      });
+      return { fechar };
+    }
+    const waCampHoraLimpar = document.getElementById('waCampHoraLimpar');
+    const waHoraCampos = [
+      waCampoHora(waCampHoraInicio, document.getElementById('waCampHoraInicioLista'), false),
+      waCampoHora(waCampHoraFim, document.getElementById('waCampHoraFimLista'), true),
+    ];
+    function waHoraAtualizar(){ waCampHoraLimpar.hidden = !(waCampHoraInicio.value || waCampHoraFim.value); }
+    waCampHoraLimpar.addEventListener('click', () => {
+      waCampHoraInicio.value = ''; waCampHoraFim.value = '';
+      [waCampHoraInicio, waCampHoraFim].forEach(i => i.classList.remove('invalido'));
+      waHoraCampos.forEach(c => c.fechar());
+      waHoraAtualizar();
+    });
+
+    // ---------------- Datas (Etapa 1) ----------------
+    // Clique em qualquer ponto do campo abre o calendário nativo (showPicker); a digitação continua normal.
+    document.querySelectorAll('#waCampaignModal input[type="date"]').forEach(inp => {
+      inp.addEventListener('click', () => { try { if(typeof inp.showPicker === 'function') inp.showPicker(); } catch(_){ /* sem suporte: segue o padrão */ } });
+    });
     const PARTICIPANT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     let participantDirectory = null;
@@ -7640,6 +7802,21 @@
           alert('Preencha todos os campos obrigatórios da Etapa 1.');
           return false;
         }
+        // Horário na agenda (opcional): os dois ou nenhum, no formato HH:MM e com o término depois do início.
+        const hIni = waHoraNormalizar(waCampHoraInicio.value), hFim = waHoraNormalizar(waCampHoraFim.value);
+        if(hIni === null || hFim === null){
+          alert('Horário inválido. Use o formato HH:MM (ex.: 08:30).');
+          return false;
+        }
+        waCampHoraInicio.value = hIni; waCampHoraFim.value = hFim;
+        if(!!hIni !== !!hFim){
+          alert('Informe o horário de início e de término, ou deixe os dois em branco.');
+          return false;
+        }
+        if(hIni && hFim <= hIni){
+          alert('O horário de término deve ser depois do horário de início.');
+          return false;
+        }
       } else if(step === 2){
         if(!waCampPersona.value.trim() || !waCampQtdPessoas.value.trim() || !waCampDescricao.value.trim() || selectedChannels.size === 0){
           alert('Preencha todos os campos e selecione ao menos um canal na Etapa 2.');
@@ -7648,14 +7825,6 @@
       } else if(step === 3){
         if(selectedTeams.size === 0){
           alert('Selecione ao menos um time envolvido na Etapa 3.');
-          return false;
-        }
-        if(!!waCampHoraInicio.value !== !!waCampHoraFim.value){
-          alert('Informe o horário de início e de término, ou deixe os dois em branco.');
-          return false;
-        }
-        if(waCampHoraInicio.value && waCampHoraFim.value <= waCampHoraInicio.value){
-          alert('O horário de término deve ser depois do horário de início.');
           return false;
         }
       }
@@ -7815,6 +7984,8 @@
       closeParticipantDropdown();
       waCampHoraInicio.value = et.horario_inicio || '';
       waCampHoraFim.value = et.horario_fim || '';
+      [waCampHoraInicio, waCampHoraFim].forEach(i => i.classList.remove('invalido'));
+      waHoraAtualizar();
       loadParticipantDirectory();
 
       updateCampWizardView();
