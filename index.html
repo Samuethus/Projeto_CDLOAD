@@ -81,6 +81,9 @@
     gap:12px;
     padding:22px 18px;
     white-space:nowrap;
+    /* Mesma altura do cabeçalho da seção (medida no JS, muda quando a descrição quebra):
+       a linha abaixo da marca encontra a borda inferior do cabeçalho, sem degrau. */
+    height:var(--brand-altura, auto);
   }
   .logo-box{
     flex:0 0 auto;
@@ -6876,11 +6879,14 @@
     menuFlutuante.setAttribute('aria-expanded', aberto ? 'true' : 'false');
   };
   menuFlutuante.addEventListener('click', () => setMenuMobile(true));
-  // Centro vertical do cabeçalho, para o botão flutuante ficar alinhado a ele.
+  // Centro vertical do cabeçalho, para o botão flutuante ficar alinhado a ele; e a altura dele, para a
+  // linha do topo da sidebar (1px, logo abaixo da marca) ficar na mesma altura da borda inferior do cabeçalho.
   const headerEl = document.querySelector('.header');
   const medirCentroHeader = () => {
     const r = headerEl.getBoundingClientRect();
     document.documentElement.style.setProperty('--header-centro', (r.top + r.height / 2) + 'px');
+    // Cabeçalho oculto (altura 0): a marca volta à altura natural.
+    if(r.height > 0) document.documentElement.style.setProperty('--brand-altura', (r.top + r.height - 1) + 'px');
   };
   if(window.ResizeObserver) new ResizeObserver(medirCentroHeader).observe(headerEl);
   window.addEventListener('resize', medirCentroHeader);
