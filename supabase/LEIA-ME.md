@@ -63,25 +63,30 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 - Remover (só Administrador) uma notícia do Google só a oculta, para ela não voltar na coleta seguinte.
 - Conferir as coletas: `select * from clipping_coletas order by iniciado_em desc limit 10;` e o agendamento: `select * from cron.job_run_details order by start_time desc limit 10;`.
 
-## Campanhas › Participantes e agenda (Outlook / Google Calendar)
+## Campanhas › Participantes e agenda (convite por e-mail da Penso / Google Calendar)
 
-Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que cria o evento na agenda de uma **conta organizadora** com todos os participantes como convidados. O Outlook/Google envia o convite e o período fica **bloqueado (Ocupado)** na agenda de cada um.
+Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo nome das pessoas cadastradas e ativas em **Usuários** (e aceita e-mail de fora da organização digitado + Enter) e um **horário opcional**. Ao salvar, a plataforma chama a Edge Function `sincronizar-agenda`, que envia o evento aos participantes a partir de uma **conta organizadora**:
+
+- **Penso (e-mail da CDL, Outlook, Hotmail, Apple…):** um **e-mail de convite de reunião** (iCalendar) sai da conta da Penso. O Outlook mostra **Aceitar / Recusar**; ao aceitar, o evento entra na agenda da pessoa como **Ocupado**.
+- **Gmail:** com o Google configurado, o evento é criado **direto pela API do Google Calendar** (fluxo já existente, sem mudança) e os endereços `@gmail.com` ficam fora do envio da Penso.
 
 - Sem horário: evento de **dia inteiro** do início ao fim da vigência. Com horário: bloqueio **diário** naquele intervalo, do início ao fim da vigência.
-- Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento.
+- Editar a campanha (só Administrador) **atualiza o mesmo evento** (quem entrou recebe convite; quem saiu recebe cancelamento). Remover todos os participantes ou remover a campanha **cancela** o evento — no convite por e-mail, a atualização/cancelamento chega como e-mail e o Outlook ajusta a agenda sozinho.
 - Fuso: America/Cuiaba.
 
 ### Passo 1 — Banco
 SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`).
 
-### Passo 2 — Configure UMA agenda (ou as duas)
-A CDL usa Microsoft 365 (`@cdlcuiaba.onmicrosoft.com`), então o **Outlook** é o caminho principal: o convite do Exchange também chega e entra na agenda de quem usa Gmail/Google. Configure o Google só se a organização tiver Google Workspace — **com os dois ligados, cada participante recebe dois convites**.
+### Passo 2 — Configure a Penso (e, se quiser, o Google)
+O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`), não no Microsoft 365 — por isso o caminho é o **convite por e-mail pela Penso**. O tenant Microsoft `cdlcba.onmicrosoft.com` não tem licença do Exchange, então a opção Outlook/Graph (no fim desta seção) não se aplica hoje.
 
-**Outlook (Microsoft 365)** — precisa de um administrador do Microsoft 365:
-1. Portal do Azure > **Microsoft Entra ID > Registros de aplicativo > Novo registro** (nome: `CDLoad Agenda`, só contas deste diretório).
-2. **Permissões de API > Adicionar > Microsoft Graph > Permissões de aplicativo > `Calendars.ReadWrite`** > **Conceder consentimento de administrador**.
-3. **Certificados e segredos > Novo segredo do cliente** (anote o valor).
-4. Escolha a caixa organizadora (ex.: `agenda@cdlcuiaba.onmicrosoft.com`). Recomendado: restringir o app só a essa caixa com uma *Application Access Policy* do Exchange (`New-ApplicationAccessPolicy -AppId <ID do app> -PolicyScopeGroupId agenda@... -AccessRight RestrictAccess`), senão o app pode escrever em qualquer agenda do tenant.
+**Penso (convite por e-mail)** — só precisa de uma conta de e-mail da Penso para ser a organizadora (ex.: `agenda@cdlcuiaba.com.br`; os convites saem em nome dela e as respostas Aceitar/Recusar chegam nela):
+1. Servidor SMTP: **`suitesmtp.penso.com.br`, porta `465` (SSL)**. As Edge Functions do Supabase **não podem usar as portas 25 e 587**; `smtp.pensomail.com.br` só atende na 587, por isso não serve. Se a conta for de outra plataforma da Penso, confirme com o suporte um servidor SMTP com **SSL na porta 465**.
+2. Usuário = e-mail completo da conta; senha = a da conta (se a Penso exigir, gere uma "senha de aplicativo").
+3. Secrets no Supabase: `PENSO_SMTP_HOST`, `PENSO_SMTP_USUARIO`, `PENSO_SMTP_SENHA` (opcionais: `PENSO_SMTP_PORTA`, padrão 465; `PENSO_REMETENTE`, padrão = usuário; `PENSO_REMETENTE_NOME`, padrão "Agenda CDL").
+4. Teste: crie uma campanha com você como participante — deve chegar o e-mail "Convite: …" com Aceitar/Recusar.
+
+**Atenção com o Google ligado junto:** a API do Google envia o convite a **todos** os participantes da lista (é o fluxo atual, mantido sem mudança). Quem é da Penso recebe então **dois convites** do mesmo evento (o do Gmail organizador e o da Penso). Se isso incomodar, dá para o Google convidar só os endereços Gmail — exige mudar o fluxo do Google.
 
 **Google Calendar (Gmail pessoal, @gmail.com)** — OAuth com refresh token:
 1. Google Cloud Console > projeto > **APIs e serviços > Biblioteca** > ative a **Google Calendar API**.
@@ -95,14 +100,22 @@ A CDL usa Microsoft 365 (`@cdlcuiaba.onmicrosoft.com`), então o **Outlook** é 
 2. Admin do Workspace > **Segurança > Controles de API > Delegação em todo o domínio** > adicione o *Client ID* da conta de serviço com o escopo `https://www.googleapis.com/auth/calendar.events`.
 3. Escolha a conta organizadora do Workspace (ex.: `agenda@suaempresa.com.br`).
 
+**Outlook (Microsoft 365 / Exchange Online)** — só para caixas hospedadas no Exchange Online (não é o caso da CDL hoje):
+1. Portal do Azure > **Microsoft Entra ID > Registros de aplicativo > Novo registro** (nome: `CDLoad Agenda`, só contas deste diretório).
+2. **Permissões de API > Adicionar > Microsoft Graph > Permissões de aplicativo > `Calendars.ReadWrite`** > **Conceder consentimento de administrador**.
+3. **Certificados e segredos > Novo segredo do cliente** (anote o valor).
+4. Escolha a caixa organizadora no Exchange Online. Recomendado: restringir o app só a essa caixa com uma *Application Access Policy* do Exchange (`New-ApplicationAccessPolicy -AppId <ID do app> -PolicyScopeGroupId agenda@... -AccessRight RestrictAccess`), senão o app pode escrever em qualquer agenda do tenant.
+
 ### Passo 3 — Publicar a função (Supabase CLI)
 ```bash
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
-# Outlook
-npx supabase secrets set MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... MS_ORGANIZADOR_EMAIL=agenda@cdlcuiaba.onmicrosoft.com
-# Google (opcional)
-npx supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON="$(cat chave-servico.json)" GOOGLE_ORGANIZADOR_EMAIL=agenda@suaempresa.com.br
+# Penso (convite por e-mail) — a senha vai direto para o Supabase, nunca para o GitHub
+npx supabase secrets set PENSO_SMTP_HOST=suitesmtp.penso.com.br PENSO_SMTP_USUARIO=agenda@cdlcuiaba.com.br PENSO_SMTP_SENHA='...'
+# Google (já existente; opcional)
+npx supabase secrets set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... GOOGLE_REFRESH_TOKEN=...
+# Outlook / Exchange Online (só se um dia houver caixa no Exchange)
+npx supabase secrets set MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... MS_ORGANIZADOR_EMAIL=...
 # Opcional: aceitar chamadas só do site publicado
 npx supabase secrets set APP_ORIGIN=https://SEU-USUARIO.github.io
 npx supabase functions deploy sincronizar-agenda

@@ -7746,12 +7746,12 @@
       waCloseCampaignModal();
     }
 
-    // ---------------- Agenda (Outlook / Google Calendar) via Edge Function ----------------
-    const CALENDAR_PROVIDER_LABEL = { outlook: 'Outlook', google: 'Google Calendar' };
+    // ---------------- Agenda (convite por e-mail da Penso / Google Calendar / Outlook) via Edge Function ----------------
+    const CALENDAR_PROVIDER_LABEL = { penso: 'Convite por e-mail (Penso)', google: 'Google Calendar', outlook: 'Outlook (Microsoft 365)' };
 
     function hasCalendarEvent(camp){
       const sync = camp && camp.agenda_sync;
-      return !!(sync && ((sync.outlook && sync.outlook.event_id) || (sync.google && sync.google.event_id)));
+      return !!(sync && ['penso', 'google', 'outlook'].some(k => sync[k] && sync[k].event_id));
     }
 
     async function syncCampaignCalendar(campanhaId, acao){
@@ -7769,7 +7769,10 @@
     }
 
     function describeCalendarSync(result){
-      const lines = Object.entries((result && result.provedores) || {}).map(([k, v]) => `• ${CALENDAR_PROVIDER_LABEL[k] || k}: ${v}`);
+      // Provedor sem secrets ("não configurado") só aparece se nenhum outro tiver funcionado.
+      const todos = Object.entries((result && result.provedores) || {});
+      const ativos = todos.filter(([, v]) => v !== 'não configurado');
+      const lines = (ativos.length ? ativos : todos).map(([k, v]) => `• ${CALENDAR_PROVIDER_LABEL[k] || k}: ${v}`);
       if(result && result.ok !== false){
         return 'Campanha salva.\n\nAgenda dos participantes:\n' + (lines.join('\n') || '• nada a sincronizar');
       }

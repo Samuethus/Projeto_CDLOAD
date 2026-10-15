@@ -6,9 +6,15 @@
 // envia o convite e o horário fica bloqueado na agenda de cada pessoa.
 //
 // Provedores (cada um só roda se os secrets dele estiverem definidos):
+//   Convite por e-mail (Penso, SMTP): PENSO_SMTP_HOST, PENSO_SMTP_USUARIO, PENSO_SMTP_SENHA,
+//                                     [PENSO_SMTP_PORTA=465], [PENSO_REMETENTE], [PENSO_REMETENTE_NOME]
 //   Outlook (Microsoft 365, Graph):  MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_ORGANIZADOR_EMAIL
+//                                     (só com caixa no Exchange Online — não é o caso da CDL, e-mail na Penso)
 //   Google Calendar (Gmail pessoal): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, [GOOGLE_CALENDAR_ID]
 //   Google Calendar (Workspace):     GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_ORGANIZADOR_EMAIL, [GOOGLE_CALENDAR_ID]
+// O convite da Penso é um e-mail de reunião padrão (iCalendar): Outlook, Gmail, Apple e afins mostram
+// Aceitar/Recusar e o evento entra na agenda da pessoa. Com o Google configurado, os endereços Gmail
+// ficam só com o Google (sincronização direta pela API) e a Penso convida os demais.
 // Passo a passo em supabase/LEIA-ME.md.
 //
 // Segurança: a função usa o login de quem chamou (nada de service_role).
@@ -43,12 +49,16 @@ type Evento = {
   horaFim: string | null;
   formato: Formato;
 };
+// deno-lint-ignore no-explicit-any
+type Registro = Record<string, any>;   // o que ficou gravado em campanhas.agenda_sync[chave]
 type Provedor = {
-  chave: 'outlook' | 'google';
+  chave: 'outlook' | 'google' | 'penso';
   configurado: () => boolean;
   criar: (ev: Evento) => Promise<string>;
-  atualizar: (id: string, ev: Evento) => Promise<boolean>;
-  cancelar: (id: string) => Promise<void>;
+  atualizar: (id: string, ev: Evento, anterior?: Registro) => Promise<boolean>;
+  cancelar: (id: string, anterior?: Registro) => Promise<void>;
+  // Dados extras guardados junto do event_id (a Penso guarda quem foi convidado, para cancelar depois).
+  registro?: (ev: Evento) => Registro;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -346,7 +356,252 @@ const google: Provedor = {
   },
 };
 
-const PROVEDORES: Provedor[] = [outlook, google];
+// ---------------- Convite por e-mail (SMTP da Penso, iCalendar / iMIP) ----------------
+// O e-mail sai da conta da Penso com o convite no padrão iCalendar (RFC 5545/6047): o Outlook, o Gmail e
+// afins mostram Aceitar/Recusar e, ao aceitar, o evento entra na agenda da pessoa. Editar a campanha manda a
+// atualização (mesmo UID, SEQUENCE maior) e quem saiu da lista recebe o cancelamento.
+// Porta 465 (SSL direto): o Supabase não deixa as Edge Functions abrirem as portas 25 e 587.
+// Gmail: com o Google configurado, esses endereços já recebem pela API do Google e ficam fora deste envio.
+
+const pensoRemetente = () => env('PENSO_REMETENTE') || env('PENSO_SMTP_USUARIO');
+const pensoNome = () => env('PENSO_REMETENTE_NOME') || 'Agenda CDL';
+const ehGmail = (email: string) => /@(gmail|googlemail)\.com$/i.test(email);
+
+// Participantes que recebem o convite pela Penso (sem os Gmail quando o Google já cuida deles).
+const pensoDestinatarios = (ev: Evento) =>
+  ev.participantes.filter((p) => !(google.configurado() && ehGmail(p.email)));
+
+function pensoStatus(ev: Evento, atualizado: boolean): string {
+  const n = pensoDestinatarios(ev).length, gmail = ev.participantes.length - n;
+  const base = n ? `${atualizado ? 'atualização enviada' : 'convite enviado'} por e-mail para ${n} participante(s)` : 'nenhum convite por e-mail';
+  return gmail ? `${base} · ${gmail} Gmail sincronizado(s) pelo Google Calendar` : base;
+}
+
+// SEQUENCE do iCalendar precisa crescer a cada versão do mesmo evento: segundos desde 2026-01-01.
+const sequencia = () => Math.max(1, Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 1000));
+
+const icsData = (d: string) => d.replace(/-/g, '');
+// Cuiabá = UTC−4 o ano todo (sem horário de verão desde 2019): hora local → UTC.
+function icsUtc(data: string, hora: string): string {
+  const [a, m, d] = data.split('-').map(Number), [h, mi] = hora.split(':').map(Number);
+  return new Date(Date.UTC(a, m - 1, d, h + 4, mi)).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+const icsAgora = () => new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const icsTexto = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsCn = (s: string) => s.replace(/["\r\n;:,]/g, ' ').trim();
+
+// Linhas de até 75 bytes (RFC 5545 §3.1), sem partir um caractere UTF-8 ao meio.
+function icsDobrar(linha: string): string {
+  const enc = new TextEncoder();
+  const partes: string[] = [];
+  let atual = '', bytes = 0, limite = 75;
+  for (const ch of linha) {
+    const n = enc.encode(ch).length;
+    if (bytes + n > limite) { partes.push(atual); atual = ''; bytes = 0; limite = 74; }
+    atual += ch; bytes += n;
+  }
+  partes.push(atual);
+  return partes.join('\r\n ');
+}
+
+const textoPuro = (html: string) =>
+  html.replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim();
+
+// Dados do evento guardados no agenda_sync para conseguir cancelar mais tarde (quando a campanha some).
+type EventoResumo = Pick<Evento, 'titulo' | 'local' | 'dataInicio' | 'dataFim' | 'horaInicio' | 'horaFim' | 'formato'> & { descricaoHtml?: string };
+
+function montarIcs(metodo: 'REQUEST' | 'CANCEL', uid: string, ev: EventoResumo, convidados: Participante[]): string {
+  const org = pensoRemetente();
+  const linhas = [
+    'BEGIN:VCALENDAR',
+    'PRODID:-//CDL Cuiaba//CDLoad//PT-BR',
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    `METHOD:${metodo}`,
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `SEQUENCE:${sequencia()}`,
+    `DTSTAMP:${icsAgora()}`,
+  ];
+  if (ev.formato === 'dia_inteiro') {
+    linhas.push(`DTSTART;VALUE=DATE:${icsData(ev.dataInicio)}`, `DTEND;VALUE=DATE:${icsData(addDias(ev.dataFim, 1))}`,
+      'X-MICROSOFT-CDO-ALLDAYEVENT:TRUE');
+  } else {
+    linhas.push(`DTSTART:${icsUtc(ev.dataInicio, ev.horaInicio!)}`, `DTEND:${icsUtc(ev.dataInicio, ev.horaFim!)}`);
+    if (ev.formato === 'horario_diario') linhas.push(`RRULE:FREQ=DAILY;UNTIL=${icsData(addDias(ev.dataFim, 1))}T035959Z`);
+  }
+  linhas.push(`SUMMARY:${icsTexto(ev.titulo)}`);
+  if (ev.local) linhas.push(`LOCATION:${icsTexto(ev.local)}`);
+  if (ev.descricaoHtml) {
+    linhas.push(`DESCRIPTION:${icsTexto(textoPuro(ev.descricaoHtml))}`,
+      `X-ALT-DESC;FMTTYPE=text/html:${icsTexto(`<html><body>${ev.descricaoHtml}</body></html>`)}`);
+  }
+  linhas.push(`ORGANIZER;CN="${icsCn(pensoNome())}":mailto:${org}`);
+  for (const p of convidados) {
+    linhas.push(`ATTENDEE;CN="${icsCn(p.nome || p.email)}";CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${p.email}`);
+  }
+  if (metodo === 'CANCEL') {
+    linhas.push('STATUS:CANCELLED', 'TRANSP:TRANSPARENT');
+  } else {
+    linhas.push('STATUS:CONFIRMED', 'TRANSP:OPAQUE', 'X-MICROSOFT-CDO-BUSYSTATUS:BUSY',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsTexto(ev.titulo)}`, 'TRIGGER:-PT60M', 'END:VALARM');
+  }
+  linhas.push('END:VEVENT', 'END:VCALENDAR');
+  return linhas.map(icsDobrar).join('\r\n') + '\r\n';
+}
+
+// Base64 de texto UTF-8, em linhas de 76 caracteres (MIME).
+function b64Mime(texto: string): string {
+  const bytes = new TextEncoder().encode(texto);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return (btoa(bin).match(/.{1,76}/g) ?? []).join('\r\n');
+}
+const cabecalhoUtf8 = (s: string) => `=?UTF-8?B?${b64Mime(s).replace(/\r\n/g, '')}?=`;
+
+function montarEmail(metodo: 'REQUEST' | 'CANCEL', assunto: string, ev: EventoResumo, ics: string, para: Participante[]): string {
+  const dominio = pensoRemetente().split('@')[1] || 'cdload';
+  const fronteira = (n: string) => `cdload-${n}-${crypto.randomUUID()}`;
+  const misto = fronteira('misto'), alt = fronteira('alt');
+  const periodo = ev.dataInicio === ev.dataFim ? dataBR(ev.dataInicio) : `${dataBR(ev.dataInicio)} a ${dataBR(ev.dataFim)}`;
+  const horario = ev.formato === 'dia_inteiro' ? 'dia inteiro' : `${ev.horaInicio} às ${ev.horaFim}${ev.formato === 'horario_diario' ? ' (todos os dias)' : ''}`;
+  const intro = metodo === 'CANCEL' ? 'Este evento foi cancelado na plataforma CDLoad.' : 'Você foi convidado(a) para este evento. Aceite o convite para adicioná-lo à sua agenda.';
+  const html = `<p>${escHtml(intro)}</p><p><b>${escHtml(ev.titulo)}</b><br>${escHtml(periodo)} · ${escHtml(horario)}${ev.local ? `<br>${escHtml(ev.local)}` : ''}</p>${ev.descricaoHtml ?? ''}`;
+  const texto = `${intro}\n\n${ev.titulo}\n${periodo} · ${horario}${ev.local ? `\n${ev.local}` : ''}\n\n${textoPuro(ev.descricaoHtml ?? '')}`;
+  const nomeEmail = (p: Participante) => (p.nome ? `${cabecalhoUtf8(p.nome)} <${p.email}>` : `<${p.email}>`);
+  return [
+    `From: ${cabecalhoUtf8(pensoNome())} <${pensoRemetente()}>`,
+    `To: ${para.map(nomeEmail).join(', ')}`,
+    `Subject: ${cabecalhoUtf8(assunto)}`,
+    `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
+    `Message-ID: <${crypto.randomUUID()}@${dominio}>`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${misto}"`,
+    '',
+    `--${misto}`,
+    `Content-Type: multipart/alternative; boundary="${alt}"`,
+    '',
+    `--${alt}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(texto),
+    `--${alt}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(html),
+    `--${alt}`,
+    `Content-Type: text/calendar; charset=UTF-8; method=${metodo}`,
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(ics),
+    `--${alt}--`,
+    `--${misto}`,
+    `Content-Type: application/ics; name="${metodo === 'CANCEL' ? 'cancelamento' : 'convite'}.ics"`,
+    `Content-Disposition: attachment; filename="${metodo === 'CANCEL' ? 'cancelamento' : 'convite'}.ics"`,
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64Mime(ics),
+    `--${misto}--`,
+    '',
+  ].join('\r\n');
+}
+
+// Cliente SMTP mínimo: SSL direto (porta 465), AUTH PLAIN, um envio por conexão.
+async function smtpEnviar(para: string[], mensagem: string): Promise<void> {
+  const host = env('PENSO_SMTP_HOST'), porta = Number(env('PENSO_SMTP_PORTA') || 465);
+  if (porta === 25 || porta === 587) throw new Error(`a porta ${porta} é bloqueada pelo Supabase; use a 465 (SSL).`);
+  const conn = await Deno.connectTls({ hostname: host, port: porta });
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const prazo = setTimeout(() => { try { conn.close(); } catch { /* já fechada */ } }, 25_000);
+  let buf = '';
+  const escrever = async (s: string) => {
+    const dados = enc.encode(s);
+    for (let i = 0; i < dados.length;) i += await conn.write(dados.subarray(i));
+  };
+  const resposta = async (): Promise<{ codigo: number; texto: string }> => {
+    const linhas: string[] = [];
+    for (;;) {
+      let i: number;
+      while ((i = buf.indexOf('\r\n')) < 0) {
+        const pedaco = new Uint8Array(4096);
+        const n = await conn.read(pedaco);
+        if (n === null) throw new Error('o servidor encerrou a conexão.');
+        buf += dec.decode(pedaco.subarray(0, n), { stream: true });
+      }
+      const linha = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      linhas.push(linha);
+      if (linha.length < 4 || linha[3] === ' ') return { codigo: Number(linha.slice(0, 3)), texto: linhas.join(' | ') };
+    }
+  };
+  // `rotulo` evita que a senha (AUTH) apareça em mensagens de erro e logs.
+  const comando = async (linha: string | null, aceitos: number[], rotulo: string) => {
+    if (linha !== null) await escrever(linha + '\r\n');
+    const r = await resposta();
+    if (!aceitos.includes(r.codigo)) throw new Error(`${rotulo}: ${r.texto}`);
+  };
+  try {
+    await comando(null, [220], 'conexão');
+    await comando('EHLO cdload', [250], 'EHLO');
+    const credencial = b64Mime(`\u0000${env('PENSO_SMTP_USUARIO')}\u0000${env('PENSO_SMTP_SENHA')}`).replace(/\r\n/g, '');
+    await comando(`AUTH PLAIN ${credencial}`, [235], 'login (usuário/senha da Penso)');
+    await comando(`MAIL FROM:<${pensoRemetente()}>`, [250], 'remetente');
+    for (const email of para) await comando(`RCPT TO:<${email}>`, [250, 251], `destinatário ${email}`);
+    await comando('DATA', [354], 'DATA');
+    // Ponto no início da linha é duplicado (RFC 5321 §4.5.2).
+    await escrever(mensagem.replace(/\r\n\./g, '\r\n..') + '\r\n.\r\n');
+    await comando(null, [250], 'envio');
+    await escrever('QUIT\r\n');
+  } finally {
+    clearTimeout(prazo);
+    try { conn.close(); } catch { /* já fechada */ }
+  }
+}
+
+async function pensoEnviar(metodo: 'REQUEST' | 'CANCEL', assunto: string, uid: string, ev: EventoResumo, para: Participante[]) {
+  if (!para.length) return;
+  const ics = montarIcs(metodo, uid, ev, para);
+  try {
+    await smtpEnviar(para.map((p) => p.email), montarEmail(metodo, assunto, ev, ics, para));
+  } catch (e) {
+    throw new Error(`Penso (SMTP ${env('PENSO_SMTP_HOST')}): ${(e as Error).message}`);
+  }
+}
+
+const resumo = (ev: Evento): EventoResumo => ({
+  titulo: ev.titulo, local: ev.local, dataInicio: ev.dataInicio, dataFim: ev.dataFim,
+  horaInicio: ev.horaInicio, horaFim: ev.horaFim, formato: ev.formato,
+});
+// Convidados e dados do evento na última versão enviada (gravados em agenda_sync.penso).
+const anteriores = (r?: Registro): Participante[] => (Array.isArray(r?.convidados) ? r!.convidados : []);
+
+const penso: Provedor = {
+  chave: 'penso',
+  configurado: () => !!(env('PENSO_SMTP_HOST') && env('PENSO_SMTP_USUARIO') && env('PENSO_SMTP_SENHA')),
+  registro: (ev) => ({ convidados: pensoDestinatarios(ev), evento: resumo(ev) }),
+  async criar(ev) {
+    const uid = `cdload-${crypto.randomUUID()}@${pensoRemetente().split('@')[1] || 'cdload'}`;
+    await pensoEnviar('REQUEST', `Convite: ${ev.titulo}`, uid, ev, pensoDestinatarios(ev));
+    return uid;
+  },
+  async atualizar(uid, ev, anterior) {
+    const agora = pensoDestinatarios(ev), emails = new Set(agora.map((p) => p.email));
+    const sairam = anteriores(anterior).filter((p) => !emails.has(p.email));
+    await pensoEnviar('REQUEST', `Atualizado: ${ev.titulo}`, uid, ev, agora);
+    await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, sairam);
+    return true;
+  },
+  async cancelar(uid, anterior) {
+    const ev = anterior?.evento as EventoResumo | undefined;
+    if (!ev) return;   // sem os dados do envio anterior não há como montar o cancelamento
+    await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, anteriores(anterior));
+  },
+};
+
+const PROVEDORES: Provedor[] = [outlook, google, penso];
 
 // ---------------- Handler ----------------
 
@@ -417,7 +672,7 @@ Deno.serve(async (req) => {
     try {
       if (cancelar) {
         if (atual?.event_id) {
-          await p.cancelar(atual.event_id);
+          await p.cancelar(atual.event_id, atual);
           provedores[p.chave] = 'evento cancelado nas agendas';
         }
         delete sync[p.chave];
@@ -427,17 +682,17 @@ Deno.serve(async (req) => {
       let id: string | null = null;
       let status = `convite enviado para ${ev.participantes.length} participante(s)`;
       if (atual?.event_id && atual.formato === ev.formato) {
-        if (await p.atualizar(atual.event_id, ev)) {
+        if (await p.atualizar(atual.event_id, ev, atual)) {
           id = atual.event_id;
           status = `evento atualizado para ${ev.participantes.length} participante(s)`;
         }
       } else if (atual?.event_id) {
         // Mudou de "dia inteiro" para "com horário" (ou vice-versa): recria.
-        await p.cancelar(atual.event_id);
+        await p.cancelar(atual.event_id, atual);
       }
       if (!id) id = await p.criar(ev);
-      sync[p.chave] = { event_id: id, formato: ev.formato, sincronizado_em: new Date().toISOString() };
-      provedores[p.chave] = status;
+      sync[p.chave] = { ...(p.registro?.(ev) ?? {}), event_id: id, formato: ev.formato, sincronizado_em: new Date().toISOString() };
+      provedores[p.chave] = p.chave === 'penso' ? pensoStatus(ev, !!atual?.event_id && id === atual.event_id) : status;
     } catch (e) {
       houveErro = true;
       provedores[p.chave] = 'erro: ' + (e as Error).message;
@@ -446,7 +701,7 @@ Deno.serve(async (req) => {
   }
 
   if (!PROVEDORES.some((p) => p.configurado()) && !cancelar) {
-    return json({ ok: false, erro: 'Nenhuma agenda configurada no Supabase (secrets do Outlook ou do Google).', provedores }, 503);
+    return json({ ok: false, erro: 'Nenhuma agenda configurada no Supabase (secrets da Penso, do Outlook ou do Google).', provedores }, 503);
   }
 
   // UPDATE direto em `campanhas` é só do Administrador (RLS); a função do banco
