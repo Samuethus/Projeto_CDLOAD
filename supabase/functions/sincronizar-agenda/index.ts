@@ -19,9 +19,9 @@
 // dobro); eventos antigos do Google são cancelados na próxima sincronização da campanha.
 //
 // Ação "leads" (Campanhas › Etapa 3 › Leads): e-mail informativo individual para cada lead do CSV importado
-// (assunto = Nome da campanha, corpo = Descrição), pela mesma conta da Penso. Em lotes (cada chamada envia o que
-// couber em ~90 s); o app chama de novo até acabar. Quem já recebeu fica em agenda_sync.leads.enviados e não
-// recebe de novo (requer supabase/schema_campanhas_leads.sql).
+// (assunto = Nome da campanha, corpo = Descrição), pela mesma conta da Penso, com rodapé de descadastro.
+// Em lotes (~90 s cada; o app chama de novo até acabar), respeitando o limite diário da conta. Quem já
+// recebeu ou se descadastrou não recebe (requer supabase/schema_campanhas_leads.sql e a função descadastro-leads).
 // Passo a passo em supabase/LEIA-ME.md.
 //
 // Segurança: a função usa o login de quem chamou (nada de service_role).
@@ -722,13 +722,21 @@ const penso: Provedor = {
 const PROVEDORES: Provedor[] = [outlook, google, penso];
 
 // ---------------- Leads: e-mail informativo (Campanhas › Etapa 3) ----------------
-// Um e-mail individual por lead (ninguém vê o endereço dos outros): assunto = Nome da campanha, corpo = Descrição.
+// Um e-mail individual por lead (ninguém vê o endereço dos outros): assunto = Nome da campanha, corpo = Descrição
+// ("{Nome}" no texto vira o nome do lead). Remetente "Núcleo de Inteligência - CDL Cuiabá" (PENSO_LEADS_REMETENTE_NOME).
+// Rodapé com "Não quero mais receber" (página descadastro.html do site + função descadastro-leads) e cabeçalhos
+// List-Unsubscribe (botão "Cancelar inscrição" do Gmail/Outlook). Quem se descadastrou (tabela leads_descadastro)
+// não recebe. Limite diário da conta da Penso (PENSO_LIMITE_DIARIO, padrão 2000, com 100 de folga para os
+// convites) somando as últimas 24 h de todas as campanhas; o que passar fica pendente para um envio posterior.
 // Uma sessão SMTP por chamada, até LEADS_TEMPO_MS ou LEADS_POR_CHAMADA; o app chama de novo enquanto houver
-// pendentes. Progresso em agenda_sync.leads = { enviados: [e-mails], falhas: [{email, erro}], total, atualizado_em }:
-// quem já recebeu (ou foi recusado pelo servidor) não entra de novo — editar a campanha e incluir leads novos
-// envia só para os novos.
+// pendentes. Progresso em agenda_sync.leads (supabase/schema_campanhas_leads.sql): quem já recebeu (ou foi
+// recusado pelo servidor) não entra de novo — editar a campanha e incluir leads novos envia só para os novos.
 const LEADS_TEMPO_MS = 90_000;
 const LEADS_POR_CHAMADA = 400;
+const LEADS_FOLGA_CONVITES = 100;
+const leadsLimiteDiario = () => Number(env('PENSO_LIMITE_DIARIO')) || 2000;
+const leadsRemetenteNome = () => env('PENSO_LEADS_REMETENTE_NOME') || 'Núcleo de Inteligência - CDL Cuiabá';
+const siteUrl = () => (env('SITE_URL') || 'https://samuethus.github.io/Projeto_CDLOAD/').replace(/\/?$/, '/');
 
 type Lead = { nome: string; email: string };
 // deno-lint-ignore no-explicit-any
@@ -743,20 +751,48 @@ function leadsDaCampanha(et: any): Lead[] {
   return out;
 }
 
+// Link de descadastro assinado (HMAC do e-mail): sem a assinatura certa a função descadastro-leads recusa,
+// então ninguém descadastra o e-mail de outra pessoa. Mesma chave na função descadastro-leads.
+async function assinaturaDescadastro(email: string): Promise<string> {
+  const chave = env('LEADS_DESCADASTRO_CHAVE') || env('SUPABASE_SERVICE_ROLE_KEY');
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(chave), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(email.toLowerCase())));
+  return b64url(sig).slice(0, 32);
+}
+async function linksDescadastro(email: string, campanhaId: string) {
+  const q = `e=${encodeURIComponent(b64url(email))}&t=${await assinaturaDescadastro(email)}&c=${encodeURIComponent(campanhaId)}`;
+  return {
+    pagina: `${siteUrl()}descadastro.html?${q}`,
+    umClique: `${env('SUPABASE_URL').replace(/\/$/, '')}/functions/v1/descadastro-leads?${q}`,
+  };
+}
+
+// "{Nome}" → nome do lead (sem nome: some, junto com o espaço antes da pontuação: "Olá, {Nome}!" → "Olá!").
+const personalizar = (texto: string, lead: Lead) =>
+  texto.replace(/[ \t]*,?[ \t]*\{\s*nome\s*\}/gi, (m) => (lead.nome ? m.replace(/\{\s*nome\s*\}/i, lead.nome) : ''));
+
 // Texto digitado → HTML: parágrafos por linha em branco, <br> por quebra simples.
 const textoParaHtml = (t: string) =>
   t.trim().split(/\r?\n\s*\r?\n/).map((par) => `<p>${escHtml(par).replace(/\r?\n/g, '<br>')}</p>`).join('');
 
-function montarEmailLead(assunto: string, corpo: string, lead: Lead): string {
+async function montarEmailLead(assunto: string, corpo: string, lead: Lead, campanhaId: string): Promise<string> {
   const dominio = pensoRemetente().split('@')[1] || 'cdload';
   const alt = `cdload-lead-${crypto.randomUUID()}`;
   const para = lead.nome ? `${cabecalhoUtf8(lead.nome)} <${lead.email}>` : `<${lead.email}>`;
+  const texto = personalizar(corpo, lead).trim();
+  const links = await linksDescadastro(lead.email, campanhaId);
+  const rodapeTxt = `\n\n--\nNão quer mais receber estes e-mails? Descadastre-se: ${links.pagina}`;
+  const rodapeHtml = `<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0 12px"><p style="font-size:12px;color:#6b7280">` +
+    `Não quer mais receber estes e-mails? <a href="${escHtml(links.pagina)}" style="color:#6b7280">Não quero mais receber</a>.</p>`;
   return [
-    `From: ${cabecalhoUtf8(pensoNome())} <${pensoRemetente()}>`,
+    `From: ${cabecalhoUtf8(leadsRemetenteNome())} <${pensoRemetente()}>`,
     `To: ${para}`,
     `Subject: ${cabecalhoUtf8(assunto)}`,
     `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: <${crypto.randomUUID()}@${dominio}>`,
+    // RFC 2369/8058: botão "Cancelar inscrição" do cliente de e-mail (POST de um clique na função descadastro-leads).
+    `List-Unsubscribe: <${links.umClique}>, <mailto:${pensoRemetente()}?subject=Descadastrar>`,
+    'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${alt}"`,
     '',
@@ -764,19 +800,25 @@ function montarEmailLead(assunto: string, corpo: string, lead: Lead): string {
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    b64Mime(corpo.trim()),
+    b64Mime(texto + rodapeTxt),
     `--${alt}`,
     'Content-Type: text/html; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    b64Mime(`<html><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1f2937">${textoParaHtml(corpo)}</body></html>`),
+    b64Mime(`<html><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1f2937">${textoParaHtml(texto)}${rodapeHtml}</body></html>`),
     `--${alt}--`,
     '',
   ].join('\r\n');
 }
 
+type LeadsDeps = {
+  gravar: (reg: Registro) => Promise<string | null>;         // erro (texto) ou null
+  enviados24h: () => Promise<number | string>;               // total ou erro (texto)
+  descadastrados: () => Promise<Set<string> | string>;       // e-mails ou erro (texto)
+};
+
 // deno-lint-ignore no-explicit-any
-async function enviarLeads(camp: any, gravar: (reg: Registro) => Promise<string | null>) {
+async function enviarLeads(camp: any, deps: LeadsDeps) {
   const et = camp.estrutura_tecnica ?? {}, pm = camp.publico_e_midia ?? {};
   const leads = leadsDaCampanha(et);
   const corpo = String(et.descricao_email || pm.descricao || '').trim();
@@ -785,35 +827,52 @@ async function enviarLeads(camp: any, gravar: (reg: Registro) => Promise<string 
   const enviados = new Set<string>(Array.isArray(anterior.enviados) ? anterior.enviados : []);
   const falhas: { email: string; erro: string }[] = Array.isArray(anterior.falhas) ? anterior.falhas : [];
   const jaFalhou = new Set(falhas.map((f) => f.email));
-  const pendentes = leads.filter((l) => !enviados.has(l.email) && !jaFalhou.has(l.email));
+  let fora = new Set<string>();   // descadastrados
+  const aEnviar = () => leads.filter((l) => !enviados.has(l.email) && !jaFalhou.has(l.email) && !fora.has(l.email));
   const resumoLeads = (extra: Registro = {}) => ({
-    total: leads.length, enviados: leads.filter((l) => enviados.has(l.email)).length,
-    falhas: falhas.length, pendentes: leads.filter((l) => !enviados.has(l.email) && !jaFalhou.has(l.email)).length, ...extra,
+    total: leads.length, enviados: leads.filter((l) => enviados.has(l.email)).length, falhas: falhas.length,
+    descadastrados: leads.filter((l) => fora.has(l.email) && !enviados.has(l.email)).length, pendentes: aEnviar().length, ...extra,
   });
+  const msgSql = (erro: string) => (/cdl_|leads_descadastro|function|função|relation|does not exist/i.test(erro) ? 'rode supabase/schema_campanhas_leads.sql no Supabase.' : erro);
 
   if (!leads.length) return { ok: true, leads: resumoLeads({ enviados_agora: 0 }) };
   if (!corpo) return { ok: false, erro: 'Preencha a Descrição da Etapa 3: ela é o corpo do e-mail enviado aos leads.' };
   if (!assunto) return { ok: false, erro: 'A campanha não tem nome (assunto do e-mail).' };
   if (!penso.configurado()) return { ok: false, erro: 'O envio aos leads usa a conta da Penso: configure os secrets PENSO_SMTP_* no Supabase.' };
+
+  const desc = await deps.descadastrados();
+  if (typeof desc === 'string') return { ok: false, erro: 'Nenhum e-mail enviado: não foi possível ler os descadastros: ' + msgSql(desc), leads: resumoLeads({ enviados_agora: 0 }) };
+  fora = desc;
+  const pendentes = aEnviar();
   if (!pendentes.length) return { ok: true, leads: resumoLeads({ enviados_agora: 0 }) };
+
+  // Limite diário da conta (todas as campanhas, últimas 24 h).
+  const usados = await deps.enviados24h();
+  if (typeof usados === 'string') return { ok: false, erro: 'Nenhum e-mail enviado: não foi possível conferir o limite diário: ' + msgSql(usados), leads: resumoLeads({ enviados_agora: 0 }) };
+  const restante = leadsLimiteDiario() - LEADS_FOLGA_CONVITES - usados;
+  if (restante <= 0) {
+    return { ok: true, leads: resumoLeads({ enviados_agora: 0, limite_atingido: true, limite: leadsLimiteDiario(), usados_24h: usados }) };
+  }
 
   // Sem conseguir gravar o controle não envia nada (senão os leads receberiam de novo na próxima vez).
   const msgRegistro = (erro: string, enviou: boolean) =>
-    (enviou ? 'E-mails enviados, mas o controle de envio não foi gravado: ' : 'Nenhum e-mail enviado: não foi possível gravar o controle de envio: ') +
-    (/cdl_gravar_leads_envio|function|função/i.test(erro) ? 'rode supabase/schema_campanhas_leads.sql no Supabase.' : erro);
-  const regAtual = () => ({ enviados: [...enviados], falhas, total: leads.length, atualizado_em: new Date().toISOString() });
-  const erroAntes = await gravar(regAtual());
+    (enviou ? 'E-mails enviados, mas o controle de envio não foi gravado: ' : 'Nenhum e-mail enviado: não foi possível gravar o controle de envio: ') + msgSql(erro);
+  const regAtual = (lote?: number) => ({
+    enviados: [...enviados], falhas, total: leads.length, atualizado_em: new Date().toISOString(),
+    ...(lote ? { lote: { em: new Date().toISOString(), n: lote } } : {}),
+  });
+  const erroAntes = await deps.gravar(regAtual());
   if (erroAntes) return { ok: false, erro: msgRegistro(erroAntes, false), leads: resumoLeads({ enviados_agora: 0 }) };
 
-  const inicio = Date.now();
+  const inicio = Date.now(), maximo = Math.min(LEADS_POR_CHAMADA, restante);
   let agora = 0, erroConexao: string | null = null;
   let sessao: Awaited<ReturnType<typeof smtpAbrir>> | null = null;
   try {
     sessao = await smtpAbrir();
     for (const lead of pendentes) {
-      if (agora >= LEADS_POR_CHAMADA || Date.now() - inicio > LEADS_TEMPO_MS) break;
+      if (agora >= maximo || Date.now() - inicio > LEADS_TEMPO_MS) break;
       try {
-        await sessao.enviar([lead.email], montarEmailLead(assunto, corpo, lead));
+        await sessao.enviar([lead.email], await montarEmailLead(assunto, corpo, lead, String(camp.id)));
         enviados.add(lead.email);
         agora++;
       } catch (e) {
@@ -829,8 +888,9 @@ async function enviarLeads(camp: any, gravar: (reg: Registro) => Promise<string 
     await sessao?.fechar();
   }
 
-  const erroGravar = await gravar(regAtual());
-  const resumoFinal = resumoLeads({ enviados_agora: agora });
+  const erroGravar = await deps.gravar(regAtual(agora));
+  const limiteAgora = usados + agora >= leadsLimiteDiario() - LEADS_FOLGA_CONVITES && aEnviar().length > 0;
+  const resumoFinal = resumoLeads({ enviados_agora: agora, ...(limiteAgora ? { limite_atingido: true, limite: leadsLimiteDiario(), usados_24h: usados + agora } : {}) });
   if (erroGravar) return { ok: false, erro: msgRegistro(erroGravar, agora > 0), leads: resumoFinal };
   if (erroConexao) return { ok: false, erro: erroConexao, leads: resumoFinal };
   return { ok: true, leads: resumoFinal };
@@ -939,11 +999,21 @@ Deno.serve(async (req) => {
 
   // Leads: quem tem a seção dispara os pendentes (cada lead recebe uma vez só; nada é reenviado).
   if (acao === 'leads') {
-    const r = await enviarLeads(camp, async (reg) => {
-      const { error } = await supabase.rpc('cdl_gravar_leads_envio', { p_campanha: campanhaId, p_leads: reg });
-      if (!error) return null;
-      console.error('[sincronizar-agenda] gravar leads:', error);
-      return error.message;
+    const r = await enviarLeads(camp, {
+      gravar: async (reg) => {
+        const { error } = await supabase.rpc('cdl_gravar_leads_envio', { p_campanha: campanhaId, p_leads: reg });
+        if (!error) return null;
+        console.error('[sincronizar-agenda] gravar leads:', error);
+        return error.message;
+      },
+      enviados24h: async () => {
+        const { data, error } = await supabase.rpc('cdl_leads_enviados_24h');
+        return error ? error.message : Number(data) || 0;
+      },
+      descadastrados: async () => {
+        const { data, error } = await supabase.from('leads_descadastro').select('email').limit(100000);
+        return error ? error.message : new Set((data ?? []).map((d: { email: string }) => String(d.email).toLowerCase()));
+      },
     });
     return json(r, r.ok ? 200 : 500);
   }

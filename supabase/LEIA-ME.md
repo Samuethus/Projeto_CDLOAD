@@ -30,7 +30,7 @@ Estas etapas só podem ser feitas por você, no painel do Supabase.
 18. Cole o conteúdo de [schema_viabilidade.sql](schema_viabilidade.sql) > **Run** (**Dashboard › Painel · Viabilidade** editável: cria as tabelas `viabilidade_itens` — ferramentas e custos, módulos do CDLoad, planos de captação — e `viabilidade_parametros` — dias úteis por mês —, já carregadas com os valores da planilha. Lê quem tem a seção Dashboard; edita pelo botão **Editar** da barra do painel quem pode editar o Dashboard — Administrador ou usuário com Edição e a seção liberada. Rode **depois** do passo 17. Rodar de novo não apaga edições. A consulta final deve mostrar 5 ferramentas, 5 módulos e 1 plano). Sem este passo o painel continua com os valores de `assets/data/viabilidades.js` e o botão Salvar fica bloqueado.
 19. Cole o conteúdo de [schema_surveymonkey_acesso.sql](schema_surveymonkey_acesso.sql) > **Run** (**Survey › Acessos**, só Administrador: escolher, por usuário, quais formulários ele visualiza — lista, painel, coletores e respostas. Cria `usuarios.survey_formularios_permitidos` (`null` = todos, como hoje; lista de ids = só esses) e troca as regras de leitura de `survey_formularios`, `survey_perguntas`, `survey_coletores` e `survey_respostas` para respeitar a lista. Rode **depois** do `schema_surveymonkey.sql`; se aquele for rodado de novo, rode este outra vez). Sem este passo o botão Acessos avisa que falta a coluna.
 20. Cole o conteúdo de [schema_inadimplencia.sql](schema_inadimplencia.sql) > **Run** (seção **Inadimplência**, antiga Configurações — a chave da seção continua `configuracoes`, então quem já tinha acesso continua tendo: cria a tabela `inadimplencia_arquivos` e o bucket privado `inadimplencia` para os PDFs do SPC Brasil, com abrangência Cuiabá, Mato Grosso ou Brasil e mês de referência. Lê e envia quem tem a seção; remove Administrador ou quem tem Edição. Rode **depois** do passo 17). As duas consultas finais devem mostrar o bucket e as 6 regras. Esses documentos alimentam o indicador **SPC: Inadimplência** do Dashboard › Panorama.
-21. Cole o conteúdo de [schema_campanhas_leads.sql](schema_campanhas_leads.sql) > **Run** (Campanhas › Etapa 3 › **Leads**: registra quem já recebeu o e-mail informativo — só acrescenta, então ninguém recebe duas vezes. Sem ele a função não envia aos leads. Rode **depois** dos passos 5 e 17).
+21. Cole o conteúdo de [schema_campanhas_leads.sql](schema_campanhas_leads.sql) > **Run** (Campanhas › Etapa 3 › **Leads**: controle de quem já recebeu — só acrescenta, então ninguém recebe duas vezes —, limite diário e tabela de descadastros. Sem ele a função não envia aos leads. Rode **depois** dos passos 5 e 17; pode rodar de novo).
 
 ## Estoque › estoques centrais e setor de consumo
 
@@ -77,13 +77,18 @@ Na **Etapa 3** do wizard de campanha há o campo **Participantes**: busca pelo n
 
 ### Leads (e-mail informativo aos associados)
 Na **Etapa 3 › Leads** anexa-se um **CSV com as colunas Nome e E-mail** (separado por `;` ou `,`, com ou sem cabeçalho; o app oferece um modelo). Ao salvar a campanha, no mesmo processo dos convites:
-- cada lead recebe um **e-mail individual** (ninguém vê o endereço dos outros) pela conta da Penso: **assunto = Nome da campanha**, **corpo = Descrição** da Etapa 3;
-- listas grandes vão em **lotes** (cada chamada da função envia o que cabe em ~90 s; o app repete e mostra o progresso no botão);
-- quem **já recebeu não recebe de novo** (`agenda_sync.leads.enviados`): editar a campanha e incluir leads novos envia só para os novos; mudar a Descrição não reenvia;
-- endereço recusado pelo servidor fica em `falhas` e não é tentado de novo;
+- cada lead recebe um **e-mail individual** (ninguém vê o endereço dos outros) pela conta da Penso, com remetente **“Núcleo de Inteligência - CDL Cuiabá”**: **assunto = Nome da campanha**, **corpo = Descrição** da Etapa 3 (`{Nome}` no texto vira o nome de cada lead);
+- **limite da conta: 2.000 e-mails por dia** — a função soma os envios das últimas 24 h de todas as campanhas e deixa 100 de folga para os convites; o excedente fica **pendente** e sai quando a campanha for salva de novo depois de 24 h;
+- listas grandes vão em **lotes** (cada chamada envia o que cabe em ~90 s; o app repete e mostra o progresso no botão);
+- quem **já recebeu não recebe de novo** (`agenda_sync.leads.enviados`); endereço recusado pelo servidor fica em `falhas`;
 - se a gravação do controle falhar (ex.: SQL do passo 21 não rodado), **nada é enviado**.
 
-Limites: até 5.000 leads por campanha. Verifique com a Penso o **limite diário de envio** da conta organizadora antes de listas grandes.
+**Descadastro ("Não quero mais receber")** — rodapé de uma linha em todo e-mail aos leads + botão “Cancelar inscrição” do Gmail/Outlook (cabeçalho `List-Unsubscribe`):
+1. O link abre a página **descadastro.html** do site (publicada junto com o app); o lead confirma num botão (abrir o link sozinho não descadastra — antivírus de e-mail abrem links).
+2. A Edge Function pública **`descadastro-leads`** confere a assinatura do link (ninguém descadastra o e-mail de outra pessoa), grava em `leads_descadastro` e **avisa a caixa organizadora da Penso** por e-mail (“Descadastro de lead: …”, com campanha e data/hora).
+3. Os próximos envios **pulam** os descadastrados; no app, a lista de leads mostra quantos são.
+
+Publicar a função `descadastro-leads`: no painel, [Edge Functions](https://supabase.com/dashboard/project/xjexujpvnahaugizeyee/functions) > **Deploy a new function** > *Via Editor* > nome `descadastro-leads` > cole [descadastro-leads/index.ts](functions/descadastro-leads/index.ts) > **Deploy** e, nas configurações da função, **desligue “Verify JWT”** (o lead não tem login). Usa os mesmos secrets `PENSO_SMTP_*`. Secrets opcionais: `PENSO_LIMITE_DIARIO` (padrão 2000), `PENSO_LEADS_REMETENTE_NOME`, `SITE_URL` (padrão `https://samuethus.github.io/Projeto_CDLOAD/`) e `LEADS_DESCADASTRO_CHAVE` (chave da assinatura dos links; sem ela vale a service role key — trocar a chave invalida links de e-mails antigos).
 
 ### Passo 1 — Banco
 SQL Editor > cole [schema_agenda.sql](schema_agenda.sql) > **Run** (cria a coluna `campanhas.agenda_sync`) e depois [schema_campanhas_leads.sql](schema_campanhas_leads.sql) (envio aos leads).

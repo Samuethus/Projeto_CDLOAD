@@ -4176,7 +4176,7 @@
                 <div class="wa-field">
                   <label for="waCampDescricaoEmail">Descrição</label>
                   <textarea id="waCampDescricaoEmail" rows="6" placeholder="Texto do e-mail: apresente a campanha, data, local e o que o associado precisa saber."></textarea>
-                  <div class="wa-field-hint">É o corpo do e-mail enviado aos leads (o assunto é o Nome da campanha) e a descrição do evento no convite dos participantes.</div>
+                  <div class="wa-field-hint">É o corpo do e-mail enviado aos leads (o assunto é o Nome da campanha) e a descrição do evento no convite dos participantes. Use <b>{Nome}</b> para o nome de cada lead (ex.: “Olá, {Nome}!”). O e-mail sai como “Núcleo de Inteligência - CDL Cuiabá” e traz no rodapé o link “Não quero mais receber”.</div>
                 </div>
                 <!-- Leads: CSV com Nome e E-mail. Cada lead recebe um e-mail individual (assunto = Nome da campanha,
                      corpo = Descrição) pela conta da Penso; quem já recebeu não recebe de novo. -->
@@ -4188,7 +4188,7 @@
                     <input type="file" id="waCampLeadsArquivo" accept=".csv,text/csv" hidden>
                   </label>
                   <div class="wa-leads-resumo" id="waCampLeadsResumo" hidden></div>
-                  <div class="wa-field-hint">Cada lead recebe um e-mail individual com o Nome da campanha como assunto e a Descrição como corpo, enviado pela conta da Penso ao salvar. Quem já recebeu não recebe de novo.
+                  <div class="wa-field-hint">Cada lead recebe um e-mail individual com o Nome da campanha como assunto e a Descrição como corpo, enviado pela conta da Penso ao salvar (limite da conta: 2.000 por dia; o excedente fica pendente). Quem já recebeu ou se descadastrou não recebe.
                     <button type="button" class="wa-hora-limpar" id="waCampLeadsModelo">Baixar modelo (.csv)</button></div>
                 </div>
               </div>
@@ -7584,7 +7584,18 @@
     const waCampLeadsArquivo = document.getElementById('waCampLeadsArquivo');
     const waCampLeadsDrop = document.getElementById('waCampLeadsDrop');
     const waCampLeadsResumo = document.getElementById('waCampLeadsResumo');
-    let campLeads = [], campLeadsEnviados = new Set(), campLeadsArquivo = '';
+    let campLeads = [], campLeadsEnviados = new Set(), campLeadsArquivo = '', campLeadsFora = new Set();
+    const WA_LEADS_LIMITE_DIA = 1900;   // 2.000/dia da conta da Penso − folga para os convites (igual à função)
+    // Descadastrados (tabela leads_descadastro): não recebem; a lista vem do banco ao abrir o cadastro.
+    async function waCarregarDescadastros(){
+      campLeadsFora = new Set();
+      if(!supabaseReady) return;
+      const { data, error } = await supabaseClient.from('leads_descadastro').select('email').limit(100000);
+      if(error){ console.warn('[Campanhas] descadastros:', error.message); return; }
+      campLeadsFora = new Set((data || []).map(d => String(d.email).toLowerCase()));
+      waRenderLeads();
+    }
+    const waLeadsAEnviar = () => campLeads.filter(l => !campLeadsEnviados.has(l.email) && !campLeadsFora.has(l.email));
     function waCsvLinhas(texto){
       const linhas = [];
       let campo = '', linha = [], aspas = false;
@@ -7639,13 +7650,14 @@
     }
     function waRenderLeads(info){
       if(!campLeads.length){ waCampLeadsResumo.hidden = true; waCampLeadsResumo.innerHTML = ''; return; }
-      const enviados = campLeads.filter(l => campLeadsEnviados.has(l.email)).length, novos = campLeads.length - enviados;
+      const enviados = campLeads.filter(l => campLeadsEnviados.has(l.email)).length, novos = waLeadsAEnviar().length;
+      const fora = campLeads.filter(l => campLeadsFora.has(l.email) && !campLeadsEnviados.has(l.email)).length;
       const ignorados = info && (info.invalidos || info.repetidos)
         ? ` · ignorados: ${[info.invalidos ? `${info.invalidos} sem e-mail válido` : '', info.repetidos ? `${info.repetidos} repetido(s)` : ''].filter(Boolean).join(', ')}` : '';
       waCampLeadsResumo.innerHTML = `<div class="wa-leads-topo"><b>${campLeads.length} lead${campLeads.length === 1 ? '' : 's'}${campLeadsArquivo ? ` · ${esc(campLeadsArquivo)}` : ''}</b>
           <span class="wa-leads-acoes"><button type="button" data-acao="trocar">Trocar arquivo</button><button type="button" class="perigo" data-acao="remover">Remover lista</button></span></div>
-        <div class="wa-leads-meta">${enviados ? `${enviados} já receberam · ${novos} a enviar` : `${novos} a enviar ao salvar`}${ignorados}</div>
-        <table class="wa-leads-tabela">${campLeads.slice(0, 5).map(l => `<tr><td>${esc(l.nome || '—')}</td><td>${esc(l.email)}</td>${campLeadsEnviados.has(l.email) ? '<td class="ok">enviado</td>' : ''}</tr>`).join('')}</table>
+        <div class="wa-leads-meta">${enviados ? `${enviados} já receberam · ${novos} a enviar` : `${novos} a enviar ao salvar`}${fora ? ` · ${fora} descadastrado(s), não recebem` : ''}${ignorados}</div>
+        <table class="wa-leads-tabela">${campLeads.slice(0, 5).map(l => `<tr><td>${esc(l.nome || '—')}</td><td>${esc(l.email)}</td>${campLeadsEnviados.has(l.email) ? '<td class="ok">enviado</td>' : campLeadsFora.has(l.email) ? '<td class="ok" style="color:var(--wa-text-muted)">descadastrado</td>' : ''}</tr>`).join('')}</table>
         ${campLeads.length > 5 ? `<div class="wa-leads-meta">… e mais ${campLeads.length - 5}</div>` : ''}`;
       waCampLeadsResumo.hidden = false;
     }
@@ -7968,8 +7980,10 @@
           <div class="wa-review-row"><span class="label">Descrição</span><span class="value" style="white-space:pre-line;">${esc(waCampDescricaoEmail.value.trim()) || '—'}</span></div>
           <div class="wa-review-row"><span class="label">Leads</span><span class="value">${(() => {
             if(!campLeads.length) return '—';
-            const novos = campLeads.filter(l => !campLeadsEnviados.has(l.email)).length;
-            return `${campLeads.length} na lista · <b>${novos} receberão o e-mail ao salvar</b>${campLeads.length - novos ? ` (${campLeads.length - novos} já receberam)` : ''} · assunto: “${esc(waCampNome.value.trim())}”`;
+            const novos = waLeadsAEnviar().length, ja = campLeads.filter(l => campLeadsEnviados.has(l.email)).length;
+            const fora = campLeads.filter(l => campLeadsFora.has(l.email) && !campLeadsEnviados.has(l.email)).length;
+            return `${campLeads.length} na lista · <b>${novos} receberão o e-mail ao salvar</b>${ja ? ` · ${ja} já receberam` : ''}${fora ? ` · ${fora} descadastrado(s)` : ''} · assunto: “${esc(waCampNome.value.trim())}” · remetente: Núcleo de Inteligência - CDL Cuiabá`
+              + (novos > WA_LEADS_LIMITE_DIA ? `<br><span style="color:#B45309">Limite da Penso: até 2.000 e-mails por dia. Hoje saem no máximo ~${WA_LEADS_LIMITE_DIA}; o restante fica pendente e é enviado quando você salvar a campanha de novo depois de 24 h.</span>` : '');
           })()}</span></div>
         </div>
       `;
@@ -8096,7 +8110,7 @@
         const result = await syncCampaignCalendar(saved.id, 'sincronizar');
         mensagens.push(describeCalendarSync(result));
       }
-      const leadsNovos = campLeads.filter(l => !campLeadsEnviados.has(l.email)).length;
+      const leadsNovos = waLeadsAEnviar().length;
       if(leadsNovos){
         const r = await waEnviarLeads(saved.id, leadsNovos);
         mensagens.push(r);
@@ -8142,7 +8156,9 @@
       }
       const L = (r && r.leads) || {};
       const linha = `E-mail aos leads (Penso): ${enviadosAgora} enviado(s) agora · ${L.enviados ?? '—'} de ${L.total ?? total} já receberam`
-        + (L.falhas ? ` · ${L.falhas} recusado(s) pelo servidor` : '') + (L.pendentes ? ` · ${L.pendentes} pendente(s)` : '');
+        + (L.falhas ? ` · ${L.falhas} recusado(s) pelo servidor` : '') + (L.descadastrados ? ` · ${L.descadastrados} descadastrado(s)` : '')
+        + (L.pendentes ? ` · ${L.pendentes} pendente(s)` : '')
+        + (L.limite_atingido ? `\nLimite diário da Penso atingido (${L.usados_24h ?? '—'} de ${L.limite ?? 2000} nas últimas 24 h). Salve a campanha de novo depois de 24 h para enviar os pendentes.` : '');
       if(r && r.ok !== false) return linha;
       return `${linha}\n• erro: ${(r && r.erro) || 'erro desconhecido'}${L.pendentes ? '\nSalve a campanha de novo para enviar os pendentes (quem já recebeu não recebe de novo).' : ''}`;
     }
@@ -8192,6 +8208,7 @@
       campLeadsArquivo = et.leads_arquivo || '';
       campLeadsEnviados = new Set((editing && editing.agenda_sync && editing.agenda_sync.leads && editing.agenda_sync.leads.enviados) || []);
       waRenderLeads();
+      waCarregarDescadastros();
       selectedParticipants = new Map((et.participantes || []).map(p => [p.email, { nome: p.nome || '', email: p.email, externo: !!p.externo }]));
       renderParticipantChips();
       waCampParticipantSearch.value = '';

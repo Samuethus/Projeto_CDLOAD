@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Publica somente o index.html, a pasta assets/ (imagens do Hub), a landing
+      # Publica somente o index.html, a página de descadastro (descadastro.html), a pasta assets/ (imagens do Hub), a landing
       # page de apresentação (landing/), os modelos do relatório em PDF
       # (report/*/branding/) e o
       # config.js gerado a partir dos secrets. .env, scripts, SQL e docs NÃO
@@ -37,6 +37,8 @@ jobs:
         run: |
           mkdir _site
           cp index.html _site/index.html
+          # Página do link "Não quero mais receber" do e-mail aos leads (Campanhas).
+          cp descadastro.html _site/descadastro.html
           cp -r assets _site/assets
           cp -r landing _site/landing
           # Modelos do PDF gerado em Relatórios > Gerar relatório (só as imagens; o escopo fica fora).
