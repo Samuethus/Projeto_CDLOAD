@@ -85,6 +85,7 @@ O e-mail da CDL (`@cdlcuiaba.com.br`) fica na **Penso** (MX `pensomail.com.br`),
 2. Usuário = e-mail completo da conta; senha = a da conta (se a Penso exigir, gere uma "senha de aplicativo").
 3. Secrets no Supabase: `PENSO_SMTP_HOST`, `PENSO_SMTP_USUARIO`, `PENSO_SMTP_SENHA` (opcionais: `PENSO_SMTP_PORTA`, padrão 465; `PENSO_REMETENTE`, padrão = usuário; `PENSO_REMETENTE_NOME`, padrão "Agenda CDL").
 4. Teste: crie uma campanha com você como participante — deve chegar o e-mail "Convite: …" com Aceitar/Recusar.
+5. **Agenda da conta organizadora:** além de enviar os convites, a função grava o evento na agenda da própria conta da Penso por **CalDAV** (`https://suite.penso.com.br/dav/<conta>/Calendar/`, mesmo usuário/senha). O evento aparece lá com os convidados listados na descrição (sem convidados formais, para o Zimbra não disparar convites em dobro). Editar regrava e remover apaga. Para outra pasta use o secret `PENSO_CALDAV_URL`; `PENSO_CALDAV_URL=off` desliga. Se a gravação falhar, os convites saem do mesmo jeito e a mensagem ao salvar avisa.
 
 **Reserva (não usadas com a Penso configurada):** Google Calendar e Outlook/Exchange abaixo só entram em ação se os secrets da Penso forem removidos. Os secrets do Google podem continuar no Supabase — servem para cancelar os eventos antigos do Google na migração.
 

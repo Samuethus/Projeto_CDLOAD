@@ -3,7 +3,8 @@
 // Cria, atualiza ou cancela o evento de uma campanha na agenda de todos os
 // participantes. O evento é criado na agenda de uma conta ORGANIZADORA da
 // organização, com os participantes como convidados: o Outlook / Google
-// envia o convite e o horário fica bloqueado na agenda de cada pessoa.
+// envia o convite e o horário fica bloqueado na agenda de cada pessoa. Com a Penso, o
+// evento também é gravado na agenda da conta organizadora (CalDAV do Zimbra).
 //
 // Provedores (cada um só roda se os secrets dele estiverem definidos):
 //   Convite por e-mail (Penso, SMTP): PENSO_SMTP_HOST, PENSO_SMTP_USUARIO, PENSO_SMTP_SENHA,
@@ -371,7 +372,9 @@ const pensoDestinatarios = (ev: Evento) => ev.participantes;
 
 function pensoStatus(ev: Evento, atualizado: boolean): string {
   const n = pensoDestinatarios(ev).length;
-  return n ? `${atualizado ? 'atualização enviada' : 'convite enviado'} por e-mail para ${n} participante(s)` : 'nenhum convite por e-mail';
+  const base = n ? `${atualizado ? 'atualização enviada' : 'convite enviado'} por e-mail para ${n} participante(s)` : 'nenhum convite por e-mail';
+  const agenda = pensoAgendaStatus.get(ev);
+  return agenda ? `${base} · ${agenda}` : base;
 }
 
 // SEQUENCE do iCalendar precisa crescer a cada versão do mesmo evento: segundos desde 2026-01-01.
@@ -568,6 +571,57 @@ async function pensoEnviar(metodo: 'REQUEST' | 'CANCEL', assunto: string, uid: s
   }
 }
 
+// ---- Agenda da própria conta organizadora (CalDAV do Zimbra da Penso) ----
+// O SMTP só entrega os convites; para o evento aparecer também na agenda da conta organizadora, ele é gravado
+// por CalDAV (mesmo usuário/senha do SMTP) em https://suite.penso.com.br/dav/<conta>/Calendar/<uid>.ics.
+// Gravado SEM os convidados como ATTENDEE (ficam listados na descrição): com ATTENDEE o Zimbra poderia
+// disparar convites por conta própria, em dobro com os do SMTP. Mesmo UID do convite enviado.
+// PENSO_CALDAV_URL troca a pasta (padrão acima) ou desliga a gravação com "off".
+// Falha aqui não impede os convites: o status avisa e os e-mails seguem.
+const pensoAgendaStatus = new WeakMap<object, string>();
+
+function pensoCalendario(): string | null {
+  const conf = env('PENSO_CALDAV_URL');
+  if (conf.toLowerCase() === 'off') return null;
+  const base = conf || `https://suite.penso.com.br/dav/${encodeURIComponent(env('PENSO_SMTP_USUARIO'))}/Calendar/`;
+  return base.endsWith('/') ? base : base + '/';
+}
+const pensoRecurso = (uid: string) => `${pensoCalendario()}${encodeURIComponent(uid.replace(/@.*/, ''))}.ics`;
+const pensoAuth = () => 'Basic ' + b64Mime(`${env('PENSO_SMTP_USUARIO')}:${env('PENSO_SMTP_SENHA')}`).replace(/\r\n/g, '');
+
+function montarIcsAgenda(uid: string, ev: Evento, convidados: Participante[]): string {
+  const lista = convidados.map((p) => (p.nome ? `${p.nome} <${p.email}>` : p.email)).join(', ');
+  const html = ev.descricaoHtml + (lista ? `<p><b>Convidados:</b> ${escHtml(lista)}</p>` : '');
+  const ics = montarIcs('REQUEST', uid, { ...ev, descricaoHtml: html }, []);
+  // Cópia do organizador: sem METHOD (é um objeto de agenda, não uma mensagem de convite) e sem ORGANIZER.
+  return ics.split('\r\n').filter((l) => !/^(METHOD|ORGANIZER)[:;]/.test(l)).join('\r\n');
+}
+
+async function pensoAgendaGravar(uid: string, ev: Evento, convidados: Participante[]): Promise<string> {
+  if (!pensoCalendario()) return '';
+  try {
+    const res = await fetch(pensoRecurso(uid), {
+      method: 'PUT',
+      headers: { Authorization: pensoAuth(), 'Content-Type': 'text/calendar; charset=utf-8' },
+      body: montarIcsAgenda(uid, ev, convidados),
+    });
+    if (!res.ok) return `agenda do organizador: erro ${res.status} ${(await res.text()).slice(0, 120)}`;
+    return 'evento gravado na agenda do organizador';
+  } catch (e) {
+    return `agenda do organizador: erro ${(e as Error).message.slice(0, 120)}`;
+  }
+}
+
+async function pensoAgendaRemover(uid: string): Promise<void> {
+  if (!pensoCalendario()) return;
+  try {
+    const res = await fetch(pensoRecurso(uid), { method: 'DELETE', headers: { Authorization: pensoAuth() } });
+    if (!res.ok && res.status !== 404) console.error('[sincronizar-agenda] penso caldav delete:', res.status, await res.text());
+  } catch (e) {
+    console.error('[sincronizar-agenda] penso caldav delete:', e);
+  }
+}
+
 const resumo = (ev: Evento): EventoResumo => ({
   titulo: ev.titulo, local: ev.local, dataInicio: ev.dataInicio, dataFim: ev.dataFim,
   horaInicio: ev.horaInicio, horaFim: ev.horaFim, formato: ev.formato,
@@ -582,6 +636,7 @@ const penso: Provedor = {
   async criar(ev) {
     const uid = `cdload-${crypto.randomUUID()}@${pensoRemetente().split('@')[1] || 'cdload'}`;
     await pensoEnviar('REQUEST', `Convite: ${ev.titulo}`, uid, ev, pensoDestinatarios(ev));
+    pensoAgendaStatus.set(ev, await pensoAgendaGravar(uid, ev, pensoDestinatarios(ev)));
     return uid;
   },
   async atualizar(uid, ev, anterior) {
@@ -589,9 +644,12 @@ const penso: Provedor = {
     const sairam = anteriores(anterior).filter((p) => !emails.has(p.email));
     await pensoEnviar('REQUEST', `Atualizado: ${ev.titulo}`, uid, ev, agora);
     await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, sairam);
+    // PUT no mesmo endereço: cria (campanha antiga, de antes da gravação na agenda) ou substitui o evento.
+    pensoAgendaStatus.set(ev, await pensoAgendaGravar(uid, ev, agora));
     return true;
   },
   async cancelar(uid, anterior) {
+    await pensoAgendaRemover(uid);
     const ev = anterior?.evento as EventoResumo | undefined;
     if (!ev) return;   // sem os dados do envio anterior não há como montar o cancelamento
     await pensoEnviar('CANCEL', `Cancelado: ${ev.titulo}`, uid, ev, anteriores(anterior));
