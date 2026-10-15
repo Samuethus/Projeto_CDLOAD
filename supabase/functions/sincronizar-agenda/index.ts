@@ -778,28 +778,24 @@ const personalizar = (texto: string, lead: Lead) =>
 const textoParaHtml = (t: string) =>
   t.trim().split(/\r?\n\s*\r?\n/).map((par) => `<p>${escHtml(par).replace(/\r?\n/g, '<br>')}</p>`).join('');
 
-// Opções (usadas pelo teste de entrega, ação "leads_teste"): remetente, rodapé e cabeçalhos List-Unsubscribe.
-type OpcoesLead = { nomeRemetente?: string; rodape?: boolean; cabecalhos?: boolean };
-
-async function montarEmailLead(assunto: string, corpo: string, lead: Lead, campanhaId: string, opc: OpcoesLead = {}): Promise<string> {
-  const { nomeRemetente = leadsRemetenteNome(), rodape = true, cabecalhos = true } = opc;
+async function montarEmailLead(assunto: string, corpo: string, lead: Lead, campanhaId: string): Promise<string> {
   const dominio = pensoRemetente().split('@')[1] || 'cdload';
   const alt = `cdload-lead-${crypto.randomUUID()}`;
   const para = lead.nome ? `${cabecalhoUtf8(lead.nome)} <${lead.email}>` : `<${lead.email}>`;
   const texto = personalizar(corpo, lead).trim();
   const links = await linksDescadastro(lead.email, campanhaId);
-  const rodapeTxt = !rodape ? '' : `\n\n--\nNão quer mais receber estes e-mails? Descadastre-se: ${links.pagina}`;
-  const rodapeHtml = !rodape ? '' : `<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0 12px"><p style="font-size:12px;color:#6b7280">` +
+  const rodapeTxt = `\n\n--\nNão quer mais receber estes e-mails? Descadastre-se: ${links.pagina}`;
+  const rodapeHtml = `<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0 12px"><p style="font-size:12px;color:#6b7280">` +
     `Não quer mais receber estes e-mails? <a href="${escHtml(links.pagina)}" style="color:#6b7280">Não quero mais receber</a>.</p>`;
   return [
-    `From: ${cabecalhoUtf8(nomeRemetente)} <${pensoRemetente()}>`,
+    `From: ${cabecalhoUtf8(leadsRemetenteNome())} <${pensoRemetente()}>`,
     `To: ${para}`,
     `Subject: ${cabecalhoUtf8(assunto)}`,
     `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: <${crypto.randomUUID()}@${dominio}>`,
     // RFC 2369/8058: botão "Cancelar inscrição" do cliente de e-mail (POST de um clique na função descadastro-leads).
-    ...(cabecalhos ? [`List-Unsubscribe: <${links.umClique}>, <mailto:${pensoRemetente()}?subject=Descadastrar>`,
-      'List-Unsubscribe-Post: List-Unsubscribe=One-Click'] : []),
+    `List-Unsubscribe: <${links.umClique}>, <mailto:${pensoRemetente()}?subject=Descadastrar>`,
+    'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${alt}"`,
     '',
@@ -992,37 +988,6 @@ Deno.serve(async (req) => {
   } catch {
     return json({ ok: false, erro: 'Corpo da requisição inválido.' }, 400);
   }
-  // Teste de entrega aos leads: 4 versões do e-mail, cada uma numa conexão própria, acrescentando uma
-  // diferença por vez em relação ao convite (que chega). A que deixar de chegar aponta a causa.
-  if (entrada?.acao === 'leads_teste') {
-    const email = String(entrada?.email ?? '').trim().toLowerCase();
-    const assunto = String(entrada?.assunto ?? '').trim() || 'Teste de entrega CDLoad';
-    const corpo = String(entrada?.corpo ?? '').trim() || 'Mensagem de teste de entrega do CDLoad.';
-    if (!EMAIL_RE.test(email)) return json({ ok: false, erro: 'Informe um e-mail válido para o teste.' }, 400);
-    if (!penso.configurado()) return json({ ok: false, erro: 'Configure os secrets PENSO_SMTP_* no Supabase.' }, 503);
-    const lead: Lead = { nome: '', email };
-    const id = String(entrada?.campanha_id ?? 'teste');
-    const versoes: { rotulo: string; opc: OpcoesLead }[] = [
-      { rotulo: '1 simples (remetente Agenda CDL, sem rodapé, sem cabeçalhos)', opc: { nomeRemetente: pensoNome(), rodape: false, cabecalhos: false } },
-      { rotulo: '2 + remetente Núcleo de Inteligência', opc: { rodape: false, cabecalhos: false } },
-      { rotulo: '3 + rodapé com link de descadastro', opc: { rodape: true, cabecalhos: false } },
-      { rotulo: '4 completo (+ cabeçalhos List-Unsubscribe)', opc: {} },
-    ];
-    const resultados: { versao: string; resposta: string }[] = [];
-    for (const v of versoes) {
-      try {
-        const msg = await montarEmailLead(`[Teste ${v.rotulo.slice(0, 1)}/4] ${assunto}`, corpo, lead, id, v.opc);
-        const sessao = await smtpAbrir();
-        try { resultados.push({ versao: v.rotulo, resposta: (await sessao.enviar([email], msg)).slice(0, 120) }); }
-        finally { await sessao.fechar(); }
-      } catch (e) {
-        resultados.push({ versao: v.rotulo, resposta: 'erro: ' + (e as Error).message.slice(0, 160) });
-      }
-      console.log(`[sincronizar-agenda] leads_teste ${email} · ${v.rotulo}: ${resultados[resultados.length - 1].resposta}`);
-    }
-    return json({ ok: true, email, resultados });
-  }
-
   const campanhaId = String(entrada?.campanha_id ?? '');
   const acao = entrada?.acao === 'cancelar' ? 'cancelar' : entrada?.acao === 'leads' ? 'leads' : 'sincronizar';
   if (!campanhaId) return json({ ok: false, erro: 'campanha_id é obrigatório.' }, 400);
