@@ -5123,6 +5123,7 @@
      --   Os campos antigos "KPIs prioritários"/"Modelo de conversão"
      --   (kpis_prioritarios/modelo_conversao) foram substituídos por
      --   local/sala_reservada em `planejamento_e_objetivos`.
+     --   Local "Online" (sala "Virtual"): supabase/schema_local_online.sql.
 
      Estrutura do módulo Estoque (substitui a antiga seção "Ajuda"). O SQL
      das tabelas está em `supabase/schema_estoque.sql`; rode-o uma vez no
@@ -7486,7 +7487,8 @@
     const FALLBACK_LOCAIS = [
       { id: 'l1', nome: 'CDL Cuiabá - Sede', salas: ['Auditório Principal', 'Sala de Reuniões 1', 'Sala de Reuniões 2', 'Sala de Treinamento'] },
       { id: 'l2', nome: 'CDL Cuiabá - Unidade Norte', salas: ['Sala de Atendimento', 'Sala de Reuniões'] },
-      { id: 'l3', nome: 'CDL Cuiabá - Centro de Convenções', salas: ['Auditório A', 'Auditório B', 'Sala VIP'] }
+      { id: 'l3', nome: 'CDL Cuiabá - Centro de Convenções', salas: ['Auditório A', 'Auditório B', 'Sala VIP'] },
+      { id: 'l4', nome: 'Online', salas: ['Virtual'] }
     ];
 
     let locais = [];
