@@ -101,13 +101,6 @@
 
   /* ---------- 1. Introdução: vitrine em carrossel de três colunas ---------- */
   .hero{position:relative; padding:56px 0 64px; overflow:hidden;}
-  .hero::before{
-    content:""; position:absolute; z-index:-1; width:720px; height:620px; left:50%; top:-260px; transform:translateX(-50%); border-radius:50%;
-    background:radial-gradient(circle at 30% 40%,rgba(0,80,162,.45),transparent 60%),
-               radial-gradient(circle at 70% 55%,rgba(0,177,109,.3),transparent 60%),
-               radial-gradient(circle at 50% 80%,rgba(0,119,148,.32),transparent 65%);
-    filter:blur(80px);
-  }
   .hero-cab{text-align:center; margin:0 auto;}
   /* Título sempre em uma linha: a fonte acompanha a largura da tela até o teto de 56px. */
   .hero h1{font-size:clamp(18px,5.2vw,56px); line-height:1.08; white-space:nowrap;}
@@ -116,7 +109,16 @@
 
   /* Carrossel: a janela recorta as páginas; o respiro interno (compensado pela margem negativa)
      deixa o card em destaque crescer e projetar sombra sem ser cortado. */
-  .vitrine{position:relative; margin-top:52px; padding-right:56px;}
+  .vitrine{--pontos:56px; position:relative; margin-top:52px; padding-right:var(--pontos);}
+  /* Degradê centralizado atrás do card do meio (o centro desconta a coluna dos pontos à direita). */
+  .vitrine::before{
+    content:""; position:absolute; z-index:-1; width:720px; height:620px; left:calc((100% - var(--pontos)) / 2); top:50%;
+    transform:translate(-50%,-50%); border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle at 40% 45%,rgba(0,80,162,.45),transparent 60%),
+               radial-gradient(circle at 60% 55%,rgba(0,177,109,.3),transparent 60%),
+               radial-gradient(circle at 50% 50%,rgba(0,119,148,.32),transparent 65%);
+    filter:blur(80px);
+  }
   .vitrine-janela{overflow:hidden; padding:28px 24px 84px; margin:-28px -24px -84px;}
   .vitrine-trilho{
     --por:3; --gap:28px; --pag:0;
@@ -340,7 +342,8 @@
   /* ---------- Responsivo ---------- */
   @media (max-width:1024px){
     .menu{display:none;}
-    .vitrine{padding-right:0;}
+    .vitrine{--pontos:0px;}
+    .vitrine::before{width:min(720px,100%);}
     .vitrine-trilho{--por:2;}
     .vitrine-pontos{position:relative; right:auto; top:auto; transform:none; flex-direction:row; justify-content:center; margin-top:28px;}
     .integracoes{grid-template-columns:repeat(2,1fr);}
