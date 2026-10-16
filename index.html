@@ -7375,9 +7375,12 @@
         const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
         const isToday = cellDateStr === todayStr;
 
+        // "Desconsiderar" (só início e fim): a campanha aparece só no dia de início e no dia de fim, como na agenda.
         const dayCampaigns = filteredCampaigns.filter(c => {
           const p = c.planejamento_e_objetivos;
-          return p.data_inicio && p.data_fim && cellDateStr >= p.data_inicio && cellDateStr <= p.data_fim;
+          if(!p.data_inicio || !p.data_fim) return false;
+          if((c.estrutura_tecnica || {}).agenda_so_inicio_fim) return cellDateStr === p.data_inicio || cellDateStr === p.data_fim;
+          return cellDateStr >= p.data_inicio && cellDateStr <= p.data_fim;
         });
 
         cellsHTML += `
