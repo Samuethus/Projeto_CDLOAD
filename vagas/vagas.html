@@ -143,7 +143,11 @@
   .vcard-img{width:100%; height:292px; border-radius:calc(var(--raio) - 6px); overflow:hidden; background:var(--bg-panel);}
   .vcard-img img{width:100%; height:100%; object-fit:cover; display:block;}
   .vcard h3{font-size:21px; margin-top:22px;}
-  .vcard p{color:var(--text-muted); font-size:14px; line-height:1.6; margin:8px 0 22px; max-width:250px;}
+  /* Descrição justificada na largura da imagem, limitada a 3 linhas. */
+  .vcard p{
+    color:var(--text-muted); font-size:14px; line-height:1.6; margin:8px 0 22px; width:100%; padding:0 6px;
+    text-align:justify; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden;
+  }
   .vcard .btn{margin-top:auto; min-width:min(220px,100%); height:46px; background:var(--sidebar-bg); color:#fff; box-shadow:0 10px 22px -12px rgba(2,43,83,.7);}
   .vcard .btn:hover{background:var(--azul-royal);}
   .vcard.foco .btn{background:var(--gradiente);}
