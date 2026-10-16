@@ -1035,6 +1035,9 @@
   .wa-time-row{display:flex;gap:12px;}
   .wa-time-row > div{flex:1;}
   .wa-time-row label{font-weight:600 !important;color:var(--wa-text-muted) !important;}
+  .wa-time-row > div.wa-hora-desc{flex:0 0 auto;}
+  .wa-time-row label.wa-restricao-check{color:#0F172A !important;}
+  .wa-time-row label.wa-restricao-check:has(input:checked){border-color:#3B82F6;background:#EFF6FF;color:#1D4ED8 !important;}
   /* Campanhas › horário: texto HH:MM + lista a cada 15 min (sem a roleta do input type=time). */
   .wa-hora-campo{position:relative;}
   .wa-field input.wa-hora-input{padding-left:36px;font-variant-numeric:tabular-nums;cursor:pointer;
@@ -1164,15 +1167,17 @@
   }
   .wa-cal-header{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-bottom:1px solid var(--wa-border);}
   .wa-cal-title{font-size:14px;font-weight:700;color:var(--wa-text);text-transform:capitalize;}
-  .wa-cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--wa-border);}
+  /* minmax(0,1fr): colunas sempre iguais; um título longo não alarga o dia (é cortado com "…"). */
+  .wa-cal-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--wa-border);}
   .wa-cal-weekdays span{padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--wa-text-muted);text-transform:uppercase;}
-  .wa-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;align-items:stretch;flex:1;}
-  .wa-cal-cell{min-height:96px;border-right:1px solid var(--wa-border-soft,#EEF2F6);border-bottom:1px solid var(--wa-border-soft,#EEF2F6);padding:6px;display:flex;flex-direction:column;gap:4px;transition:background .2s ease-in-out;}
+  .wa-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;align-items:stretch;flex:1;}
+  .wa-cal-cell{min-width:0;min-height:96px;border-right:1px solid var(--wa-border-soft,#EEF2F6);border-bottom:1px solid var(--wa-border-soft,#EEF2F6);padding:6px;display:flex;flex-direction:column;gap:4px;transition:background .2s ease-in-out;}
   .wa-cal-cell-muted{background:#FAFBFC;}
   .wa-cal-cell-today{background:var(--wa-primary-soft);}
   .wa-cal-daynum{font-size:11.5px;font-weight:700;color:var(--wa-text-muted);}
-  .wa-cal-events{display:flex;flex-direction:column;gap:3px;}
+  .wa-cal-events{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .wa-cal-event{
+    display:block;width:100%;min-width:0;max-width:100%;
     background:var(--cal-pastel-bg, var(--wa-primary-soft));color:var(--cal-pastel-text, var(--wa-primary));border:none;border-radius:6px;
     padding:3px 6px;font-size:10.5px;font-weight:600;text-align:left;cursor:pointer;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background .15s, color .15s;
@@ -4129,6 +4134,15 @@
                       <input type="text" id="waCampHoraFim" class="wa-hora-input" inputmode="numeric" maxlength="5" placeholder="--:--" autocomplete="off"
                              role="combobox" aria-expanded="false" aria-controls="waCampHoraFimLista" aria-autocomplete="list">
                       <div class="wa-hora-lista" id="waCampHoraFimLista" role="listbox" hidden></div>
+                    </div>
+                    <!-- Desconsiderar: ignora os dias do meio; o horário só fica bloqueado no dia de início e no dia de fim
+                         (padrão 06:00–07:00, para o lembrete aparecer logo cedo na agenda). -->
+                    <div class="wa-hora-desc">
+                      <label for="waCampHoraDesconsiderar">Desconsiderar</label>
+                      <label class="wa-restricao-check" title="Bloqueia a agenda só no dia de início e no dia de fim (padrão 06:00–07:00), sem ocupar os dias do meio.">
+                        <input type="checkbox" id="waCampHoraDesconsiderar">
+                        <span>Só início e fim</span>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -7372,7 +7386,8 @@
             <div class="wa-cal-events">
               ${dayCampaigns.map(c => {
                 const color = getCampaignCalColor(c.nome_campanha);
-                return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};" ${window.__podeEditar('campanhas') ? `onclick="waOpenCampaignModal('${c.id}')"` : 'style="cursor:default;"'} title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
+                const pode = window.__podeEditar('campanhas');
+                return `<button type="button" class="wa-cal-event" style="--cal-pastel-bg:${color.bg};--cal-pastel-text:${color.text};${pode ? '' : 'cursor:default;'}" ${pode ? `onclick="waOpenCampaignModal('${c.id}')"` : ''} title="${esc(c.nome_campanha)}">${esc(c.nome_campanha)}</button>`;
               }).join('')}
             </div>
           </div>
@@ -7788,6 +7803,15 @@
     }
     waCampoHora(waCampHoraInicio, document.getElementById('waCampHoraInicioLista'), false);
     waCampoHora(waCampHoraFim, document.getElementById('waCampHoraFimLista'), true);
+    // "Desconsiderar": bloqueio só no dia de início e no dia de fim. Ao marcar, sugere 06:00–07:00 se não houver horário.
+    const WA_HORA_DESC_PADRAO = ['06:00', '07:00'];
+    const waCampHoraDesconsiderar = document.getElementById('waCampHoraDesconsiderar');
+    waCampHoraDesconsiderar.addEventListener('change', () => {
+      if(waCampHoraDesconsiderar.checked && !waCampHoraInicio.value && !waCampHoraFim.value){
+        [waCampHoraInicio.value, waCampHoraFim.value] = WA_HORA_DESC_PADRAO;
+        [waCampHoraInicio, waCampHoraFim].forEach(i => i.classList.remove('invalido'));
+      }
+    });
 
     // ---------------- Datas (Etapa 1) ----------------
     // Clique em qualquer ponto do campo abre o calendário nativo (showPicker); a digitação continua normal.
@@ -7941,7 +7965,7 @@
           <div class="wa-review-row"><span class="label">Sala Reservada</span><span class="value">${waCampSalaReservada.value || '—'}</span></div>
           <div class="wa-review-row"><span class="label">Times envolvidos</span><div class="value wa-review-tags">${[...selectedTeams].map(t => `<span class="wa-pill-category">${esc(t)}</span>`).join('') || '—'}</div></div>
           <div class="wa-review-row"><span class="label">Vigência</span><span class="value">${formatDateBR(waCampDataInicio.value)} – ${formatDateBR(waCampDataFim.value)}</span></div>
-          <div class="wa-review-row"><span class="label">Bloqueio na agenda</span><span class="value">${waCampHoraInicio.value && waCampHoraFim.value ? `Diário, ${esc(waCampHoraInicio.value)} – ${esc(waCampHoraFim.value)}` : 'Dia inteiro'}</span></div>
+          <div class="wa-review-row"><span class="label">Bloqueio na agenda</span><span class="value">${waCampHoraInicio.value && waCampHoraFim.value ? `${waCampHoraDesconsiderar.checked ? 'Só no dia de início e no de fim' : 'Diário'}, ${esc(waCampHoraInicio.value)} – ${esc(waCampHoraFim.value)}` : 'Dia inteiro'}</span></div>
         </div>
         <div class="wa-review-section">
           <h4>Detalhamento</h4>
@@ -7975,6 +7999,10 @@
           return false;
         }
         // Horário na agenda (opcional): os dois ou nenhum, no formato HH:MM e com o término depois do início.
+        // Com "Desconsiderar" marcado e os dois em branco, vale o padrão 06:00–07:00.
+        if(waCampHoraDesconsiderar.checked && !waCampHoraInicio.value.trim() && !waCampHoraFim.value.trim()){
+          [waCampHoraInicio.value, waCampHoraFim.value] = WA_HORA_DESC_PADRAO;
+        }
         const hIni = waHoraNormalizar(waCampHoraInicio.value), hFim = waHoraNormalizar(waCampHoraFim.value);
         if(hIni === null || hFim === null){
           alert('Horário inválido. Use o formato HH:MM (ex.: 08:30).');
@@ -8036,6 +8064,7 @@
           participantes: [...selectedParticipants.values()].map(p => ({ nome: p.nome, email: p.email, externo: p.externo })),
           horario_inicio: waCampHoraInicio.value || null,
           horario_fim: waCampHoraFim.value || null,
+          agenda_so_inicio_fim: waCampHoraDesconsiderar.checked,
           descricao_email: waCampDescricaoEmail.value.trim(),
           leads: campLeads,
           leads_arquivo: campLeadsArquivo || null
@@ -8214,6 +8243,7 @@
       closeParticipantDropdown();
       waCampHoraInicio.value = et.horario_inicio || '';
       waCampHoraFim.value = et.horario_fim || '';
+      waCampHoraDesconsiderar.checked = !!et.agenda_so_inicio_fim;
       [waCampHoraInicio, waCampHoraFim].forEach(i => i.classList.remove('invalido'));
       loadParticipantDirectory();
 

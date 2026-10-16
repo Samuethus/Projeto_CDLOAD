@@ -45,7 +45,9 @@ const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const HORA_RE = /^\d{2}:\d{2}$/;
 
 type Participante = { nome: string; email: string };
-type Formato = 'dia_inteiro' | 'horario' | 'horario_diario';
+// inicio_fim: "Desconsiderar" na Etapa 1 — o horário fica bloqueado só no dia de início e no dia de fim
+// (2 ocorrências, intervalo = dias entre as datas), sem ocupar os dias do meio.
+type Formato = 'dia_inteiro' | 'horario' | 'horario_diario' | 'inicio_fim';
 type Evento = {
   titulo: string;
   descricaoHtml: string;
@@ -85,6 +87,11 @@ function addDias(data: string, n: number): string {
 
 const dataBR = (d: string) => d.split('-').reverse().join('/');
 
+const diasEntre = (de: string, ate: string) => Math.round((Date.parse(ate + 'T00:00:00Z') - Date.parse(de + 'T00:00:00Z')) / 86_400_000);
+
+// Horário padrão do "Desconsiderar" (só início e fim) quando a campanha não traz horário.
+const HORA_SO_INICIO_FIM = ['06:00', '07:00'];
+
 async function falha(res: Response, contexto: string): Promise<never> {
   const texto = await res.text();
   let msg = texto.slice(0, 300);
@@ -106,8 +113,10 @@ function montarEvento(camp: any): Evento {
   if (!DATA_RE.test(dataInicio) || !DATA_RE.test(dataFim)) throw new Error('A campanha não tem data de início/fim válida.');
   if (dataFim < dataInicio) throw new Error('A data de fim da campanha é anterior à data de início.');
 
-  const horaInicio = HORA_RE.test(et.horario_inicio ?? '') ? et.horario_inicio : null;
-  const horaFim = HORA_RE.test(et.horario_fim ?? '') ? et.horario_fim : null;
+  const soInicioFim = et.agenda_so_inicio_fim === true;
+  let horaInicio = HORA_RE.test(et.horario_inicio ?? '') ? et.horario_inicio : null;
+  let horaFim = HORA_RE.test(et.horario_fim ?? '') ? et.horario_fim : null;
+  if (soInicioFim && !(horaInicio && horaFim && horaFim > horaInicio)) [horaInicio, horaFim] = HORA_SO_INICIO_FIM;
   const comHorario = !!(horaInicio && horaFim && horaFim > horaInicio);
 
   const vistos = new Set<string>();
@@ -141,7 +150,7 @@ function montarEvento(camp: any): Evento {
     dataFim,
     horaInicio: comHorario ? horaInicio : null,
     horaFim: comHorario ? horaFim : null,
-    formato: !comHorario ? 'dia_inteiro' : dataFim > dataInicio ? 'horario_diario' : 'horario',
+    formato: !comHorario ? 'dia_inteiro' : dataFim === dataInicio ? 'horario' : soInicioFim ? 'inicio_fim' : 'horario_diario',
   };
 }
 
@@ -195,6 +204,11 @@ function corpoOutlook(ev: Evento) {
     base.recurrence = {
       pattern: { type: 'daily', interval: 1 },
       range: { type: 'endDate', startDate: ev.dataInicio, endDate: ev.dataFim, recurrenceTimeZone: tz },
+    };
+  } else if (ev.formato === 'inicio_fim') {
+    base.recurrence = {
+      pattern: { type: 'daily', interval: diasEntre(ev.dataInicio, ev.dataFim) },
+      range: { type: 'numbered', startDate: ev.dataInicio, numberOfOccurrences: 2, recurrenceTimeZone: tz },
     };
   }
   return base;
@@ -325,6 +339,8 @@ function corpoGoogle(ev: Evento) {
     // UNTIL é em UTC: 23:59:59 do último dia em Cuiabá (UTC-4) = 03:59:59Z do dia seguinte.
     const ate = addDias(ev.dataFim, 1).replace(/-/g, '') + 'T035959Z';
     base.recurrence = [`RRULE:FREQ=DAILY;UNTIL=${ate}`];
+  } else if (ev.formato === 'inicio_fim') {
+    base.recurrence = [`RRULE:FREQ=DAILY;INTERVAL=${diasEntre(ev.dataInicio, ev.dataFim)};COUNT=2`];
   }
   return base;
 }
@@ -439,6 +455,7 @@ function montarIcs(metodo: 'REQUEST' | 'CANCEL', uid: string, ev: EventoResumo, 
   } else {
     linhas.push(`DTSTART:${icsUtc(ev.dataInicio, ev.horaInicio!)}`, `DTEND:${icsUtc(ev.dataInicio, ev.horaFim!)}`);
     if (ev.formato === 'horario_diario') linhas.push(`RRULE:FREQ=DAILY;UNTIL=${icsData(addDias(ev.dataFim, 1))}T035959Z`);
+    else if (ev.formato === 'inicio_fim') linhas.push(`RRULE:FREQ=DAILY;INTERVAL=${diasEntre(ev.dataInicio, ev.dataFim)};COUNT=2`);
   }
   linhas.push(`SUMMARY:${icsTexto(ev.titulo)}`);
   if (ev.local) linhas.push(`LOCATION:${icsTexto(ev.local)}`);
@@ -474,7 +491,7 @@ function montarEmail(metodo: 'REQUEST' | 'CANCEL', assunto: string, ev: EventoRe
   const fronteira = (n: string) => `cdload-${n}-${crypto.randomUUID()}`;
   const misto = fronteira('misto'), alt = fronteira('alt');
   const periodo = ev.dataInicio === ev.dataFim ? dataBR(ev.dataInicio) : `${dataBR(ev.dataInicio)} a ${dataBR(ev.dataFim)}`;
-  const horario = ev.formato === 'dia_inteiro' ? 'dia inteiro' : `${ev.horaInicio} às ${ev.horaFim}${ev.formato === 'horario_diario' ? ' (todos os dias)' : ''}`;
+  const horario = ev.formato === 'dia_inteiro' ? 'dia inteiro' : `${ev.horaInicio} às ${ev.horaFim}${ev.formato === 'horario_diario' ? ' (todos os dias)' : ev.formato === 'inicio_fim' ? ' (só no dia de início e no dia de fim)' : ''}`;
   const intro = metodo === 'CANCEL' ? 'Este evento foi cancelado na plataforma CDLoad.' : 'Você foi convidado(a) para este evento. Aceite o convite para adicioná-lo à sua agenda.';
   const html = `<p>${escHtml(intro)}</p><p><b>${escHtml(ev.titulo)}</b><br>${escHtml(periodo)} · ${escHtml(horario)}${ev.local ? `<br>${escHtml(ev.local)}` : ''}</p>${ev.descricaoHtml ?? ''}`;
   const texto = `${intro}\n\n${ev.titulo}\n${periodo} · ${horario}${ev.local ? `\n${ev.local}` : ''}\n\n${textoPuro(ev.descricaoHtml ?? '')}`;
