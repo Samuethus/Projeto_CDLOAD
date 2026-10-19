@@ -211,6 +211,8 @@
   .servico:hover .seta{transform:rotate(-45deg);}
   .servico h3{font-size:21px; margin-top:auto; padding-top:40px;}
   .servico p{color:var(--text-muted); font-size:14px; line-height:1.6; margin-top:10px;}
+  .servico[data-servico]{cursor:pointer;}
+  .servico[data-servico]:focus-visible{outline:3px solid var(--azul-petroleo); outline-offset:3px;}
   .servico .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:14px;}
   .servico .tags span{font-size:11.5px; padding:4px 10px; border-radius:999px; background:#fff; border:1px solid var(--borda); color:#4b5563;}
 
@@ -337,12 +339,55 @@
   .copyright{text-align:center; font-size:13px; color:rgba(255,255,255,.75); margin-top:36px;}
 
   /* ---------- Aparição suave ---------- */
+  /* ---------- Demonstração dos serviços (modal wizard com fade) ---------- */
+  .demo-modal{position:fixed; inset:0; z-index:200; display:grid; place-items:center; padding:24px 16px; opacity:0; transition:opacity .3s ease;}
+  .demo-modal[hidden]{display:none;}
+  .demo-modal.aberto{opacity:1;}
+  .demo-fundo{position:absolute; inset:0; background:rgba(1,26,51,.62); backdrop-filter:blur(4px);}
+  .demo-caixa{
+    position:relative; width:min(980px,100%); max-height:calc(100vh - 48px); overflow:auto; background:#fff; border-radius:var(--raio);
+    box-shadow:0 40px 80px -30px rgba(1,26,51,.6); padding:24px 28px; transform:translateY(14px) scale(.98); transition:transform .3s ease;
+  }
+  .demo-modal.aberto .demo-caixa{transform:none;}
+  .demo-cab{display:flex; justify-content:space-between; align-items:flex-start; gap:16px;}
+  .demo-cab small{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--azul-petroleo);}
+  .demo-cab h3{font-size:22px; margin:4px 0 0;}
+  .demo-x{flex:0 0 auto; width:38px; height:38px; border-radius:10px; border:1px solid var(--borda); background:#fff; color:var(--text-dark); cursor:pointer; display:grid; place-items:center;}
+  .demo-x:hover{border-color:var(--azul-royal); color:var(--azul-royal);}
+  .demo-x svg{width:18px; height:18px;}
+  .demo-etapas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 14px; padding:0; list-style:none;}
+  .demo-etapas button{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--borda); background:var(--bg-card); color:var(--text-muted);
+    font:500 12.5px 'Inter',sans-serif; padding:6px 12px 6px 6px; border-radius:999px; cursor:pointer; transition:all .2s ease;
+  }
+  .demo-etapas em{font-style:normal;}
+  .demo-etapas button span{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; background:#fff; border:1px solid var(--borda); font-size:11px; font-weight:700;}
+  .demo-etapas button[aria-current="step"]{background:#fff; border-color:var(--azul-royal); color:var(--text-dark); font-weight:600;}
+  .demo-etapas button[aria-current="step"] span,.demo-etapas button.feito span{background:var(--gradiente); border-color:transparent; color:#fff;}
+  .demo-figura{margin:0; border-radius:14px; overflow:hidden; background:var(--bg-card); border:1px solid var(--borda); aspect-ratio:960/600;}
+  .demo-figura img{display:block; width:100%; height:100%; object-fit:cover; transition:opacity .25s ease;}
+  .demo-figura img.trocando{opacity:0;}
+  .demo-texto{color:var(--text-muted); font-size:14.5px; line-height:1.6; margin:14px 0 0; min-height:46px; transition:opacity .25s ease;}
+  .demo-texto.trocando{opacity:0;}
+  .demo-rodape{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;}
+  .demo-rodape > span{font-size:12.5px; color:var(--text-muted);}
+  .demo-rodape > div{display:flex; gap:10px;}
+  .demo-rodape .btn{height:44px; padding:0 22px;}
+  .demo-rodape .btn[disabled]{opacity:.45; pointer-events:none;}
+  .demo-aviso{font-size:11.5px; color:var(--text-muted); margin:10px 0 0;}
+  @media (max-width:640px){
+    .demo-caixa{padding:18px 16px;}
+    .demo-etapas button{padding:6px;}
+    .demo-etapas button:not([aria-current="step"]) em{display:none;}
+    .demo-rodape .btn{padding:0 16px;}
+  }
   .revelar{opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease;}
   .revelar.visivel{opacity:1; transform:none;}
   @media (prefers-reduced-motion: reduce){
     html{scroll-behavior:auto;}
     .revelar{opacity:1; transform:none; transition:none;}
     .flutuante{animation:none;}
+    .demo-modal,.demo-caixa,.demo-figura img,.demo-texto{transition:none;}
   }
 
   /* ---------- Responsivo ---------- */
@@ -522,37 +567,37 @@
     <div class="container">
       <h2 class="secao-titulo revelar">Todos os serviços que você precisa <span class="destaque">em um só lugar</span></h2>
       <div class="servicos">
-        <article class="servico revelar">
+        <article class="servico revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="powerbi">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Painéis Power BI</h3>
           <p>Uma galeria com os painéis do Núcleo: pesquisas de mercado, obras, financeiro, CAGED e radar de mercado, cada um a um clique.</p>
         </article>
-        <article class="servico realce revelar">
+        <article class="servico realce revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="clipping">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4zM8 10h8M8 14h8M8 18h5"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Clipping News</h3>
           <p>Coleta automática de notícias, com comparação entre a sua entidade e outros players do mercado e indicadores no Dashboard.</p>
         </article>
-        <article class="servico revelar">
+        <article class="servico revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="comunicacao">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12Z"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Comunicação Automatizada</h3>
           <p>Conecte números, crie modelos de mensagem e acompanhe disparos e campanhas para associados.</p>
         </article>
-        <article class="servico revelar">
+        <article class="servico revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="relatorios">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Relatórios</h3>
           <p>Biblioteca de relatórios em PDF organizada por categoria e data, com histórico de indicadores sempre à mão.</p>
         </article>
-        <article class="servico revelar">
+        <article class="servico revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="estoque">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Controle de Estoque</h3>
           <p>Cadastro de produtos e entradas e saídas por código de barras, lido pela câmera do celular, com alerta de estoque mínimo por setor.</p>
         </article>
-        <article class="servico revelar">
+        <article class="servico revelar" tabindex="0" role="button" aria-haspopup="dialog" data-servico="usuarios">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7M16 4a4 4 0 0 1 0 8M22 21c0-3-1.8-5.5-4.5-6.5"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
           <h3>Usuários e Permissões</h3>
@@ -777,6 +822,28 @@
   </div>
 </footer>
 
+<!-- ============ Demonstração dos serviços (wizard) ============ -->
+<div class="demo-modal" id="demoModal" hidden role="dialog" aria-modal="true" aria-labelledby="demoTitulo">
+  <div class="demo-fundo" data-fechar></div>
+  <div class="demo-caixa">
+    <header class="demo-cab">
+      <div><small>Demonstração</small><h3 id="demoTitulo"></h3></div>
+      <button type="button" class="demo-x" data-fechar aria-label="Fechar demonstração"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </header>
+    <ol class="demo-etapas" id="demoEtapas" aria-label="Etapas"></ol>
+    <figure class="demo-figura"><img id="demoImg" alt="" width="960" height="600"></figure>
+    <p class="demo-texto" id="demoTexto" aria-live="polite"></p>
+    <div class="demo-rodape">
+      <span id="demoContador"></span>
+      <div>
+        <button type="button" class="btn btn-contorno" id="demoVoltar">Voltar</button>
+        <button type="button" class="btn btn-primario" id="demoAvancar">Próximo</button>
+      </div>
+    </div>
+    <p class="demo-aviso">Telas ilustrativas, com dados fictícios.</p>
+  </div>
+</div>
+
 <script>
   // Cabeçalho com fundo ao rolar
   const topo = document.getElementById('topo');
@@ -803,6 +870,117 @@
       document.querySelectorAll('.preco .periodo').forEach(s => { s.textContent = periodo === 'anual' ? '/mês, cobrado anualmente' : '/mês'; });
     });
   });
+
+  // Demonstração dos serviços: clicar num card abre um wizard (com fade) com as telas ilustrativas de landing/service.
+  (() => {
+    const SERVICOS = {
+      powerbi: { nome: 'Painéis Power BI', passos: [
+        ['Galeria', 'powerbi-1', 'Todos os painéis do Núcleo reunidos em uma galeria, organizados por tema e a um clique de distância.'],
+        ['Painel aberto', 'powerbi-2', 'Cada painel abre dentro da plataforma, com indicadores, gráficos e detalhes na mesma tela.'],
+        ['Filtros', 'powerbi-3', 'Refine a visão por período, região ou segmento e compare séries lado a lado.']] },
+      clipping: { nome: 'Clipping News', passos: [
+        ['Coleta', 'clipping-1', 'As notícias dos termos monitorados chegam sozinhas, com fonte e horário, sem busca manual.'],
+        ['Comparativo', 'clipping-2', 'Compare as menções da sua entidade com as de outros players do mercado, mês a mês.'],
+        ['Dashboard', 'clipping-3', 'Volume, tom e alcance das notícias resumidos em indicadores no Dashboard.']] },
+      comunicacao: { nome: 'Comunicação Automatizada', passos: [
+        ['Canais', 'mensagens-1', 'Conecte números de WhatsApp e o e-mail da entidade em poucos passos.'],
+        ['Modelos', 'mensagens-2', 'Crie modelos de mensagem com campos personalizados e veja a prévia antes de enviar.'],
+        ['Campanhas', 'mensagens-3', 'Dispare campanhas segmentadas e acompanhe o envio, a entrega e a leitura de cada uma.']] },
+      relatorios: { nome: 'Relatórios', passos: [
+        ['Biblioteca', 'relatorios-1', 'Relatórios em PDF organizados por categoria e edição, prontos para baixar.'],
+        ['Gerador .pdf', 'relatorios-2', 'Escolha o modelo, o período e as seções: o relatório sai pronto em .pdf.'],
+        ['Histórico', 'relatorios-3', 'Consulte a evolução dos indicadores e as edições anteriores quando precisar.']] },
+      estoque: { nome: 'Controle de Estoque', passos: [
+        ['Cadastro', 'estoque-1', 'Cadastre produtos com código, setor e saldo, e encontre qualquer item pela busca.'],
+        ['Código de barras', 'estoque-2', 'Aponte a câmera do celular para o código de barras e registre entradas e saídas na hora.'],
+        ['Alertas', 'estoque-3', 'Receba alertas quando um item fica abaixo do estoque mínimo definido para ele.']] },
+      usuarios: { nome: 'Usuários e Permissões', passos: [
+        ['Usuários', 'usuarios-1', 'Convide as pessoas da equipe e defina o perfil de cada uma.'],
+        ['Permissões', 'usuarios-2', 'Ligue e desligue o acesso de cada perfil às seções da plataforma.'],
+        ['Acesso seguro', 'usuarios-3', 'Cada pessoa entra com e-mail e senha e vê apenas o que foi liberado para ela.']] }
+    };
+    const modal = document.getElementById('demoModal');
+    const caixa = modal.querySelector('.demo-caixa');
+    const titulo = document.getElementById('demoTitulo'), etapas = document.getElementById('demoEtapas');
+    const img = document.getElementById('demoImg'), texto = document.getElementById('demoTexto');
+    const contador = document.getElementById('demoContador');
+    const btnVoltar = document.getElementById('demoVoltar'), btnAvancar = document.getElementById('demoAvancar');
+    const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const src = arq => 'service/' + arq + '.svg';
+    let atual = null, passo = 0, origem = null, trocaTimer = 0, fechaTimer = 0;
+
+    const mostrar = (n, animar = true) => {
+      const passos = atual.passos, [rotulo, arq, desc] = passos[n];
+      passo = n;
+      etapas.querySelectorAll('button').forEach((b, i) => {
+        if (i === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+        b.classList.toggle('feito', i < n);
+      });
+      contador.textContent = `Etapa ${n + 1} de ${passos.length}`;
+      btnVoltar.disabled = n === 0;
+      btnAvancar.textContent = n === passos.length - 1 ? 'Agendar demonstração' : 'Próximo';
+      img.alt = `${atual.nome}: ${rotulo} (tela ilustrativa)`;
+      clearTimeout(trocaTimer);
+      if (!animar || semMovimento) { img.src = src(arq); texto.textContent = desc; return; }
+      // Fade: some, troca a tela e o texto, e reaparece quando a nova imagem carregar.
+      img.classList.add('trocando'); texto.classList.add('trocando');
+      trocaTimer = setTimeout(() => {
+        const revelar = () => { img.classList.remove('trocando'); texto.classList.remove('trocando'); };
+        img.onload = img.onerror = revelar;
+        img.src = src(arq); texto.textContent = desc;
+        if (img.complete) revelar();
+      }, 220);
+    };
+
+    const abrir = (chave, card) => {
+      atual = SERVICOS[chave]; if (!atual) return;
+      clearTimeout(fechaTimer);
+      origem = card;
+      titulo.textContent = atual.nome;
+      etapas.innerHTML = atual.passos.map((p, i) => `<li><button type="button" data-passo="${i}"><span>${i + 1}</span><em>${p[0]}</em></button></li>`).join('');
+      atual.passos.forEach(p => { new Image().src = src(p[1]); }); // pré-carrega as telas
+      img.classList.remove('trocando'); texto.classList.remove('trocando');
+      mostrar(0, false);
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      void modal.offsetWidth; // força o reflow para a transição de fade acontecer
+      modal.classList.add('aberto');
+      modal.querySelector('.demo-x').focus();
+    };
+
+    const fechar = (devolverFoco = true) => {
+      if (modal.hidden) return;
+      modal.classList.remove('aberto');
+      document.body.style.overflow = '';
+      fechaTimer = setTimeout(() => { modal.hidden = true; }, semMovimento ? 0 : 300);
+      if (devolverFoco && origem) origem.focus();
+    };
+
+    document.querySelectorAll('.servico[data-servico]').forEach(card => {
+      card.addEventListener('click', () => abrir(card.dataset.servico, card));
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(card.dataset.servico, card); } });
+    });
+    modal.querySelectorAll('[data-fechar]').forEach(el => el.addEventListener('click', () => fechar()));
+    etapas.addEventListener('click', e => { const b = e.target.closest('[data-passo]'); if (b) mostrar(+b.dataset.passo); });
+    btnVoltar.addEventListener('click', () => { if (passo > 0) mostrar(passo - 1); });
+    btnAvancar.addEventListener('click', () => {
+      if (passo < atual.passos.length - 1) return mostrar(passo + 1);
+      fechar(false); // última etapa: leva ao contato
+      document.getElementById('contato').scrollIntoView({ behavior: semMovimento ? 'auto' : 'smooth' });
+    });
+    document.addEventListener('keydown', e => {
+      if (modal.hidden || !modal.classList.contains('aberto')) return;
+      if (e.key === 'Escape') fechar();
+      else if (e.key === 'ArrowRight' && passo < atual.passos.length - 1) mostrar(passo + 1);
+      else if (e.key === 'ArrowLeft' && passo > 0) mostrar(passo - 1);
+      else if (e.key === 'Tab') { // mantém o foco dentro do modal
+        const foc = [...caixa.querySelectorAll('button:not([disabled])')];
+        const prim = foc[0], ult = foc[foc.length - 1];
+        if (e.shiftKey && document.activeElement === prim) { e.preventDefault(); ult.focus(); }
+        else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); prim.focus(); }
+      }
+    });
+  })();
 
   // Newsletter (sem envio real: só confirma na tela)
   document.getElementById('newsForm').addEventListener('submit', e => {
