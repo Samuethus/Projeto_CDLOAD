@@ -408,6 +408,12 @@
     .secao{padding:72px 0;}
     .topo-acoes .link{display:none;}
     .hero{padding-top:32px;}
+    /* Celular: os dois botões do topo e os três números lado a lado, cada um numa única linha. */
+    .hero-botoes{flex-wrap:nowrap; gap:8px;}
+    .hero-botoes .btn{flex:1 1 0; min-width:0; height:48px; padding:0 8px; font-size:13px; line-height:1.2; text-align:center;}
+    .hero-provas{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:32px;}
+    .hero-provas div{font-size:11.5px; line-height:1.35;}
+    .hero-provas strong{font-size:20px;}
     .mock{padding:10px 0 60px;}
     .janela{grid-template-columns:44px 1fr; min-height:0;}
     .janela-menu i{width:24px; height:24px;}
