@@ -302,6 +302,9 @@
   .plano.premium .plano-recursos li{color:rgba(255,255,255,.88);}
   .plano.premium .plano-recursos li svg{color:#5fe0b3;}
   .plano.premium .btn{margin:16px 0 0;}
+  .planos-dois{grid-template-columns:repeat(2,1fr); max-width:760px; margin-inline:auto;}
+  .planos[hidden]{display:none;}
+  @media (max-width:480px){ .alternador button{padding:11px 18px;} }
   .nota-precos{text-align:center; font-size:12.5px; color:var(--text-muted); margin-top:28px;}
 
   /* ---------- 6. Rodapé ---------- */
@@ -410,7 +413,7 @@
       <div class="revelar">
         <span class="selo"><b>CDLoad</b> Plataforma do Núcleo de Inteligência</span>
         <h1>Controle a inteligência da sua entidade <em class="destaque">em um só lugar</em></h1>
-        <p class="hero-sub">Painéis Power BI, monitoramento de notícias, relatórios, comunicação via WhatsApp e controle de estoque reunidos em um único painel seguro.</p>
+        <p class="hero-sub">Painéis Power BI, monitoramento de notícias, gerador de relatórios em .pdf, comunicação via WhatsApp e muito mais reunidos em um único painel seguro.</p>
         <div class="hero-botoes">
           <a class="btn btn-primario" href="#contato">Agendar demonstração</a>
           <a class="btn btn-contorno" href="#servicos">Conhecer a plataforma</a>
@@ -496,13 +499,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4zM8 10h8M8 14h8M8 18h5"/></svg>Google Notícias
         </div>
         <div class="integracao">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Supabase
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Relatório .pdf
         </div>
         <div class="integracao">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7M17 11l2 2 4-4"/></svg>Novo CAGED
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7M17 11l2 2 4-4"/></svg>IBGE Dados
         </div>
         <div class="integracao">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>ABVE Data
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>E-mail Auto
         </div>
         <div class="integracao">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6v12M7 6v12M11 6v12M14 6v12M18 6v12M20 6v12"/></svg>Código de barras
@@ -534,9 +537,8 @@
         <article class="servico revelar">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12Z"/></svg></span>
           <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 8v9H8"/></svg>
-          <h3>Comunicação via WhatsApp</h3>
+          <h3>Comunicação Automatizada</h3>
           <p>Conecte números, crie modelos de mensagem e acompanhe disparos e campanhas para associados.</p>
-          <div class="tags"><span>WhatsApp</span><span>Instâncias</span><span>Templates</span><span>Campanhas</span></div>
         </article>
         <article class="servico revelar">
           <span class="servico-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg></span>
@@ -592,7 +594,7 @@
         <article class="impacto brilho revelar">
           <svg class="impacto-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
           <h3>Comunicação que chega a quem importa</h3>
-          <p>Campanhas segmentadas pelo WhatsApp com acompanhamento de envio. Menos retrabalho manual e mais associados bem informados.</p>
+          <p>Campanhas segmentadas pelo WhatsApp ou via e-mail com acompanhamento de envio. Menos retrabalho manual e mais associados bem informados.</p>
           <div class="impacto-palco" aria-hidden="true">
             <div class="palco-fone">
               <div class="mini"><small>Associados alcançados</small><strong>9.647</strong><span class="sobe">▲ 4,8% no mês</span></div>
@@ -617,13 +619,14 @@
       <div class="alternador revelar" role="group" aria-label="Periodicidade">
         <button type="button" data-periodo="mensal" aria-pressed="true">Mensal</button>
         <button type="button" data-periodo="anual" aria-pressed="false">Anual<sup>-20%</sup></button>
+        <button type="button" data-periodo="associados" aria-pressed="false">Associados</button>
       </div>
 
-      <div class="planos">
+      <div class="planos" data-grupo="geral">
         <article class="plano revelar">
           <div class="plano-topo">
             <div class="plano-nome">Essencial <span>Essencial</span></div>
-            <div class="preco"><b>R$ 99</b><small>/projeto</small></div>
+            <div class="preco"><b>R$ 0</b><small>/projeto</small></div>
             <p class="plano-desc">Pagamento único para começar a centralizar painéis e relatórios.</p>
           </div>
           <div class="plano-recursos">
@@ -641,7 +644,7 @@
 
         <article class="plano premium revelar">
           <div class="plano-nome">Profissional <span>Mais escolhido</span></div>
-          <div class="preco"><b data-mensal="R$ 120" data-anual="R$ 96">R$ 120</b><small class="periodo">/mês</small></div>
+          <div class="preco"><b data-mensal="R$ 0" data-anual="R$ 0">R$ 0</b><small class="periodo">/mês</small></div>
           <p class="plano-desc">Inteligência de mercado e comunicação com associados.</p>
           <div class="plano-recursos">
             <h4>Tudo do Essencial, mais</h4>
@@ -659,7 +662,7 @@
         <article class="plano revelar">
           <div class="plano-topo">
             <div class="plano-nome">Corporativo <span>Corporativo</span></div>
-            <div class="preco"><b data-mensal="R$ 220" data-anual="R$ 176">R$ 220</b><small class="periodo">/mês</small></div>
+            <div class="preco"><b data-mensal="R$ 0" data-anual="R$ 0">R$ 0</b><small class="periodo">/mês</small></div>
             <p class="plano-desc">Operação completa, com estoque e painéis sob medida.</p>
           </div>
           <div class="plano-recursos">
@@ -673,6 +676,38 @@
             </ul>
           </div>
           <a class="btn btn-contorno" href="#contato">Falar com vendas</a>
+        </article>
+      </div>
+
+      <!-- Planos exclusivos para associados (aba "Associados" do alternador) -->
+      <div class="planos planos-dois" data-grupo="associados" hidden>
+        <article class="plano revelar">
+          <div class="plano-topo">
+            <div class="plano-nome">Lite <span>Lite</span></div>
+            <div class="preco"><b>R$ 0</b><small>/mês</small></div>
+            <p class="plano-desc">Consultoria focada em aplicações práticas dentro da rotina de trabalho da empresa.</p>
+          </div>
+          <div class="plano-recursos">
+            <h4>Recursos</h4>
+            <ul>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>Consultoria focada em aplicações práticas dentro da rotina de trabalho da empresa</li>
+            </ul>
+          </div>
+          <a class="btn btn-contorno" href="#contato">Começar agora</a>
+        </article>
+
+        <article class="plano premium revelar">
+          <div class="plano-nome">Plus <span>Recomendado</span></div>
+          <div class="preco"><b>R$ 0</b><small>/mês</small></div>
+          <p class="plano-desc">Consultoria com acompanhamento especializado e projeto de automação.</p>
+          <div class="plano-recursos">
+            <h4>Tudo do Lite, mais</h4>
+            <ul>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>Acompanhamento especializado</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>Projeto de Automação/Integração</li>
+            </ul>
+          </div>
+          <a class="btn btn-primario btn-bloco" href="#contato">Agendar demonstração</a>
         </article>
       </div>
       <p class="nota-precos">Valores de referência. Consulte condições para a sua entidade.</p>
@@ -760,6 +795,10 @@
     btn.addEventListener('click', () => {
       const periodo = btn.dataset.periodo;
       document.querySelectorAll('.alternador button').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+      // "Associados" troca o conjunto de planos; Mensal/Anual atualizam os preços dos planos gerais.
+      const associados = periodo === 'associados';
+      document.querySelectorAll('.planos[data-grupo]').forEach(g => { g.hidden = (g.dataset.grupo === 'associados') !== associados; });
+      if (associados) return;
       document.querySelectorAll('.preco b[data-mensal]').forEach(b => { b.textContent = b.dataset[periodo]; });
       document.querySelectorAll('.preco .periodo').forEach(s => { s.textContent = periodo === 'anual' ? '/mês, cobrado anualmente' : '/mês'; });
     });
