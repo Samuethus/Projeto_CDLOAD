@@ -13849,7 +13849,7 @@ ${clipPlayerPills(n)}
     // % da população adulta negativada, mês a mês (jan–dez), uma linha por ano: o mais recente em azul, o anterior em azul
     // claro (cores do gráfico de linhas original da visão Dashboard) e o 3º em cinza. Filtro Região (Centro-Oeste por padrão;
     // vazio = Brasil, total do país) e Ano (o escolhido e os dois anteriores; sem Ano, os três mais recentes). Fontes, lidas sozinhas dos
-    // PDFs da seção Inadimplência (pdf.js no navegador, sem API; cache no IndexedDB, chave "inad-v2|id|caminho"):
+    // PDFs da seção Inadimplência (pdf.js no navegador, sem API; cache no IndexedDB, chave "inad-v3|id|caminho"):
     //   1. Tabela mensal ("Inadimplência Mensal 2025 · Janeiro Centro-Oeste 45,78% ..."), ex.: Inadimplencia_2025_Centro-Oeste.pdf.
     //   2. Gráfico 12 "Estimativa de inadimplentes" dos relatórios Brasil do SPC ("Norte: 6,86 milhões (48,45% da população
     //      adulta)" + total do país; mês = "(ref. jun/2026)" ou o mês de referência do cadastro).
@@ -13872,8 +13872,11 @@ ${clipPlayerPills(n)}
       while((m = re.exec(t))) regioes[m[1]] = { negativadosMi: inadNumBR(m[2]), popAdulta: inadNumBR(m[3]) };
       if(!INAD_REGIOES.every(n => regioes[n] && isFinite(regioes[n].popAdulta))) return null;
       const b = t.match(/havia\s+([\d.,]+)\s*milh.*?representa\s+([\d.,]+)\s*%/);
+      // Mês: o do texto ("estima que em maio de 2026 havia") vale mais que a legenda do gráfico — o PDF de mai/2026
+      // traz "(ref. abr/2026)" por engano. Sem o texto, fica a legenda.
+      const e = t.match(/estima que em ([a-zç]+) de (\d{4})/i), iE = e ? INAD_MESES_LONGOS.indexOf(e[1].toLowerCase()) : -1;
       const r = t.match(/\(ref\.?\s*([a-zç]{3})[a-zç]*\/(\d{4})\)/i), iM = r ? INAD_MES_ABREV.indexOf(r[1].toLowerCase()) : -1;
-      return { mes: iM >= 0 ? inadMesChave(r[2], iM) : null, regioes,
+      return { mes: iE >= 0 ? inadMesChave(e[2], iE) : iM >= 0 ? inadMesChave(r[2], iM) : null, regioes,
         brasil: b ? { negativadosMi: inadNumBR(b[1]), popAdulta: inadNumBR(b[2]) } : null };
     }
     // Tabela mensal: "Inadimplência Mensal 2025" (ou "Mês (2025)") e linhas "Janeiro Centro-Oeste 45,78%".
@@ -13893,7 +13896,7 @@ ${clipPlayerPills(n)}
       return Object.keys(out).length ? out : null;
     }
     async function inadLerPdfRegioes(r){
-      const chave = `inad-v2|${r.id}|${r.arquivo_path}`;
+      const chave = `inad-v3|${r.id}|${r.arquivo_path}`;
       const cache = await thumbCache('get', chave);
       if(cache) return cache;
       const pdfjs = await loadPdfJs();
