@@ -13,6 +13,7 @@ Formato (compacto, mensal):
            participação dos eletrificados no mercado total
   dims: { tec|fab|uf|grupo|seg: { nomes: [...], linhas: [[iMes, iNome, qtd], ...] } }
   mun_mt: { nomes, linhas } — municípios de Mato Grosso
+  api: { chave, cluster, dataset, relatorio, modelo } — relatório publicado no momento da extração
 """
 import datetime
 import json
@@ -94,6 +95,10 @@ def main():
             'seg': dim('Segmento'),
         },
         'mun_mt': dim('Municipio', where=[p.filtro_in('b', 'Estado', ['MT'])]),
+        # Relatório publicado agora: o painel usa esta chave nas consultas ao vivo (filtro de Estado/Cidade/busca),
+        # já que a ABVE troca a chave todo mês e o relatório antigo continua no ar, parado.
+        'api': {'chave': p.RESOURCE_KEY, 'cluster': p.CLUSTER, 'dataset': p.DATASET_ID,
+                'relatorio': p.REPORT_ID, 'modelo': p.MODEL_ID},
     }
     # Modelos de cada fabricante (nome "FABRICANTE|MODELO"), para o subtítulo do ranking de fabricantes.
     fg = p.consultar(E, BASE + [('f', p.col('b', 'Fabricante')), ('g', p.col('b', 'GrupoModeloVeiculo')), ('qtd', p.medida('b', 'Quantidade'))], [F_TEC])

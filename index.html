@@ -13243,10 +13243,12 @@ ${clipPlayerPills(n)}
     // a mesma do relatório; CORS aberto), e todos os gráficos acompanham.
     const stkUfEl = document.getElementById('stkUfFiltro');
     const stkCidadeEl = document.getElementById('stkCidadeFiltro');
+    // A ABVE republica o BI Frotas todo mês com uma chave nova e o relatório antigo continua no ar, parado.
+    // Estes valores são só a reserva: vale a chave gravada pela extração diária (ABVE_FROTAS.api), ver panSincronizarApi.
     const PAN_API = {
-      chave: '079ec3b8-1fd6-4c00-93b0-fd22b9258970',
+      chave: 'bc748218-53e3-462f-bf8c-7a4347ae9149',
       cluster: 'https://wabi-brazil-south-b-primary-api.analysis.windows.net',
-      dataset: 'bf99f664-ff4f-43e7-a258-139c3e11a6e2', relatorio: '8dfea0d6-d8e9-4d9c-b5bb-9de3509781b7', modelo: 8592399
+      dataset: 'b07dfd04-87d0-4be7-8c8f-21a5d0f40652', relatorio: '35da7c22-9b87-4fed-86b5-836e98a5e7aa', modelo: 8707429
     };
     const panCol = (s, p) => ({ Column: { Expression: { SourceRef: { Source: s } }, Property: p } });
     const panMed = (s, p) => ({ Measure: { Expression: { SourceRef: { Source: s } }, Property: p } });
@@ -13286,9 +13288,15 @@ ${clipPlayerPills(n)}
         localStorage.setItem(chave, JSON.stringify({ dia, dados }));
       } catch(e){ /* sem espaço ou permissão: segue sem cache */ }
     }
+    // Passa a consultar o relatório da ABVE publicado no dia da última extração (abve_frotas.js).
+    function panSincronizarApi(){
+      const a = window.ABVE_FROTAS && window.ABVE_FROTAS.api;
+      if(a && a.chave && a.chave !== PAN_API.chave) Object.assign(PAN_API, a);
+    }
     // api: relatório consultado (PAN_API = ABVE por padrão; CAG_API = Novo CAGED).
     async function panConsulta(entidades, selects, where, tentativa, api){
       api = api || PAN_API;
+      if(api === PAN_API){ await panCarregar().catch(() => {}); panSincronizarApi(); }
       const query = { Version: 2, From: Object.entries(entidades).map(([k, v]) => ({ Name: k, Entity: v, Type: 0 })),
         Select: selects.map(([nome, expr]) => ({ ...expr, Name: nome })) };
       if(where && where.length) query.Where = where;
