@@ -1,14 +1,30 @@
-# Atualiza diariamente os dados do Panorama Econômico (ABVE e Novo CAGED) e dos painéis Sefaz MT (ICMS), IBGE (IPCA-15 e PMC)
-# e Stone (Índice do Varejo Stone). Roda scripts/abve_extrair.py, scripts/caged_extrair.py, scripts/sefaz_extrair.ps1,
-# scripts/ibge_extrair.ps1 e scripts/stone_ivs_extrair.py e só faz
-# commit (e novo deploy) se alguma das fontes publicou algo novo.
-name: Atualizar dados (ABVE, CAGED, Sefaz MT, IBGE e Stone)
+# Atualiza todo dia os dados do Dashboard › Panorama Econômico, com os dados no ar até as 06:00 de Brasília.
+#
+# Dois jobs, em ordem de prioridade:
+#   1. panorama — fontes rápidas dos painéis do Panorama (ABVE, Novo CAGED, Sefaz MT, IBGE IPCA-15/PMC/PNAD,
+#      Stone e Cielo). Leva poucos minutos; commita e publica assim que termina.
+#   2. cnpj — EMPRESAS (dados abertos do CNPJ, ~7 GB por edição mensal) e coordenadas dos CEPs. Leva até ~1h30;
+#      roda depois e publica à parte, sem atrasar o Panorama.
+# Cada job só faz commit (e novo deploy) se alguma fonte publicou algo novo.
+#
+# Horário: o cron do GitHub atrasa muito (agendado para 09:00 UTC, começava entre 12:30 e 16:00 UTC). Por isso:
+#   - o gatilho principal é o pg_cron do Supabase (supabase/schema_atualizacao_diaria.sql), que chama
+#     workflow_dispatch às 08:45 UTC (05:45 em Brasília) com cnpj=false: o Panorama fica no ar antes das 06:00;
+#   - os dois agendamentos abaixo são a reserva, fora da hora cheia (onde o atraso é maior):
+#     05:23 UTC (02:23 em Brasília) roda tudo, inclusive o CNPJ; 08:37 UTC (05:37) roda só o Panorama.
+name: Atualizar dados do Panorama (ABVE, CAGED, Sefaz MT, IBGE, Stone, Cielo e CNPJ)
 
 on:
   schedule:
-    - cron: '0 9 * * *'   # 09:00 UTC (06:00 em Cuiabá), uma vez por dia
-  workflow_dispatch:       # também dá para rodar manualmente na aba Actions
-  push:                    # e quando os scripts do CNPJ (ou este workflow) mudam: regera a base e o mapa por CEP na hora
+    - cron: '23 5 * * *'   # 02:23 em Brasília: Panorama + CNPJ
+    - cron: '37 8 * * *'   # 05:37 em Brasília: só o Panorama (reserva do pg_cron)
+  workflow_dispatch:       # manual (aba Actions) ou pelo pg_cron do Supabase
+    inputs:
+      cnpj:
+        description: 'Rodar também EMPRESAS (CNPJ) e coordenadas dos CEPs (lento)'
+        type: boolean
+        default: true
+  push:                    # quando os scripts do CNPJ (ou este workflow) mudam: regera a base e o mapa por CEP na hora
     branches: [main]
     paths:
       - scripts/cnpj_extrair.py
@@ -24,19 +40,24 @@ permissions:
   actions: write
 
 jobs:
-  atualizar:
+  panorama:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # A ABVE republica o BI Frotas todo mês com uma chave nova: o script relê a chave na página da ABVE.
+      # Falha sem bloquear as demais fontes (o arquivo anterior fica como está).
       - name: Extrair dados da ABVE
+        continue-on-error: true
         run: python scripts/abve_extrair.py
       - name: Extrair dados do Novo CAGED
+        continue-on-error: true
         run: python scripts/caged_extrair.py
       # Looker Studio público da Sefaz MT. Se a Sefaz refizer o relatório, este passo falha
-      # sem apagar os dados anteriores e sem impedir a atualização de ABVE e CAGED.
+      # sem apagar os dados anteriores e sem impedir a atualização dos demais.
       - name: Extrair dados da Sefaz MT (ICMS)
         continue-on-error: true
         shell: pwsh
@@ -57,6 +78,30 @@ jobs:
       - name: Extrair dados da Cielo (ICVA)
         continue-on-error: true
         run: python scripts/cielo_icva_extrair.py
+      - name: Commit e deploy se houve mudança
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          bash scripts/commitar_dados.sh "Dados do Panorama (ABVE/CAGED/Sefaz/IBGE/Stone/Cielo): atualização diária"
+          assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js
+          assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/ibge_pnad.js
+          assets/data/stone_ivs.js assets/data/cielo_icva.js
+
+  cnpj:
+    needs: panorama
+    # Não roda no agendamento de reserva das 05:37 nem quando o pg_cron pede só o Panorama (cnpj=false).
+    if: >-
+      !cancelled() &&
+      !(github.event_name == 'schedule' && github.event.schedule == '37 8 * * *') &&
+      !(github.event_name == 'workflow_dispatch' && inputs.cnpj == false)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main   # já com o commit do Panorama
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       # Receita Federal: dados abertos do CNPJ (~7 GB por edição mensal: Estabelecimentos, Empresas e Simples).
       # Consulta só a lista de pastas e sai na hora quando a edição mais recente já foi processada; falha sem
       # bloquear os demais. Prazo largo: o servidor da Receita às vezes fica lento (~1 MB/s).
@@ -88,26 +133,10 @@ jobs:
           AWESOMEAPI_KEY: ${{ secrets.AWESOMEAPI_KEY }}   # cadastro gratuito em awesomeapi.com.br (100 mil consultas/mês)
         run: python scripts/cnpj_ceps_geo.py
       - name: Commit e deploy se houve mudança
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          ARQS="assets/data/abve_frotas.js assets/data/caged_dados.js assets/data/caged_relatorio.js assets/data/sefaz_icms.js assets/data/ibge_ipca15.js assets/data/ibge_pmc.js assets/data/stone_ivs.js assets/data/cielo_icva.js assets/data/ibge_pnad.js assets/data/cnpj_empresas.js assets/data/cnpj_ceps.js assets/data/cnpj_amostras.js scripts/cache/ceps_geo.csv scripts/cache/cnpj_status.txt"
-          if [ -n "$(git status --porcelain $ARQS)" ]; then
-            git config user.name "abve-bot"
-            git config user.email "abve-bot@users.noreply.github.com"
-            git add $(ls $ARQS 2>/dev/null)   # só os que existem (cnpj_ceps.js e o cache surgem na 1ª extração)
-            git commit -m "Dados ABVE/CAGED/Sefaz/IBGE/Stone: atualização diária"
-            # A execução leva ~1h30 (CNPJ + CEPs): se a main recebeu commits nesse meio tempo, o push simples é
-            # recusado e tudo o que foi gerado se perde. Traz os commits novos (só mexem em outros arquivos) e tenta de novo.
-            # --autostash: algum arquivo fora da lista alterado pelos scripts não pode travar o rebase (e perder o commit).
-            enviado=""
-            for i in 1 2 3; do
-              git pull --rebase --autostash origin main && git push && enviado=1 && break
-              sleep 10
-            done
-            [ -n "$enviado" ] || { echo "::error::Não foi possível enviar os dados gerados (push recusado 3 vezes)."; exit 1; }
-            # Commits feitos pelo GITHUB_TOKEN não disparam o deploy sozinhos.
-            gh workflow run deploy.yml
-          else
-            echo "Sem mudanças."
-          fi
+        run: >-
+          bash scripts/commitar_dados.sh "Dados de EMPRESAS (CNPJ): atualização diária"
+          assets/data/cnpj_empresas.js assets/data/cnpj_ceps.js assets/data/cnpj_amostras.js
+          scripts/cache/ceps_geo.csv scripts/cache/cnpj_status.txt

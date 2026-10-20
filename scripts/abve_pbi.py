@@ -7,16 +7,23 @@ do link de publicação; aqui fazemos o mesmo, com consultas agregadas próprias
 Uso: importado por scripts/abve_extrair.py (padrão: ABVE) e scripts/caged_extrair.py
 (chama usar(CAGED)). Só a biblioteca padrão do Python.
 """
+import base64
 import gzip
 import json
+import re
+import urllib.parse
 import urllib.request
 import uuid
 
-RESOURCE_KEY = '079ec3b8-1fd6-4c00-93b0-fd22b9258970'
+# A ABVE republica o BI Frotas todo mês com uma chave nova (BI_Frota_Set26, BI_Frota_Out26...), e o
+# relatório antigo continua no ar, parado. Por isso a chave é relida da página a cada execução
+# (usar_chave_publicada); a constante abaixo é só o último valor conhecido, usado se a página falhar.
+PAGINA_ABVE = 'https://abve.org.br/abve-data/bi-frotas/'
+RESOURCE_KEY = 'bc748218-53e3-462f-bf8c-7a4347ae9149'
 CLUSTER = 'https://wabi-brazil-south-b-primary-api.analysis.windows.net'
-DATASET_ID = 'bf99f664-ff4f-43e7-a258-139c3e11a6e2'
-REPORT_ID = '8dfea0d6-d8e9-4d9c-b5bb-9de3509781b7'
-MODEL_ID = 8592399
+DATASET_ID = 'b07dfd04-87d0-4be7-8c8f-21a5d0f40652'
+REPORT_ID = ''
+MODEL_ID = 8707429
 
 # Novo CAGED — Ministério do Trabalho e Emprego (painel público "Painel Novo CAGED").
 CAGED = {'chave': '5b95b481-bfbc-4287-935e-ce2b20015ab6',
@@ -39,6 +46,29 @@ def atualizar_ids():
     with urllib.request.urlopen(req, timeout=120) as r:
         j = _json(r.read())
     MODEL_ID, DATASET_ID, REPORT_ID = j['models'][0]['id'], j['models'][0]['dbName'], j['exploration']['report']['objectId']
+    return j['models'][0].get('displayName'), j['models'][0].get('LastRefreshTime')
+
+
+def usar_chave_publicada(pagina=PAGINA_ABVE):
+    """Lê a chave do Power BI embutido na página da ABVE (link app.powerbi.com/view?r=<base64 {"k": chave}>)."""
+    global RESOURCE_KEY
+    try:
+        req = urllib.request.Request(pagina, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            html = r.read().decode('utf-8', 'replace')
+        chaves = []
+        for cod in re.findall(r'powerbi\.com/view\?r=([A-Za-z0-9_\-=%]+)', html):
+            cod = urllib.parse.unquote(cod)
+            k = json.loads(base64.urlsafe_b64decode(cod + '=' * (-len(cod) % 4)))['k']
+            if k not in chaves:
+                chaves.append(k)
+        if not chaves:
+            raise RuntimeError('nenhum link do Power BI na página')
+        RESOURCE_KEY = chaves[0]
+    except Exception as e:  # página fora do ar ou refeita: segue com a última chave conhecida
+        print(f'Aviso: não consegui ler a chave na página da ABVE ({e}); usando {RESOURCE_KEY}.')
+    nome, atualizado = atualizar_ids()
+    print(f'ABVE: relatório {nome} (chave {RESOURCE_KEY}, atualizado em {atualizado}).')
 
 
 def _json(b):

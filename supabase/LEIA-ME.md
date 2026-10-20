@@ -154,6 +154,16 @@ Copia pastas, formulários, perguntas, coletores e respostas do Survey Monkey pa
 3. **SQL:** em [schema_surveymonkey.sql](schema_surveymonkey.sql), troque as duas ocorrências de `SEU_PROJECT_REF` pelo id do projeto (Project Settings > General > Project ID) > cole no SQL Editor > **Run**. Rode **depois** do `schema_seguranca_rls.sql`.
 4. **Conferir:** depois de alguns minutos, rode as consultas comentadas no fim do arquivo. A primeira carga traz todo o histórico e pode levar algumas execuções (cada uma tem ~2 min e respeita o limite de chamadas da API); `pendentes` chega a 0 quando terminar. Erros: coluna `erros` de `survey_sincronizacoes` e **Edge Functions > surveymonkey-sincronizar > Logs**.
 
+## Dashboard › Panorama Econômico: atualização diária às 06:00 (pg_cron → GitHub Actions)
+
+O cron do próprio GitHub atrasa horas. Para o Panorama estar atualizado às 06:00 de Brasília, o Supabase dispara o workflow `abve-diario.yml` às 05:45 (só as fontes do Panorama, que levam poucos minutos):
+
+1. No GitHub, crie um token *fine-grained* só para o repositório `Samuethus/Projeto_CDLOAD`, com **Actions: Read and write**.
+2. Cole o token em `schema_atualizacao_diaria.sql` (no lugar de `COLE_AQUI_O_TOKEN`) e rode o arquivo no SQL Editor. O token fica no Vault.
+3. Confira na aba **Actions** do GitHub a execução disparada pelo teste do final do arquivo.
+
+Sem este passo, o workflow continua rodando pelos agendamentos de reserva do próprio GitHub (02:23 e 05:37 de Brasília), sujeitos ao atraso.
+
 ## 3. Primeiro acesso do administrador
 
 1. Abra o site, digite o e-mail do admin e uma **nova senha** (8+ caracteres) e clique em **Primeiro acesso**.

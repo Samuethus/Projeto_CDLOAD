@@ -39,7 +39,8 @@ def chave(r):
 
 
 def main():
-    tot = p.consultar(E, BASE + [('qtd', p.medida('b', 'Quantidade'))], [F_TEC])
+    p.usar_chave_publicada()
+    tot =p.consultar(E, BASE + [('qtd', p.medida('b', 'Quantidade'))], [F_TEC])
     meses = sorted({chave(r) for r in tot if r['ano'] and r['mes']})
     im = {m: i for i, m in enumerate(meses)}
     total = [0] * len(meses)
