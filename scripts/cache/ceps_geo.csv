@@ -1170,6 +1170,7 @@ cep;lon;lat;logradouro;bairro
 78043435;-56.10308;-15.58817;Rua Corsino do Amarante;Quilombo
 78043438;-56.09950;-15.58612;Travessa das Palmeiras;Quilombo
 78043460;-56.10380;-15.59033;Rua Marechal Floriano Peixoto;Quilombo
+78043500;-56.10305;-15.58469;Avenida Senador Filinto Müller;Quilombo
 78043505;-56.10209;-15.58820;Rua Presidente Afonso Pena;Quilombo
 78043508;-56.09957;-15.58412;Rua Presidente Wenceslau Braz;Quilombo
 78043512;-56.10053;-15.58270;Rua Presidente Washington Luís;Quilombo
@@ -3125,6 +3126,7 @@ cep;lon;lat;logradouro;bairro
 78070115;-56.07668;-15.61942;Rua Dezoito;Jardim Petrópolis
 78070118;-56.07096;-15.61991;Rua Nove;Jardim Petrópolis
 78070119;-56.07099;-15.61945;Rua E;Jardim Petrópolis
+78070122;-56.07473;-15.59990;Avenida Tancredo de Almeida Neves;Jardim Petrópolis
 78070130;-56.07566;-15.61992;Rua Geraldo Deschamps de Almeida;Jardim Petrópolis
 78070140;-56.06778;-15.62091;Rua da Mangueira;Jardim Shangri-Lá
 78070150;-56.06785;-15.62464;Rua Ceilão;Jardim Shangri-Lá
@@ -3216,6 +3218,7 @@ cep;lon;lat;logradouro;bairro
 78070714;-56.10932;-15.60544;Rua W-3;Bela Marina
 78070715;-56.10932;-15.60544;Rua W-4;Bela Marina
 78070716;-56.10933;-15.60546;Rua W-5;Bela Marina
+78070720;-56.13559;-15.66380;Avenida Manoel José de Arruda;Bela Marina
 78070970;-56.06601;-15.62083;Avenida Fernando Correa da Costa, 3180;Jardim Shangri-Lá
 78070971;-56.06722;-15.62029;Avenida Fernando Correa da Costa, 3010;Jardim Shangri-Lá
 78074000|RECANTO DOS PASSAROS;-56.09789;-15.60141;Avenida Sanhaço;Recanto dos Pássaros
@@ -5535,6 +5538,7 @@ cep;lon;lat;logradouro;bairro
 78120602;-56.08508;-15.66790;Rua Papa João XXIII;Parque do Lago
 78120605;-56.08442;-15.67008;Avenida São Gonçalo;Parque do Lago
 78120607;-56.08543;-15.66843;Rua Frei Emiliano Monteiro;Parque do Lago
+78120611;-56.08535;-15.67231;Rua Sol Nascente;Parque do Lago
 78120615;-56.09082;-15.62138;Rua São Pedro;Parque do Lago
 78120616;-56.09811;-15.65251;Rua Vila Nova;Parque do Lago
 78120618;-56.17222;-15.64756;Rua Mar de Rosas;Parque do Lago
@@ -20367,6 +20371,7 @@ cep;lon;lat;logradouro;bairro
 78550186;-55.50764;-11.85034;Rua dos Ariris;Setor Comercial
 78550188;-55.50788;-11.85130;Rua dos Álamos;Setor Comercial
 78550204;-55.50879;-11.85485;Rua das Azaleias;Setor Comercial
+78550206;-55.50740;-11.85765;Avenida das Embaúbas;Setor Comercial
 78550210;-55.50741;-11.85499;Rua das Avencas;Setor Comercial
 78550218;-55.50436;-11.85455;Rua das Rosas;Setor Comercial
 78550220;-55.50334;-11.85611;Rua das Orquídeas;Setor Comercial
@@ -20683,6 +20688,7 @@ cep;lon;lat;logradouro;bairro
 78552558;-55.49744;-11.82394;Rua das Éricas;Jardim das Orquídeas
 78552561;-55.49813;-11.82378;Rua dos Caetés;Jardim das Orquídeas
 78552598;-55.50657;-11.84629;Rua das Azaleias;Jardim das Azaleias
+78552616;-55.49551;-11.82568;Avenida Senador Jonas Pinheiro;Jardim das Azaleias
 78552622;-55.50497;-11.82238;Rua dos Cambuis;Jardim das Azaleias
 78552658;-55.50795;-11.82258;Rua dos Narcisos;Jardim das Azaleias
 78552664;-55.52558;-11.85348;Avenida André Antônio Maggi;Jardim das Azaleias
@@ -28697,6 +28703,7 @@ cep;lon;lat;logradouro;bairro
 78710191;-54.64642;-16.45502;Rua Osório Machado;Jardim Guanabara II
 78710193;-54.64555;-16.45203;Rua Rufino Araújo;Jardim Guanabara II
 78710210;-54.64555;-16.45203;Rua Rufino Araújo;Loteamento Monte Líbano
+78710230;-54.62651;-16.46978;Rua Dom Pedro II;Loteamento Monte Líbano
 78710235;-54.64202;-16.45869;Rua Treze de Maio;Loteamento Monte Líbano
 78710250;-54.64361;-16.44938;Rua Pedro Ferrer;Loteamento Monte Líbano
 78710270;-54.64737;-16.45102;Avenida José de Alencar;Loteamento Monte Líbano
@@ -29034,6 +29041,7 @@ cep;lon;lat;logradouro;bairro
 78716456;-54.63960;-16.43006;Rua Joaquim Evangelista;Jardim Residencial Mathias Neves
 78716460;-54.67327;-16.46045;Rua João Batista Francisco Silva;Jardim Residencial Mathias Neves
 78716466;-54.67362;-16.46476;Rua Dez;Jardim Residencial Mathias Neves
+78716468;-54.63872;-16.46548;Rua Jovenil Soterio Borges;Jardim Residencial Mathias Neves
 78716496;;;;
 78716550;-54.58464;-16.49240;Avenida C;Jardim Paiaguás
 78716555;-54.61142;-16.44216;Rua Maria Alveni Beduan;Jardim Paiaguás
@@ -29569,6 +29577,7 @@ cep;lon;lat;logradouro;bairro
 78735000|PQE SAGRADA FAMILIA;;;;
 78735000|SAGRADA FAMILIA;-54.63766;-16.46769;Rua Antônio Francisco Buosi;Parque Sagrada Família
 78735001;-54.60153;-16.47925;Rodovia MT-270;Parque Sagrada Família
+78735002;-54.63766;-16.46769;Rua Antônio Francisco Buosi;Parque Sagrada Família
 78735006;-54.60793;-16.48765;Rua Waldomiro Rodrigues Xavier;Parque Sagrada Família
 78735008;-54.60683;-16.48782;Rua Professora Darce Gomes de Araújo;Parque Sagrada Família
 78735011;-54.60697;-16.48676;Rua Osmar Adalberto Horing;Parque Sagrada Família
@@ -35011,6 +35020,7 @@ cep;lon;lat;logradouro;bairro
 78894369;-55.73739;-12.55825;Rua Garibaldi;Porto Alegre
 78894373;-55.73598;-12.56154;Rua São Manoel;Porto Alegre
 78894391;-55.72369;-12.54031;Avenida Porto Alegre - Sul;Loteamento Monte Líbano I
+78894393;-55.74658;-12.57111;Alameda Emílio Garrastazu Médici;Loteamento Monte Líbano I
 78894395;-55.74711;-12.57084;Alameda João Baptista Figueiredo;Loteamento Monte Líbano I
 78894405;-55.74542;-12.56795;Alameda Carlos Luz;Loteamento Monte Líbano I
 78894407;-55.74818;-12.57016;Alameda Humberto Castelo Branco;Loteamento Monte Líbano I
