@@ -2,7 +2,9 @@
 // Fonte: relatórios do SPC Brasil anexados na seção Inadimplência (PDF), lidos e transcritos à mão:
 //   relat_inadimplencia_MT_<mês>.pdf ............ "Inadimplência no Mato Grosso" (mt)
 //   Análise-Inadimplência-BReRegiões-PF_<mês>.pdf  "Inadimplência de Pessoas Físicas" — Brasil e regiões (br)
-// Cuiabá: o SPC Brasil ainda não enviou relatório do município (cuiaba fica vazio até chegar o 1º PDF).
+//   Cuiabá-MT_<mês>.pdf ......................... "Inadimplência em Cuiabá/MT" (cuiaba) — a partir de set/2026, mesmo formato do MT
+// Edições anteriores a set/2026 não têm Cuiabá (o SPC Brasil ainda não enviava o relatório do município).
+// O relatório de Pessoas Jurídicas (Análise-Inadimplência-BReRegiões-PJ_<mês>.pdf) não entra neste painel.
 //
 // Para incluir uma edição nova: copie um bloco de edicoes, troque a chave ('AAAA-MM' = mês de referência dos
 // dados) e os números, e acrescente o mês em `meses`. Percentuais em % (7.61 = 7,61%), valores em R$.
@@ -30,12 +32,12 @@
 //   historico    (Brasil) variação mensal do mesmo mês nos últimos 10 anos (devedores e dívidas)
 window.SPC_INAD = {
   fonte: 'SPC Brasil',
-  atualizado: '2026-10-13',
+  atualizado: '2026-10-20',
   locais: { cuiaba: 'Cuiabá', mt: 'Mato Grosso', br: 'Brasil' },
   faixas: ['18 a 24 anos', '25 a 29 anos', '30 a 39 anos', '40 a 49 anos', '50 a 64 anos', '65 a 84 anos', '85 anos ou mais'],
   valores: ['Até R$ 500', 'R$ 500,01 a R$ 1.000', 'R$ 1.000,01 a R$ 2.500', 'R$ 2.500,01 a R$ 7.500', 'Acima de R$ 7.500'],
   atrasos: ['Até 90 dias', '91 dias a 1 ano', '1 a 3 anos', '3 a 4 anos', '4 a 5 anos'],
-  meses: ['2025-11', '2026-06'],
+  meses: ['2025-11', '2026-06', '2026-09'],
   // Séries mensais de % da população adulta negativada (visão Gráfico, comparativo ano a ano). Reserva do que o painel lê
   // sozinho da tabela mensal anexada na seção Inadimplência. Atenção: a tabela de 2025 usa base de 2.608.340 adultos
   // (ordem de grandeza de Mato Grosso, não do Centro-Oeste) e difere do SPC Brasil em nov/2025 (45,00% x 47,08%);
@@ -129,6 +131,60 @@ window.SPC_INAD = {
         historico: { meses: ['2017-06', '2018-06', '2019-06', '2020-06', '2021-06', '2022-06', '2023-06', '2024-06', '2025-06', '2026-06'],
           devedores: [-0.64, 0.61, -0.08, -2.51, -0.05, 0.64, -1.00, -0.43, 0.93, -0.30],
           dividas: [-1.12, 0.45, -0.82, -2.95, -0.11, 1.65, -1.46, -0.06, 1.44, -0.59] }
+      }
+    },
+    '2026-09': {
+      cuiaba: {
+        arquivo: 'Cuiabá-MT_set26.pdf',
+        devedores: { anual: 3.03, mensal: 1.63 }, dividas: { anual: 9.74, mensal: 3.21 },
+        dividaMedia: 6673.19, dividasPorDevedor: 2.54, atrasoMeses: 29.7, idadeMedia: 45.4,
+        sexo: { homens: 52.13, mulheres: 47.87 },
+        faixaEtaria: [5.78, 10.42, 25.47, 23.69, 21.77, 11.46, 1.40],
+        valor: [22.47, 11.61, 19.75, 22.47, 23.70],
+        atraso: [7.03, 17.48, 34.42, 17.00, 24.07],
+        setor: { 'Bancos': 62.35, 'Comércio': 14.46, 'Outros': 12.28, 'Água e Luz': 7.98, 'Comunicação': 2.93 },
+        comparativo: {
+          'Centro-Oeste': { devedoresAnual: 7.74, devedoresMensal: 2.27, dividasAnual: 14.36, dividasMensal: 3.37, dividasPorDevedor: 2.49 },
+          'Brasil': { devedoresAnual: 6.97, devedoresMensal: 2.07, dividasAnual: 13.62, dividasMensal: 3.07, dividasPorDevedor: 2.36 }
+        }
+      },
+      mt: {
+        arquivo: 'relat_inadimplencia_MT_set2026.pdf',
+        devedores: { anual: 5.02, mensal: 1.82 }, dividas: { anual: 11.22, mensal: 3.07 },
+        dividaMedia: 6203.81, dividasPorDevedor: 2.447, atrasoMeses: 29.0, idadeMedia: 43.8,
+        sexo: { homens: 53.42, mulheres: 46.58 },
+        faixaEtaria: [7.41, 11.99, 26.94, 22.82, 19.82, 9.77, 1.23],
+        valor: [22.96, 12.08, 20.21, 22.91, 21.84],
+        atraso: [7.77, 17.70, 35.12, 17.07, 22.34],
+        setor: { 'Bancos': 56.18, 'Comércio': 21.43, 'Outros': 10.86, 'Água e Luz': 7.41, 'Comunicação': 4.12 },
+        comparativo: {
+          'Centro-Oeste': { devedoresAnual: 7.74, devedoresMensal: 2.27, dividasAnual: 14.36, dividasMensal: 3.37, dividasPorDevedor: 2.489 },
+          'Brasil': { devedoresAnual: 6.97, devedoresMensal: 2.07, dividasAnual: 13.62, dividasMensal: 3.07, dividasPorDevedor: 2.363 }
+        }
+      },
+      br: {
+        arquivo: 'Análise-Inadimplência-BReRegiões-PF_set2026.pdf',
+        devedores: { anual: 6.97, mensal: 2.07 }, dividas: { anual: 13.62, mensal: 3.07 },
+        dividaMedia: 5240.29, dividasPorDevedor: 2.36, atrasoMeses: 29.4, idadeMedia: 45.1,
+        sexo: { homens: 48.62, mulheres: 51.38 },
+        faixaEtaria: [8.68, 11.55, 23.35, 21.37, 20.70, 12.27, 2.08],
+        valor: [28.69, 12.06, 18.83, 21.23, 19.19],
+        atraso: [7.69, 17.43, 34.33, 16.88, 23.68],
+        atrasoAnual: [6.30, 9.63, 1.89, -11.44, 34.48],
+        setor: { 'Bancos': 65.95, 'Água e Luz': 10.14, 'Outros': 9.82, 'Comércio': 8.12, 'Comunicação': 5.97 },
+        setorAnual: { 'Água e Luz': 12.08, 'Comércio': -1.77, 'Comunicação': 17.84, 'Bancos': 12.89, 'Outros': 36.08 },
+        regioes: {
+          'Norte':        { devedoresMensal: 0.85, devedoresAnual: 7.25, dividasMensal: 2.15, dividasAnual: 14.99, negativadosMi: 6.89,  popAdulta: 48.45 },
+          'Nordeste':     { devedoresMensal: 1.68, devedoresAnual: 4.58, dividasMensal: 2.44, dividasAnual: 10.40, negativadosMi: 19.82, popAdulta: 44.77 },
+          'Centro-Oeste': { devedoresMensal: 2.27, devedoresAnual: 7.74, dividasMensal: 3.37, dividasAnual: 14.36, negativadosMi: 6.47,  popAdulta: 48.74 },
+          'Sudeste':      { devedoresMensal: 2.21, devedoresAnual: 5.60, dividasMensal: 3.35, dividasAnual: 12.62, negativadosMi: 31.89, popAdulta: 44.36 },
+          'Sul':          { devedoresMensal: 3.26, devedoresAnual: 9.75, dividasMensal: 4.18, dividasAnual: 17.19, negativadosMi: 9.99,  popAdulta: 41.01 }
+        },
+        estimativa: { negativadosMi: 75.05, popAdulta: 44.67,
+          faixaEtaria: [[7.05, 33.08], [8.96, 53.02], [18.06, 53.30], [16.46, 50.38], [15.74, 42.50], [8.28, 34.89], [0.501, 20.35]] },
+        historico: { meses: ['2017-09', '2018-09', '2019-09', '2020-09', '2021-09', '2022-09', '2023-09', '2024-09', '2025-09', '2026-09'],
+          devedores: [-0.13, 0.09, -0.55, -0.16, -0.02, 0.93, -0.39, 0.47, 0.21, 2.07],
+          dividas: [-0.43, -0.04, -1.74, -0.55, -0.26, 2.05, 0.23, 0.74, 0.05, 3.07] }
       }
     }
   }

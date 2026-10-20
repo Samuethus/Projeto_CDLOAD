@@ -14132,7 +14132,7 @@ ${clipPlayerPills(n)}
       // ---- Destaques ----
       const dest = [];
       const tomVar = v => v > 0 ? ['setaCima', 'vermelho'] : v < 0 ? ['setaBaixo', 'verde'] : ['pontos', 'azul'];
-      if(loc === 'mt' && X.comparativo){
+      if(loc !== 'br' && X.comparativo){
         const co = X.comparativo['Centro-Oeste'], br = X.comparativo['Brasil'];
         const [ic, tom] = tomVar(X.devedores.anual - br.devedoresAnual);
         dest.push({ ic, tom, tit: `Inadimplentes ${pctS(X.devedores.anual)} em 12 meses`, meta: `${X.devedores.anual > br.devedoresAnual ? 'Acima' : 'Abaixo'} do Brasil (${pctS(br.devedoresAnual)}) · Centro-Oeste ${pctS(co.devedoresAnual)}` });
