@@ -7641,13 +7641,34 @@
       const vistos = new Set(), leads = [];
       let invalidos = 0, repetidos = 0;
       for(const l of linhas.slice(inicio)){
-        const email = String(l[iEmail] || '').trim().toLowerCase();
-        if(!PARTICIPANT_EMAIL_RE.test(email)){ invalidos++; continue; }
-        if(vistos.has(email)){ repetidos++; continue; }
-        vistos.add(email);
-        leads.push({ nome: String(l[iNome] || '').trim(), email });
+        const emails = waEmailsDaCelula(l[iEmail]);
+        if(!emails.length){ invalidos++; continue; }
+        // Célula com mais de um e-mail ("a@x.com / b@y.com"): cada um vira um lead com o mesmo nome.
+        for(const email of emails){
+          if(vistos.has(email)){ repetidos++; continue; }
+          vistos.add(email);
+          leads.push({ nome: String(l[iNome] || '').replace(/[​-‍⁠﻿]/g, '').trim(), email });
+        }
       }
       return { leads, invalidos, repetidos };
+    }
+    // E-mails de uma célula do CSV, limpos para o SMTP (listas de CRM/sites corporativos trazem sujeira que o
+    // servidor recusa ou devolve depois): tira caracteres invisíveis (espaço de largura zero, BOM, NBSP), "mailto:",
+    // <>, aspas e pontuação nas pontas; domínio com acento vai para o formato ASCII (punycode). Mesma regra da
+    // função sincronizar-agenda (leadsDaCampanha). Qualquer domínio vale — corporativo, Gmail, Outlook etc.
+    function waEmailsDaCelula(celula){
+      const t = String(celula || '').replace(/[​-‍⁠﻿]/g, '').replace(/ /g, ' ').replace(/mailto:/gi, ' ');
+      const out = [];
+      for(const m of t.matchAll(/[^\s@<>()[\]"',;:/|]+@[^\s@<>()[\]"',;:/|]+/g)){
+        const bruto = m[0].replace(/^[.\-_]+|[.\-]+$/g, '').toLowerCase();
+        const [local, dominio] = bruto.split('@');
+        if(!local || !dominio) continue;
+        let ascii;
+        try { ascii = new URL('http://' + dominio).hostname; } catch(_){ continue; }
+        const email = `${local}@${ascii}`;
+        if(/^[\x21-\x7E]+$/.test(local) && PARTICIPANT_EMAIL_RE.test(email) && /\.[a-z0-9-]{2,}$/.test(ascii)) out.push(email);
+      }
+      return out;
     }
     async function waImportarLeads(arquivo){
       if(!arquivo) return;

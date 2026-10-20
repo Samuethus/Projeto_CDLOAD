@@ -585,7 +585,9 @@ async function smtpAbrir() {
   };
   try {
     await comando(null, [220], 'conexão');
-    await comando('EHLO cdload', [250], 'EHLO');
+    // EHLO com domínio de verdade (o do remetente): "cdload" sozinho não é FQDN (RFC 5321) e fica no cabeçalho
+    // Received, o que pesa contra o e-mail nos filtros antispam de servidores corporativos.
+    await comando(`EHLO ${pensoRemetente().split('@')[1] || 'cdlcuiaba.com.br'}`, [250], 'EHLO');
     const credencial = b64Mime(`\u0000${env('PENSO_SMTP_USUARIO')}\u0000${env('PENSO_SMTP_SENHA')}`).replace(/\r\n/g, '');
     try {
       await comando(`AUTH PLAIN ${credencial}`, [235], 'login (usuário/senha da Penso)');
@@ -760,11 +762,26 @@ const LEADS_FOLGA_CONVITES = 100;
 const leadsLimiteDiario = () => Number(env('PENSO_LIMITE_DIARIO')) || 2000;
 
 type Lead = { nome: string; email: string };
+// E-mail do lead limpo para o SMTP (mesma regra do app, waEmailsDaCelula): sem caracteres invisíveis, "mailto:",
+// <> e pontuação nas pontas; domínio com acento em punycode. Qualquer domínio vale (corporativo, Gmail, Outlook...).
+// Listas importadas antes da limpeza no app também passam por aqui.
+function limparEmail(bruto: unknown): string {
+  const t = String(bruto ?? '').replace(/[​-‍⁠﻿]/g, '').replace(/ /g, ' ').replace(/mailto:/gi, ' ');
+  const m = t.match(/[^\s@<>()[\]"',;:/|]+@[^\s@<>()[\]"',;:/|]+/);
+  if (!m) return '';
+  const [local, dominio] = m[0].replace(/^[.\-_]+|[.\-]+$/g, '').toLowerCase().split('@');
+  if (!local || !dominio || !/^[\x21-\x7E]+$/.test(local)) return '';
+  try {
+    return `${local}@${new URL('http://' + dominio).hostname}`;
+  } catch {
+    return '';
+  }
+}
 // deno-lint-ignore no-explicit-any
 function leadsDaCampanha(et: any): Lead[] {
   const vistos = new Set<string>(), out: Lead[] = [];
   for (const l of Array.isArray(et?.leads) ? et.leads : []) {
-    const email = String(l?.email ?? '').trim().toLowerCase();
+    const email = limparEmail(l?.email);
     if (!EMAIL_RE.test(email) || vistos.has(email)) continue;
     vistos.add(email);
     out.push({ nome: String(l?.nome ?? '').trim(), email });
