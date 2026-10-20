@@ -13000,11 +13000,13 @@ ${clipPlayerPills(n)}
       return `<div class="cd-card"><div class="cd-card-head"><div class="cd-card-tits"><h3>${esc(titulo)}</h3>${sub ? `<div class="cd-sub">${esc(sub)}</div>` : ''}</div>${extra || ''}</div><div class="cd-card-body">${corpo}</div></div>`;
     }
     // Variação vs. ano anterior: seta + valor (verde se sobe, vermelho se cai, como na referência).
-    function cdDelta(atual, anterior, pp, semBase, inverso, casas){
+    // fixas: número fixo de casas decimais (ex.: 2 → "1,20%"), usado pela Inadimplência.
+    function cdDelta(atual, anterior, pp, semBase, inverso, casas, fixas){
       if(semBase || (!pp && !(anterior > 0))) return { cls: 'neu', txt: '— sem base' };
       const dif = pp ? (atual - anterior) * 100 : (atual - anterior) / anterior * 100;
-      const v = Math.abs(dif).toLocaleString('pt-BR', { maximumFractionDigits: casas != null ? Math.min(casas, 1) : 1 }) + (pp ? ' p.p.' : '%');
-      if(Math.abs(dif) < (pp ? 0.05 : 0.005)) return { cls: 'neu', txt: pp ? '→ 0 p.p.' : '→ 0%' };
+      const fmt = fixas != null ? { minimumFractionDigits: fixas, maximumFractionDigits: fixas } : { maximumFractionDigits: casas != null ? Math.min(casas, 1) : 1 };
+      const v = Math.abs(dif).toLocaleString('pt-BR', fmt) + (pp ? ' p.p.' : '%');
+      if(Math.abs(dif) < (fixas != null ? 0.5 / 10 ** fixas : pp ? 0.05 : 0.005)) return { cls: 'neu', txt: '→ ' + (0).toLocaleString('pt-BR', fmt) + (pp ? ' p.p.' : '%') };
       const bom = (dif > 0) !== !!inverso;
       return { cls: bom ? 'up' : 'down', txt: (dif > 0 ? '↑ ' : '↓ ') + v };
     }
@@ -14042,9 +14044,9 @@ ${clipPlayerPills(n)}
       const pctP = v => dec(v, 2) + '%';                                                                  // participação
       const reais = v => 'R$ ' + dec(v, 2);
       const vsAnt = txt => A ? `vs. ${rotM(refAnt)} (${txt})` : 'sem edição anterior';
-      // Variações já em %: diferença em p.p. contra a edição anterior (alta = ruim).
-      const dTaxa = (v, a) => cdDelta(v / 100, (a == null ? 0 : a) / 100, true, a == null, true);
-      const dQtd = (v, a) => cdDelta(v, a || 0, false, a == null, true);
+      // Variações já em %: diferença em p.p. contra a edição anterior (alta = ruim). Cartões do topo sempre com 2 casas.
+      const dTaxa = (v, a) => cdDelta(v / 100, (a == null ? 0 : a) / 100, true, a == null, true, null, 2);
+      const dQtd = (v, a) => cdDelta(v, a || 0, false, a == null, true, null, 2);
       const fonte = ref ? `SPC Brasil · ${rotM(ref)}` : 'SPC Brasil';
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       // Busca (como nos demais painéis): filtra os itens das listas pelo nome — região, setor credor, faixa etária, valor ou atraso.
@@ -14076,10 +14078,10 @@ ${clipPlayerPills(n)}
         vsAnt(pctS(A && A.dividas.anual)), `Número de dívidas em atraso em ${rotLongo(ref)} contra o mesmo mês do ano anterior · mês a mês: ${pctS(X.dividas.mensal)} · ${nomeLoc}`);
       const kMed = cdKpiCard('banco', 'amarelo', 'Dívida média por inadimplente', reais(X.dividaMedia), dQtd(X.dividaMedia, A && A.dividaMedia),
         vsAnt(A ? reais(A.dividaMedia) : ''), `Soma de todas as dívidas de cada consumidor negativado, em média · ${nomeLoc}`);
-      const kQtd = cdKpiCard('layers', 'azul', 'Dívidas por inadimplente', dec(X.dividasPorDevedor, loc === 'br' ? 2 : 3), dQtd(X.dividasPorDevedor, A && A.dividasPorDevedor),
-        vsAnt(A ? dec(A.dividasPorDevedor, loc === 'br' ? 2 : 3) : ''), loc === 'br' ? 'Empresas credoras por consumidor negativado, em média · Brasil' : `Dívidas em atraso por consumidor negativado, em média · ${nomeLoc}`);
-      const kAtr = cdKpiCard('alerta', 'verde', 'Tempo médio de atraso', `${dec(X.atrasoMeses, 1)}<span class="cd-kpi-un"> meses</span>`, dQtd(X.atrasoMeses, A && A.atrasoMeses),
-        vsAnt(A ? dec(A.atrasoMeses, 1) + ' meses' : ''), `Tempo médio desde o vencimento das dívidas dos negativados (${dec(X.atrasoMeses / 12, 1)} anos) · ${nomeLoc}`);
+      const kQtd = cdKpiCard('layers', 'azul', 'Dívidas por inadimplente', dec(X.dividasPorDevedor, 2), dQtd(X.dividasPorDevedor, A && A.dividasPorDevedor),
+        vsAnt(A ? dec(A.dividasPorDevedor, 2) : ''), loc === 'br' ? 'Empresas credoras por consumidor negativado, em média · Brasil' : `Dívidas em atraso por consumidor negativado, em média · ${nomeLoc}`);
+      const kAtr = cdKpiCard('alerta', 'verde', 'Tempo médio de atraso', `${dec(X.atrasoMeses, 2)}<span class="cd-kpi-un"> meses</span>`, dQtd(X.atrasoMeses, A && A.atrasoMeses),
+        vsAnt(A ? dec(A.atrasoMeses, 2) + ' meses' : ''), `Tempo médio desde o vencimento das dívidas dos negativados (${dec(X.atrasoMeses / 12, 2)} anos) · ${nomeLoc}`);
 
       // ---- Linha A, 1º quadro: comparativo (Mato Grosso) ou evolução de 10 anos (Brasil) ----
       let wComp, linhas10 = null;
