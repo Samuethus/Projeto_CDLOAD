@@ -501,7 +501,7 @@
     .content{padding:18px 16px 40px;}
     /* As seções (fundo próprio) compensam o espaçamento menor do celular; com a margem do
        desktop (-34px) elas ficavam 36px mais largas que a tela e cortavam o lado direito. */
-    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
+    .content > :is(#page-home, #page-roadmap, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
       margin:-18px -16px -40px;
       padding:18px 16px 40px;
     }
@@ -677,7 +677,7 @@
      seções abaixo; não interferem no design system global do app.
      Toda seção nova que use as classes wa-* precisa entrar nesta lista.
   =================================================================== */
-  #page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp{
+  #page-home, #page-roadmap, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp{
     --wa-bg:#F8FAFC;
     --wa-card:#FFFFFF;
     --wa-border:#E2E8F0;
@@ -1982,7 +1982,7 @@
     #page-dashboard .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
-    .content > :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-whatsapp){padding-top:18px;}
+    .content > :is(#page-home, #page-roadmap, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-whatsapp){padding-top:18px;}
     .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
       margin-bottom:14px;padding:10px 14px;column-gap:10px;
     }
@@ -2410,7 +2410,7 @@
     --bg-panel:#1A2436;
     --bg-card:#172033;
   }
-  :root[data-theme="dark"] :is(#page-home, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
+  :root[data-theme="dark"] :is(#page-home, #page-roadmap, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-dashboard, #page-whatsapp){
     --wa-bg:#0B1220;
     --wa-card:#131C2E;
     --wa-border:#243047;
@@ -2476,6 +2476,124 @@
   :root[data-theme="dark"] .wa-phone-bubble .hdr{color:#E9EDEF;border-bottom-color:rgba(233,237,239,.1);}
   :root[data-theme="dark"] .wa-phone-bubble .body{color:#E9EDEF;}
   :root[data-theme="dark"] .wa-phone-bubble .time{color:#8696A0;}
+
+  /* ---- Roadmap: interações do Núcleo com os setores ---- */
+  #page-roadmap{
+    --rm-reuniao:#2563EB;--rm-alinhamento:#0D9488;--rm-demanda:#C026D3;
+    --rm-ok:#16A34A;--rm-atencao:#D97706;--rm-critico:#DC2626;
+    --rm-janela:rgba(37,99,235,.07);--rm-fds:rgba(100,116,139,.06);
+  }
+  :root[data-theme="dark"] #page-roadmap{
+    --rm-reuniao:#3B82F6;--rm-alinhamento:#14B8A6;--rm-demanda:#D946EF;
+    --rm-ok:#4ADE80;--rm-atencao:#FBBF24;--rm-critico:#F87171;
+    --rm-janela:rgba(59,130,246,.13);--rm-fds:rgba(148,163,184,.06);
+  }
+  #page-roadmap [hidden]{display:none !important;}
+  :root[data-theme="dark"] #page-roadmap .wa-btn-outline{background:var(--wa-card);color:var(--wa-text-muted);}
+  .rm-kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  @media (max-width:1100px){ .rm-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:560px){ .rm-kpis{grid-template-columns:1fr;} }
+  .rm-kpi{background:var(--wa-card);border:1px solid var(--wa-border);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:0;}
+  .rm-kpi-rot{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--wa-text-muted);}
+  .rm-kpi-val{font-size:28px;font-weight:800;color:var(--wa-text);margin-top:6px;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .rm-kpi-sub{font-size:12px;color:var(--wa-text-muted);margin-top:4px;}
+  .rm-kpi-indice{display:flex;align-items:center;gap:18px;}
+  .rm-anel{width:84px;height:84px;flex:0 0 auto;transform:rotate(-90deg);}
+  .rm-anel circle{fill:none;stroke-width:9;}
+  .rm-anel .trilho{stroke:var(--wa-slate-bg);}
+  .rm-anel .valor{stroke:var(--wa-primary);stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
+  .rm-kpi-indice.pulso .rm-kpi-val{animation:rmPulso .7s ease;}
+  @keyframes rmPulso{0%{color:var(--wa-primary);transform:scale(1.08);transform-origin:left center;}100%{transform:none;}}
+  .rm-previa{display:inline-block;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--wa-primary);background:var(--wa-primary-soft);padding:3px 9px;border-radius:9999px;}
+  .rm-var.sobe{color:var(--rm-ok);}
+  .rm-var.desce{color:var(--rm-critico);}
+  .rm-sem-lista{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+  .rm-chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
+  .rm-chip.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
+
+  .rm-board{margin-bottom:20px;}
+  .rm-toolbar{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--wa-border);}
+  .rm-mes{display:flex;align-items:center;gap:6px;}
+  .rm-mes-rot{min-width:150px;text-align:center;font-weight:700;font-size:15px;color:var(--wa-text);}
+  .rm-nav-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--wa-border);background:var(--wa-card);color:var(--wa-text-muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+  .rm-nav-btn:hover:not(:disabled){border-color:var(--wa-primary);color:var(--wa-primary);}
+  .rm-nav-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .rm-nav-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;}
+  #page-roadmap .rm-btn-hoje{padding:6px 12px;font-size:12.5px;margin-left:4px;}
+  .rm-tipos{display:inline-flex;gap:4px;padding:3px;background:var(--wa-slate-bg);border-radius:10px;}
+  .rm-tipo{border:none;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--wa-text-muted);padding:6px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .rm-tipo.active{background:var(--wa-card);color:var(--wa-text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .rm-tipo-marca{width:16px;height:16px;border-radius:4px;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .rm-toolbar-fim{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .rm-pend{font-size:12px;font-weight:600;color:var(--wa-pending-text);background:var(--wa-pending-bg);padding:4px 10px;border-radius:9999px;}
+  #page-roadmap .wa-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .rm-msg{padding:8px 18px;font-size:12.5px;color:var(--wa-approved-text);background:var(--wa-approved-bg);border-bottom:1px solid var(--wa-border);}
+  .rm-msg.erro{color:var(--wa-rejected-text);background:var(--wa-rejected-bg);}
+
+  .rm-grade-wrap{overflow-x:auto;}
+  .rm-grade{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;transition:opacity .2s;}
+  .rm-grade.carregando{opacity:.55;}
+  .rm-grade th,.rm-grade td{padding:3px 1px;text-align:center;border-bottom:1px solid var(--wa-border);}
+  .rm-grade thead th{background:var(--wa-card);font-weight:600;color:var(--wa-text-muted);padding:8px 1px 6px;}
+  .rm-dia-sem{display:block;font-size:9.5px;opacity:.75;}
+  .rm-dia-num{display:block;font-size:12px;font-variant-numeric:tabular-nums;min-width:22px;}
+  .rm-grade .janela{background:var(--rm-janela);}
+  .rm-grade .fds:not(.janela){background:var(--rm-fds);}
+  .rm-grade thead th.hoje .rm-dia-num{background:var(--wa-primary);color:#fff;border-radius:6px;padding:1px 0;font-weight:700;}
+  .rm-col-setor{position:sticky;left:0;z-index:2;background:var(--wa-card) !important;text-align:left !important;padding:6px 12px 6px 18px !important;white-space:nowrap;font-weight:600;color:var(--wa-text);min-width:200px;}
+  thead .rm-col-setor{z-index:3;color:var(--wa-text-muted);}
+  .rm-col-total{font-weight:700;color:var(--wa-text);padding:0 14px !important;font-variant-numeric:tabular-nums;}
+  .rm-st-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle;}
+  .rm-leg-item .rm-st-dot{margin:0 2px 0 0;}
+  .rm-st-dot.ok{background:var(--rm-ok);}
+  .rm-st-dot.atencao{background:var(--rm-atencao);}
+  .rm-st-dot.critico{background:var(--rm-critico);}
+  .rm-cel{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--wa-border);background:var(--wa-card);cursor:pointer;padding:0;font:inherit;font-size:11px;font-weight:800;color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s,border-color .12s;vertical-align:middle;}
+  .rm-cel:hover:not(:disabled){border-color:var(--wa-primary);transform:scale(1.12);}
+  .rm-cel:focus-visible{outline:2px solid var(--wa-primary);outline-offset:2px;}
+  .rm-cel:disabled{cursor:not-allowed;opacity:.35;border-style:dashed;}
+  .rm-cel.t-reuniao,.rm-tipo-marca.t-reuniao{background:var(--rm-reuniao);border-color:var(--rm-reuniao);}
+  .rm-cel.t-alinhamento,.rm-tipo-marca.t-alinhamento{background:var(--rm-alinhamento);border-color:var(--rm-alinhamento);}
+  .rm-cel.t-demanda,.rm-tipo-marca.t-demanda{background:var(--rm-demanda);border-color:var(--rm-demanda);}
+  .rm-cel.pend-add{box-shadow:0 0 0 2px var(--wa-card),0 0 0 4px var(--rm-atencao);}
+  .rm-cel.pend-del{background:var(--wa-card) !important;color:var(--wa-text-muted);text-decoration:line-through;border-style:dashed;box-shadow:0 0 0 2px var(--wa-card),0 0 0 4px var(--rm-critico);}
+  .rm-grade tfoot th,.rm-grade tfoot td{font-weight:700;color:var(--wa-text-muted);font-variant-numeric:tabular-nums;border-bottom:none;padding:8px 2px;}
+  .rm-legenda{display:flex;flex-wrap:wrap;gap:10px 18px;padding:12px 18px;font-size:12px;color:var(--wa-text-muted);border-top:1px solid var(--wa-border);}
+  .rm-leg-item{display:inline-flex;align-items:center;gap:6px;}
+  .rm-leg-janela{width:16px;height:12px;border-radius:3px;background:var(--rm-janela);border:1px solid var(--wa-border);}
+  .rm-leg-pend{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--wa-border);box-shadow:0 0 0 2px var(--wa-card),0 0 0 3.5px var(--rm-atencao);}
+
+  .rm-baixo{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;}
+  @media (max-width:1000px){ .rm-baixo{grid-template-columns:1fr;} }
+  .rm-painel-tit{padding:16px 20px 2px;font-size:14px;font-weight:700;color:var(--wa-text);}
+  .rm-painel-sub{padding:0 20px 8px;font-size:12px;color:var(--wa-text-muted);}
+  .rm-evol{position:relative;padding:4px 16px 16px;}
+  /* stroke:none — sem isto o gráfico herda o `svg{stroke:currentColor}` global (alvos e textos contornados). */
+  .rm-evol svg{width:100%;height:auto;display:block;stroke:none;}
+  .rm-evol .grade-l{stroke:var(--wa-border);stroke-width:1;}
+  .rm-evol .eixo-t{fill:var(--wa-text-muted);font-size:10px;font-family:inherit;}
+  .rm-evol .eixo-t.hoje{fill:var(--wa-primary);font-weight:700;}
+  .rm-evol .barra{fill:var(--wa-primary);opacity:.45;transition:opacity .12s;}
+  .rm-evol .barra.hoje,.rm-evol .barra.ativa{opacity:1;}
+  .rm-evol .alvo{cursor:default;}
+  .rm-tip{position:absolute;pointer-events:none;background:var(--wa-text);color:var(--wa-card);font-size:11.5px;font-weight:600;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));box-shadow:0 6px 16px rgba(15,23,42,.2);z-index:5;}
+  .rm-radar{list-style:none;margin:0;padding:4px 12px 14px;}
+  .rm-radar li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--wa-border);}
+  .rm-radar li:last-child{border-bottom:none;}
+  .rm-radar-nome{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rm-radar-ult{font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;}
+  .rm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:9999px;white-space:nowrap;min-width:92px;}
+  .rm-badge svg{width:12px;height:12px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .rm-badge.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
+  .rm-badge.atencao{background:var(--wa-pending-bg);color:var(--wa-pending-text);}
+  .rm-badge.critico{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
+  @media (max-width:640px){
+    .rm-toolbar-fim{margin-left:0;width:100%;}
+    .rm-toolbar-fim .wa-btn{flex:1;justify-content:center;}
+    .rm-mes-rot{min-width:120px;font-size:14px;}
+    .rm-col-setor{min-width:140px;max-width:150px;padding-left:12px !important;white-space:normal;}
+    .rm-radar-ult{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -2581,6 +2699,10 @@
       <button class="nav-item active" data-page="home" data-title="Bem-vindo ao CDLOAD" data-desc="Acesse os painéis Power BI do Núcleo de Inteligência.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 10L12 3L21 10" /> <path d="M5 10V20H10V16A2 2 0 0 1 14 16V20H19V10" /> </svg>
         <span>Home</span>
+      </button>
+      <button class="nav-item" data-page="roadmap" data-title="Roadmap" data-desc="Mapa de interações do Núcleo de Inteligência com os setores da CDL.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"></path><path d="M4 4h13l-2.5 4.5L17 13H4"></path></svg>
+        <span>Roadmap</span>
       </button>
       <button class="nav-item" data-page="dashboard" data-title="Dashboard" data-desc="Painéis com os principais indicadores da plataforma.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
@@ -2689,6 +2811,86 @@
       <!-- HOME -->
       <section class="page active" id="page-home">
         <div class="wa-hub-grid" id="waHubGrid"></div>
+      </section>
+
+      <!-- ROADMAP: flags de interação/reunião do Núcleo com os setores (índice na janela de 10 dias) -->
+      <section class="page" id="page-roadmap">
+        <div class="rm-kpis">
+          <div class="rm-kpi rm-kpi-indice" id="rmKpiIndice">
+            <svg class="rm-anel" viewBox="0 0 84 84" aria-hidden="true"><circle class="trilho" cx="42" cy="42" r="34"></circle><circle class="valor" id="rmAnel" cx="42" cy="42" r="34" stroke-dasharray="213.63" stroke-dashoffset="213.63"></circle></svg>
+            <div>
+              <div class="rm-kpi-rot">Índice de interação · 10 dias</div>
+              <div class="rm-kpi-val" id="rmIndiceValor">—</div>
+              <div class="rm-kpi-sub" id="rmIndiceSub">—</div>
+              <span class="rm-previa" id="rmPrevia" hidden></span>
+            </div>
+          </div>
+          <div class="rm-kpi">
+            <div class="rm-kpi-rot">Interações na janela</div>
+            <div class="rm-kpi-val" id="rmTotal">—</div>
+            <div class="rm-kpi-sub" id="rmTotalSub">—</div>
+          </div>
+          <div class="rm-kpi">
+            <div class="rm-kpi-rot">Setores sem interação</div>
+            <div class="rm-kpi-val" id="rmSem">—</div>
+            <div class="rm-sem-lista" id="rmSemLista"></div>
+          </div>
+          <div class="rm-kpi">
+            <div class="rm-kpi-rot">Variação</div>
+            <div class="rm-kpi-val rm-var" id="rmVar">—</div>
+            <div class="rm-kpi-sub" id="rmVarSub">—</div>
+          </div>
+        </div>
+
+        <div class="wa-card rm-board">
+          <div class="rm-toolbar">
+            <div class="rm-mes">
+              <button type="button" class="rm-nav-btn" id="rmMesAnt" title="Mês anterior" aria-label="Mês anterior"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+              <div class="rm-mes-rot" id="rmMesRot">—</div>
+              <button type="button" class="rm-nav-btn" id="rmMesProx" title="Próximo mês" aria-label="Próximo mês"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              <button type="button" class="wa-btn wa-btn-outline rm-btn-hoje" id="rmHoje">Hoje</button>
+            </div>
+            <div class="rm-tipos" id="rmTipos" role="radiogroup" aria-label="Tipo da interação a registrar">
+              <button type="button" class="rm-tipo active" data-tipo="reuniao" role="radio" aria-checked="true"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</button>
+              <button type="button" class="rm-tipo" data-tipo="alinhamento" role="radio" aria-checked="false"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</button>
+              <button type="button" class="rm-tipo" data-tipo="demanda" role="radio" aria-checked="false"><span class="rm-tipo-marca t-demanda">D</span>Demanda</button>
+            </div>
+            <div class="rm-toolbar-fim">
+              <span class="rm-pend" id="rmPend" hidden></span>
+              <button type="button" class="wa-btn wa-btn-outline" id="rmDescartar" disabled>Descartar</button>
+              <button type="button" class="wa-btn wa-btn-primary" id="rmSalvar" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span id="rmSalvarTxt">Salvar alterações</span>
+              </button>
+            </div>
+          </div>
+          <div class="rm-msg" id="rmMsg" role="status" hidden></div>
+          <div class="rm-grade-wrap"><table class="rm-grade" id="rmGrade" aria-label="Interações por setor e dia do mês"></table></div>
+          <div class="rm-legenda">
+            <span class="rm-leg-item"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</span>
+            <span class="rm-leg-item"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</span>
+            <span class="rm-leg-item"><span class="rm-tipo-marca t-demanda">D</span>Demanda</span>
+            <span class="rm-leg-item"><span class="rm-leg-janela"></span>Janela de 10 dias (até hoje)</span>
+            <span class="rm-leg-item"><span class="rm-leg-pend"></span>Pendente (clique em Salvar)</span>
+            <span class="rm-leg-item"><span class="rm-st-dot ok"></span>Em dia · <span class="rm-st-dot atencao"></span>Atenção · <span class="rm-st-dot critico"></span>Sem contato</span>
+          </div>
+        </div>
+
+        <div class="rm-baixo">
+          <div class="wa-card">
+            <div class="rm-painel-tit">Evolução do índice</div>
+            <div class="rm-painel-sub">% de setores com interação na janela de 10 dias encerrada em cada dia do mês</div>
+            <div class="rm-evol" id="rmEvol">
+              <svg id="rmEvolSvg" viewBox="0 0 640 190" role="img" aria-label="Evolução diária do índice de interação"></svg>
+              <div class="rm-tip" id="rmTip" hidden></div>
+            </div>
+          </div>
+          <div class="wa-card">
+            <div class="rm-painel-tit">Radar de setores</div>
+            <div class="rm-painel-sub">Tempo desde a última interação registrada</div>
+            <ul class="rm-radar" id="rmRadar"></ul>
+          </div>
+        </div>
       </section>
 
 
@@ -5208,6 +5410,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ALL_SECTIONS = [
     { key: 'home', label: 'Home' },
+    { key: 'roadmap', label: 'Roadmap' },
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'clipping', label: 'Clipping News' },
     { key: 'relatorios', label: 'Relatórios' },
@@ -18688,6 +18891,373 @@ ${quadro}
       }
     };
 
+  })();
+</script>
+
+<script>
+  // ---------------- Roadmap: interações do Núcleo de Inteligência com os setores ----------------
+  // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 10 dias que
+  // termina hoje: % de setores com ao menos uma interação (100% = houve interação com todos).
+  // Os cliques ficam pendentes até "Salvar alterações"; KPIs, gráfico e radar usam só o que foi salvo.
+  // Dados: tabela `roadmap_interacoes` (supabase/schema_roadmap.sql); sem Supabase, no localStorage (demonstração).
+  (function(){
+    const page = document.getElementById('page-roadmap');
+    if(!page) return;
+
+    const SETORES = ['Marketing', 'Certificado Digital / Espaço CDL', 'Institucional', 'Superintendência', 'Financeiro', 'TI',
+      'Relações Humanas', 'CNDL', 'Departamento Pessoal', 'SPC Brasil', 'Produtos CDL'];
+    const TIPOS = {
+      reuniao: { rotulo: 'Reunião', letra: 'R' },
+      alinhamento: { rotulo: 'Alinhamento', letra: 'A' },
+      demanda: { rotulo: 'Demanda', letra: 'D' }
+    };
+    const JANELA = 10;           // dias da janela do índice (hoje + 9 anteriores)
+    const HISTORICO = 60;        // dias carregados para trás (radar "última interação")
+    const TABELA = 'roadmap_interacoes';
+    const CHAVE_LOCAL = 'cdload-roadmap';
+    const ICO = {
+      ok: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+      atencao: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>',
+      critico: '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+    };
+
+    const $ = id => document.getElementById(id);
+    const grade = $('rmGrade'), evolSvg = $('rmEvolSvg'), tip = $('rmTip'), radar = $('rmRadar');
+    const btnSalvar = $('rmSalvar'), btnDescartar = $('rmDescartar');
+
+    // Datas sempre como 'AAAA-MM-DD' no fuso local.
+    const pad = n => String(n).padStart(2, '0');
+    const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const deIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+    const somaDias = (s, n) => { const d = deIso(s); d.setDate(d.getDate() + n); return iso(d); };
+    const difDias = (a, b) => Math.round((deIso(a) - deIso(b)) / 86400000);
+    const dataBR = s => s.split('-').reverse().join('/');
+    const hoje = () => iso(new Date());
+    const mesAtual = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); };
+
+    let mesRef = mesAtual();
+    let tipoAtual = 'reuniao';
+    let registros = new Map();     // "setor|data" -> { id, setor, data, tipo, criado_por } (salvos)
+    const pendentes = new Map();   // "setor|data" -> { acao: 'add', tipo } | { acao: 'del' }
+    let carregando = false, salvando = false, pontos = [];
+
+    const chave = (setor, data) => setor + '|' + data;
+    const sb = () => window.CDL_SB;
+    const emailAtual = () => ((typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '').toLowerCase();
+    // Remover uma flag salva: Administrador/Edição, ou quem a registrou (o RLS aplica a mesma regra).
+    const podeRemover = r => !sb() || (window.__podeEditar && window.__podeEditar('roadmap'))
+      || (!!r.criado_por && r.criado_por.toLowerCase() === emailAtual());
+
+    function msg(texto, erro){
+      const el = $('rmMsg');
+      el.hidden = !texto;
+      el.textContent = texto || '';
+      el.classList.toggle('erro', !!erro);
+    }
+
+    // ---------- Modo demonstração (sem Supabase) ----------
+    function lerLocal(){
+      try { const v = JSON.parse(localStorage.getItem(CHAVE_LOCAL)); if(Array.isArray(v)) return v; } catch(e){ /* sem storage */ }
+      // Primeira visita: alguns registros de exemplo nos últimos dias.
+      const h = hoje();
+      return [[0, 0, 'reuniao'], [1, 2, 'alinhamento'], [2, 1, 'reuniao'], [3, 4, 'demanda'], [5, 3, 'reuniao'], [6, 8, 'alinhamento'],
+        [7, 12, 'reuniao'], [9, 6, 'demanda'], [0, 14, 'alinhamento'], [4, 18, 'reuniao'], [10, 25, 'reuniao']]
+        .map(([s, d, t], i) => ({ id: 'demo' + i, setor: SETORES[s], data: somaDias(h, -d), tipo: t, criado_por: '' }));
+    }
+    function gravarLocal(lista){
+      try { localStorage.setItem(CHAVE_LOCAL, JSON.stringify(lista)); }
+      catch(e){ throw new Error('o navegador não permitiu gravar os dados localmente.'); }
+    }
+
+    // ---------- Carga ----------
+    // Mês exibido (+9 dias antes, para o gráfico) e os últimos 60 dias (índice, variação e radar).
+    function intervalo(){
+      const ini = iso(mesRef), fimMes = iso(new Date(mesRef.getFullYear(), mesRef.getMonth() + 1, 0)), h = hoje();
+      const de = [somaDias(ini, -(JANELA - 1)), somaDias(h, -(HISTORICO - 1))].sort()[0];
+      const ate = [fimMes, h].sort()[1];
+      return { de, ate };
+    }
+    async function carregar(){
+      const { de, ate } = intervalo();
+      carregando = true; render();
+      try {
+        let lista;
+        if(sb()){
+          const { data, error } = await sb().from(TABELA).select('id,setor,data,tipo,criado_por').gte('data', de).lte('data', ate).limit(10000);
+          if(error) throw error;
+          lista = data || [];
+        } else {
+          lista = lerLocal().filter(r => r.data >= de && r.data <= ate);
+        }
+        registros = new Map(lista.filter(r => SETORES.includes(r.setor)).map(r => [chave(r.setor, r.data), r]));
+      } catch(e){
+        console.error('Roadmap: erro ao carregar interações', e);
+        msg('Não foi possível carregar as interações: ' + (e.message || e), true);
+      }
+      carregando = false; render();
+    }
+
+    // ---------- Métricas ----------
+    // Índice da janela [fim-9, fim]: setores distintos com interação ÷ total de setores.
+    function indice(fim, mapa){
+      const ini = somaDias(fim, -(JANELA - 1)), cobertos = new Set();
+      let total = 0;
+      mapa.forEach(r => { if(r.data >= ini && r.data <= fim){ cobertos.add(r.setor); total++; } });
+      return { pct: Math.round(cobertos.size / SETORES.length * 100), cobertos, total, ini };
+    }
+    // Salvos + cliques pendentes (o que a grade mostra e a prévia do índice).
+    function efetivo(){
+      const m = new Map(registros);
+      pendentes.forEach((p, k) => {
+        if(p.acao === 'del') m.delete(k);
+        else { const [setor, data] = k.split('|'); m.set(k, { setor, data, tipo: p.tipo }); }
+      });
+      return m;
+    }
+    function ultimaInteracao(setor){
+      const h = hoje(); let u = null;
+      registros.forEach(r => { if(r.setor === setor && r.data <= h && (!u || r.data > u)) u = r.data; });
+      return u;
+    }
+    function situacao(dias){
+      if(dias != null && dias < JANELA) return { cls: 'ok', rotulo: 'Em dia' };
+      if(dias != null && dias < 2 * JANELA) return { cls: 'atencao', rotulo: 'Atenção' };
+      return { cls: 'critico', rotulo: 'Sem contato' };
+    }
+    const haQuanto = d => d === 0 ? 'hoje' : d === 1 ? 'ontem' : `há ${d} dias`;
+
+    // ---------- Render ----------
+    function renderKpis(){
+      const h = hoje(), atual = indice(h, registros), anterior = indice(somaDias(h, -JANELA), registros);
+      $('rmIndiceValor').textContent = atual.pct + '%';
+      $('rmAnel').style.strokeDashoffset = (213.63 * (1 - atual.pct / 100)).toFixed(2);
+      $('rmIndiceSub').textContent = `${atual.cobertos.size} de ${SETORES.length} setores · ${dataBR(atual.ini).slice(0, 5)} a ${dataBR(h).slice(0, 5)}`;
+      const previa = $('rmPrevia');
+      if(pendentes.size){
+        const p = indice(h, efetivo()).pct;
+        previa.textContent = `Prévia após salvar: ${p}%`;
+        previa.hidden = p === atual.pct;
+      } else previa.hidden = true;
+
+      $('rmTotal').textContent = atual.total;
+      $('rmTotalSub').textContent = atual.total === 1 ? 'flag registrada nos últimos 10 dias' : 'flags registradas nos últimos 10 dias';
+
+      const sem = SETORES.filter(s => !atual.cobertos.has(s));
+      $('rmSem').textContent = sem.length;
+      $('rmSemLista').innerHTML = sem.length
+        ? sem.slice(0, 4).map(s => `<span class="rm-chip">${esc(s)}</span>`).join('') + (sem.length > 4 ? `<span class="rm-chip">+${sem.length - 4}</span>` : '')
+        : '<span class="rm-chip ok">Todos os setores atendidos</span>';
+
+      const delta = atual.pct - anterior.pct, v = $('rmVar');
+      v.textContent = (delta > 0 ? '+' : '') + delta + ' p.p.';
+      v.classList.toggle('sobe', delta > 0);
+      v.classList.toggle('desce', delta < 0);
+      $('rmVarSub').textContent = `vs. ${anterior.pct}% nos 10 dias anteriores`;
+    }
+
+    function renderToolbar(){
+      const rot = mesRef.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      $('rmMesRot').textContent = rot.charAt(0).toUpperCase() + rot.slice(1);
+      $('rmMesProx').disabled = mesRef >= mesAtual();     // dias futuros não recebem flag
+      const n = pendentes.size, pend = $('rmPend');
+      pend.hidden = !n;
+      pend.textContent = n === 1 ? '1 alteração pendente' : `${n} alterações pendentes`;
+      btnSalvar.disabled = !n || salvando;
+      btnDescartar.disabled = !n || salvando;
+      $('rmSalvarTxt').textContent = salvando ? 'Salvando...' : 'Salvar alterações';
+    }
+
+    function renderGrade(){
+      const ano = mesRef.getFullYear(), mes = mesRef.getMonth(), nDias = new Date(ano, mes + 1, 0).getDate();
+      const h = hoje(), iniJan = somaDias(h, -(JANELA - 1)), ef = efetivo();
+      const dias = [];
+      for(let d = 1; d <= nDias; d++){
+        const dt = new Date(ano, mes, d), s = iso(dt), sem = dt.getDay();
+        dias.push({ s, d, letra: 'DSTQQSS'[sem], fds: sem === 0 || sem === 6, futuro: s > h, hoje: s === h, janela: s >= iniJan && s <= h });
+      }
+      const colCls = x => [x.fds && 'fds', x.janela && 'janela', x.hoje && 'hoje'].filter(Boolean).join(' ');
+      const porDia = dias.map(() => 0);
+
+      let corpo = '';
+      SETORES.forEach(setor => {
+        const ult = ultimaInteracao(setor), st = situacao(ult ? difDias(h, ult) : null);
+        let noMes = 0;
+        corpo += `<tr><th scope="row" class="rm-col-setor"><span class="rm-st-dot ${st.cls}" title="${st.rotulo}${ult ? ' · última em ' + dataBR(ult) : ''}"></span>${esc(setor)}</th>`;
+        dias.forEach((x, i) => {
+          const k = chave(setor, x.s), r = ef.get(k), p = pendentes.get(k);
+          const cls = ['rm-cel'];
+          let letra = '', titulo = `${setor} · ${dataBR(x.s)}`;
+          if(r){
+            noMes++; porDia[i]++;
+            cls.push('t-' + r.tipo);
+            letra = (TIPOS[r.tipo] || {}).letra || '•';
+            titulo += ` · ${(TIPOS[r.tipo] || {}).rotulo || 'Interação'}`;
+            if(r.criado_por) titulo += ` · registrada por ${r.criado_por}`;
+            if(p) { cls.push('pend-add'); titulo += ' · pendente (clique em Salvar)'; }
+          } else if(p && p.acao === 'del'){
+            const orig = registros.get(k) || {};
+            cls.push('pend-del');
+            letra = (TIPOS[orig.tipo] || {}).letra || '•';
+            titulo += ' · remoção pendente (clique em Salvar)';
+          } else if(x.futuro) titulo += ' · data futura';
+          corpo += `<td class="${colCls(x)}"><button type="button" class="${cls.join(' ')}" data-k="${esc(k)}"${x.futuro ? ' disabled' : ''} aria-pressed="${!!r}" title="${esc(titulo)}">${letra}</button></td>`;
+        });
+        corpo += `<td class="rm-col-total">${noMes}</td></tr>`;
+      });
+
+      const cab = '<thead><tr><th scope="col" class="rm-col-setor">Setor</th>'
+        + dias.map(x => `<th scope="col" class="${colCls(x)}" title="${dataBR(x.s)}"><span class="rm-dia-sem">${x.letra}</span><span class="rm-dia-num">${x.d}</span></th>`).join('')
+        + '<th scope="col" class="rm-col-total" title="Interações do setor no mês">Mês</th></tr></thead>';
+      const rodape = '<tfoot><tr><th scope="row" class="rm-col-setor">Setores no dia</th>'
+        + dias.map((x, i) => `<td class="${colCls(x)}">${x.futuro ? '' : porDia[i] || '·'}</td>`).join('')
+        + `<td class="rm-col-total">${porDia.reduce((a, b) => a + b, 0)}</td></tr></tfoot>`;
+      grade.innerHTML = cab + '<tbody>' + corpo + '</tbody>' + rodape;
+      grade.classList.toggle('carregando', carregando);
+    }
+
+    // Barra com topo arredondado, apoiada na linha de base.
+    const barraPath = (x, y, w, alt, r) => `M${x},${y + alt}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + alt}Z`;
+    function renderEvolucao(){
+      const ano = mesRef.getFullYear(), mes = mesRef.getMonth(), n = new Date(ano, mes + 1, 0).getDate(), h = hoje();
+      const W = 640, H = 190, pl = 36, pr = 8, pt = 12, pb = 24, cw = (W - pl - pr) / n, ch = H - pt - pb;
+      const y = v => pt + ch - v / 100 * ch;
+      const diaHoje = h.slice(0, 7) === iso(mesRef).slice(0, 7) ? Number(h.slice(8)) : null;
+      let s = '';
+      [0, 50, 100].forEach(v => {
+        s += `<line class="grade-l" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"></line><text class="eixo-t" x="${pl - 6}" y="${y(v) + 3}" text-anchor="end">${v}%</text>`;
+      });
+      pontos = [];
+      const bw = Math.max(4, Math.min(14, cw - 2));
+      for(let d = 1; d <= n; d++){
+        const ds = iso(new Date(ano, mes, d)), cx = pl + cw * (d - 0.5), p = { ds, cx };
+        if(ds <= h){
+          const r = indice(ds, registros);
+          p.pct = r.pct; p.n = r.cobertos.size;
+          const alt = r.pct / 100 * ch;
+          if(alt > 0) s += `<path class="barra${ds === h ? ' hoje' : ''}" data-i="${d - 1}" d="${barraPath(cx - bw / 2, pt + ch - alt, bw, alt, Math.min(4, bw / 2, alt))}"></path>`;
+        }
+        pontos.push(p);
+        const ehHoje = d === diaHoje;
+        if(ehHoje || ((d === 1 || d % 5 === 0) && (diaHoje == null || Math.abs(d - diaHoje) > 1))){
+          s += `<text class="eixo-t${ehHoje ? ' hoje' : ''}" x="${cx}" y="${H - 6}" text-anchor="middle">${ehHoje ? 'hoje' : d}</text>`;
+        }
+      }
+      // Alvos de hover: a faixa inteira do dia, maior que a barra.
+      s += pontos.map((p, i) => p.pct == null ? '' : `<rect class="alvo" data-i="${i}" x="${p.cx - cw / 2}" y="${pt}" width="${cw}" height="${ch}" fill="transparent"></rect>`).join('');
+      evolSvg.innerHTML = s;
+      tip.hidden = true;
+    }
+    function mostrarTip(i){
+      const p = pontos[i], wrap = $('rmEvol');
+      evolSvg.querySelectorAll('.barra.ativa').forEach(b => b.classList.remove('ativa'));
+      if(!p || p.pct == null){ tip.hidden = true; return; }
+      const barra = evolSvg.querySelector(`.barra[data-i="${i}"]`);
+      if(barra) barra.classList.add('ativa');
+      const rs = evolSvg.getBoundingClientRect(), rw = wrap.getBoundingClientRect(), k = rs.width / 640;
+      const topo = 12 + (190 - 12 - 24) * (1 - p.pct / 100);
+      tip.textContent = `${dataBR(p.ds)} · ${p.pct}% (${p.n} de ${SETORES.length} setores)`;
+      tip.style.left = (rs.left - rw.left + p.cx * k) + 'px';
+      tip.style.top = (rs.top - rw.top + topo * k) + 'px';
+      tip.hidden = false;
+    }
+
+    function renderRadar(){
+      const h = hoje();
+      const itens = SETORES.map(setor => { const u = ultimaInteracao(setor); return { setor, u, dd: u ? difDias(h, u) : null }; })
+        .sort((a, b) => (b.dd == null ? 1e9 : b.dd) - (a.dd == null ? 1e9 : a.dd) || a.setor.localeCompare(b.setor, 'pt-BR'));
+      radar.innerHTML = itens.map(it => {
+        const st = situacao(it.dd);
+        return `<li><span class="rm-badge ${st.cls}">${ICO[st.cls]}${st.rotulo}</span><span class="rm-radar-nome">${esc(it.setor)}</span>`
+          + `<span class="rm-radar-ult">${it.u ? `${dataBR(it.u)} · ${haQuanto(it.dd)}` : `sem registro em ${HISTORICO} dias`}</span></li>`;
+      }).join('');
+    }
+
+    function render(){
+      renderToolbar();
+      renderKpis();
+      renderGrade();
+      renderEvolucao();
+      renderRadar();
+    }
+
+    // ---------- Salvar ----------
+    async function salvar(){
+      if(!pendentes.size || salvando) return;
+      salvando = true; renderToolbar();
+      const novas = [], remover = [];
+      pendentes.forEach((p, k) => {
+        const [setor, data] = k.split('|');
+        if(p.acao === 'add') novas.push({ setor, data, tipo: p.tipo, criado_por: emailAtual() || null });
+        else if(registros.get(k)) remover.push(registros.get(k));
+      });
+      let aviso = '';
+      try {
+        if(sb()){
+          if(novas.length){
+            // Já marcada por outra pessoa no mesmo setor/dia: mantém a existente.
+            const { error } = await sb().from(TABELA).upsert(novas, { onConflict: 'setor,data', ignoreDuplicates: true });
+            if(error) throw error;
+          }
+          if(remover.length){
+            const { data, error } = await sb().from(TABELA).delete().in('id', remover.map(r => r.id)).select('id');
+            if(error) throw error;
+            const negadas = remover.length - (data || []).length;
+            if(negadas > 0) aviso = ` ${negadas} remoção(ões) não permitida(s): só quem registrou, um usuário com Edição ou um Administrador pode remover.`;
+          }
+        } else {
+          const ids = new Set(remover.map(r => r.id));
+          const lista = lerLocal().filter(r => !ids.has(r.id));
+          novas.forEach(n => {
+            if(!lista.some(r => r.setor === n.setor && r.data === n.data)) lista.push({ id: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ...n });
+          });
+          gravarLocal(lista);
+        }
+        pendentes.clear();
+        salvando = false;
+        await carregar();
+        const pct = indice(hoje(), registros).pct, kpi = $('rmKpiIndice');
+        kpi.classList.remove('pulso'); void kpi.offsetWidth; kpi.classList.add('pulso');
+        msg(`Alterações salvas. Índice de interação atual: ${pct}%.` + aviso, !!aviso);
+      } catch(e){
+        console.error('Roadmap: erro ao salvar', e);
+        msg('Não foi possível salvar: ' + (e.message || e), true);
+      } finally {
+        salvando = false; renderToolbar();
+      }
+    }
+
+    // ---------- Eventos ----------
+    grade.addEventListener('click', ev => {
+      const b = ev.target.closest('.rm-cel');
+      if(!b || b.disabled || salvando) return;
+      const k = b.dataset.k, salvo = registros.get(k);
+      if(pendentes.has(k)) pendentes.delete(k);               // desfaz o clique pendente
+      else if(salvo){
+        if(!podeRemover(salvo)){ alert('Só quem registrou a interação, um usuário com Edição ou um Administrador pode removê-la.'); return; }
+        pendentes.set(k, { acao: 'del' });
+      } else pendentes.set(k, { acao: 'add', tipo: tipoAtual });
+      msg('');
+      render();
+      const foco = grade.querySelector(`.rm-cel[data-k="${CSS.escape(k)}"]`);
+      if(foco) foco.focus();
+    });
+    $('rmTipos').addEventListener('click', ev => {
+      const b = ev.target.closest('.rm-tipo');
+      if(!b) return;
+      tipoAtual = b.dataset.tipo;
+      $('rmTipos').querySelectorAll('.rm-tipo').forEach(t => { const on = t === b; t.classList.toggle('active', on); t.setAttribute('aria-checked', String(on)); });
+    });
+    $('rmMesAnt').addEventListener('click', () => { mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth() - 1, 1); carregar(); });
+    $('rmMesProx').addEventListener('click', () => { if(mesRef < mesAtual()){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth() + 1, 1); carregar(); } });
+    $('rmHoje').addEventListener('click', () => { mesRef = mesAtual(); carregar(); });
+    btnSalvar.addEventListener('click', salvar);
+    btnDescartar.addEventListener('click', () => { pendentes.clear(); msg(''); render(); });
+    evolSvg.addEventListener('mousemove', ev => { const a = ev.target.closest('.alvo'); if(a) mostrarTip(Number(a.dataset.i)); });
+    evolSvg.addEventListener('mouseleave', () => { tip.hidden = true; evolSvg.querySelectorAll('.barra.ativa').forEach(b => b.classList.remove('ativa')); });
+    window.addEventListener('beforeunload', ev => { if(pendentes.size){ ev.preventDefault(); ev.returnValue = ''; } });
+    document.addEventListener('cdload:pagechange', ev => { if(ev.detail.page === 'roadmap') carregar(); });
+
+    render();
   })();
 </script>
 
