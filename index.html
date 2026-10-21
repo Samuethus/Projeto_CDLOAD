@@ -2813,13 +2813,13 @@
         <div class="wa-hub-grid" id="waHubGrid"></div>
       </section>
 
-      <!-- ROADMAP: flags de interação/reunião do Núcleo com os setores (índice na janela de 10 dias) -->
+      <!-- ROADMAP: flags de interação/reunião do Núcleo com os setores (índice na janela de 7 dias) -->
       <section class="page" id="page-roadmap">
         <div class="rm-kpis">
           <div class="rm-kpi rm-kpi-indice" id="rmKpiIndice">
             <svg class="rm-anel" viewBox="0 0 84 84" aria-hidden="true"><circle class="trilho" cx="42" cy="42" r="34"></circle><circle class="valor" id="rmAnel" cx="42" cy="42" r="34" stroke-dasharray="213.63" stroke-dashoffset="213.63"></circle></svg>
             <div>
-              <div class="rm-kpi-rot">Índice de interação · 10 dias</div>
+              <div class="rm-kpi-rot">Índice de interação · 7 dias</div>
               <div class="rm-kpi-val" id="rmIndiceValor">—</div>
               <div class="rm-kpi-sub" id="rmIndiceSub">—</div>
               <span class="rm-previa" id="rmPrevia" hidden></span>
@@ -2870,7 +2870,7 @@
             <span class="rm-leg-item"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</span>
             <span class="rm-leg-item"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</span>
             <span class="rm-leg-item"><span class="rm-tipo-marca t-demanda">D</span>Demanda</span>
-            <span class="rm-leg-item"><span class="rm-leg-janela"></span>Janela de 10 dias (até hoje)</span>
+            <span class="rm-leg-item"><span class="rm-leg-janela"></span>Janela de 7 dias (até hoje)</span>
             <span class="rm-leg-item"><span class="rm-leg-pend"></span>Pendente (clique em Salvar)</span>
             <span class="rm-leg-item"><span class="rm-st-dot ok"></span>Em dia · <span class="rm-st-dot atencao"></span>Atenção · <span class="rm-st-dot critico"></span>Sem contato</span>
           </div>
@@ -2879,7 +2879,7 @@
         <div class="rm-baixo">
           <div class="wa-card">
             <div class="rm-painel-tit">Evolução do índice</div>
-            <div class="rm-painel-sub">% de setores com interação na janela de 10 dias encerrada em cada dia do mês</div>
+            <div class="rm-painel-sub">% de setores com interação na janela de 7 dias encerrada em cada dia do mês</div>
             <div class="rm-evol" id="rmEvol">
               <svg id="rmEvolSvg" viewBox="0 0 640 190" role="img" aria-label="Evolução diária do índice de interação"></svg>
               <div class="rm-tip" id="rmTip" hidden></div>
@@ -18900,7 +18900,7 @@ ${quadro}
 
 <script>
   // ---------------- Roadmap: interações do Núcleo de Inteligência com os setores ----------------
-  // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 10 dias que
+  // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 7 dias que
   // termina hoje: % de setores com ao menos uma interação (100% = houve interação com todos).
   // Os cliques ficam pendentes até "Salvar alterações"; KPIs, gráfico e radar usam só o que foi salvo.
   // Dados: tabela `roadmap_interacoes` (supabase/schema_roadmap.sql); sem Supabase, no localStorage (demonstração).
@@ -18915,7 +18915,7 @@ ${quadro}
       alinhamento: { rotulo: 'Alinhamento', letra: 'A' },
       demanda: { rotulo: 'Demanda', letra: 'D' }
     };
-    const JANELA = 10;           // dias da janela do índice (hoje + 9 anteriores)
+    const JANELA = 7;            // dias da janela do índice (hoje + 6 anteriores)
     const HISTORICO = 60;        // dias carregados para trás (radar "última interação")
     const TABELA = 'roadmap_interacoes';
     const CHAVE_LOCAL = 'cdload-roadmap';
@@ -19002,7 +19002,7 @@ ${quadro}
     }
 
     // ---------- Métricas ----------
-    // Índice da janela [fim-9, fim]: setores distintos com interação ÷ total de setores.
+    // Índice da janela [fim-(JANELA-1), fim]: setores distintos com interação ÷ total de setores.
     function indice(fim, mapa){
       const ini = somaDias(fim, -(JANELA - 1)), cobertos = new Set();
       let total = 0;
@@ -19044,7 +19044,7 @@ ${quadro}
       } else previa.hidden = true;
 
       $('rmTotal').textContent = atual.total;
-      $('rmTotalSub').textContent = atual.total === 1 ? 'flag registrada nos últimos 10 dias' : 'flags registradas nos últimos 10 dias';
+      $('rmTotalSub').textContent = `${atual.total === 1 ? 'flag registrada' : 'flags registradas'} nos últimos ${JANELA} dias`;
 
       const sem = SETORES.filter(s => !atual.cobertos.has(s));
       $('rmSem').textContent = sem.length;
@@ -19056,7 +19056,7 @@ ${quadro}
       v.textContent = (delta > 0 ? '+' : '') + delta + ' p.p.';
       v.classList.toggle('sobe', delta > 0);
       v.classList.toggle('desce', delta < 0);
-      $('rmVarSub').textContent = `vs. ${anterior.pct}% nos 10 dias anteriores`;
+      $('rmVarSub').textContent = `vs. ${anterior.pct}% nos ${JANELA} dias anteriores`;
     }
 
     function renderToolbar(){

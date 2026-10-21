@@ -9,7 +9,7 @@
 --   roadmap_interacoes → uma linha por setor e dia em que houve
 --                        interação/reunião (no máximo uma por dia)
 --
--- Métrica exibida no app: janela de 10 dias que termina hoje;
+-- Métrica exibida no app: janela de 7 dias que termina hoje;
 -- índice = setores distintos com interação ÷ 11 setores (100% = todos).
 --
 -- Acesso (seção "roadmap" em Usuários › Permissões de Acesso):
