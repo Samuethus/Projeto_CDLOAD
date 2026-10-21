@@ -1574,7 +1574,10 @@
   .cd-kpi.roxo{--cd-ac:#7C3AED;--cd-ac-bg:#EDE9FE;}
   .cd-kpi.laranja{--cd-ac:#EA580C;--cd-ac-bg:#FFEDD5;}
   .cd-kpi.grafite{--cd-ac:#334155;--cd-ac-bg:#E2E8F0;}
-  .cd-barras.ic-barras .cd-barra{grid-template-columns:minmax(0,148px) 1fr minmax(34px,auto);}   /* nome da data + ano inteiros */
+  /* Intenção de compra: nome da data + ano inteiros e, ao lado do %, a variação vs. o ano anterior (p.p.) */
+  .cd-barras.ic-barras .cd-barra, .cd-barras.ic-barras .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,142px) 1fr minmax(40px,auto) 62px;gap:10px;}
+  .cd-barras.ic-barras .cd-barra-pct.ic-sobe{color:var(--cd-verde);font-weight:600;}
+  .cd-barras.ic-barras .cd-barra-pct.ic-cai{color:var(--cd-verm);font-weight:600;}
   .ic-data-ic{width:18px;height:18px;flex:0 0 auto;display:inline-flex;color:var(--ic-cor, #1D5FD3);}
   .ic-data-ic svg{width:18px;height:18px;}
   .cd-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cd-ac);}
@@ -15260,22 +15263,25 @@ ${clipPlayerPills(n)}
           `Movimentação estimada na economia local · intenção de compra ${icPct(e.intencao)}${a ? ` (${icPp(e.intencao - a.intencao)} vs. ${a.ano})` : ''} · ticket médio ${icReais(e.ticket)} · ${stkNum(e.consumidores)} consumidores · ${stkNum(e.amostra)} entrevistas`);
       }).join('');
 
-      // ---- Linha A, 1º quadro: movimentação por data, ano a ano (como a evolução do saldo do CAGED) ----
+      // ---- Linha A, 1º quadro: ticket médio por data, ano a ano (como a evolução do saldo do CAGED) ----
       const nomes = Object.keys(IC_DATAS).filter(n => sel.some(e => e.data === n));
       const anos = [...new Set(sel.map(e => e.ano))].sort();
       const anosSerie = [...new Set([anos[0] - 1, ...anos])].slice(-3);
       const tons = [CD_COR.cinza, CD_COR.azulClaro, CD_COR.azul].slice(-anosSerie.length);
-      const series = anosSerie.map((ano, i) => ({ nome: String(ano), cor: tons[i], valores: nomes.map(n => { const e = D.edicoes.find(x => x.data === n && x.ano === ano); return e ? e.movimentacao / 1e6 : null; }) }))
+      const series = anosSerie.map((ano, i) => ({ nome: String(ano), cor: tons[i], valores: nomes.map(n => { const e = D.edicoes.find(x => x.data === n && x.ano === ano); return e ? e.ticket : null; }) }))
         .filter(s => s.valores.some(v => v != null));
-      const wMov = cdCard('Movimentação por data', `Estimativa na economia local · R$ milhões · ${D.regiao}`, '<div id="stkFluxoGraf"></div>', legendaDots(series));
+      const wMov = cdCard('Ticket médio por data', `Valor médio que os consumidores pretendem gastar · R$ · ${D.regiao}`, '<div id="stkFluxoGraf"></div>', legendaDots(series));
 
       // ---- Linha A, 2º quadro: intenção de compra por data (com o ícone da data) ----
       const itInt = sel.slice().reverse().filter(e => casa(icRot(e))).map(e => {
         const a = icAnterior(D, e), cfg = IC_DATAS[e.data] || {};
-        return { nome: `${cfg.curto || e.data} ${e.ano}`, icone: cfg.ic, valor: e.intencao, rotulo: icPct(e.intencao), cor: cfg.cor || CD_COR.azul,
+        // Ao lado do %: variação em p.p. contra a mesma data no ano anterior ("—" sem pesquisa naquele ano).
+        return { nome: `${cfg.curto || e.data} ${e.ano}`, icone: cfg.ic, valor: e.intencao, rotulo: icPct(e.intencao), pct: a ? icPp(e.intencao - a.intencao) : '—', cor: cfg.cor || CD_COR.azul,
           dica: `${icPct(e.intencao)} pretendem comprar${a ? ` · ${a.ano}: ${icPct(a.intencao)} (${icPp(e.intencao - a.intencao)})` : ''} · ticket ${icReais(e.ticket)}` };
       });
-      const wInt = cdCard('Intenção de compra', 'Entrevistados que pretendem comprar na data', cdBarras(itInt, 'Intenção de compra', termos.length ? semBusca : 'Sem datas.').replace('class="cd-barras"', 'class="cd-barras ic-barras"'));
+      const wInt = cdCard('Intenção de compra', 'Entrevistados que pretendem comprar na data', cdBarras(itInt, 'Intenção de compra', termos.length ? semBusca : 'Sem datas.')
+        .replace('class="cd-barras"', 'class="cd-barras ic-barras"')
+        .replace(/<span class="cd-barra-pct">([+−])/g, (m, s) => `<span class="cd-barra-pct ${s === '+' ? 'ic-sobe' : 'ic-cai'}">${s}`));
 
       // ---- Detalhamento: soma das pesquisas selecionadas com questionário completo ----
       const det = sel.filter(e => e.detalhe), S = icSomar(det);
@@ -15337,7 +15343,7 @@ ${clipPlayerPills(n)}
       if(det.length && dadosR.length) stkDesenharRoscaCd(dadosR, visaoLocal ? 'Local de compra' : 'Meio de pagamento', 196);
       const graf = document.getElementById('stkFluxoGraf');
       if(graf) stkDesenharLinhasFluxo(graf, nomes.map(n => IC_DATAS[n].curto), series, cdAlturaLivre(graf, 200),
-        v => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mi`);
+        v => icReais(v));
       cdAjustarListas();
       icUltimo = D;
 
