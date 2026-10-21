@@ -1569,6 +1569,14 @@
   .cd-kpi.verde{--cd-ac:var(--cd-verde);--cd-ac-bg:var(--cd-verde-bg);}
   .cd-kpi.vermelho{--cd-ac:var(--cd-verm);--cd-ac-bg:var(--cd-verm-bg);}
   .cd-kpi.amarelo{--cd-ac:#E3AE1F;--cd-ac-bg:#FCF3D9;}
+  /* Intenção de Compra: uma cor por data comemorativa (cards do topo e ícones da lista Datas) */
+  .cd-kpi.rosa{--cd-ac:#DB2777;--cd-ac-bg:#FCE7F3;}
+  .cd-kpi.roxo{--cd-ac:#7C3AED;--cd-ac-bg:#EDE9FE;}
+  .cd-kpi.laranja{--cd-ac:#EA580C;--cd-ac-bg:#FFEDD5;}
+  .cd-kpi.grafite{--cd-ac:#334155;--cd-ac-bg:#E2E8F0;}
+  .cd-barras.ic-barras .cd-barra{grid-template-columns:minmax(0,148px) 1fr minmax(34px,auto);}   /* nome da data + ano inteiros */
+  .ic-data-ic{width:18px;height:18px;flex:0 0 auto;display:inline-flex;color:var(--ic-cor, #1D5FD3);}
+  .ic-data-ic svg{width:18px;height:18px;}
   .cd-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cd-ac);}
   .cd-kpi-ic{width:44px;height:44px;border-radius:50%;background:var(--cd-ac-bg);color:var(--cd-ac);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
   .cd-kpi-ic svg{width:20px;height:20px;stroke-width:2;}
@@ -2443,6 +2451,10 @@
   :root[data-theme="dark"] .stk-seg-btn.active{background:rgba(59,130,246,.18);color:#BFDBFE;box-shadow:inset 0 0 0 1px rgba(96,165,250,.35);}
   :root[data-theme="dark"] .stk-seg-btn:not(.active):hover{background:rgba(148,163,184,.08);}
   :root[data-theme="dark"] .cd-kpi.amarelo{--cd-ac-bg:rgba(227,174,31,.18);}
+  :root[data-theme="dark"] .cd-kpi.rosa{--cd-ac:#F472B6;--cd-ac-bg:rgba(219,39,119,.2);}
+  :root[data-theme="dark"] .cd-kpi.roxo{--cd-ac:#A78BFA;--cd-ac-bg:rgba(124,58,237,.22);}
+  :root[data-theme="dark"] .cd-kpi.laranja{--cd-ac:#FB923C;--cd-ac-bg:rgba(234,88,12,.2);}
+  :root[data-theme="dark"] .cd-kpi.grafite{--cd-ac:#CBD5E1;--cd-ac-bg:rgba(148,163,184,.18);}
   :root[data-theme="dark"] .wa-cal-event{
     background:color-mix(in srgb, var(--cal-pastel-text, #3B82F6) 28%, #131C2E);
     color:color-mix(in srgb, var(--cal-pastel-text, #3B82F6) 45%, #fff);
@@ -2689,6 +2701,7 @@
           <select class="filter-select" id="stkPainelFiltro" title="Painel exibido">
             <option value="estoque">Painel · Controle de Estoque</option>
             <option value="clipping">Painel · Clipping News</option>
+            <option value="intencao">Painel · Intenção de Compra</option>
             <option value="panorama">Painel · Panorama Econômico</option>
             <option value="viabilidades">Painel · Viabilidade</option>
           </select>
@@ -2718,6 +2731,11 @@
           <div class="vb-ferr-filtro" id="stkViabFerrFiltro" hidden>
             <button type="button" class="filter-select" id="stkViabFerrBtn" title="Ferramentas incluídas no painel" aria-haspopup="listbox" aria-expanded="false">Ferramentas</button>
             <div class="stk-busca-lista" id="stkViabFerrLista" role="listbox" aria-multiselectable="true" hidden></div>
+          </div>
+          <!-- Intenção de Compra: datas comemorativas exibidas nos cards do topo (até 5; padrão: as 5 mais recentes do período) -->
+          <div class="vb-ferr-filtro" id="stkIcDatasFiltro" hidden>
+            <button type="button" class="filter-select" id="stkIcDatasBtn" title="Datas comemorativas exibidas (até 5)" aria-haspopup="listbox" aria-expanded="false">Datas</button>
+            <div class="stk-busca-lista" id="stkIcDatasLista" role="listbox" aria-multiselectable="true" hidden></div>
           </div>
           <select class="filter-select" id="stkIndicadorFiltro" title="Indicador utilizado nas análises" hidden>
             <option value="abve">ABVE</option>
@@ -12005,7 +12023,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set(), inadimplencia: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set(), inadimplencia: new Set(), intencao: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -12064,7 +12082,16 @@ ${clipPlayerPills(n)}
       mapa: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>',
       setaBaixo: '<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>',
       carro: '<path d="M5 17h14M5 17a2 2 0 1 1-4 0v-4l2-5a2 2 0 0 1 2-1.4h14A2 2 0 0 1 21 8l2 5v4a2 2 0 1 1-4 0"></path><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle>',
-      sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>'
+      sorriso: '<circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>',
+      // Datas comemorativas (Painel · Intenção de Compra)
+      ovo: '<path d="M12 22c6.23-.05 7.87-5.57 7.5-10-.36-4.34-3.95-9.96-7.5-10-3.55.04-7.14 5.66-7.5 10-.37 4.43 1.27 9.95 7.5 10z"></path>',
+      flor: '<circle cx="12" cy="12" r="3"></circle><path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5"></path><path d="M12 7.5V9M7.5 12H9M16.5 12H15M12 16.5V15M8 8l1.88 1.88M14.12 9.88 16 8M8 16l1.88-1.88M14.12 14.12 16 16"></path>',
+      coracao: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>',
+      camisa: '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path>',
+      balao: '<path d="M12 16v1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v1"></path><path d="M12 6a2 2 0 0 1 2 2"></path><path d="M18 8c0 4-3.5 8-6 8s-6-4-6-8a6 6 0 0 1 12 0"></path>',
+      etiqueta: '<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r="1"></circle>',
+      pinheiro: '<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"></path><path d="M12 22v-3"></path>',
+      presente: '<rect x="3" y="8" width="18" height="4" rx="1"></rect><path d="M12 8v13"></path><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>'
     };
     const stkIcone = nome => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${STK_ICONS[nome] || ''}</svg>`;
     // Paleta dos setores = degradê entre as duas cores do gráfico de linha
@@ -12215,12 +12242,15 @@ ${clipPlayerPills(n)}
       const viab = stkPainel() === 'viabilidades';
       const emp = stkPainel() === 'empresas';
       const inad = stkPainel() === 'inadimplencia';
-      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad;
+      const ic = stkPainel() === 'intencao';
+      document.getElementById('stkIcDatasFiltro').hidden = !ic;
+      if(!ic) document.getElementById('stkIcDatasLista').hidden = true;
+      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
-      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad;
+      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic;
       stkMesEl.hidden = viab || (inad && inadVisao === 'graf');   // Gráfico da Inadimplência: jan–dez de cada ano, sem Mês
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
@@ -12256,12 +12286,19 @@ ${clipPlayerPills(n)}
       document.getElementById('empMapa').hidden = !mapa;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
-      stkBuscaInput.placeholder = inad ? (inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
+      stkBuscaInput.placeholder = ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
         : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade econômica (CNAE)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
     }
 
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
+      if(stkPainel() === 'intencao'){
+        // Intenção de Compra: anos com pesquisa (2025 = histórico de comparação).
+        const anosIc = [...new Set((window.INTENCAO_COMPRA ? window.INTENCAO_COMPRA.edicoes : []).map(e => String(e.ano)))].sort().reverse();
+        stkAnoEl.innerHTML = '<option value="">Ano</option>' + anosIc.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        if(anosIc.includes(curAno)) stkAnoEl.value = curAno;
+        return;
+      }
       if(stkPainel() === 'inadimplencia'){
         // Inadimplência: anos com edição do SPC Brasil (sem ano-base: os relatórios já trazem a variação anual).
         // Na visão Gráfico, também os anos lidos dos PDFs Brasil da seção.
@@ -12814,7 +12851,7 @@ ${clipPlayerPills(n)}
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' || painel === 'inadimplencia' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' || painel === 'inadimplencia' || painel === 'intencao' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -12831,6 +12868,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'ipca15' || stkPainel() === 'pmc' || stkPainel() === 'ivs' || stkPainel() === 'icva' || stkPainel() === 'pnad') return ibgeRender();
       if(stkPainel() === 'viabilidades') return viabRender();
       if(stkPainel() === 'inadimplencia') return inadPainelRender();
+      if(stkPainel() === 'intencao') return icRender();
       return stkRenderEstoque();
     }
 
@@ -15069,6 +15107,260 @@ ${clipPlayerPills(n)}
       }
     }
 
+    // ===== Painel · Intenção de Compra — mesma estrutura do CAGED =====
+    // Pesquisa de Intenção de Compra da CDL Cuiabá (região de Cuiabá). Dados: assets/data/intencao_compra.js, gerado por
+    // scripts/intencao_extrair.py a partir da aba "Painel" (oficial) da planilha consolidada — uma edição por data
+    // comemorativa; as de 2025 vêm da aba "Historico 2025" e só têm os indicadores (o questionário era outro).
+    // Cards do topo: uma data comemorativa cada (movimentação estimada vs. a mesma data no ano anterior). Filtro Datas:
+    // lista com seleção múltipla (até 5); sem escolha, as 5 mais recentes do período (Mês/Ano). Abaixo, o detalhamento
+    // das pesquisas selecionadas que têm questionário completo, somando as respostas (mesma conta do Painel da planilha).
+    const IC_DATAS = {
+      'Páscoa': { ic: 'ovo', tom: 'amarelo', cor: '#E3AE1F', curto: 'Páscoa' },
+      'Dia das Mães': { ic: 'flor', tom: 'rosa', cor: '#DB2777', curto: 'Mães' },
+      'Dia dos Namorados': { ic: 'coracao', tom: 'vermelho', cor: '#EF4444', curto: 'Namorados' },
+      'Dia dos Pais': { ic: 'camisa', tom: 'azul', cor: '#1D5FD3', curto: 'Pais' },
+      'Dia das Crianças': { ic: 'balao', tom: 'laranja', cor: '#EA580C', curto: 'Crianças' },
+      'Black Friday': { ic: 'etiqueta', tom: 'grafite', cor: '#334155', curto: 'Black Friday' },
+      'Natal': { ic: 'pinheiro', tom: 'verde', cor: '#5DB14E', curto: 'Natal' }
+    };
+    const IC_MAX = 5;
+    const IC_PAGAMENTO_COR = { 'Cartão de Crédito': '#1D5FD3', 'Pix': '#5DB14E', 'Cartão de Débito': '#A7C7F4', 'Dinheiro': '#E3AE1F', 'Crediário': '#7C3AED', 'Boleto': '#A5B1C2' };
+    const IC_LOCAL_COR = { 'Lojas físicas': '#1D5FD3', 'Internet': '#5DB14E', 'Mídias sociais': '#E3AE1F' };
+    const stkIcDatasBtn = document.getElementById('stkIcDatasBtn'), stkIcDatasLista = document.getElementById('stkIcDatasLista');
+    let icProm = null, icSel = null, icRoscaVisao = 'pagamento', icUltimo = null, icPainelUltimo = null, icPeriodoChave = '|';
+    function icCarregar(){
+      if(window.INTENCAO_COMPRA) return Promise.resolve();
+      if(!icProm) icProm = new Promise((ok, falha) => {
+        const sc = document.createElement('script');
+        sc.src = 'assets/data/intencao_compra.js'; sc.onload = ok;
+        sc.onerror = () => { icProm = null; falha(new Error('intencao_compra.js')); };
+        document.head.appendChild(sc);
+      });
+      return icProm;
+    }
+    const icRot = e => `${e.data} ${e.ano}`;
+    const icMi = v => `R$ ${(v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+    const icReais = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const icPct = (v, c = 1) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }) + '%';
+    const icPp = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' p.p.';
+    const icAnterior = (D, e) => D.edicoes.find(x => x.data === e.data && x.ano === e.ano - 1) || null;
+    // Período (Mês/Ano): Ano escolhe o ano; Mês corta até aquele mês (sem Ano, no ano mais recente).
+    function icPeriodo(D){
+      const ano = stkAnoEl.value, mes = stkMesEl.value;
+      const ult = D.edicoes.length ? D.edicoes[D.edicoes.length - 1].mes.slice(0, 4) : '';
+      const ini = ano ? `${ano}-01` : '0000-00', fim = ano ? `${ano}-${mes || '12'}` : mes ? `${ult}-${mes}` : '9999-99';
+      return D.edicoes.filter(e => e.mes >= ini && e.mes <= fim);
+    }
+    // Datas exibidas: as marcadas no filtro (que estejam no período) ou, sem escolha, as 5 mais recentes do período.
+    function icSelecionadas(D){
+      const per = icPeriodo(D);
+      const marcadas = icSel ? per.filter(e => icSel.has(e.id)) : [];
+      return (marcadas.length ? marcadas : per.slice(-IC_MAX)).slice(-IC_MAX);
+    }
+
+    // ---- Filtro Datas: lista suspensa com checkbox (como o Ferramentas da Viabilidade) ----
+    function icDatasAtualizar(){
+      const D = window.INTENCAO_COMPRA;
+      const per = D ? icPeriodo(D) : [], sel = D ? icSelecionadas(D) : [], ids = new Set(sel.map(e => e.id));
+      const padrao = !icSel || !per.some(e => icSel.has(e.id));
+      stkIcDatasBtn.textContent = !sel.length ? 'Datas' : padrao ? `Datas · ${sel.length} mais recentes` : sel.length === 1 ? 'Datas · ' + icRot(sel[0]) : `Datas · ${sel.length} de ${per.length}`;
+      stkIcDatasBtn.classList.toggle('ativo', !padrao);
+      if(stkIcDatasLista.hidden) return;
+      stkIcDatasLista.innerHTML = !per.length ? '<div class="stk-busca-vazio">Nenhuma pesquisa no período.</div>'
+        : `<div class="stk-busca-topo"><span>${sel.length} de ${IC_MAX} no painel</span><span class="stk-busca-acoes">
+            <button type="button" data-ic-padrao>${IC_MAX} mais recentes</button><button type="button" data-ic-nenhuma>Desmarcar todas</button></span></div>`
+          + per.slice().reverse().map(e => {
+              const ok = ids.has(e.id), cheio = !ok && sel.length >= IC_MAX && !padrao, cfg = IC_DATAS[e.data] || {};
+              return `<label class="stk-busca-item${ok ? ' marcado' : ''}" role="option" aria-selected="${ok}"${cheio ? ' title="Limite de 5 datas: desmarque uma para trocar"' : ''}>
+                <input type="checkbox" data-ic-data="${esc(e.id)}"${ok ? ' checked' : ''}${cheio ? ' disabled' : ''}>
+                <span class="ic-data-ic" style="--ic-cor:${cfg.cor || CD_COR.azul}" aria-hidden="true">${stkIcone(cfg.ic || 'presente')}</span>
+                <span class="stk-busca-nome">${esc(icRot(e))}</span>
+                <span class="stk-busca-meta">${icPct(e.intencao)} de intenção · ${e.detalhe ? `${stkNum(e.amostra)} entrevistas` : 'histórico'}</span></label>`; }).join('');
+    }
+    function icDatasAbrir(abrir){
+      stkIcDatasLista.hidden = !abrir;
+      stkIcDatasBtn.setAttribute('aria-expanded', String(abrir));
+      if(!abrir) return;
+      icDatasAtualizar();
+      const r = stkIcDatasBtn.getBoundingClientRect(), larg = stkIcDatasLista.offsetWidth;
+      stkIcDatasLista.style.top = Math.round(r.bottom + 6) + 'px';
+      stkIcDatasLista.style.left = Math.round(Math.max(16, Math.min(r.left, window.innerWidth - larg - 16))) + 'px';
+    }
+    window.addEventListener('resize', () => { if(!stkIcDatasLista.hidden) icDatasAbrir(false); });
+    document.addEventListener('scroll', ev => { if(!stkIcDatasLista.hidden && !stkIcDatasLista.contains(ev.target)) icDatasAbrir(false); }, true);
+    stkIcDatasBtn.addEventListener('click', () => icDatasAbrir(stkIcDatasLista.hidden));
+    stkIcDatasLista.addEventListener('change', ev => {
+      const cb = ev.target.closest('[data-ic-data]'), D = window.INTENCAO_COMPRA;
+      if(!cb || !D) return;
+      // Primeira escolha parte das datas que já estão na tela (o padrão), para marcar/desmarcar uma de cada vez.
+      if(!icSel || !icPeriodo(D).some(e => icSel.has(e.id))) icSel = new Set(icSelecionadas(D).map(e => e.id));
+      if(cb.checked){ if(icSelecionadas(D).length < IC_MAX) icSel.add(cb.dataset.icData); }
+      else icSel.delete(cb.dataset.icData);
+      if(!icPeriodo(D).some(e => icSel.has(e.id))) icSel = new Set(['—']);   // nenhuma marcada: painel vazio, não volta ao padrão
+      icRender();
+    });
+    stkIcDatasLista.addEventListener('click', ev => {
+      if(ev.target.closest('[data-ic-padrao]')){ icSel = null; icRender(); }
+      else if(ev.target.closest('[data-ic-nenhuma]')){ icSel = new Set(['—']); icRender(); }
+    });
+    document.addEventListener('click', ev => { if(!stkIcDatasLista.hidden && !ev.target.closest('#stkIcDatasFiltro')) icDatasAbrir(false); });
+    document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && !stkIcDatasLista.hidden){ icDatasAbrir(false); stkIcDatasBtn.focus(); } });
+    // Limpar / troca de painel: volta às 5 mais recentes.
+    function icFiltrosLimpar(){ icSel = null; icRoscaVisao = 'pagamento'; icDatasAbrir(false); }
+
+    function icRender(){
+      if(!window.INTENCAO_COMPRA){
+        stkGrid.classList.add('cd-carregando');
+        icCarregar().then(() => { if(stkPainel() === 'intencao') icRender(); }).catch(() => {
+          stkGrid.classList.remove('cd-carregando');
+          stkGrid.innerHTML = '<div class="stk-card stk-span-4"><div class="stk-vazio">Não foi possível carregar a pesquisa de intenção de compra (assets/data/intencao_compra.js).</div></div>';
+        });
+        return;
+      }
+      stkPreencherFiltros();
+      // Trocar o período (Mês/Ano) volta às 5 mais recentes dele.
+      const per = `${stkAnoEl.value}|${stkMesEl.value}`;
+      if(per !== icPeriodoChave){ icPeriodoChave = per; icSel = null; }
+      icDatasAtualizar();
+      icDesenhar(window.INTENCAO_COMPRA);
+    }
+
+    // Soma as respostas das edições com questionário completo (pergunta a pergunta, só onde a pergunta existiu).
+    function icSomar(eds){
+      const S = {}, n = {};
+      eds.forEach(e => Object.entries(e.detalhe || {}).forEach(([k, v]) => {
+        if(typeof v === 'number'){ S[k] = (S[k] || 0) + v; return; }
+        const m = S[k] = S[k] || {};
+        Object.entries(v).forEach(([o, c]) => { m[o] = (m[o] || 0) + c; });
+        n[k] = (n[k] || 0) + 1;
+      }));
+      return S;
+    }
+
+    function icDesenhar(D){
+      const sel = icSelecionadas(D);
+      const termos = ibgeTermo(), busca = stkBuscaInput.value.trim();
+      const casa = t => !termos.length || ibgeCasa(t, termos);
+      const semBusca = `Nenhum item com “${busca}”.`;
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      stkGrid.classList.add('cd-fit');
+      stkGrid.classList.remove('cd-carregando');
+      if(!sel.length){
+        stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-row cd-row-unica">${cdCard('Intenção de Compra', D.regiao, `<div class="stk-vazio">${icPeriodo(D).length ? 'Nenhuma data marcada no filtro Datas.' : 'Nenhuma pesquisa no período. Limpe o Mês/Ano para ver as mais recentes.'}</div>`)}</div></div>`;
+        icPainelUltimo = null;
+        return;
+      }
+
+      // ---- Cards do topo: uma data comemorativa cada ----
+      const kpis = sel.map(e => {
+        const a = icAnterior(D, e), cfg = IC_DATAS[e.data] || { ic: 'presente', tom: 'azul' };
+        return cdKpiCard(cfg.ic, cfg.tom, icRot(e), `${icMi(e.movimentacao)} mi`,   // "mi" no próprio valor: a unidade (cd-kpi-un) some nos cards estreitos
+          cdDelta(e.movimentacao, a ? a.movimentacao : 0, false, !a, false, null, 1),
+          a ? `vs. ${a.ano} (${icMi(a.movimentacao)} mi)` : 'sem pesquisa no ano anterior',
+          `Movimentação estimada na economia local · intenção de compra ${icPct(e.intencao)}${a ? ` (${icPp(e.intencao - a.intencao)} vs. ${a.ano})` : ''} · ticket médio ${icReais(e.ticket)} · ${stkNum(e.consumidores)} consumidores · ${stkNum(e.amostra)} entrevistas`);
+      }).join('');
+
+      // ---- Linha A, 1º quadro: movimentação por data, ano a ano (como a evolução do saldo do CAGED) ----
+      const nomes = Object.keys(IC_DATAS).filter(n => sel.some(e => e.data === n));
+      const anos = [...new Set(sel.map(e => e.ano))].sort();
+      const anosSerie = [...new Set([anos[0] - 1, ...anos])].slice(-3);
+      const tons = [CD_COR.cinza, CD_COR.azulClaro, CD_COR.azul].slice(-anosSerie.length);
+      const series = anosSerie.map((ano, i) => ({ nome: String(ano), cor: tons[i], valores: nomes.map(n => { const e = D.edicoes.find(x => x.data === n && x.ano === ano); return e ? e.movimentacao / 1e6 : null; }) }))
+        .filter(s => s.valores.some(v => v != null));
+      const wMov = cdCard('Movimentação por data', `Estimativa na economia local · R$ milhões · ${D.regiao}`, '<div id="stkFluxoGraf"></div>', legendaDots(series));
+
+      // ---- Linha A, 2º quadro: intenção de compra por data (com o ícone da data) ----
+      const itInt = sel.slice().reverse().filter(e => casa(icRot(e))).map(e => {
+        const a = icAnterior(D, e), cfg = IC_DATAS[e.data] || {};
+        return { nome: `${cfg.curto || e.data} ${e.ano}`, icone: cfg.ic, valor: e.intencao, rotulo: icPct(e.intencao), cor: cfg.cor || CD_COR.azul,
+          dica: `${icPct(e.intencao)} pretendem comprar${a ? ` · ${a.ano}: ${icPct(a.intencao)} (${icPp(e.intencao - a.intencao)})` : ''} · ticket ${icReais(e.ticket)}` };
+      });
+      const wInt = cdCard('Intenção de compra', 'Entrevistados que pretendem comprar na data', cdBarras(itInt, 'Intenção de compra', termos.length ? semBusca : 'Sem datas.').replace('class="cd-barras"', 'class="cd-barras ic-barras"'));
+
+      // ---- Detalhamento: soma das pesquisas selecionadas com questionário completo ----
+      const det = sel.filter(e => e.detalhe), S = icSomar(det);
+      const nResp = S.respostas || 0;
+      const subDet = !det.length ? '' : det.length === 1 ? `${icRot(det[0])} · ${stkNum(nResp)} respostas` : `${det.length} pesquisas · ${stkNum(nResp)} respostas`;
+      const semDet = 'O detalhamento existe nas pesquisas de 2026; as de 2025 entram só nos indicadores (histórico oficial).';
+      const ordenar = m => Object.entries(m || {}).sort((a, b) => b[1] - a[1]);
+      const tot = m => Object.values(m || {}).reduce((s, v) => s + v, 0);
+
+      // ---- Linha A, 3º quadro: rosca Pagamento | Local de compra (switch, como a do CAGED) ----
+      const visaoLocal = icRoscaVisao === 'local';
+      const mapaR = visaoLocal ? S.local : S.pagamento, coresR = visaoLocal ? IC_LOCAL_COR : IC_PAGAMENTO_COR;
+      const dadosR = ordenar(mapaR).filter(([n]) => casa(n)).map(([n, v]) => ({ nome: n, sigla: n, cor: coresR[n] || CD_COR.cinza, valor: v }));
+      const totR = dadosR.reduce((s, d) => s + d.valor, 0);
+      const switchRosca = `<div class="cd-head-acoes"><div class="stk-segmented" id="icRoscaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['pagamento', 'Pagamento'], ['local', 'Local']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${icRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${icRoscaVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wRosca = cdCard(visaoLocal ? 'Local de compra' : 'Meio de pagamento', subDet || 'Pesquisas selecionadas', !det.length ? `<div class="stk-vazio">${esc(semDet)}</div>` : !dadosR.length ? `<div class="stk-vazio">${esc(termos.length ? semBusca : 'Sem respostas.')}</div>` : `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${icPct(totR ? dadosR[0].valor / totR : 0, 0)}</strong><span>${esc(dadosR[0].nome.replace(/^Cartão de /, '').toLowerCase())}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosR.map(d => `<li title="${esc(d.nome)}: ${stkNum(d.valor)} respostas"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${icPct(totR ? d.valor / totR : 0)}</strong></li>`).join('')}</ul>
+        </div>`, switchRosca);
+
+      // ---- Linha B, 1º quadro: produtos mais procurados (% das menções, como no Painel) ----
+      const totP = tot(S.produtos);
+      const prods = ordenar(S.produtos).filter(([n]) => casa(n)).slice(0, 6);
+      const wProd = cdCard('Produtos mais procurados', subDet ? `% das menções · ${subDet}` : 'Pesquisas selecionadas', !det.length ? `<div class="stk-vazio">${esc(semDet)}</div>`
+        : cdBarras(prods.map(([n, v], i) => ({ nome: n, valor: v, rotulo: icPct(totP ? v / totP : 0), cor: stkMisturarCor(CD_COR.verde, '#CDE8C7', prods.length > 1 ? i / (prods.length - 1) : 0),
+            dica: `${stkNum(v)} menções · ${icPct(totP ? v / totP : 0)} do total` })), 'Produtos mais procurados', termos.length ? semBusca : 'Sem respostas.'));
+
+      // ---- Linha B, 2º quadro: motivação para compra (ranking) ----
+      const totM = tot(S.motivoCompra);
+      const motivos = ordenar(S.motivoCompra).filter(([n]) => casa(n)).slice(0, 5);
+      const wMot = cdCard('Motivação para compra', subDet ? `O que leva a presentear · ${subDet}` : 'Pesquisas selecionadas', !det.length ? `<div class="stk-vazio">${esc(semDet)}</div>`
+        : motivos.length ? `<ol class="cd-rank">${motivos.map(([nome, v], i) => `
+          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${stkNum(v)}</strong><span class="cd-rank-pct">${icPct(totM ? v / totM : 0)}</span></li>`).join('')}</ol>`
+        : `<div class="stk-vazio">${esc(termos.length ? semBusca : 'Sem respostas.')}</div>`);
+
+      // ---- Linha B, 3º quadro: destaques do comportamento de compra ----
+      const dest = [];
+      const pc = (m, ...ks) => { const t = tot(m); return t ? ks.reduce((s, k) => s + (m[k] || 0), 0) / t : 0; };
+      if(S.planejamento) dest.push({ ic: 'trendUp', tom: 'azul', tit: `${icPct(pc(S.planejamento, 'Planejada (mais de 15 dias antes)', 'Na semana da data'))} compram com antecedência`,
+        meta: `${icPct(pc(S.planejamento, 'Planejada (mais de 15 dias antes)'))} com mais de 15 dias · ${icPct(pc(S.planejamento, 'Véspera'))} na véspera · ${icPct(pc(S.planejamento, 'No dia da data'))} no dia` });
+      if(S.gastos) dest.push({ ic: 'setaCima', tom: 'verde', tit: `${icPct(pc(S.gastos, 'Maiores', 'Muito maiores'))} vão gastar mais que no ano passado`,
+        meta: `${icPct(pc(S.gastos, 'Iguais'))} manterão o valor · ${icPct(pc(S.gastos, 'Menores'))} vão gastar menos` });
+      if(S.presentes) dest.push({ ic: 'presente', tom: 'amarelo', tit: `${icPct(pc(S.presentes, '1', '2'))} compram 1 ou 2 presentes`, meta: `${icPct(pc(S.presentes, '4 ou mais'))} compram 4 ou mais` });
+      if(S.local) dest.push({ ic: 'carrinho', tom: 'azul', tit: `Lojas físicas: ${icPct(pc(S.local, 'Lojas físicas'))} das compras`, meta: `Internet ${icPct(pc(S.local, 'Internet'))} · mídias sociais ${icPct(pc(S.local, 'Mídias sociais'))}` });
+      if(S.motivosNao){ const [n, v] = ordenar(S.motivosNao)[0]; dest.push({ ic: 'alerta', tom: 'vermelho', tit: `Quem não vai comprar: ${n.toLowerCase()}`, meta: `${icPct(v / tot(S.motivosNao))} dos motivos citados por quem não pretende comprar` }); }
+      if(S.servicos){ const [n, v] = ordenar(S.servicos)[0]; dest.push({ ic: 'mapa', tom: 'verde', tit: `Para comemorar: ${n.toLowerCase()} (${icPct(v / tot(S.servicos))})`, meta: `Serviço mais citado · ${ordenar(S.servicos).slice(1, 3).map(([k, x]) => `${k.toLowerCase()} ${icPct(x / tot(S.servicos))}`).join(' · ')}` }); }
+      if(S.genero && S.faixaEtaria){ const [f] = ordenar(S.faixaEtaria)[0]; dest.push({ ic: 'pessoas', tom: 'azul', tit: `Perfil: ${icPct(pc(S.genero, 'Feminino'))} mulheres`, meta: `Faixa etária mais presente: ${f}` }); }
+      const destF = dest.filter(d => casa(`${d.tit} ${d.meta}`)).slice(0, 6);
+      const wDest = cdCard('Destaques', subDet || 'Comportamento de compra', !det.length ? `<div class="stk-vazio">${esc(semDet)}</div>` : destF.length ? `<ul class="cd-dest">${destF.map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
+          <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
+          <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`
+        : `<div class="stk-vazio">${esc(semBusca)}</div>`);
+
+      stkGrid.innerHTML = `<div class="cd-tela"><div class="cd-kpis">${kpis}</div>`
+        + `<div class="cd-row cd-row-a">${wMov}${wInt}${wRosca}</div>`
+        + `<div class="cd-row cd-row-b">${wProd}${wMot}${wDest}</div></div>`;
+      if(det.length && dadosR.length) stkDesenharRoscaCd(dadosR, visaoLocal ? 'Local de compra' : 'Meio de pagamento', 196);
+      const graf = document.getElementById('stkFluxoGraf');
+      if(graf) stkDesenharLinhasFluxo(graf, nomes.map(n => IC_DATAS[n].curto), series, cdAlturaLivre(graf, 200),
+        v => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mi`);
+      cdAjustarListas();
+      icUltimo = D;
+
+      // ---- Exportar (CSV): indicadores das datas na tela + detalhamento somado ----
+      const L = [['Seção', 'Item', 'Valor', 'Unidade']];
+      const add = (s, i, v, u) => L.push([s, i, v == null ? '' : String(v).replace('.', ','), u]);
+      sel.forEach(e => { const a = icAnterior(D, e), r = icRot(e);
+        add(r, 'Entrevistas', e.amostra, ''); add(r, 'Intenção de compra', (e.intencao * 100).toFixed(2), '%'); add(r, 'Ticket médio', e.ticket.toFixed(2), 'R$');
+        add(r, 'Consumidores', e.consumidores, 'pessoas'); add(r, 'Movimentação estimada', e.movimentacao.toFixed(2), 'R$');
+        if(a){ add(r, `Intenção de compra ${a.ano}`, (a.intencao * 100).toFixed(2), '%'); add(r, `Movimentação estimada ${a.ano}`, a.movimentacao.toFixed(2), 'R$'); } });
+      const secoes = [['planejamento', 'Planejamento da compra'], ['gastos', 'Gastos vs. ano anterior'], ['presentes', 'Quantidade de presentes'], ['local', 'Local de compra'],
+        ['pagamento', 'Meio de pagamento'], ['produtos', 'Produtos (menções)'], ['motivoCompra', 'Motivação para compra (menções)'], ['motivoLocal', 'Motivação do local (menções)'],
+        ['motivosNao', 'Motivo de não comprar (menções)'], ['servicos', 'Serviços (menções)'], ['genero', 'Gênero'], ['faixaEtaria', 'Faixa etária'], ['renda', 'Faixa salarial']];
+      secoes.forEach(([k, nome]) => { const t = tot(S[k]); ordenar(S[k]).forEach(([o, v]) => { add(`${nome} · ${subDet}`, o, v, 'respostas'); add(`${nome} · ${subDet}`, o, (t ? v / t * 100 : 0).toFixed(2), '%'); }); });
+      icPainelUltimo = { linhas: L, arquivo: `intencao_compra_${sel.map(e => e.id).join('_')}.csv` };
+    }
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#icRoscaVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === icRoscaVisao) return;
+      icRoscaVisao = btn.dataset.visao;
+      if(icUltimo && stkPainel() === 'intencao') icDesenhar(icUltimo); else stkRender();
+    });
+
     // ===== Painel Viabilidade — mesma estrutura do CAGED =====
     // Impacto do CDLoad na rotina (horas salvas) e no financeiro (custo das ferramentas x
     // captação via planos). Dados: Supabase (viabilidade_itens + viabilidade_parametros —
@@ -16365,7 +16657,7 @@ ${clipPlayerPills(n)}
     function stkResetarPainel(indicador){
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; stkIndicadorEl.value = indicador; stkIndicadorAnterior = indicador; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); icFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -16378,7 +16670,7 @@ ${clipPlayerPills(n)}
     document.getElementById('stkLimpar').addEventListener('click', () => {
       stkMesEl.value = ''; stkAnoEl.value = ''; stkSetorEl.value = ''; stkPlayerEl.value = ''; stkPeriodoClipEl.value = ''; stkPlayerPadrao = true;
       stkUfEl.value = ''; panPreencherCidades();
-      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
+      stkRegiaoEl.value = ''; stkMunicipioEl.value = ''; stkIbgeLocalEl.value = ''; stkLeadsEl.value = '1'; stkLicencasEl.value = '1'; viabFiltrosLimpar(); icFiltrosLimpar(); document.getElementById('stkInadLocalFiltro').value = 'mt'; stkInadRegiaoEl.value = INAD_REGIAO_PADRAO;
       stkEmpFiltros.forEach(el => { el.value = el.dataset.padrao || ''; });
       stkBuscaInput.value = ''; stkSelAtual().clear(); stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = '';
       stkPeriodoAtual = ''; stkTabelaAba = 'produtos'; stkVolumeModoClip = 'yoy';
@@ -16412,7 +16704,7 @@ ${clipPlayerPills(n)}
       stkBuscaContagem.textContent = `${n} selecionado${n === 1 ? '' : 's'} ×`;
     }
     function stkMostrarBusca(){
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -16443,7 +16735,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -16519,6 +16811,17 @@ ${clipPlayerPills(n)}
       if(ev.target.closest('[data-stk-dica]')) stkEsconderDica();
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
+      // Intenção de Compra: indicadores das datas na tela e o detalhamento somado (mesma tabela do painel).
+      if(stkPainel() === 'intencao'){
+        if(!icPainelUltimo) return;
+        const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const url = URL.createObjectURL(new Blob(['﻿' + icPainelUltimo.linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = icPainelUltimo.arquivo;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
       // Inadimplência: todos os números da edição e abrangência escolhidas (SPC Brasil), um por linha.
       if(stkPainel() === 'inadimplencia'){
         if(!inadPainelUltimo) return;
