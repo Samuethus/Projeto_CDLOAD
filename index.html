@@ -3136,10 +3136,10 @@
                   <label for="relTipo">Qual relatório deseja gerar?</label>
                   <select id="relTipo">
                     <option value="">Selecione o relatório</option>
-                    <option value="panorama">Panorama Econômico</option>
-                    <option value="caged">CAGED - Empregos Formais</option>
-                    <option value="estoque">Controle de Estoque</option>
-                    <option value="inadimplencia">Inadimplência (SPC Brasil)</option>
+                    <option value="estoque">1. Controle de Estoque</option>
+                    <option value="caged">2. Empregos Formais (CAGED)</option>
+                    <option value="inadimplencia">3. Inadimplência (SPC Brasil)</option>
+                    <option value="panorama">4. Panorama Econômico</option>
                   </select>
                 </div>
                 <div id="relOpcoes" hidden>
@@ -17305,7 +17305,7 @@ ${clipPlayerPills(n)}
       return relJsPdfProm;
     }
 
-    // ===== Relatório "CAGED - Empregos Formais" =====
+    // ===== Relatório "Empregos Formais (CAGED)" =====
     // Dados: assets/data/caged_relatorio.js (scripts/caged_extrair.py) — Cuiabá e MT por
     // sexo, faixa etária, escolaridade e setor. Modelos: report/caged/branding (1 = capa,
     // 2 = página de análise). Regras: report/caged/escopo/instruções.md.
@@ -17593,8 +17593,8 @@ ${clipPlayerPills(n)}
       }
       return {
         paginas, arquivo: `CAGED_Empregos_Formais_${ref.slice(5, 7)}-${ref.slice(0, 4)}.pdf`,
-        titulo: `CAGED - Empregos Formais · ${relRot(ref)}`,
-        pronto: `CAGED - Empregos Formais de ${mesTxt} · ${paginas.length} páginas.`,
+        titulo: `Empregos Formais (CAGED) · ${relRot(ref)}`,
+        pronto: `Empregos Formais (CAGED) de ${mesTxt} · ${paginas.length} páginas.`,
         resumo: [`<li><strong>Dados de ${relRot(ref)}</strong>${ref < alvo ? ' <span>· último mês publicado pelo MTE</span>' : ''}</li>`,
           `<li><strong>Cuiabá e Mato Grosso</strong> <span>· gênero, faixa etária, escolaridade e setores</span></li>`].join('')
       };
@@ -18243,7 +18243,7 @@ ${quadro}
       relBaixarBtn.textContent = doc ? 'Baixar .doc' : 'Baixar PDF';
       if(relTipo.value === 'caged'){
         relGerarBtn.disabled = false;
-        relRodape.textContent = `CAGED - Empregos Formais · ${mesTxt} · ${doc ? 'release .doc (Assessoria)' : 'PDF (Documentação)'}`;
+        relRodape.textContent = `Empregos Formais (CAGED) · ${mesTxt} · ${doc ? 'release .doc (Assessoria)' : 'PDF (Documentação)'}`;
         return;
       }
       if(relTipo.value === 'inadimplencia'){
