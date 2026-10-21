@@ -2700,21 +2700,34 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 10L12 3L21 10" /> <path d="M5 10V20H10V16A2 2 0 0 1 14 16V20H19V10" /> </svg>
         <span>Home</span>
       </button>
-      <button class="nav-item" data-page="roadmap" data-title="Roadmap" data-desc="Mapa de interações do Núcleo de Inteligência com os setores da CDL.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"></path><path d="M4 4h13l-2.5 4.5L17 13H4"></path></svg>
-        <span>Roadmap</span>
-      </button>
-      <button class="nav-item" data-page="dashboard" data-title="Dashboard" data-desc="Painéis com os principais indicadores da plataforma.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-        <span>Dashboard</span>
+      <button class="nav-item" data-page="campanhas" data-title="Campanhas" data-desc="Planeje e monitore suas campanhas de comunicação.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
+        <span>Campanhas</span>
       </button>
       <button class="nav-item" data-page="clipping" data-title="Clipping News" data-desc="Acompanhe as notícias sobre a CDL Cuiabá e a Fecomércio MT.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path><path d="M10 6h8v4h-8V6Z"></path></svg>
         <span>Clipping News</span>
       </button>
+      <button class="nav-item" data-page="dashboard" data-title="Dashboard" data-desc="Painéis com os principais indicadores da plataforma.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-page="estoque" data-title="Controle de Estoque" data-desc="Cadastre produtos e controle entradas e saídas por código de barras.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
+        <span>Estoque</span>
+      </button>
+      <!-- Seção Inadimplência (chave interna "configuracoes", mantida para as permissões de seção já cadastradas) -->
+      <button class="nav-item" data-page="configuracoes" data-title="Inadimplência" data-desc="Documentação de inadimplência emitida pelo SPC Brasil (Cuiabá, Mato Grosso e Brasil).">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg>
+        <span>Inadimplência</span>
+      </button>
       <button class="nav-item" data-page="relatorios" data-title="Relatórios" data-desc="Acompanhe indicadores e históricos de desempenho.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         <span>Relatórios</span>
+      </button>
+      <button class="nav-item" data-page="roadmap" data-title="Roadmap" data-desc="Mapa de interações do Núcleo de Inteligência com os setores da CDL.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"></path><path d="M4 4h13l-2.5 4.5L17 13H4"></path></svg>
+        <span>Roadmap</span>
       </button>
       <!-- Seção Supabase (chave interna "instancias", mantida para as permissões de seção já cadastradas) -->
       <button class="nav-item" data-page="instancias" data-title="Supabase" data-desc="Visualize as tabelas e os dados do banco de dados da plataforma (somente leitura).">
@@ -2725,26 +2738,13 @@
         <svg class="nav-ic-preenchido" viewBox="-8 -154 974 974" aria-hidden="true"><!-- ícone do Survey Monkey (cabeça do macaco), desenhado a partir da logo --><path d="M190 665C150 590 128 500 135 420C150 250 300 125 480 125C660 125 810 250 825 420C832 500 810 590 770 665L672 605C700 560 715 500 715 450C715 360 680 315 610 312C560 312 515 335 485 368L470 368C440 335 395 312 345 312C275 315 243 360 243 450C243 500 258 560 285 605Z"/><path d="M380 72L392 55C428 72 452 92 462 112L418 130C412 105 400 86 380 72Z"/><path d="M458 118C466 60 510 22 563 0L573 20C538 40 522 78 522 128Z"/><path fill-rule="evenodd" d="M128 378A116 114 0 1 0 128 606A116 114 0 1 0 128 378ZM106 462A30 30 0 1 0 106 522A30 30 0 1 0 106 462Z"/><path fill-rule="evenodd" d="M830 378A116 114 0 1 1 830 606A116 114 0 1 1 830 378ZM852 462A30 30 0 1 1 852 522A30 30 0 1 1 852 462Z"/></svg>
         <span>Survey Monkey</span>
       </button>
-      <button class="nav-item" data-page="whatsapp" data-title="WhatsApp" data-desc="Instâncias, templates e envios de mensagens pelo WhatsApp.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
-        <span>WhatsApp</span>
-      </button>
-      <button class="nav-item" data-page="campanhas" data-title="Campanhas" data-desc="Planeje e monitore suas campanhas de comunicação.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
-        <span>Campanhas</span>
-      </button>
       <button class="nav-item" data-page="usuarios" data-title="Usuários" data-desc="Gerencie usuários e as permissões de acesso às seções da plataforma.">
         <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">  <circle cx="9" cy="7" r="4" /> <path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />   </svg>
         <span>Usuários</span>
       </button>
-      <!-- Seção Inadimplência (chave interna "configuracoes", mantida para as permissões de seção já cadastradas) -->
-      <button class="nav-item" data-page="configuracoes" data-title="Inadimplência" data-desc="Documentação de inadimplência emitida pelo SPC Brasil (Cuiabá, Mato Grosso e Brasil).">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="17" y1="13" x2="17" y2="15.5"></line><line x1="17" y1="17.5" x2="17.01" y2="17.5"></line><line x1="6" y1="15" x2="11" y2="15"></line></svg>
-        <span>Inadimplência</span>
-      </button>
-      <button class="nav-item" data-page="estoque" data-title="Controle de Estoque" data-desc="Cadastre produtos e controle entradas e saídas por código de barras.">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
-        <span>Estoque</span>
+      <button class="nav-item" data-page="whatsapp" data-title="WhatsApp" data-desc="Instâncias, templates e envios de mensagens pelo WhatsApp.">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+        <span>WhatsApp</span>
       </button>
     </nav>
 
@@ -5409,18 +5409,19 @@
   // Escapa texto vindo do banco antes de inseri-lo em innerHTML (evita XSS armazenado).
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ALL_SECTIONS = [
+    // Mesma ordem do menu: Home primeiro, depois as demais em ordem alfabética.
     { key: 'home', label: 'Home' },
-    { key: 'roadmap', label: 'Roadmap' },
-    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'campanhas', label: 'Campanhas' },
     { key: 'clipping', label: 'Clipping News' },
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'estoque', label: 'Estoque' },
+    { key: 'configuracoes', label: 'Inadimplência' },   // antiga "Configurações" (chave mantida)
     { key: 'relatorios', label: 'Relatórios' },
+    { key: 'roadmap', label: 'Roadmap' },
     { key: 'instancias', label: 'Supabase' },
     { key: 'surveymonkey', label: 'Survey Monkey' },
-    { key: 'whatsapp', label: 'WhatsApp' },
-    { key: 'campanhas', label: 'Campanhas' },
     { key: 'usuarios', label: 'Usuários' },
-    { key: 'configuracoes', label: 'Inadimplência' },   // antiga "Configurações" (chave mantida)
-    { key: 'estoque', label: 'Estoque' }
+    { key: 'whatsapp', label: 'WhatsApp' }
   ];
   let currentUser = null;
   // Chaves antigas de seções renomeadas que cadastros antigos ainda podem trazer:
@@ -5434,7 +5435,8 @@
     // O administrador principal sempre tem acesso a TODAS as seções atuais,
     // mesmo que a lista guardada em cache (localStorage) seja de antes de
     // uma seção nova ter sido criada — nunca confia no valor cacheado aqui.
-    if(currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+    // Vale também para quem tem cargo Administrador (mesma regra do RLS: cdl_secao).
+    if(currentUser.cargo === 'Administrador' || (currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase())){
       currentUser.secoes = ALL_SECTIONS.map(s => s.key);
     }
     const allowed = new Set(currentUser.secoes || []);
@@ -9079,7 +9081,7 @@
         return { ok: false, message: 'Este usuário está inativo. Fale com um administrador.' };
       }
       const isAdminEmail = email === ADMIN_EMAIL.toLowerCase();
-      const secoes = isAdminEmail ? ALL_SECTIONS.map(s => s.key) : normalizarSecoes(row.secoes_permitidas);
+      const secoes = isAdminEmail || row.cargo === 'Administrador' ? ALL_SECTIONS.map(s => s.key) : normalizarSecoes(row.secoes_permitidas);
       const paineis = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.paineis_permitidos) ? null : row.paineis_permitidos;
       // Survey: formulários liberados (Acessos); null = todos.
       const survey = isAdminEmail || row.cargo === 'Administrador' || !Array.isArray(row.survey_formularios_permitidos) ? null : row.survey_formularios_permitidos.map(String);
@@ -11500,9 +11502,9 @@ ${clipPlayerPills(n)}
     const waReportViewToggle = document.getElementById('waReportViewToggle');
     const waReportTableView = document.getElementById('waReportTableView');
     const waReportGalleryView = document.getElementById('waReportGalleryView');
-    const REPORT_VIEW_KEY = 'cdload.relatorios.view';
+    // A seção sempre abre na visão de tabela; a galeria vale só até sair da seção.
     let reportView = 'table';
-    try { if(localStorage.getItem(REPORT_VIEW_KEY) === 'gallery') reportView = 'gallery'; } catch(e){ /* sem storage: começa na tabela */ }
+    try { localStorage.removeItem('cdload.relatorios.view'); } catch(e){ /* limpa a escolha que a versão anterior guardava */ }
 
     // id do relatório → URL da miniatura (data:/blob:), 'loading' ou 'error'
     const reportThumbs = new Map();
@@ -11708,11 +11710,13 @@ ${clipPlayerPills(n)}
       btn.addEventListener('click', () => {
         if(btn.dataset.view === reportView) return;
         reportView = btn.dataset.view;
-        try { localStorage.setItem(REPORT_VIEW_KEY, reportView); } catch(e){ /* sem storage: só não lembra a escolha */ }
         applyReportView();
       });
     });
     applyReportView();
+    document.addEventListener('cdload:pagechange', e => {
+      if(e.detail.page === 'relatorios' && reportView !== 'table'){ reportView = 'table'; applyReportView(); }
+    });
 
     async function loadReports(){
       if(!supabaseReady){
