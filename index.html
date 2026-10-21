@@ -3139,6 +3139,7 @@
                     <option value="panorama">Panorama Econômico</option>
                     <option value="caged">CAGED - Empregos Formais</option>
                     <option value="estoque">Controle de Estoque</option>
+                    <option value="inadimplencia">Inadimplência (SPC Brasil)</option>
                   </select>
                 </div>
                 <div id="relOpcoes" hidden>
@@ -3168,6 +3169,14 @@
                     <div class="rel-not-grid rel-mod-grid" id="relModOpcoes">
                       <label class="rel-not-card"><input type="radio" name="relMod" value="pdf" checked><span><span class="rel-ind-nome">Modelo .pdf (Documentação)</span><span class="rel-ind-info" style="display:block;">Relatório completo com capa, gráficos e tabelas</span></span></label>
                       <label class="rel-not-card"><input type="radio" name="relMod" value="doc"><span><span class="rel-ind-nome">Modelo .doc (Assessoria)</span><span class="rel-ind-info" style="display:block;">Release em texto editável, pronto para publicação (até 2 páginas)</span></span></label>
+                    </div>
+                  </div>
+                  <div id="relOpcoesInad" hidden>
+                    <h3 class="wa-step-title" style="margin-top:22px;">3. Referência</h3>
+                    <div class="wa-empty-hint" style="margin-bottom:10px;">Release .docx da assessoria, montado com os PDFs do SPC Brasil da seção Inadimplência: o relatório do local (números e gráficos) e o relatório Brasil do mesmo mês (mapa e taxa do Centro-Oeste).</div>
+                    <div class="rel-not-grid rel-mod-grid" id="relInadOpcoes">
+                      <label class="rel-not-card"><input type="radio" name="relInadRef" value="cuiaba" checked><span><span class="rel-ind-nome">Cuiabá</span><span class="rel-ind-info" style="display:block;">Relatório de Cuiabá · restrição de crédito sobre 699 mil adultos</span></span></label>
+                      <label class="rel-not-card"><input type="radio" name="relInadRef" value="mt"><span><span class="rel-ind-nome">Mato Grosso</span><span class="rel-ind-info" style="display:block;">Relatório de Mato Grosso · restrição de crédito sobre 3,95 milhões de adultos</span></span></label>
                     </div>
                   </div>
                   <div id="relOpcoesPanorama">
@@ -17735,6 +17744,232 @@ ${quadro}
       };
     }
 
+    // ===== Inadimplência (SPC Brasil) · release .docx =====
+    // Preenche o modelo da assessoria (assets/modelos/inadimplencia_<local>.docx, feito a partir do release de set/2026,
+    // com campos {{...}}) usando os PDFs do SPC Brasil da seção Inadimplência: o relatório do local (Cuiabá ou Mato Grosso)
+    // dá os números e os dois quadros de barras; o relatório Brasil PF do mesmo mês dá o mapa (Gráfico 12) e a taxa do
+    // Centro-Oeste, que vezes a população adulta (RI_POP_MIL) estima os consumidores com restrição de crédito.
+    // Tudo no navegador (pdf.js + JSZip), sem API. Mês sem relatório do local: usa o último até o mês escolhido.
+    const RI_LOCAIS = {
+      cuiaba: { nome: 'Cuiabá', arquivo: 'CUIABA', modelo: 'assets/modelos/inadimplencia_cuiaba.docx', popMil: 699, titulo: /Inadimpl\S+ em Cuiab/i },
+      mt: { nome: 'Mato Grosso', arquivo: 'MATO_GROSSO', modelo: 'assets/modelos/inadimplencia_mato_grosso.docx', popMil: 3950, titulo: /Inadimpl\S+ no Mato Grosso/i }
+    };
+    let riJsZipProm = null;
+    function riCarregarJsZip(){
+      if(window.JSZip) return Promise.resolve();
+      if(!riJsZipProm) riJsZipProm = loadScriptSRI('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG')
+        .catch(e => { riJsZipProm = null; throw new Error('Não foi possível carregar o gerador de .docx.'); });
+      return riJsZipProm;
+    }
+    const riNorm = s => String(s).replace(/[‐‑‒–−]/g, '-').replace(/ /g, ' ');
+    const riMesNum = nome => INAD_MESES_LONGOS.indexOf(String(nome).toLowerCase()) + 1;
+    // PDF da seção → { pdf, itens: [{ p, x, y (linha de base, de cima para baixo), w, h, s }], texto, W }. Cache por arquivo.
+    const riPdfCache = new Map();
+    function riAbrirPdf(r){
+      if(!riPdfCache.has(r.id)) riPdfCache.set(r.id, (async () => {
+        const pdfjs = await loadPdfJs();
+        const { data, error } = await supabaseClient.storage.from(INAD_BUCKET).createSignedUrl(r.arquivo_path, 300);
+        if(error) throw error;
+        const pdf = await pdfjs.getDocument({ url: data.signedUrl, isEvalSupported: false }).promise;
+        const itens = [];
+        let W = 0;
+        for(let p = 1; p <= pdf.numPages; p++){
+          const pg = await pdf.getPage(p), vp = pg.getViewport({ scale: 1 });
+          W = W || vp.width;
+          (await pg.getTextContent()).items.forEach(i => { const s = riNorm(i.str).trim(); if(s) itens.push({ p, x: i.transform[4], y: vp.height - i.transform[5], w: i.width, h: i.height, s }); });
+        }
+        return { pdf, itens, W, texto: itens.map(i => i.s).join(' ').replace(/\s+/g, ' ') };
+      })().catch(e => { riPdfCache.delete(r.id); throw e; }));
+      return riPdfCache.get(r.id);
+    }
+    // Mês dos dados: relatório do local ("Dados referentes a setembro/2026") ou Brasil PF ("estima que em setembro de 2026").
+    function riMesDoPdf(D, tipo){
+      const m = tipo === 'br' ? D.texto.match(/Pessoas F\S+sicas[\s\S]*?estima que em ([a-zç]+) de (\d{4})/i) : D.texto.match(/Dados referentes a ([a-zç]+)\/(\d{4})/i);
+      const n = m ? riMesNum(m[1]) : 0;
+      return n ? `${m[2]}-${String(n).padStart(2, '0')}` : null;
+    }
+    // Procura nos PDFs da abrangência o do mês pedido (ou o último antes dele); lê primeiro as pastas mais próximas do mês.
+    async function riAcharPdf(abrangencia, tipo, alvo, exato, passo){
+      const cand = inadArquivos.filter(r => r.abrangencia === abrangencia && r.arquivo_path && /\.pdf$/i.test(r.arquivo_nome || r.arquivo_path)
+          && !/PJ|Jur[ií]dica|Recupera|Reincid/i.test(r.arquivo_nome || ''))
+        .sort((a, b) => Math.abs(relMesesEntre(inadRef(a), alvo)) - Math.abs(relMesesEntre(inadRef(b), alvo)) || inadRef(b).localeCompare(inadRef(a)));
+      let melhor = null;
+      for(const r of cand){
+        passo(`Lendo ${r.arquivo_nome}…`);
+        let D;
+        try { D = await riAbrirPdf(r); } catch(e){ console.warn('[Relatório Inadimplência]', r.arquivo_nome, e); continue; }
+        if(tipo !== 'br' && !RI_LOCAIS[tipo].titulo.test(D.texto)) continue;
+        const mes = riMesDoPdf(D, tipo);
+        if(!mes || mes > alvo || (exato && mes !== alvo)) continue;
+        if(mes === alvo) return { r, D, mes };
+        if(!melhor || mes > melhor.mes) melhor = { r, D, mes };
+      }
+      return melhor;
+    }
+    function relMesesEntre(a, b){ return a && b ? (Number(a.slice(0, 4)) - Number(b.slice(0, 4))) * 12 + Number(a.slice(5, 7)) - Number(b.slice(5, 7)) : 99; }
+
+    // Números do relatório do local (mesmo processo da leitura dos PDFs do painel): frases do texto + rótulos dos gráficos,
+    // que o pdf.js entrega na ordem de desenho (nas pizzas, a ordem da legenda). Valores ficam como o SPC escreveu ("5,02").
+    function riLerLocal(D){
+      const { itens, texto, W } = D;
+      const PCT = /^-?\d{1,3}(?:\.\d{3})*,\d+%$/;
+      const regiao = rx => {
+        const t = itens.find(i => rx.test(i.s));
+        if(!t) throw new Error(`o relatório não tem "${rx.source}".`);
+        const f = itens.find(i => i.p === t.p && i.y > t.y && /^Fonte:/.test(i.s));
+        return itens.filter(i => i.p === t.p && i.y > t.y && (!f || i.y <= f.y));
+      };
+      const meio = i => i.x + i.w / 2;
+      const pcts = arr => arr.filter(i => PCT.test(i.s));
+      const porX = arr => pcts(arr).sort((a, b) => a.x - b.x).map(i => i.s.slice(0, -1));
+      const emOrdem = arr => pcts(arr).map(i => i.s.slice(0, -1));
+      const frase = (rx, nome) => { const m = texto.match(rx); if(!m) throw new Error(`não achei ${nome} no relatório.`); return m[1]; };
+      const barras = rx => { const g = regiao(rx); return [porX(g.filter(i => meio(i) < W / 2)), porX(g.filter(i => meio(i) >= W / 2))]; };
+      const [devA, devM] = barras(/^Gráficos 1 e 2/), [divA, divM] = barras(/^Gráficos 8 e 9/);
+      if([devA, devM, divA, divM].some(v => v.length !== 3)) throw new Error('os gráficos de variação (local, Centro-Oeste e Brasil) não foram reconhecidos.');
+      const fx = regiao(/^Gráficos 4 e 5/).filter(i => meio(i) < W / 2);
+      const g67 = regiao(/^Gráficos 6 e 7/);
+      const g11 = regiao(/^Gráfico 11/);
+      const setNomes = g11.map(i => i.s).filter(s => ['Bancos', 'Comunicação', 'Comércio', 'Outros', 'Água e Luz'].includes(s));
+      const setVals = emOrdem(g11);
+      const out = {
+        devAnual: devA[0], coDevAnual: devA[1], brDevAnual: devA[2], devMensal: devM[0],
+        divAnual: divA[0], divMensal: divM[0],
+        faixa: emOrdem(fx), idade: (fx.map(i => i.s.match(/^(\d+,\d+) anos$/)).find(Boolean) || [])[1],
+        valor: porX(g67.filter(i => meio(i) < W / 2)), atraso: emOrdem(g67.filter(i => meio(i) >= W / 2)),
+        setor: Object.fromEntries(setNomes.map((n, k) => [n, setVals[k]])),
+        homens: frase(/([\d,]+)% homens/, 'a participação dos homens'), mulheres: frase(/([\d,]+)% mulheres/, 'a participação das mulheres'),
+        dividaMedia: frase(/devia, em m\S+dia, R\$ ([\d.,]+\d)/, 'a dívida média'), atrasoMeses: frase(/igual a ([\d,]+) meses/, 'o tempo médio de atraso'),
+        dpd: frase(/tinha em m\S+dia ([\d,]+) d\S+vidas/, 'as dívidas por inadimplente'),
+        coDpd: frase(/Centro-Oeste \(([\d,]+) d\S+vidas/, 'as dívidas por inadimplente do Centro-Oeste'),
+        brDpd: frase(/nacional registrada no m\S+s \(([\d,]+) d\S+vidas/, 'as dívidas por inadimplente do Brasil')
+      };
+      if(out.faixa.length !== 7 || !out.idade) throw new Error('a faixa etária não foi reconhecida.');
+      if(out.atraso.length !== 5) throw new Error('o tempo de atraso não foi reconhecido.');
+      if(setNomes.length !== 5 || setVals.length !== 5) throw new Error('os setores credores não foram reconhecidos.');
+      return out;
+    }
+
+    // Recorte de uma faixa da página (em pt, de cima para baixo), sem as bordas brancas → { blob, w, h } em PNG.
+    async function riRecorte(D, p, yIni, yFim){
+      const ESC = 3, pg = await D.pdf.getPage(p), vp = pg.getViewport({ scale: ESC });
+      const c = document.createElement('canvas');
+      c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+      const y0 = Math.max(0, Math.floor(yIni * ESC)), y1 = Math.min(c.height, Math.ceil(yFim * ESC));
+      const px = ctx.getImageData(0, y0, c.width, y1 - y0).data;
+      let x0 = c.width, x1 = -1, t0 = y1 - y0, t1 = -1;
+      for(let y = 0; y < y1 - y0; y++) for(let x = 0; x < c.width; x++){
+        const k = (y * c.width + x) * 4;
+        if(px[k] < 245 || px[k + 1] < 245 || px[k + 2] < 245){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < t0) t0 = y; if(y > t1) t1 = y; }
+      }
+      if(x1 < 0) throw new Error('a imagem do relatório saiu em branco.');
+      const M = 6, w = x1 - x0 + 1 + 2 * M, h = t1 - t0 + 1 + 2 * M;
+      const out = document.createElement('canvas');
+      out.width = w; out.height = h;
+      const o = out.getContext('2d');
+      o.fillStyle = '#FFFFFF'; o.fillRect(0, 0, w, h);
+      o.drawImage(c, x0, y0 + t0, w - 2 * M, h - 2 * M, M, M, w - 2 * M, h - 2 * M);
+      const blob = await new Promise(ok => out.toBlob(ok, 'image/png'));
+      return { blob, w, h };
+    }
+    // Quadro de barras "Gráficos N e M": do título até a "Fonte: SPC Brasil" logo abaixo (moldura + fonte, como no modelo).
+    function riImgQuadro(D, rx){
+      const t = D.itens.find(i => rx.test(i.s)), f = t && D.itens.find(i => i.p === t.p && i.y > t.y && /^Fonte:/.test(i.s));
+      if(!t || !f) throw new Error(`o quadro "${rx.source}" não foi encontrado no relatório.`);
+      return riRecorte(D, t.p, t.y + 3, f.y + 3);
+    }
+    // Mapa do Gráfico 12 (Brasil PF): só o mapa, entre a legenda "(ref. …)" e a "Fonte: SPC Brasil".
+    function riImgMapa(D){
+      const t = D.itens.find(i => /^Gráfico 12/.test(i.s));
+      if(!t) throw new Error('o relatório Brasil não tem o Gráfico 12 (mapa).');
+      const ref = D.itens.find(i => i.p === t.p && i.y >= t.y && /\(ref\./.test(i.s)) || t;
+      const f = D.itens.find(i => i.p === t.p && i.y > ref.y && /^Fonte:/.test(i.s));
+      if(!f) throw new Error('o mapa do Gráfico 12 não foi delimitado.');
+      return riRecorte(D, t.p, ref.y + 4, f.y - f.h - 2);
+    }
+
+    async function riRelease(alvo, loc, passo){
+      const L = RI_LOCAIS[loc];
+      if(!supabaseReady) throw new Error('o relatório usa os PDFs da seção Inadimplência: entre na plataforma conectada ao banco.');
+      passo('Carregando os documentos da seção Inadimplência…');
+      await Promise.all([inadCarregar(), loadPdfJs(), riCarregarJsZip()]);
+      const loc0 = await riAcharPdf(L.nome, loc, alvo, false, passo);
+      if(!loc0) throw new Error(`não há relatório do SPC Brasil de ${L.nome} até ${relRot(alvo)} na seção Inadimplência.`);
+      const br = await riAcharPdf('Brasil', 'br', loc0.mes, true, passo);
+      if(!br) throw new Error(`falta o relatório Brasil (Pessoas Físicas) de ${relRot(loc0.mes)} na seção Inadimplência: é dele que saem o mapa e a taxa do Centro-Oeste.`);
+      passo('Lendo os números do relatório…');
+      const V = riLerLocal(loc0.D);
+      const g12 = inadLerTextoGrafico12(br.D.texto);
+      const taxa = g12 && g12.regioes['Centro-Oeste'] && g12.regioes['Centro-Oeste'].popAdulta;
+      if(!taxa) throw new Error('a taxa do Centro-Oeste não foi encontrada no Gráfico 12 do relatório Brasil.');
+      passo('Recortando o mapa e os gráficos…');
+      const imgs = [await riImgMapa(br.D), await riImgQuadro(loc0.D, /^Gráficos 1 e 2/), await riImgQuadro(loc0.D, /^Gráficos 8 e 9/)];
+
+      // Campos do modelo
+      const ano = Number(loc0.mes.slice(0, 4)), mesN = Number(loc0.mes.slice(5, 7));
+      const ant = mesN === 1 ? [ano - 1, 12] : [ano, mesN - 1];
+      const cap = s => s[0].toUpperCase() + s.slice(1);
+      const num = s => Number(String(s).replace(/\./g, '').replace(',', '.'));
+      const abs = s => String(s).replace(/^-/, '');
+      const mov = s => num(s) > 0 ? 'crescimento' : num(s) < 0 ? 'queda' : 'estabilidade';
+      const pos = (a, b) => num(a) > num(b) ? 'acima' : num(a) < num(b) ? 'abaixo' : 'igual à média';
+      const afet = L.popMil * taxa / 100;   // mil pessoas
+      const dec1 = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const S = V.setor;
+      const C = {
+        MES: cap(INAD_MESES_LONGOS[mesN - 1]), ANO: String(ano), ANO_ANT: String(ano - 1),
+        MES_ANT: cap(INAD_MESES_LONGOS[ant[1] - 1]), ANO_MES_ANT: String(ant[0]),
+        TAXA_CO: taxa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        AFETADOS: afet >= 1000 ? `${dec1(afet / 1000)} ${afet / 1000 >= 2 ? 'milhões' : 'milhão'}` : `${Math.round(afet).toLocaleString('pt-BR')} mil`,
+        DEV_ANUAL_MOV: cap(mov(V.devAnual)), DEV_ANUAL: abs(V.devAnual), CO_DEV_ANUAL: V.coDevAnual, BR_DEV_ANUAL: V.brDevAnual,
+        DEV_MENSAL_MOV: mov(V.devMensal), DEV_MENSAL: abs(V.devMensal),
+        DEV_MENSAL_SENTIDO: num(V.devMensal) > 0 ? 'aumento' : num(V.devMensal) < 0 ? 'redução' : 'estabilidade',
+        HOMENS: V.homens, MULHERES: V.mulheres, IDADE: V.idade,
+        DIVIDA_MEDIA: V.dividaMedia, ATRASO_MESES: V.atrasoMeses,
+        DIV_ANUAL_MOV: mov(V.divAnual), DIV_ANUAL: abs(V.divAnual),
+        DIV_MENSAL_ART: num(V.divMensal) > 0 ? 'o crescimento' : num(V.divMensal) < 0 ? 'a queda' : 'a variação', DIV_MENSAL: abs(V.divMensal),
+        S_BANCOS: S['Bancos'], S_COMERCIO: S['Comércio'], S_AGUA: S['Água e Luz'], S_COMUNICACAO: S['Comunicação'], S_OUTROS: S['Outros'],
+        DPD: V.dpd, CO_DPD: V.coDpd, BR_DPD: V.brDpd, POS_CO: pos(V.dpd, V.coDpd), POS_BR: pos(V.dpd, V.brDpd)
+      };
+      V.faixa.forEach((v, k) => { C['FX' + (k + 1)] = v; });
+      V.atraso.forEach((v, k) => { C['AT' + (k + 1)] = v; });
+
+      passo('Montando o .docx…');
+      const resp = await fetch(L.modelo, { cache: 'no-cache' });
+      if(!resp.ok) throw new Error(`modelo ${L.modelo} indisponível (${resp.status}).`);
+      const zip = await window.JSZip.loadAsync(await resp.arrayBuffer());
+      let xml = await zip.file('word/document.xml').async('string');
+      const rels = await zip.file('word/_rels/document.xml.rels').async('string');
+      // Imagens na ordem do documento (mapa, devedores, dívidas): troca o arquivo e ajusta a altura à proporção nova.
+      const desenhos = xml.match(/<w:drawing>[\s\S]*?<\/w:drawing>/g) || [];
+      if(desenhos.length !== imgs.length) throw new Error('o modelo .docx não tem as 3 imagens esperadas.');
+      desenhos.forEach((d, k) => {
+        const id = d.match(/r:embed="([^"]+)"/)[1], cx = Number(d.match(/<wp:extent cx="(\d+)"/)[1]);
+        const alvoImg = rels.match(new RegExp(`Id="${id}"[^>]*Target="([^"]+)"`))[1];
+        zip.file('word/' + alvoImg, imgs[k].blob);
+        C[`IMG${k + 1}_CY`] = String(Math.round(cx * imgs[k].h / imgs[k].w));
+      });
+      const escXml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      xml = xml.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => {
+        if(C[k] == null || C[k] === '') throw new Error(`o campo ${k} do modelo ficou sem valor.`);
+        return escXml(C[k]);
+      });
+      zip.file('word/document.xml', xml);
+      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
+      const mesTxt = `${INAD_MESES_LONGOS[mesN - 1]} de ${ano}`;
+      return {
+        blob, arquivo: `RELEASE_DADOS_INADIMPLENCIA_CDL_${stkNorm(C.MES).toUpperCase()}_${L.arquivo}.docx`,
+        pronto: `Release de inadimplência de ${L.nome} · ${mesTxt} · texto editável (.docx) com o mapa e os gráficos do SPC Brasil.`,
+        resumo: [`<li><strong>Dados de ${relRot(loc0.mes)}</strong>${loc0.mes < alvo ? ' <span>· último relatório do SPC Brasil na seção</span>' : ''}</li>`,
+          `<li><strong>${esc(loc0.r.arquivo_nome)}</strong> <span>· números e gráficos de ${esc(L.nome)}</span></li>`,
+          `<li><strong>${esc(br.r.arquivo_nome)}</strong> <span>· mapa e taxa do Centro-Oeste (${esc(C.TAXA_CO)}%)</span></li>`,
+          `<li><strong>Restrição de crédito</strong> <span>· ${esc(C.AFETADOS)} (${esc(C.TAXA_CO)}% de ${L.popMil.toLocaleString('pt-BR')} mil adultos)</span></li>`].join('')
+      };
+    }
+
     // ===== Relatório "Controle de Estoque" (página única) =====
     // Dados do próprio módulo Estoque (produtos, saldos e movimentações). Período: os 6 meses
     // até o mês de referência. Modelo: report/estoque/branding/1.png.
@@ -17922,6 +18157,7 @@ ${quadro}
     const relGerarBtn = document.getElementById('relGerarBtn'), relBaixarBtn = document.getElementById('relBaixarBtn');
     const relRodape = document.getElementById('relRodape');
     const relDocCaged = () => relTipo.value === 'caged' && document.querySelector('input[name="relMod"]:checked')?.value === 'doc';
+    const relInadRef = () => document.querySelector('input[name="relInadRef"]:checked')?.value || 'cuiaba';
     const relEtapa = nome =>['Config', 'Gerando', 'Pronto'].forEach(e => { document.getElementById('relEtapa' + e).hidden = e !== nome; });
     let relSel = new Set(), relUrl = null, relSelItens = [];
     const relSelBox = document.getElementById('relSelBox'), relSelTexto = document.getElementById('relSelTexto');
@@ -18010,6 +18246,13 @@ ${quadro}
         relRodape.textContent = `CAGED - Empregos Formais · ${mesTxt} · ${doc ? 'release .doc (Assessoria)' : 'PDF (Documentação)'}`;
         return;
       }
+      if(relTipo.value === 'inadimplencia'){
+        relGerarBtn.textContent = 'Gerar .docx';
+        relBaixarBtn.textContent = 'Baixar .docx';
+        relGerarBtn.disabled = false;
+        relRodape.textContent = `Inadimplência (SPC Brasil) · ${RI_LOCAIS[relInadRef()].nome} · ${mesTxt} · release .docx`;
+        return;
+      }
       if(relTipo.value === 'estoque'){
         const st = document.getElementById('relSetor').value;
         relGerarBtn.disabled = false;
@@ -18030,6 +18273,7 @@ ${quadro}
       document.getElementById('relOpcoesPanorama').hidden = !panorama;
       document.getElementById('relOpcoesEstoque').hidden = relTipo.value !== 'estoque';
       document.getElementById('relOpcoesCaged').hidden = relTipo.value !== 'caged';
+      document.getElementById('relOpcoesInad').hidden = relTipo.value !== 'inadimplencia';
       relOpcoes.classList.remove('rel-fade');
       if(panorama){ void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
       relAtualizar();
@@ -18038,6 +18282,7 @@ ${quadro}
     [relMes, relAno].forEach(el => el.addEventListener('change', () => { if(relTipo.value === 'panorama' && relNotModo() !== 'sel') relPreencherLista(); else relAtualizar(); }));
     document.getElementById('relSetor').addEventListener('change', relAtualizar);
     document.getElementById('relModOpcoes').addEventListener('change', relAtualizar);
+    document.getElementById('relInadOpcoes').addEventListener('change', relAtualizar);
     relIndGrid.addEventListener('change', ev => {
       const cb = ev.target.closest('input[type="checkbox"]');
       if(!cb) return;
@@ -18059,6 +18304,7 @@ ${quadro}
       document.getElementById('relSetor').value = 'Todas';
       document.querySelector('input[name="relNot"][value="10"]').checked = true;
       document.querySelector('input[name="relMod"][value="pdf"]').checked = true;
+      document.querySelector('input[name="relInadRef"][value="cuiaba"]').checked = true;
       relSelBox.hidden = true; relSelTexto.value = ''; relSelItens = []; relSelCsv = false;
       relSelArquivoNome.textContent = 'Nenhum arquivo'; relSelPrevia.hidden = true; relSelContagem.textContent = '0 notícias reconhecidas';
       relMes.value = String(ant.getMonth() + 1).padStart(2, '0');
@@ -18096,6 +18342,7 @@ ${quadro}
       try {
         let res;
         if(relDocCaged()) res = await rcRelease(alvo, passo);
+        else if(relTipo.value === 'inadimplencia') res = await riRelease(alvo, relInadRef(), passo);
         else {
           passo('Carregando o gerador de PDF…');
           await relCarregarJsPdf();
