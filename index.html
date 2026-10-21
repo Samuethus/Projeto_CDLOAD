@@ -1346,7 +1346,7 @@
      entrada/sucesso = verde, saída = vermelho, em progresso = azul claro,
      alerta = laranja.
   =================================================================== */
-  #page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias{
+  #page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap{
     --stk-primary-dark:#002B54;
     --stk-primary:#0056D2;
     --stk-primary-light:#0099FF;
@@ -1367,11 +1367,11 @@
   /* Mais itens que as demais páginas (painel + busca + período + mês/ano/setor
      ou player) — quebra em linha ao invés de rolagem horizontal, para nenhum
      filtro (em especial o seletor de Painel) ficar fora da área visível. */
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar{margin-bottom:20px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .wa-clip-search,
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
-  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .filter-bar{margin-bottom:20px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .filter-bar.wa-stock-filters{flex-wrap:wrap;overflow-x:visible;row-gap:10px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .wa-stock-filters .wa-clip-search,
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .wa-stock-filters .filter-select{min-width:110px;flex:1 1 110px;}
+  :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .wa-stock-filters .wa-clip-search{width:288px;min-width:min(220px,100%);max-width:288px;flex:0 1 288px;}
   /* Seletor de Painel: mesma largura em todos os painéis, calibrada no Panorama (o painel com mais
      filtros): ~156px em 1366px, ~195px em 1600px, ~225px em 1920px de tela. Não estica nem encolhe
      conforme a quantidade de filtros de cada visão; os demais filtros ocupam o espaço restante. */
@@ -1446,8 +1446,8 @@
   /* EMPRESAS: muitos filtros na barra — busca mais estreita para os rótulos dos selects caberem. */
   /* EMPRESAS: busca no mesmo tamanho dos outros painéis (padrão ABVE: 288px, até 220px); para caber em telas
      menores, o switch Dashboard/Mapa vira só ícones abaixo de 1500px e o espaçamento/selects ficam mais justos. */
-  #stkVisaoEmp .stk-seg-btn, #stkVisaoInad .stk-seg-btn{display:inline-flex;align-items:center;gap:6px;}
-  #stkVisaoEmp .stk-seg-ic, #stkVisaoInad .stk-seg-ic{width:15px;height:15px;stroke-width:2;flex:0 0 auto;}
+  #stkVisaoEmp .stk-seg-btn, #stkVisaoInad .stk-seg-btn, #rmVisao .stk-seg-btn{display:inline-flex;align-items:center;gap:6px;}
+  #stkVisaoEmp .stk-seg-ic, #stkVisaoInad .stk-seg-ic, #rmVisao .stk-seg-ic{width:15px;height:15px;stroke-width:2;flex:0 0 auto;}
   /* INADIMPLÊNCIA › Gráfico: só o gráfico de linhas, em uma coluna. */
   .cd-row-unica{grid-template-columns:1fr;}
   .content > #page-dashboard.stk-emp > .filter-bar{column-gap:8px;}
@@ -1507,18 +1507,18 @@
   /* ===== Barra de filtros: padrão único em todas as seções (igual à do Dashboard) =====
      Mesmo lugar (topo da seção), mesma altura, espaçamento, cantos e sombra: ao trocar de
      seção o box parece "fixo". O conteúdo de cada barra muda; o box não. */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
     box-sizing:border-box;min-height:58px;margin-bottom:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);
   }
   /* Uma linha só e altura fixa (58px) em qualquer largura de tela: o box nunca muda de tamanho.
      Os campos encolhem por igual; o que não couber rola para o lado (sem barra visível). */
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
     flex-wrap:nowrap !important;height:58px;min-height:58px;padding:10px 14px;column-gap:10px;row-gap:0;
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
   }
   .content > .page > .filter-bar::-webkit-scrollbar{display:none;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
-  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar .filter-select{min-width:72px;flex:1 1 0;}
+  .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar :is(.btn, .wa-btn, .filter-divider, .wa-view-toggle, .stk-segmented, .wa-sort-group){flex:0 0 auto;}
   .content > .page > .filter-bar .wa-view-toggle{padding:2px;}
   .content > .page > .filter-bar .wa-view-toggle-btn{padding:6px 12px;}
   @media (max-width:1800px){
@@ -1557,7 +1557,7 @@
 
   /* ===== Clipping (layout "cd") — KPIs com acento lateral, cards com título +
      subtítulo, barras com trilho, ranking e destaques ===== */
-  #page-dashboard, #page-surveymonkey, #page-instancias{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
+  #page-dashboard, #page-surveymonkey, #page-instancias, #page-roadmap{--cd-azul:#1D5FD3;--cd-azul-bg:#E8F0FD;--cd-verde:#5DB14E;--cd-verde-bg:#EAF6E6;--cd-verm:#EF4444;--cd-verm-bg:#FDECEC;
     --cd-texto:#0F1E3D;--cd-muted:#64748B;--cd-borda:#E6EBF2;--cd-trilho:#EEF2F7;}
   .cd-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:16px;}
   @media (max-width:1200px){ .cd-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
@@ -1974,8 +1974,8 @@
   @media (min-width:1201px) and (min-height:720px){
     .content:has(#page-dashboard.active #stkGrid.cd-fit){padding:0;}
     #page-dashboard.active:has(#stkGrid.cd-fit){display:flex;flex-direction:column;height:100%;margin:0;padding:18px 34px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .filter-bar{margin-bottom:14px;padding:10px 14px;column-gap:10px;min-height:58px;box-sizing:border-box;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .wa-stock-filters .filter-select{min-width:90px;flex:1 1 90px;}
     #page-dashboard .wa-stock-filters .filter-select{min-width:80px;flex:1 1 80px;}
     #page-dashboard .wa-stock-filters #stkPainelFiltro{min-width:0;flex:0 0 var(--stk-painel-w);}
     /* Dashboard: busca 80% maior (160 → 288px); selects um pouco mais estreitos compensam. */
@@ -1983,11 +1983,11 @@
     /* Estoque: mesma posição da barra do Clipping (topo) e seletor de período compacto para caber em 1 linha. */
     #page-dashboard.active{padding-top:18px;}
     .content > :is(#page-home, #page-roadmap, #page-surveymonkey, #page-instancias, #page-campanhas, #page-usuarios, #page-clipping, #page-estoque, #page-relatorios, #page-configuracoes, #page-whatsapp){padding-top:18px;}
-    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
+    .content > :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap, #page-estoque, #page-usuarios, #page-relatorios, #page-configuracoes, #page-campanhas, #page-clipping) > .filter-bar{
       margin-bottom:14px;padding:10px 14px;column-gap:10px;
     }
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .stk-segmented{padding:2px;}
-    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias) .stk-seg-btn{padding:6px 9px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .stk-segmented{padding:2px;}
+    :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap) .stk-seg-btn{padding:6px 9px;}
     #stkGrid.cd-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
     /* Barra de rolagem invisível (a rolagem pela roda do mouse/toque continua). */
     #stkGrid.cd-fit::-webkit-scrollbar{display:none;}
@@ -2429,7 +2429,7 @@
     --wa-slate-bg:#1E293B;
     --wa-slate-text:#CBD5E1;
   }
-  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias){
+  :root[data-theme="dark"] :is(#page-dashboard, #page-whatsapp, #page-surveymonkey, #page-instancias, #page-roadmap){
     --stk-primary-dark:#E2E8F0;
     --stk-secondary-dark:#CBD5E1;
     --stk-neutral-bg:#243047;
@@ -2478,6 +2478,7 @@
   :root[data-theme="dark"] .wa-phone-bubble .time{color:#8696A0;}
 
   /* ---- Roadmap: interações do Núcleo com os setores ---- */
+  /* Barra de filtros, switch e gráfico usam as classes do Dashboard (#page-roadmap entra nas mesmas listas). */
   #page-roadmap{
     --rm-reuniao:#2563EB;--rm-alinhamento:#0D9488;--rm-demanda:#C026D3;
     --rm-ok:#16A34A;--rm-atencao:#D97706;--rm-critico:#DC2626;
@@ -2490,41 +2491,42 @@
   }
   #page-roadmap [hidden]{display:none !important;}
   :root[data-theme="dark"] #page-roadmap .wa-btn-outline{background:var(--wa-card);color:var(--wa-text-muted);}
-  .rm-kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+
+  /* KPIs compactos */
+  .rm-kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
   @media (max-width:1100px){ .rm-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
   @media (max-width:560px){ .rm-kpis{grid-template-columns:1fr;} }
-  .rm-kpi{background:var(--wa-card);border:1px solid var(--wa-border);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:0;}
-  .rm-kpi-rot{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--wa-text-muted);}
-  .rm-kpi-val{font-size:28px;font-weight:800;color:var(--wa-text);margin-top:6px;line-height:1.1;font-variant-numeric:tabular-nums;}
-  .rm-kpi-sub{font-size:12px;color:var(--wa-text-muted);margin-top:4px;}
-  .rm-kpi-indice{display:flex;align-items:center;gap:18px;}
-  .rm-anel{width:84px;height:84px;flex:0 0 auto;transform:rotate(-90deg);}
+  .rm-kpi{background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;padding:14px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:0;}
+  .rm-kpi-rot{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--wa-text-muted);}
+  .rm-kpi-val{font-size:24px;font-weight:800;color:var(--wa-text);margin-top:4px;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .rm-kpi-sub{font-size:12px;color:var(--wa-text-muted);margin-top:3px;}
+  .rm-kpi-indice{display:flex;align-items:center;gap:16px;}
+  .rm-anel{width:64px;height:64px;flex:0 0 auto;transform:rotate(-90deg);}
   .rm-anel circle{fill:none;stroke-width:9;}
   .rm-anel .trilho{stroke:var(--wa-slate-bg);}
   .rm-anel .valor{stroke:var(--wa-primary);stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
   .rm-kpi-indice.pulso .rm-kpi-val{animation:rmPulso .7s ease;}
   @keyframes rmPulso{0%{color:var(--wa-primary);transform:scale(1.08);transform-origin:left center;}100%{transform:none;}}
-  .rm-previa{display:inline-block;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--wa-primary);background:var(--wa-primary-soft);padding:3px 9px;border-radius:9999px;}
+  .rm-previa{display:inline-block;margin-top:5px;font-size:11.5px;font-weight:600;color:var(--wa-primary);background:var(--wa-primary-soft);padding:2px 9px;border-radius:9999px;}
   .rm-var.sobe{color:var(--rm-ok);}
   .rm-var.desce{color:var(--rm-critico);}
-  .rm-sem-lista{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+  .rm-sem-lista{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
   .rm-chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
   .rm-chip.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
 
-  .rm-board{margin-bottom:20px;}
-  .rm-toolbar{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--wa-border);}
-  .rm-mes{display:flex;align-items:center;gap:6px;}
-  .rm-mes-rot{min-width:150px;text-align:center;font-weight:700;font-size:15px;color:var(--wa-text);}
-  .rm-nav-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--wa-border);background:var(--wa-card);color:var(--wa-text-muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;}
-  .rm-nav-btn:hover:not(:disabled){border-color:var(--wa-primary);color:var(--wa-primary);}
-  .rm-nav-btn:disabled{opacity:.4;cursor:not-allowed;}
-  .rm-nav-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;}
-  #page-roadmap .rm-btn-hoje{padding:6px 12px;font-size:12.5px;margin-left:4px;}
+  /* Corpo da visão Roadmap: calendário à esquerda, radar à direita */
+  .rm-corpo{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start;}
+  @media (max-width:1200px){ .rm-corpo{grid-template-columns:minmax(0,1fr);} }
+  .rm-board-head{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--wa-border);}
+  .rm-board-tits{min-width:0;margin-right:auto;}
+  .rm-board-tits h3{margin:0;font-size:16px;font-weight:700;color:var(--wa-text);}
+  .rm-board-sub{font-size:12px;color:var(--wa-text-muted);margin-top:2px;}
   .rm-tipos{display:inline-flex;gap:4px;padding:3px;background:var(--wa-slate-bg);border-radius:10px;}
   .rm-tipo{border:none;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--wa-text-muted);padding:6px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
   .rm-tipo.active{background:var(--wa-card);color:var(--wa-text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   .rm-tipo-marca{width:16px;height:16px;border-radius:4px;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
-  .rm-toolbar-fim{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .rm-toolbar-fim{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  #page-roadmap .rm-toolbar-fim .wa-btn{padding:8px 14px;font-size:13px;}
   .rm-pend{font-size:12px;font-weight:600;color:var(--wa-pending-text);background:var(--wa-pending-bg);padding:4px 10px;border-radius:9999px;}
   #page-roadmap .wa-btn:disabled{opacity:.5;cursor:not-allowed;}
   .rm-msg{padding:8px 18px;font-size:12.5px;color:var(--wa-approved-text);background:var(--wa-approved-bg);border-bottom:1px solid var(--wa-border);}
@@ -2540,59 +2542,56 @@
   .rm-grade .janela{background:var(--rm-janela);}
   .rm-grade .fds:not(.janela){background:var(--rm-fds);}
   .rm-grade thead th.hoje .rm-dia-num{background:var(--wa-primary);color:#fff;border-radius:6px;padding:1px 0;font-weight:700;}
-  .rm-col-setor{position:sticky;left:0;z-index:2;background:var(--wa-card) !important;text-align:left !important;padding:6px 12px 6px 18px !important;white-space:nowrap;font-weight:600;color:var(--wa-text);min-width:200px;}
+  .rm-col-setor{position:sticky;left:0;z-index:2;background:var(--wa-card) !important;text-align:left !important;padding:6px 12px 6px 18px !important;white-space:nowrap;font-weight:600;color:var(--wa-text);min-width:190px;}
   thead .rm-col-setor{z-index:3;color:var(--wa-text-muted);}
   .rm-col-total{font-weight:700;color:var(--wa-text);padding:0 14px !important;font-variant-numeric:tabular-nums;}
+  .rm-vazio{padding:28px 18px !important;color:var(--wa-text-muted);font-size:13px;}
   .rm-st-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle;}
   .rm-leg-item .rm-st-dot{margin:0 2px 0 0;}
   .rm-st-dot.ok{background:var(--rm-ok);}
   .rm-st-dot.atencao{background:var(--rm-atencao);}
   .rm-st-dot.critico{background:var(--rm-critico);}
-  .rm-cel{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--wa-border);background:var(--wa-card);cursor:pointer;padding:0;font:inherit;font-size:11px;font-weight:800;color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s,border-color .12s;vertical-align:middle;}
+  .rm-cel{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--wa-border);background:var(--wa-card);cursor:pointer;padding:0;font:inherit;font-size:11px;font-weight:800;color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s,border-color .12s,opacity .12s;vertical-align:middle;}
   .rm-cel:hover:not(:disabled){border-color:var(--wa-primary);transform:scale(1.12);}
   .rm-cel:focus-visible{outline:2px solid var(--wa-primary);outline-offset:2px;}
   .rm-cel:disabled{cursor:not-allowed;opacity:.35;border-style:dashed;}
   .rm-cel.t-reuniao,.rm-tipo-marca.t-reuniao{background:var(--rm-reuniao);border-color:var(--rm-reuniao);}
   .rm-cel.t-alinhamento,.rm-tipo-marca.t-alinhamento{background:var(--rm-alinhamento);border-color:var(--rm-alinhamento);}
   .rm-cel.t-demanda,.rm-tipo-marca.t-demanda{background:var(--rm-demanda);border-color:var(--rm-demanda);}
+  .rm-cel.fora-filtro{opacity:.3;}
   .rm-cel.pend-add{box-shadow:0 0 0 2px var(--wa-card),0 0 0 4px var(--rm-atencao);}
   .rm-cel.pend-del{background:var(--wa-card) !important;color:var(--wa-text-muted);text-decoration:line-through;border-style:dashed;box-shadow:0 0 0 2px var(--wa-card),0 0 0 4px var(--rm-critico);}
-  .rm-grade tfoot th,.rm-grade tfoot td{font-weight:700;color:var(--wa-text-muted);font-variant-numeric:tabular-nums;border-bottom:none;padding:8px 2px;}
-  .rm-legenda{display:flex;flex-wrap:wrap;gap:10px 18px;padding:12px 18px;font-size:12px;color:var(--wa-text-muted);border-top:1px solid var(--wa-border);}
+  .rm-grade tfoot th,.rm-grade tfoot td{font-weight:700;color:var(--wa-text-muted);font-variant-numeric:tabular-nums;border-bottom:none;padding:8px 1px;}
+  .rm-legenda{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 18px;font-size:12px;color:var(--wa-text-muted);border-top:1px solid var(--wa-border);}
   .rm-leg-item{display:inline-flex;align-items:center;gap:6px;}
   .rm-leg-janela{width:16px;height:12px;border-radius:3px;background:var(--rm-janela);border:1px solid var(--wa-border);}
   .rm-leg-pend{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--wa-border);box-shadow:0 0 0 2px var(--wa-card),0 0 0 3.5px var(--rm-atencao);}
 
-  .rm-baixo{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;}
-  @media (max-width:1000px){ .rm-baixo{grid-template-columns:1fr;} }
-  .rm-painel-tit{padding:16px 20px 2px;font-size:14px;font-weight:700;color:var(--wa-text);}
-  .rm-painel-sub{padding:0 20px 8px;font-size:12px;color:var(--wa-text-muted);}
-  .rm-evol{position:relative;padding:4px 16px 16px;}
-  /* stroke:none — sem isto o gráfico herda o `svg{stroke:currentColor}` global (alvos e textos contornados). */
-  .rm-evol svg{width:100%;height:auto;display:block;stroke:none;}
-  .rm-evol .grade-l{stroke:var(--wa-border);stroke-width:1;}
-  .rm-evol .eixo-t{fill:var(--wa-text-muted);font-size:10px;font-family:inherit;}
-  .rm-evol .eixo-t.hoje{fill:var(--wa-primary);font-weight:700;}
-  .rm-evol .barra{fill:var(--wa-primary);opacity:.45;transition:opacity .12s;}
-  .rm-evol .barra.hoje,.rm-evol .barra.ativa{opacity:1;}
-  .rm-evol .alvo{cursor:default;}
-  .rm-tip{position:absolute;pointer-events:none;background:var(--wa-text);color:var(--wa-card);font-size:11.5px;font-weight:600;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));box-shadow:0 6px 16px rgba(15,23,42,.2);z-index:5;}
-  .rm-radar{list-style:none;margin:0;padding:4px 12px 14px;}
-  .rm-radar li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--wa-border);}
+  /* Radar de setores (coluna da direita) */
+  .rm-painel-tit{padding:14px 18px 2px;font-size:16px;font-weight:700;color:var(--wa-text);}
+  .rm-painel-sub{padding:0 18px 6px;font-size:12px;color:var(--wa-text-muted);}
+  .rm-radar{list-style:none;margin:0;padding:2px 10px 10px;}
+  .rm-radar li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px;padding:7px 8px;border-bottom:1px solid var(--wa-border);}
   .rm-radar li:last-child{border-bottom:none;}
-  .rm-radar-nome{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .rm-radar-ult{font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;}
-  .rm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:9999px;white-space:nowrap;min-width:92px;}
+  .rm-radar-nome{font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rm-radar-ult{grid-column:1;font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rm-radar .rm-badge{grid-row:1 / span 2;grid-column:2;}
+  .rm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:9999px;white-space:nowrap;}
   .rm-badge svg{width:12px;height:12px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;}
   .rm-badge.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
   .rm-badge.atencao{background:var(--wa-pending-bg);color:var(--wa-pending-text);}
   .rm-badge.critico{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
+
+  /* Visão Gráfico: cartão .cd-card do Dashboard; legenda + switch Semana | Mês no cabeçalho */
+  .rm-grafico .cd-card{min-height:420px;}
+  .rm-graf-acoes{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;}
+  .rm-graf-acoes .stk-seg-btn{padding:5px 12px;font-size:12.5px;}
+  #rmGrafLinhas{min-height:360px;}
+
   @media (max-width:640px){
-    .rm-toolbar-fim{margin-left:0;width:100%;}
+    .rm-toolbar-fim{width:100%;}
     .rm-toolbar-fim .wa-btn{flex:1;justify-content:center;}
-    .rm-mes-rot{min-width:120px;font-size:14px;}
     .rm-col-setor{min-width:140px;max-width:150px;padding-left:12px !important;white-space:normal;}
-    .rm-radar-ult{display:none;}
   }
 </style>
 </head>
@@ -2815,6 +2814,37 @@
 
       <!-- ROADMAP: flags de interação/reunião do Núcleo com os setores (índice na janela de 7 dias) -->
       <section class="page" id="page-roadmap">
+        <!-- Barra de filtros no padrão do Dashboard -->
+        <div class="filter-bar wa-stock-filters">
+          <div class="wa-clip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="rmBusca" placeholder="Buscar setor..." autocomplete="off">
+          </div>
+          <select class="filter-select" id="rmSetorFiltro" title="Setor"></select>
+          <select class="filter-select" id="rmTipoFiltro" title="Tipo de interação considerado nas análises">
+            <option value="">Tipo</option>
+            <option value="reuniao">Tipo · Reunião</option>
+            <option value="alinhamento">Tipo · Alinhamento</option>
+            <option value="demanda">Tipo · Demanda</option>
+          </select>
+          <select class="filter-select" id="rmMesFiltro" title="Mês"></select>
+          <select class="filter-select" id="rmAnoFiltro" title="Ano"></select>
+          <div class="stk-segmented" id="rmVisao" role="tablist" aria-label="Visualização">
+            <button type="button" class="stk-seg-btn active" data-visao="roadmap" role="tab" aria-selected="true" title="Roadmap"><svg class="stk-seg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"></path><path d="M4 4h13l-2.5 4.5L17 13H4"></path></svg><span class="stk-seg-rot">Roadmap</span></button>
+            <button type="button" class="stk-seg-btn" data-visao="grafico" role="tab" aria-selected="false" title="Gráfico"><svg class="stk-seg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg><span class="stk-seg-rot">Gráfico</span></button>
+          </div>
+          <div class="filter-spacer"></div>
+          <div class="filter-divider"></div>
+          <button class="btn btn-clear" id="rmLimpar" title="Limpar filtros" aria-label="Limpar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span class="btn-label">Limpar</span>
+          </button>
+          <button class="btn btn-export" id="rmExportar" title="Exportar dados (CSV)" aria-label="Exportar dados (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            <span class="btn-label">Exportar</span>
+          </button>
+        </div>
+
         <div class="rm-kpis">
           <div class="rm-kpi rm-kpi-indice" id="rmKpiIndice">
             <svg class="rm-anel" viewBox="0 0 84 84" aria-hidden="true"><circle class="trilho" cx="42" cy="42" r="34"></circle><circle class="valor" id="rmAnel" cx="42" cy="42" r="34" stroke-dasharray="213.63" stroke-dashoffset="213.63"></circle></svg>
@@ -2842,55 +2872,48 @@
           </div>
         </div>
 
-        <div class="wa-card rm-board">
-          <div class="rm-toolbar">
-            <div class="rm-mes">
-              <button type="button" class="rm-nav-btn" id="rmMesAnt" title="Mês anterior" aria-label="Mês anterior"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-              <div class="rm-mes-rot" id="rmMesRot">—</div>
-              <button type="button" class="rm-nav-btn" id="rmMesProx" title="Próximo mês" aria-label="Próximo mês"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-              <button type="button" class="wa-btn wa-btn-outline rm-btn-hoje" id="rmHoje">Hoje</button>
+        <!-- Visão Roadmap: calendário (até a data de referência) e, à direita, o radar de setores -->
+        <div class="rm-corpo" id="rmVisaoRoadmap">
+          <div class="wa-card rm-board">
+            <div class="rm-board-head">
+              <div class="rm-board-tits">
+                <h3 id="rmGradeTit">Roadmap</h3>
+                <div class="rm-board-sub" id="rmGradeSub">—</div>
+              </div>
+              <div class="rm-tipos" id="rmTipos" role="radiogroup" aria-label="Tipo da interação a registrar">
+                <button type="button" class="rm-tipo active" data-tipo="reuniao" role="radio" aria-checked="true"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</button>
+                <button type="button" class="rm-tipo" data-tipo="alinhamento" role="radio" aria-checked="false"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</button>
+                <button type="button" class="rm-tipo" data-tipo="demanda" role="radio" aria-checked="false"><span class="rm-tipo-marca t-demanda">D</span>Demanda</button>
+              </div>
+              <div class="rm-toolbar-fim">
+                <span class="rm-pend" id="rmPend" hidden></span>
+                <button type="button" class="wa-btn wa-btn-outline" id="rmDescartar" disabled>Descartar</button>
+                <button type="button" class="wa-btn wa-btn-primary" id="rmSalvar" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span id="rmSalvarTxt">Salvar alterações</span>
+                </button>
+              </div>
             </div>
-            <div class="rm-tipos" id="rmTipos" role="radiogroup" aria-label="Tipo da interação a registrar">
-              <button type="button" class="rm-tipo active" data-tipo="reuniao" role="radio" aria-checked="true"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</button>
-              <button type="button" class="rm-tipo" data-tipo="alinhamento" role="radio" aria-checked="false"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</button>
-              <button type="button" class="rm-tipo" data-tipo="demanda" role="radio" aria-checked="false"><span class="rm-tipo-marca t-demanda">D</span>Demanda</button>
-            </div>
-            <div class="rm-toolbar-fim">
-              <span class="rm-pend" id="rmPend" hidden></span>
-              <button type="button" class="wa-btn wa-btn-outline" id="rmDescartar" disabled>Descartar</button>
-              <button type="button" class="wa-btn wa-btn-primary" id="rmSalvar" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span id="rmSalvarTxt">Salvar alterações</span>
-              </button>
-            </div>
-          </div>
-          <div class="rm-msg" id="rmMsg" role="status" hidden></div>
-          <div class="rm-grade-wrap"><table class="rm-grade" id="rmGrade" aria-label="Interações por setor e dia do mês"></table></div>
-          <div class="rm-legenda">
-            <span class="rm-leg-item"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</span>
-            <span class="rm-leg-item"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</span>
-            <span class="rm-leg-item"><span class="rm-tipo-marca t-demanda">D</span>Demanda</span>
-            <span class="rm-leg-item"><span class="rm-leg-janela"></span>Janela de 7 dias (até hoje)</span>
-            <span class="rm-leg-item"><span class="rm-leg-pend"></span>Pendente (clique em Salvar)</span>
-            <span class="rm-leg-item"><span class="rm-st-dot ok"></span>Em dia · <span class="rm-st-dot atencao"></span>Atenção · <span class="rm-st-dot critico"></span>Sem contato</span>
-          </div>
-        </div>
-
-        <div class="rm-baixo">
-          <div class="wa-card">
-            <div class="rm-painel-tit">Evolução do índice</div>
-            <div class="rm-painel-sub">% de setores com interação na janela de 7 dias encerrada em cada dia do mês</div>
-            <div class="rm-evol" id="rmEvol">
-              <svg id="rmEvolSvg" viewBox="0 0 640 190" role="img" aria-label="Evolução diária do índice de interação"></svg>
-              <div class="rm-tip" id="rmTip" hidden></div>
+            <div class="rm-msg" id="rmMsg" role="status" hidden></div>
+            <div class="rm-grade-wrap"><table class="rm-grade" id="rmGrade" aria-label="Interações por setor e dia do mês"></table></div>
+            <div class="rm-legenda">
+              <span class="rm-leg-item"><span class="rm-tipo-marca t-reuniao">R</span>Reunião</span>
+              <span class="rm-leg-item"><span class="rm-tipo-marca t-alinhamento">A</span>Alinhamento</span>
+              <span class="rm-leg-item"><span class="rm-tipo-marca t-demanda">D</span>Demanda</span>
+              <span class="rm-leg-item"><span class="rm-leg-janela"></span>Janela de 7 dias</span>
+              <span class="rm-leg-item"><span class="rm-leg-pend"></span>Pendente (clique em Salvar)</span>
+              <span class="rm-leg-item"><span class="rm-st-dot ok"></span>Em dia · <span class="rm-st-dot atencao"></span>Atenção · <span class="rm-st-dot critico"></span>Sem contato</span>
             </div>
           </div>
-          <div class="wa-card">
+          <div class="wa-card rm-radar-card">
             <div class="rm-painel-tit">Radar de setores</div>
             <div class="rm-painel-sub">Tempo desde a última interação registrada</div>
             <ul class="rm-radar" id="rmRadar"></ul>
           </div>
         </div>
+
+        <!-- Visão Gráfico: evolução do índice (padrão do gráfico da Inadimplência no Panorama) -->
+        <div class="rm-grafico" id="rmVisaoGrafico" hidden></div>
       </section>
 
 
@@ -13277,6 +13300,8 @@ ${clipPlayerPills(n)}
     function cdCard(titulo, sub, corpo, extra){
       return `<div class="cd-card"><div class="cd-card-head"><div class="cd-card-tits"><h3>${esc(titulo)}</h3>${sub ? `<div class="cd-sub">${esc(sub)}</div>` : ''}</div>${extra || ''}</div><div class="cd-card-body">${corpo}</div></div>`;
     }
+    // Componentes do gráfico de linhas (padrão do Panorama › Inadimplência) reaproveitados pela seção Roadmap.
+    window.__cdGrafico = { linhas: stkDesenharLinhasFluxo, card: cdCard, cor: CD_COR };
     // Variação vs. ano anterior: seta + valor (verde se sobe, vermelho se cai, como na referência).
     // fixas: número fixo de casas decimais (ex.: 2 → "1,20%"), usado pela Inadimplência.
     function cdDelta(atual, anterior, pp, semBase, inverso, casas, fixas){
@@ -18900,9 +18925,11 @@ ${quadro}
 
 <script>
   // ---------------- Roadmap: interações do Núcleo de Inteligência com os setores ----------------
-  // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 7 dias que
-  // termina hoje: % de setores com ao menos uma interação (100% = houve interação com todos).
-  // Os cliques ficam pendentes até "Salvar alterações"; KPIs, gráfico e radar usam só o que foi salvo.
+  // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 7 dias que termina na data de
+  // referência (hoje; num mês passado, o último dia dele): % dos setores filtrados com ao menos uma interação.
+  // Os cliques ficam pendentes até "Salvar alterações"; KPIs, radar e gráfico usam só o que foi salvo.
+  // Barra de filtros no padrão do Dashboard: busca e Setor (setores analisados), Tipo (flags consideradas), Mês/Ano e o
+  // switch Roadmap | Gráfico. O Gráfico reaproveita o componente da Inadimplência (window.__cdGrafico).
   // Dados: tabela `roadmap_interacoes` (supabase/schema_roadmap.sql); sem Supabase, no localStorage (demonstração).
   (function(){
     const page = document.getElementById('page-roadmap');
@@ -18915,10 +18942,12 @@ ${quadro}
       alinhamento: { rotulo: 'Alinhamento', letra: 'A' },
       demanda: { rotulo: 'Demanda', letra: 'D' }
     };
-    const JANELA = 7;            // dias da janela do índice (hoje + 6 anteriores)
+    const JANELA = 7;            // dias da janela do índice (data de referência + 6 anteriores)
     const HISTORICO = 60;        // dias carregados para trás (radar "última interação")
     const TABELA = 'roadmap_interacoes';
     const CHAVE_LOCAL = 'cdload-roadmap';
+    const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const DIA_SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const ICO = {
       ok: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>',
       atencao: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>',
@@ -18926,8 +18955,13 @@ ${quadro}
     };
 
     const $ = id => document.getElementById(id);
-    const grade = $('rmGrade'), evolSvg = $('rmEvolSvg'), tip = $('rmTip'), radar = $('rmRadar');
+    const grade = $('rmGrade'), radar = $('rmRadar'), grafEl = $('rmVisaoGrafico');
     const btnSalvar = $('rmSalvar'), btnDescartar = $('rmDescartar');
+    const fBusca = $('rmBusca'), fSetor = $('rmSetorFiltro'), fTipo = $('rmTipoFiltro'), fMes = $('rmMesFiltro'), fAno = $('rmAnoFiltro');
+
+    // O tooltip dos gráficos do Dashboard fica dentro da seção Dashboard (oculta aqui): passa para o <body>.
+    const tipDash = $('stkTooltip');
+    if(tipDash && tipDash.parentElement !== document.body) document.body.appendChild(tipDash);
 
     // Datas sempre como 'AAAA-MM-DD' no fuso local.
     const pad = n => String(n).padStart(2, '0');
@@ -18936,14 +18970,26 @@ ${quadro}
     const somaDias = (s, n) => { const d = deIso(s); d.setDate(d.getDate() + n); return iso(d); };
     const difDias = (a, b) => Math.round((deIso(a) - deIso(b)) / 86400000);
     const dataBR = s => s.split('-').reverse().join('/');
+    const diaMes = s => dataBR(s).slice(0, 5);
     const hoje = () => iso(new Date());
-    const mesAtual = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); };
+    const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-    let mesRef = mesAtual();
-    let tipoAtual = 'reuniao';
+    // ---------- Filtros ----------
+    fSetor.innerHTML = '<option value="">Setor</option>' + SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+    fMes.innerHTML = MESES.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+    const anoAtual = new Date().getFullYear();
+    fAno.innerHTML = [anoAtual - 2, anoAtual - 1, anoAtual].map(a => `<option value="${a}">${a}</option>`).join('');
+    function filtrosPadrao(){
+      const d = new Date();
+      fBusca.value = ''; fSetor.value = ''; fTipo.value = '';
+      fMes.value = String(d.getMonth()); fAno.value = String(d.getFullYear());
+    }
+    filtrosPadrao();
+
+    let visao = 'roadmap', escala = 'mes', tipoAtual = 'reuniao';
     let registros = new Map();     // "setor|data" -> { id, setor, data, tipo, criado_por } (salvos)
     const pendentes = new Map();   // "setor|data" -> { acao: 'add', tipo } | { acao: 'del' }
-    let carregando = false, salvando = false, pontos = [];
+    let carregando = false, salvando = false;
 
     const chave = (setor, data) => setor + '|' + data;
     const sb = () => window.CDL_SB;
@@ -18951,6 +18997,28 @@ ${quadro}
     // Remover uma flag salva: Administrador/Edição, ou quem a registrou (o RLS aplica a mesma regra).
     const podeRemover = r => !sb() || (window.__podeEditar && window.__podeEditar('roadmap'))
       || (!!r.criado_por && r.criado_por.toLowerCase() === emailAtual());
+
+    const anoSel = () => Number(fAno.value), mesSel = () => Number(fMes.value);
+    const iniMes = () => iso(new Date(anoSel(), mesSel(), 1));
+    const fimMes = () => iso(new Date(anoSel(), mesSel() + 1, 0));
+    const nomeMes = () => `${MESES[mesSel()]} de ${anoSel()}`;
+    // Data de referência: hoje no mês atual; o último dia num mês passado; mês futuro → null (nada a analisar).
+    function dataRef(){
+      const h = hoje();
+      if(iniMes() > h) return null;
+      return fimMes() < h ? fimMes() : h;
+    }
+    // Setores analisados (busca + Setor) e flags consideradas (Tipo).
+    function setoresVis(){
+      const t = norm(fBusca.value.trim());
+      return SETORES.filter(s => (!fSetor.value || s === fSetor.value) && (!t || norm(s).includes(t)));
+    }
+    const doTipo = mapa => {
+      if(!fTipo.value) return mapa;
+      const m = new Map();
+      mapa.forEach((r, k) => { if(r.tipo === fTipo.value) m.set(k, r); });
+      return m;
+    };
 
     function msg(texto, erro){
       const el = $('rmMsg');
@@ -18965,7 +19033,8 @@ ${quadro}
       // Primeira visita: alguns registros de exemplo nos últimos dias.
       const h = hoje();
       return [[0, 0, 'reuniao'], [1, 2, 'alinhamento'], [2, 1, 'reuniao'], [3, 4, 'demanda'], [5, 3, 'reuniao'], [6, 8, 'alinhamento'],
-        [7, 12, 'reuniao'], [9, 6, 'demanda'], [0, 14, 'alinhamento'], [4, 18, 'reuniao'], [10, 25, 'reuniao']]
+        [7, 12, 'reuniao'], [9, 6, 'demanda'], [0, 14, 'alinhamento'], [4, 18, 'reuniao'], [10, 25, 'reuniao'], [2, 22, 'reuniao'],
+        [8, 30, 'demanda'], [1, 33, 'reuniao'], [5, 27, 'alinhamento']]
         .map(([s, d, t], i) => ({ id: 'demo' + i, setor: SETORES[s], data: somaDias(h, -d), tipo: t, criado_por: '' }));
     }
     function gravarLocal(lista){
@@ -18974,12 +19043,12 @@ ${quadro}
     }
 
     // ---------- Carga ----------
-    // Mês exibido (+9 dias antes, para o gráfico) e os últimos 60 dias (índice, variação e radar).
+    // Do mês anterior ao escolhido (comparativo do gráfico, -6 dias da janela) e dos últimos 60 dias (radar) até a referência.
     function intervalo(){
-      const ini = iso(mesRef), fimMes = iso(new Date(mesRef.getFullYear(), mesRef.getMonth() + 1, 0)), h = hoje();
-      const de = [somaDias(ini, -(JANELA - 1)), somaDias(h, -(HISTORICO - 1))].sort()[0];
-      const ate = [fimMes, h].sort()[1];
-      return { de, ate };
+      const ref = dataRef() || fimMes();
+      const iniAnt = iso(new Date(anoSel(), mesSel() - 1, 1));
+      const de = [somaDias(iniAnt, -(JANELA - 1)), somaDias(ref, -(HISTORICO - 1))].sort()[0];
+      return { de, ate: ref };
     }
     async function carregar(){
       const { de, ate } = intervalo();
@@ -19002,12 +19071,12 @@ ${quadro}
     }
 
     // ---------- Métricas ----------
-    // Índice da janela [fim-(JANELA-1), fim]: setores distintos com interação ÷ total de setores.
-    function indice(fim, mapa){
-      const ini = somaDias(fim, -(JANELA - 1)), cobertos = new Set();
+    // Índice da janela [fim-(JANELA-1), fim]: setores (da lista) com interação ÷ total de setores da lista.
+    function indice(fim, mapa, setores){
+      const ini = somaDias(fim, -(JANELA - 1)), alvo = new Set(setores), cobertos = new Set();
       let total = 0;
-      mapa.forEach(r => { if(r.data >= ini && r.data <= fim){ cobertos.add(r.setor); total++; } });
-      return { pct: Math.round(cobertos.size / SETORES.length * 100), cobertos, total, ini };
+      mapa.forEach(r => { if(alvo.has(r.setor) && r.data >= ini && r.data <= fim){ cobertos.add(r.setor); total++; } });
+      return { pct: setores.length ? Math.round(cobertos.size / setores.length * 100) : 0, cobertos, total, ini };
     }
     // Salvos + cliques pendentes (o que a grade mostra e a prévia do índice).
     function efetivo(){
@@ -19018,9 +19087,9 @@ ${quadro}
       });
       return m;
     }
-    function ultimaInteracao(setor){
-      const h = hoje(); let u = null;
-      registros.forEach(r => { if(r.setor === setor && r.data <= h && (!u || r.data > u)) u = r.data; });
+    function ultimaInteracao(setor, mapa, ref){
+      let u = null;
+      mapa.forEach(r => { if(r.setor === setor && r.data <= ref && (!u || r.data > u)) u = r.data; });
       return u;
     }
     function situacao(dias){
@@ -19028,27 +19097,34 @@ ${quadro}
       if(dias != null && dias < 2 * JANELA) return { cls: 'atencao', rotulo: 'Atenção' };
       return { cls: 'critico', rotulo: 'Sem contato' };
     }
-    const haQuanto = d => d === 0 ? 'hoje' : d === 1 ? 'ontem' : `há ${d} dias`;
+    const haQuanto = d => d === 0 ? 'no dia' : d === 1 ? 'há 1 dia' : `há ${d} dias`;
 
     // ---------- Render ----------
     function renderKpis(){
-      const h = hoje(), atual = indice(h, registros), anterior = indice(somaDias(h, -JANELA), registros);
+      const ref = dataRef(), setores = setoresVis(), A = doTipo(registros);
+      if(!ref){
+        ['rmIndiceValor', 'rmTotal', 'rmSem', 'rmVar'].forEach(id => { $(id).textContent = '—'; });
+        ['rmIndiceSub', 'rmTotalSub', 'rmVarSub'].forEach(id => { $(id).textContent = 'Mês futuro'; });
+        $('rmSemLista').innerHTML = ''; $('rmPrevia').hidden = true; $('rmAnel').style.strokeDashoffset = '213.63';
+        return;
+      }
+      const atual = indice(ref, A, setores), anterior = indice(somaDias(ref, -JANELA), A, setores);
       $('rmIndiceValor').textContent = atual.pct + '%';
       $('rmAnel').style.strokeDashoffset = (213.63 * (1 - atual.pct / 100)).toFixed(2);
-      $('rmIndiceSub').textContent = `${atual.cobertos.size} de ${SETORES.length} setores · ${dataBR(atual.ini).slice(0, 5)} a ${dataBR(h).slice(0, 5)}`;
+      $('rmIndiceSub').textContent = `${atual.cobertos.size} de ${setores.length} setores · ${diaMes(atual.ini)} a ${diaMes(ref)}`;
       const previa = $('rmPrevia');
       if(pendentes.size){
-        const p = indice(h, efetivo()).pct;
+        const p = indice(ref, doTipo(efetivo()), setores).pct;
         previa.textContent = `Prévia após salvar: ${p}%`;
         previa.hidden = p === atual.pct;
       } else previa.hidden = true;
 
       $('rmTotal').textContent = atual.total;
-      $('rmTotalSub').textContent = `${atual.total === 1 ? 'flag registrada' : 'flags registradas'} nos últimos ${JANELA} dias`;
+      $('rmTotalSub').textContent = `${atual.total === 1 ? 'flag registrada' : 'flags registradas'} de ${diaMes(atual.ini)} a ${diaMes(ref)}`;
 
-      const sem = SETORES.filter(s => !atual.cobertos.has(s));
+      const sem = setores.filter(s => !atual.cobertos.has(s));
       $('rmSem').textContent = sem.length;
-      $('rmSemLista').innerHTML = sem.length
+      $('rmSemLista').innerHTML = !setores.length ? '' : sem.length
         ? sem.slice(0, 4).map(s => `<span class="rm-chip">${esc(s)}</span>`).join('') + (sem.length > 4 ? `<span class="rm-chip">+${sem.length - 4}</span>` : '')
         : '<span class="rm-chip ok">Todos os setores atendidos</span>';
 
@@ -19060,9 +19136,6 @@ ${quadro}
     }
 
     function renderToolbar(){
-      const rot = mesRef.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-      $('rmMesRot').textContent = rot.charAt(0).toUpperCase() + rot.slice(1);
-      $('rmMesProx').disabled = mesRef >= mesAtual();     // dias futuros não recebem flag
       const n = pendentes.size, pend = $('rmPend');
       pend.hidden = !n;
       pend.textContent = n === 1 ? '1 alteração pendente' : `${n} alterações pendentes`;
@@ -19071,20 +19144,29 @@ ${quadro}
       $('rmSalvarTxt').textContent = salvando ? 'Salvando...' : 'Salvar alterações';
     }
 
+    // Calendário: só os dias do mês até a data de referência (hoje no mês atual).
     function renderGrade(){
-      const ano = mesRef.getFullYear(), mes = mesRef.getMonth(), nDias = new Date(ano, mes + 1, 0).getDate();
-      const h = hoje(), iniJan = somaDias(h, -(JANELA - 1)), ef = efetivo();
+      const ref = dataRef(), setores = setoresVis();
+      $('rmGradeTit').textContent = 'Roadmap · ' + nomeMes();
+      $('rmGradeSub').textContent = ref ? `Clique na caixa do setor no dia da interação · dias até ${dataBR(ref)}` : 'Mês futuro: ainda não há dias para registrar.';
+      if(!ref || !setores.length){
+        const busca = fBusca.value.trim();
+        grade.innerHTML = `<tbody><tr><td class="rm-vazio">${!ref ? 'Escolha o mês atual ou um mês anterior.' : esc(busca ? `Nenhum setor com “${busca}”.` : 'Nenhum setor no filtro.')}</td></tr></tbody>`;
+        return;
+      }
+      const ano = anoSel(), mes = mesSel(), nDias = Number(ref.slice(8)), h = hoje();
+      const iniJan = somaDias(ref, -(JANELA - 1)), ef = efetivo(), A = doTipo(registros);
       const dias = [];
       for(let d = 1; d <= nDias; d++){
         const dt = new Date(ano, mes, d), s = iso(dt), sem = dt.getDay();
-        dias.push({ s, d, letra: 'DSTQQSS'[sem], fds: sem === 0 || sem === 6, futuro: s > h, hoje: s === h, janela: s >= iniJan && s <= h });
+        dias.push({ s, d, letra: 'DSTQQSS'[sem], fds: sem === 0 || sem === 6, hoje: s === h, janela: s >= iniJan && s <= ref });
       }
       const colCls = x => [x.fds && 'fds', x.janela && 'janela', x.hoje && 'hoje'].filter(Boolean).join(' ');
       const porDia = dias.map(() => 0);
 
       let corpo = '';
-      SETORES.forEach(setor => {
-        const ult = ultimaInteracao(setor), st = situacao(ult ? difDias(h, ult) : null);
+      setores.forEach(setor => {
+        const ult = ultimaInteracao(setor, A, ref), st = situacao(ult ? difDias(ref, ult) : null);
         let noMes = 0;
         corpo += `<tr><th scope="row" class="rm-col-setor"><span class="rm-st-dot ${st.cls}" title="${st.rotulo}${ult ? ' · última em ' + dataBR(ult) : ''}"></span>${esc(setor)}</th>`;
         dias.forEach((x, i) => {
@@ -19092,7 +19174,8 @@ ${quadro}
           const cls = ['rm-cel'];
           let letra = '', titulo = `${setor} · ${dataBR(x.s)}`;
           if(r){
-            noMes++; porDia[i]++;
+            const conta = !fTipo.value || r.tipo === fTipo.value;
+            if(conta){ noMes++; porDia[i]++; } else cls.push('fora-filtro');
             cls.push('t-' + r.tipo);
             letra = (TIPOS[r.tipo] || {}).letra || '•';
             titulo += ` · ${(TIPOS[r.tipo] || {}).rotulo || 'Interação'}`;
@@ -19103,8 +19186,8 @@ ${quadro}
             cls.push('pend-del');
             letra = (TIPOS[orig.tipo] || {}).letra || '•';
             titulo += ' · remoção pendente (clique em Salvar)';
-          } else if(x.futuro) titulo += ' · data futura';
-          corpo += `<td class="${colCls(x)}"><button type="button" class="${cls.join(' ')}" data-k="${esc(k)}"${x.futuro ? ' disabled' : ''} aria-pressed="${!!r}" title="${esc(titulo)}">${letra}</button></td>`;
+          }
+          corpo += `<td class="${colCls(x)}"><button type="button" class="${cls.join(' ')}" data-k="${esc(k)}" aria-pressed="${!!r}" title="${esc(titulo)}">${letra}</button></td>`;
         });
         corpo += `<td class="rm-col-total">${noMes}</td></tr>`;
       });
@@ -19113,75 +19196,102 @@ ${quadro}
         + dias.map(x => `<th scope="col" class="${colCls(x)}" title="${dataBR(x.s)}"><span class="rm-dia-sem">${x.letra}</span><span class="rm-dia-num">${x.d}</span></th>`).join('')
         + '<th scope="col" class="rm-col-total" title="Interações do setor no mês">Mês</th></tr></thead>';
       const rodape = '<tfoot><tr><th scope="row" class="rm-col-setor">Setores no dia</th>'
-        + dias.map((x, i) => `<td class="${colCls(x)}">${x.futuro ? '' : porDia[i] || '·'}</td>`).join('')
+        + dias.map((x, i) => `<td class="${colCls(x)}">${porDia[i] || '·'}</td>`).join('')
         + `<td class="rm-col-total">${porDia.reduce((a, b) => a + b, 0)}</td></tr></tfoot>`;
       grade.innerHTML = cab + '<tbody>' + corpo + '</tbody>' + rodape;
       grade.classList.toggle('carregando', carregando);
     }
 
-    // Barra com topo arredondado, apoiada na linha de base.
-    const barraPath = (x, y, w, alt, r) => `M${x},${y + alt}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + alt}Z`;
-    function renderEvolucao(){
-      const ano = mesRef.getFullYear(), mes = mesRef.getMonth(), n = new Date(ano, mes + 1, 0).getDate(), h = hoje();
-      const W = 640, H = 190, pl = 36, pr = 8, pt = 12, pb = 24, cw = (W - pl - pr) / n, ch = H - pt - pb;
-      const y = v => pt + ch - v / 100 * ch;
-      const diaHoje = h.slice(0, 7) === iso(mesRef).slice(0, 7) ? Number(h.slice(8)) : null;
-      let s = '';
-      [0, 50, 100].forEach(v => {
-        s += `<line class="grade-l" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"></line><text class="eixo-t" x="${pl - 6}" y="${y(v) + 3}" text-anchor="end">${v}%</text>`;
-      });
-      pontos = [];
-      const bw = Math.max(4, Math.min(14, cw - 2));
-      for(let d = 1; d <= n; d++){
-        const ds = iso(new Date(ano, mes, d)), cx = pl + cw * (d - 0.5), p = { ds, cx };
-        if(ds <= h){
-          const r = indice(ds, registros);
-          p.pct = r.pct; p.n = r.cobertos.size;
-          const alt = r.pct / 100 * ch;
-          if(alt > 0) s += `<path class="barra${ds === h ? ' hoje' : ''}" data-i="${d - 1}" d="${barraPath(cx - bw / 2, pt + ch - alt, bw, alt, Math.min(4, bw / 2, alt))}"></path>`;
-        }
-        pontos.push(p);
-        const ehHoje = d === diaHoje;
-        if(ehHoje || ((d === 1 || d % 5 === 0) && (diaHoje == null || Math.abs(d - diaHoje) > 1))){
-          s += `<text class="eixo-t${ehHoje ? ' hoje' : ''}" x="${cx}" y="${H - 6}" text-anchor="middle">${ehHoje ? 'hoje' : d}</text>`;
-        }
-      }
-      // Alvos de hover: a faixa inteira do dia, maior que a barra.
-      s += pontos.map((p, i) => p.pct == null ? '' : `<rect class="alvo" data-i="${i}" x="${p.cx - cw / 2}" y="${pt}" width="${cw}" height="${ch}" fill="transparent"></rect>`).join('');
-      evolSvg.innerHTML = s;
-      tip.hidden = true;
-    }
-    function mostrarTip(i){
-      const p = pontos[i], wrap = $('rmEvol');
-      evolSvg.querySelectorAll('.barra.ativa').forEach(b => b.classList.remove('ativa'));
-      if(!p || p.pct == null){ tip.hidden = true; return; }
-      const barra = evolSvg.querySelector(`.barra[data-i="${i}"]`);
-      if(barra) barra.classList.add('ativa');
-      const rs = evolSvg.getBoundingClientRect(), rw = wrap.getBoundingClientRect(), k = rs.width / 640;
-      const topo = 12 + (190 - 12 - 24) * (1 - p.pct / 100);
-      tip.textContent = `${dataBR(p.ds)} · ${p.pct}% (${p.n} de ${SETORES.length} setores)`;
-      tip.style.left = (rs.left - rw.left + p.cx * k) + 'px';
-      tip.style.top = (rs.top - rw.top + topo * k) + 'px';
-      tip.hidden = false;
-    }
-
     function renderRadar(){
-      const h = hoje();
-      const itens = SETORES.map(setor => { const u = ultimaInteracao(setor); return { setor, u, dd: u ? difDias(h, u) : null }; })
+      const ref = dataRef(), A = doTipo(registros);
+      if(!ref){ radar.innerHTML = '<li><span class="rm-radar-ult">Mês futuro.</span></li>'; return; }
+      const itens = setoresVis().map(setor => { const u = ultimaInteracao(setor, A, ref); return { setor, u, dd: u ? difDias(ref, u) : null }; })
         .sort((a, b) => (b.dd == null ? 1e9 : b.dd) - (a.dd == null ? 1e9 : a.dd) || a.setor.localeCompare(b.setor, 'pt-BR'));
       radar.innerHTML = itens.map(it => {
         const st = situacao(it.dd);
-        return `<li><span class="rm-badge ${st.cls}">${ICO[st.cls]}${st.rotulo}</span><span class="rm-radar-nome">${esc(it.setor)}</span>`
+        return `<li><span class="rm-radar-nome" title="${esc(it.setor)}">${esc(it.setor)}</span><span class="rm-badge ${st.cls}">${ICO[st.cls]}${st.rotulo}</span>`
           + `<span class="rm-radar-ult">${it.u ? `${dataBR(it.u)} · ${haQuanto(it.dd)}` : `sem registro em ${HISTORICO} dias`}</span></li>`;
-      }).join('');
+      }).join('') || '<li><span class="rm-radar-ult">Nenhum setor no filtro.</span></li>';
+    }
+
+    // Gráfico: evolução diária do índice — período escolhido x anterior (Mês: mês x mês anterior, dia a dia;
+    // Semana: 7 dias até a referência x os 7 anteriores). Mais recente em azul, anterior em azul claro (padrão da Inadimplência).
+    let ultimoGrafico = null;
+    function renderGrafico(){
+      if(visao !== 'grafico') return;
+      const G = window.__cdGrafico;
+      const ref = dataRef(), setores = setoresVis(), A = doTipo(registros);
+      const titulo = 'Evolução do índice de interação';
+      const seg = `<div class="stk-segmented" id="rmEscala" role="tablist" aria-label="Eixo de dias">`
+        + [['semana', 'Semana'], ['mes', 'Mês']].map(([v, r]) => `<button type="button" class="stk-seg-btn${escala === v ? ' active' : ''}" data-escala="${v}" role="tab" aria-selected="${escala === v}">${r}</button>`).join('')
+        + '</div>';
+      if(!G){ grafEl.innerHTML = '<div class="stk-vazio">Gráfico indisponível: o módulo do Dashboard não foi carregado.</div>'; return; }
+      if(!ref || !setores.length){
+        grafEl.innerHTML = G.card(titulo, nomeMes(), `<div class="stk-vazio">${!ref ? 'Mês futuro: escolha o mês atual ou um anterior.' : 'Nenhum setor no filtro.'}</div>`, `<div class="rm-graf-acoes">${seg}</div>`);
+        ultimoGrafico = null;
+        return;
+      }
+      let categorias, dias, diasAnt, nomes, dica;
+      if(escala === 'mes'){
+        const ano = anoSel(), mes = mesSel(), n = new Date(ano, mes + 1, 0).getDate();
+        const pa = new Date(ano, mes - 1, 1), nAnt = new Date(pa.getFullYear(), pa.getMonth() + 1, 0).getDate();
+        dias = Array.from({ length: n }, (_, i) => iso(new Date(ano, mes, i + 1)));
+        diasAnt = dias.map((_, i) => i < nAnt ? iso(new Date(pa.getFullYear(), pa.getMonth(), i + 1)) : null);
+        categorias = dias.map(s => s.slice(8));          // só o dia no eixo (31 rótulos "01/10" se sobrepunham)
+        nomes = [`${MESES[pa.getMonth()]}/${String(pa.getFullYear()).slice(2)}`, `${MESES[mes]}/${String(ano).slice(2)}`];
+        dica = i => diasAnt[i] ? diaMes(diasAnt[i]) : '';
+      } else {
+        dias = Array.from({ length: 7 }, (_, i) => somaDias(ref, i - 6));
+        diasAnt = dias.map(s => somaDias(s, -7));
+        categorias = dias.map(s => `${DIA_SEM[deIso(s).getDay()]} ${diaMes(s)}`);
+        nomes = ['Semana anterior', 'Semana atual'];
+        dica = i => diaMes(diasAnt[i]);
+      }
+      const atual = dias.map(s => s <= ref ? indice(s, A, setores).pct : null);
+      const anterior = diasAnt.map(s => s ? indice(s, A, setores).pct : null);
+      const series = [
+        { nome: nomes[0], cor: G.cor.azulClaro, valores: anterior },
+        { nome: nomes[1], cor: G.cor.azul, valores: atual }
+      ];
+
+      // Análise: média de cada período e, no último dia com dado, a variação contra o mesmo dia do anterior (p.p.).
+      const media = v => { const x = v.filter(n => n != null); return x.length ? Math.round(x.reduce((a, b) => a + b, 0) / x.length) : null; };
+      const pp = d => (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d) + ' p.p.';
+      let iU = atual.length - 1; while(iU > 0 && atual[iU] == null) iU--;
+      const partes = [`média ${series.map(s => `${s.nome} ${media(s.valores) ?? '—'}%`).join(', ')}`];
+      if(atual[iU] != null && anterior[iU] != null) partes.push(`${diaMes(dias[iU])} x ${dica(iU)}: ${pp(atual[iU] - anterior[iU])}`);
+      const filtro = [fSetor.value || (fBusca.value.trim() ? `${setores.length} setor(es)` : `${setores.length} setores`), fTipo.value ? TIPOS[fTipo.value].rotulo : ''].filter(Boolean).join(' · ');
+      const sub = `% dos setores com interação nos ${JANELA} dias até cada dia · ${filtro} · ${partes.join(' · ')}`;
+      const legenda = `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      grafEl.innerHTML = G.card(titulo, sub, '<div id="rmGrafLinhas"></div>', `<div class="rm-graf-acoes">${legenda}${seg}</div>`);
+
+      // Tooltip: período mais recente primeiro (cada um com a sua data) e a variação contra o anterior
+      // (verde se subiu, vermelho se caiu).
+      const dicaVar = (i, linhas) => {
+        const datas = [diaMes(dias[i]), dica(i)];
+        const out = linhas.slice().reverse().map((l, k) => datas[k] ? { ...l, rotulo: `${l.rotulo} (${datas[k]})` } : l);
+        if(atual[i] == null || anterior[i] == null) return out;
+        const d = atual[i] - anterior[i];
+        return out.concat([{ valor: pp(d), rotulo: 'variação', corValor: d > 0 ? '#4ADE80' : d < 0 ? '#F87171' : '' }]);
+      };
+      const el = $('rmGrafLinhas');
+      G.linhas(el, categorias, series, 360, v => v + '%', null, false, dicaVar);
+      ultimoGrafico = { dias, diasAnt, atual, anterior, nomes };
     }
 
     function render(){
       renderToolbar();
       renderKpis();
-      renderGrade();
-      renderEvolucao();
-      renderRadar();
+      if(visao === 'roadmap'){ renderGrade(); renderRadar(); }
+      else renderGrafico();
+    }
+
+    function mudarVisao(v){
+      visao = v;
+      $('rmVisao').querySelectorAll('.stk-seg-btn').forEach(b => { const on = b.dataset.visao === v; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+      $('rmVisaoRoadmap').hidden = v !== 'roadmap';
+      grafEl.hidden = v !== 'grafico';
+      render();
     }
 
     // ---------- Salvar ----------
@@ -19219,15 +19329,38 @@ ${quadro}
         pendentes.clear();
         salvando = false;
         await carregar();
-        const pct = indice(hoje(), registros).pct, kpi = $('rmKpiIndice');
+        const ref = dataRef(), kpi = $('rmKpiIndice');
         kpi.classList.remove('pulso'); void kpi.offsetWidth; kpi.classList.add('pulso');
-        msg(`Alterações salvas. Índice de interação atual: ${pct}%.` + aviso, !!aviso);
+        msg(`Alterações salvas. Índice de interação atual: ${ref ? indice(ref, doTipo(registros), setoresVis()).pct : 0}%.` + aviso, !!aviso);
       } catch(e){
         console.error('Roadmap: erro ao salvar', e);
         msg('Não foi possível salvar: ' + (e.message || e), true);
       } finally {
         salvando = false; renderToolbar();
       }
+    }
+
+    // ---------- Exportar (CSV) ----------
+    function exportar(){
+      const csv = v => { const s = String(v == null ? '' : v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+      let linhas, arquivo;
+      if(visao === 'grafico' && ultimoGrafico){
+        const G = ultimoGrafico;
+        linhas = [['Dia', `Índice ${G.nomes[1]} (%)`, 'Dia comparado', `Índice ${G.nomes[0]} (%)`]]
+          .concat(G.dias.map((s, i) => [dataBR(s), G.atual[i] ?? '', G.diasAnt[i] ? dataBR(G.diasAnt[i]) : '', G.anterior[i] ?? '']));
+        arquivo = `roadmap_indice_${escala}_${iniMes().slice(0, 7)}.csv`;
+      } else {
+        const alvo = new Set(setoresVis()), ini = iniMes(), fim = dataRef() || fimMes();
+        const lista = [...doTipo(registros).values()].filter(r => alvo.has(r.setor) && r.data >= ini && r.data <= fim)
+          .sort((a, b) => a.data.localeCompare(b.data) || a.setor.localeCompare(b.setor, 'pt-BR'));
+        linhas = [['Data', 'Setor', 'Tipo', 'Registrado por']].concat(lista.map(r => [dataBR(r.data), r.setor, (TIPOS[r.tipo] || {}).rotulo || r.tipo, r.criado_por || '']));
+        arquivo = `roadmap_interacoes_${ini.slice(0, 7)}.csv`;
+      }
+      const blob = new Blob(['﻿' + linhas.map(l => l.map(csv).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = arquivo;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
 
     // ---------- Eventos ----------
@@ -19251,13 +19384,25 @@ ${quadro}
       tipoAtual = b.dataset.tipo;
       $('rmTipos').querySelectorAll('.rm-tipo').forEach(t => { const on = t === b; t.classList.toggle('active', on); t.setAttribute('aria-checked', String(on)); });
     });
-    $('rmMesAnt').addEventListener('click', () => { mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth() - 1, 1); carregar(); });
-    $('rmMesProx').addEventListener('click', () => { if(mesRef < mesAtual()){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth() + 1, 1); carregar(); } });
-    $('rmHoje').addEventListener('click', () => { mesRef = mesAtual(); carregar(); });
+    $('rmVisao').addEventListener('click', ev => { const b = ev.target.closest('.stk-seg-btn'); if(b && b.dataset.visao !== visao) mudarVisao(b.dataset.visao); });
+    grafEl.addEventListener('click', ev => {
+      const b = ev.target.closest('.stk-seg-btn[data-escala]');
+      if(b && b.dataset.escala !== escala){ escala = b.dataset.escala; renderGrafico(); }
+    });
+    fBusca.addEventListener('input', render);
+    fSetor.addEventListener('change', render);
+    fTipo.addEventListener('change', render);
+    fMes.addEventListener('change', carregar);
+    fAno.addEventListener('change', carregar);
+    $('rmLimpar').addEventListener('click', () => { filtrosPadrao(); carregar(); });
+    $('rmExportar').addEventListener('click', exportar);
     btnSalvar.addEventListener('click', salvar);
     btnDescartar.addEventListener('click', () => { pendentes.clear(); msg(''); render(); });
-    evolSvg.addEventListener('mousemove', ev => { const a = ev.target.closest('.alvo'); if(a) mostrarTip(Number(a.dataset.i)); });
-    evolSvg.addEventListener('mouseleave', () => { tip.hidden = true; evolSvg.querySelectorAll('.barra.ativa').forEach(b => b.classList.remove('ativa')); });
+    let redim = null;
+    window.addEventListener('resize', () => {
+      if(visao !== 'grafico' || !page.classList.contains('active')) return;
+      clearTimeout(redim); redim = setTimeout(renderGrafico, 150);
+    });
     window.addEventListener('beforeunload', ev => { if(pendentes.size){ ev.preventDefault(); ev.returnValue = ''; } });
     document.addEventListener('cdload:pagechange', ev => { if(ev.detail.page === 'roadmap') carregar(); });
 
