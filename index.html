@@ -267,6 +267,31 @@
   .wa-restrito-tit{font-size:28px;font-weight:800;line-height:1.2;}
   .wa-restrito-sub{font-size:18px;font-weight:500;color:#334155;}
   .wa-restrito-msg{padding:18px 20px;border-radius:16px;font-size:20px;font-weight:700;line-height:1.35;text-align:center;}
+  .wa-restrito-digitar{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:64px;padding:14px 18px;
+    border:2px solid #CBD5E1;border-radius:18px;background:#fff;color:#0F172A;font-family:inherit;font-size:19px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .wa-restrito-digitar svg{width:28px;height:28px;stroke:#0056D2;stroke-width:2;flex:0 0 auto;}
+  .wa-restrito-digitar strong{color:#0056D2;}
+  .wa-restrito-digitar[aria-expanded="true"]{border-color:#0056D2;background:#EFF6FF;}
+  .wa-restrito-busca{display:flex;flex-direction:column;gap:12px;}
+  .wa-restrito-busca[hidden]{display:none !important;}
+  .wa-restrito-busca-tit{font-size:18px;font-weight:700;color:#0F172A;}
+  .wa-restrito-busca-campo{display:flex;align-items:center;gap:10px;padding:0 16px;border:3px solid #0056D2;border-radius:16px;background:#fff;}
+  .wa-restrito-busca-campo svg{width:26px;height:26px;stroke:#64748B;stroke-width:2;flex:0 0 auto;}
+  .wa-restrito-busca-campo input{flex:1 1 auto;min-width:0;border:0;outline:none;background:transparent;font-family:inherit;font-size:22px;min-height:62px;color:#0F172A;}
+  .wa-restrito-sug{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .wa-restrito-sug-item{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:12px 16px;border:2px solid #E2E8F0;border-radius:16px;
+    background:#fff;font-family:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .wa-restrito-sug-item:active, .wa-restrito-sug-item:focus-visible{border-color:#0056D2;background:#EFF6FF;outline:none;}
+  .wa-restrito-sug-item.primeiro{border-color:#93C5FD;}
+  .wa-restrito-sug-ic{width:44px;height:44px;border-radius:12px;background:#EFF6FF;color:#0056D2;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .wa-restrito-sug-ic svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;}
+  .wa-restrito-sug-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto;}
+  .wa-restrito-sug-nome{font-size:19px;font-weight:700;color:#0F172A;line-height:1.25;}
+  .wa-restrito-sug-nome mark{background:#FEF08A;color:inherit;border-radius:3px;padding:0 1px;}
+  .wa-restrito-sug-meta{font-size:15px;color:#475569;}
+  .wa-restrito-sug-meta .sem{color:#B91C1C;font-weight:700;}
+  .wa-restrito-sug-seta{font-size:26px;color:#0056D2;flex:0 0 auto;}
+  .wa-restrito-sug-vazio{padding:16px;border-radius:16px;background:#F8FAFC;border:2px dashed #CBD5E1;font-size:17px;color:#334155;text-align:center;}
   .wa-restrito-msg.ok{background:#DCFCE7;color:#166534;border:2px solid #86EFAC;}
   .wa-restrito-msg.err, .wa-restrito-msg.warn{background:#FEE2E2;color:#991B1B;border:2px solid #FCA5A5;}
   /* Modal de saída do restrito: só o essencial e letras grandes. */
@@ -4831,6 +4856,19 @@
             <span class="wa-restrito-sub">Aponte a câmera para o código de barras</span>
           </button>
           <div class="wa-restrito-msg" id="waRestritoMsg" role="status" aria-live="polite" hidden></div>
+          <!-- Sem leitura: digita o nome (ou o código) e toca no produto sugerido; abre a mesma saída da leitura. -->
+          <button type="button" class="wa-restrito-digitar" id="waRestritoDigitarBtn" aria-expanded="false" aria-controls="waRestritoBusca">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path></svg>
+            <span>Não conseguiu ler? <strong>Digite o produto</strong></span>
+          </button>
+          <div class="wa-restrito-busca" id="waRestritoBusca" hidden>
+            <label for="waRestritoInput" class="wa-restrito-busca-tit">Digite o nome ou o código do produto</label>
+            <div class="wa-restrito-busca-campo">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="search" id="waRestritoInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ex.: papel, café, copo..." enterkeyhint="search">
+            </div>
+            <ul class="wa-restrito-sug" id="waRestritoSug" role="listbox" aria-label="Produtos encontrados"></ul>
+          </div>
         </div>
 
         <div class="wa-supabase-banner" id="waStockSupabaseBanner" hidden>
@@ -17812,6 +17850,8 @@ ${clipPlayerPills(n)}
       if(restrito){
         scanMode = 'saida';
         document.getElementById('waRestritoMsg').hidden = true;
+        document.getElementById('waRestritoBusca').hidden = true;
+        document.getElementById('waRestritoDigitarBtn').setAttribute('aria-expanded', 'false');
         const desc = document.getElementById('headerDesc');
         if(desc) desc.textContent = 'Leia o produto para registrar a saída.';
       }
@@ -17821,6 +17861,64 @@ ${clipPlayerPills(n)}
       document.getElementById('waRestritoMsg').hidden = true;
       openCameraScanner(handleScannedCode, 'Aponte a câmera para o código de barras do produto');
     });
+
+    // Sem leitura: "Digite o produto" abre a busca; a cada letra aparecem até 6 produtos ativos (nome ou código,
+    // sem acento, todas as palavras). Tocar num produto (ou Enter no primeiro) abre a mesma saída da leitura.
+    const waRestritoDigitarBtn = document.getElementById('waRestritoDigitarBtn');
+    const waRestritoBusca = document.getElementById('waRestritoBusca');
+    const waRestritoInput = document.getElementById('waRestritoInput');
+    const waRestritoSug = document.getElementById('waRestritoSug');
+    const RESTRITO_IC_PRODUTO = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>';
+    const restritoNorm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    let restritoAchados = [];
+    function restritoBuscaAbrir(abrir){
+      waRestritoBusca.hidden = !abrir;
+      waRestritoDigitarBtn.setAttribute('aria-expanded', String(abrir));
+      if(!abrir) return;
+      document.getElementById('waRestritoMsg').hidden = true;
+      waRestritoInput.value = '';
+      restritoSugerir();
+      setTimeout(() => { waRestritoInput.focus(); waRestritoBusca.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    }
+    function restritoSugerir(){
+      const q = waRestritoInput.value.trim(), termos = restritoNorm(q).split(/\s+/).filter(Boolean);
+      if(!termos.length){
+        restritoAchados = [];
+        waRestritoSug.innerHTML = '<li class="wa-restrito-sug-vazio">Comece a digitar: os produtos aparecem aqui embaixo.</li>';
+        return;
+      }
+      const marcar = nome => { let h = stockEsc(nome);
+        termos.forEach(t => { const i = restritoNorm(nome).indexOf(t); if(i >= 0 && t.length > 1) h = h.replace(stockEsc(nome.slice(i, i + t.length)), m => `<mark>${m}</mark>`); });
+        return h; };
+      restritoAchados = stockProducts.filter(p => p.ativo)
+        .map(p => { const nome = restritoNorm(p.nome), cod = String(p.codigo_barras || '');
+          if(!termos.every(t => nome.includes(t) || cod.includes(t))) return null;
+          // Ordem: nome que começa com o que foi digitado, depois palavra que começa, depois o resto; empate por nome.
+          const r = nome.startsWith(termos[0]) ? 0 : nome.split(/\s+/).some(w => w.startsWith(termos[0])) ? 1 : 2;
+          return { p, r }; })
+        .filter(Boolean).sort((a, b) => a.r - b.r || a.p.nome.localeCompare(b.p.nome, 'pt-BR')).slice(0, 6).map(x => x.p);
+      waRestritoSug.innerHTML = restritoAchados.length ? restritoAchados.map((p, i) => {
+          const saldo = saldoOf(p.id, STOCK_SETOR_TODOS);
+          return `<li><button type="button" class="wa-restrito-sug-item${i ? '' : ' primeiro'}" data-restrito-prod="${stockEsc(p.id)}" role="option">
+            <span class="wa-restrito-sug-ic">${RESTRITO_IC_PRODUTO}</span>
+            <span class="wa-restrito-sug-txt"><span class="wa-restrito-sug-nome">${marcar(p.nome)}</span>
+              <span class="wa-restrito-sug-meta">Cód. ${stockEsc(p.codigo_barras || '—')} · ${saldo > 0 ? `saldo ${fmtQty(saldo)} ${stockEsc(p.unidade || '')}` : '<span class="sem">sem saldo</span>'}</span></span>
+            <span class="wa-restrito-sug-seta" aria-hidden="true">›</span></button></li>`; }).join('')
+        : `<li class="wa-restrito-sug-vazio">Nenhum produto com “${stockEsc(q)}”. Confira o nome ou avise o responsável pelo estoque.</li>`;
+    }
+    function restritoEscolher(id){
+      const p = stockProducts.find(x => x.id === id);
+      if(!p) return;
+      restritoBuscaAbrir(false);
+      waOpenMovModal(p.id, 'saida');   // a mesma tela da leitura do código de barras
+    }
+    waRestritoDigitarBtn.addEventListener('click', () => restritoBuscaAbrir(waRestritoBusca.hidden));
+    waRestritoInput.addEventListener('input', restritoSugerir);
+    waRestritoInput.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && restritoAchados.length){ e.preventDefault(); restritoEscolher(restritoAchados[0].id); }
+      if(e.key === 'Escape') restritoBuscaAbrir(false);
+    });
+    waRestritoSug.addEventListener('click', e => { const b = e.target.closest('[data-restrito-prod]'); if(b) restritoEscolher(b.dataset.restritoProd); });
 
     // ---------------- Integração com a navegação ----------------
     document.addEventListener('cdload:pagechange', (e) => {
