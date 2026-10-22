@@ -1570,6 +1570,7 @@
   .cd-kpi.vermelho{--cd-ac:var(--cd-verm);--cd-ac-bg:var(--cd-verm-bg);}
   .cd-kpi.amarelo{--cd-ac:#E3AE1F;--cd-ac-bg:#FCF3D9;}
   /* Intenção de Compra: uma cor por data comemorativa (cards do topo e ícones da lista Datas) */
+  #waStockTransferBtn[hidden], #waStockHubGrid .wa-category-card[hidden], #waMovTipoGroup .wa-toggle-chip[hidden]{display:none !important;}
   .cd-kpi.rosa{--cd-ac:#DB2777;--cd-ac-bg:#FCE7F3;}
   .cd-kpi.roxo{--cd-ac:#7C3AED;--cd-ac-bg:#EDE9FE;}
   .cd-kpi.laranja{--cd-ac:#EA580C;--cd-ac-bg:#FFEDD5;}
@@ -4909,7 +4910,7 @@
             </div>
             <div>
               <div class="wa-topcard-title">Controle de Estoque</div>
-              <div class="wa-topcard-sub">Compras abastecem os estoques centrais (Escritório e Almoxarifado) — cada saída informa o setor que consome o produto.</div>
+              <div class="wa-topcard-sub">Compras abastecem o Almoxarifado — cada saída informa o setor que consome o produto.</div>
             </div>
           </div>
           <div class="wa-stock-actions" id="waStockActions">
@@ -4923,7 +4924,7 @@
               <span class="wa-stock-action-label">Saída</span>
               <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
             </button>
-            <button class="wa-btn wa-btn-outline" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre Escritório e Almoxarifado">
+            <button class="wa-btn wa-btn-outline" id="waStockTransferBtn" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre estoques centrais" hidden>
               <svg class="wa-stock-action-icon wa-stock-action-icon-always" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               <span class="wa-stock-action-label">Transferência</span>
             </button>
@@ -5066,17 +5067,17 @@
                 <div class="wa-category-card" data-acao="entrada">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
                   <h4>Entrada</h4>
-                  <p>Compra que abastece o Escritório ou o Almoxarifado.</p>
+                  <p>Compra que abastece o Almoxarifado.</p>
                 </div>
                 <div class="wa-category-card" data-acao="saida">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
                   <h4>Saída</h4>
                   <p>Retirada da central, informando o setor que consome.</p>
                 </div>
-                <div class="wa-category-card" data-acao="transferencia">
+                <div class="wa-category-card" data-acao="transferencia" hidden>
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
                   <h4>Transferência</h4>
-                  <p>Move o saldo entre Escritório e Almoxarifado.</p>
+                  <p>Move o saldo entre os estoques centrais.</p>
                 </div>
                 <div class="wa-category-card" data-acao="produto">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg></div>
@@ -9813,16 +9814,22 @@ ${clipPlayerPills(n)}
 
     // ---------------- Estoque (produtos · origem / entradas / saídas) ----------------
     // Produto é global — cadastro em `cadastro_de_produtos` não tem setor,
-    // só código de barras (único no catálogo), nome e estoque_minimo (um
-    // total único, somando os dois estoques centrais). O estoque só existe
-    // nas centrais (STOCK_SETORES): a compra do mês entra no Escritório ou
-    // no Almoxarifado (`setor` do lançamento) e toda saída é uma retirada
-    // de uma delas, informando em `setor_consumo` o setor que consome o
-    // produto — é o que mapeia os setores que mais demandam. O saldo por
-    // produto + central vem da view `vw_estoque_saldo`. Transferência
-    // (`transferencia` = true) só move saldo entre as duas centrais: não
-    // é compra nem consumo.
-    const STOCK_SETORES = ['Escritório', 'Almoxarifado'];
+    // só código de barras (único no catálogo), nome e estoque_minimo. O
+    // estoque só existe nas centrais (STOCK_SETORES) — hoje uma só, o
+    // Almoxarifado (o Escritório foi extinto: lançamentos antigos dele são
+    // lidos como Almoxarifado, ver stockCentral). A compra entra no
+    // Almoxarifado (`setor` do lançamento) e toda saída é uma retirada dele,
+    // informando em `setor_consumo` o setor que consome o produto — é o que
+    // mapeia os setores que mais demandam. O saldo por produto + central vem
+    // da view `vw_estoque_saldo`. Transferência (`transferencia` = true) só
+    // move saldo entre centrais e só aparece com mais de uma central.
+    const STOCK_SETORES = ['Almoxarifado'];
+    const STOCK_CENTRAIS_EXTINTAS = { 'Escritório': 'Almoxarifado' };
+    const stockCentral = s => STOCK_CENTRAIS_EXTINTAS[s] || s;
+    const stockTemTransferencia = () => STOCK_SETORES.length > 1;
+    // Com uma central só, Transferência some da barra, da central de operações e do modal (volta com 2+ centrais).
+    document.getElementById('waStockTransferBtn').hidden = !stockTemTransferencia();
+    document.querySelector('#waStockHubGrid [data-acao="transferencia"]').hidden = !stockTemTransferencia();
     // "Por enquanto" — para incluir/renomear, basta editar esta lista (o banco não trava os nomes).
     const STOCK_SETORES_CONSUMO = ['Térreo', '1º Piso', '2º Piso', 'Espaço CDL', 'Administrativo', 'Financeiro', 'Certificado', 'Comercial', 'Diretoria', 'Recepção', 'RH', 'Jurídico'];
     // Saídas antigas (antes do setor de consumo) aparecem com este rótulo nas análises.
@@ -10063,7 +10070,7 @@ ${clipPlayerPills(n)}
       if(!supabaseReady){
         if(!stockFallbackSeeded){
           stockProducts = FALLBACK_PRODUCTS.map(p => ({ ...p, created_at: '2026-09-01T09:00:00' }));
-          stockMovements = FALLBACK_MOVEMENTS.map(m => ({ ...m }));
+          stockMovements = FALLBACK_MOVEMENTS.map(m => ({ ...m, setor: stockCentral(m.setor) }));
           stockFallbackSeeded = true;
         }
         stockUsers = FALLBACK_USERS.map(u => ({ nome: u.nome, email: u.email }));
@@ -10088,9 +10095,10 @@ ${clipPlayerPills(n)}
       stockBalances = new Map();
       (saldoRes.data || []).forEach(r => {
         if(!stockBalances.has(r.produto_id)) stockBalances.set(r.produto_id, new Map());
-        stockBalances.get(r.produto_id).set(r.setor, Number(r.saldo) || 0);
+        const bal = stockBalances.get(r.produto_id), c = stockCentral(r.setor);
+        bal.set(c, (bal.get(c) || 0) + (Number(r.saldo) || 0));   // central extinta soma na que a substituiu
       });
-      stockMovements = (movRes.data || []).map(m => Object.assign({}, m, { quantidade: Number(m.quantidade) || 0 }));
+      stockMovements = (movRes.data || []).map(m => Object.assign({}, m, { setor: stockCentral(m.setor), quantidade: Number(m.quantidade) || 0 }));
       renderStock();
     }
 
@@ -10239,7 +10247,7 @@ ${clipPlayerPills(n)}
         const moveBtns = p.ativo ? `
             <button class="wa-icon-btn" title="Registrar entrada" onclick="waOpenMovModal('${p.id}','entrada')">${ICON_PLUS}</button>
             <button class="wa-icon-btn" title="Registrar saída" onclick="waOpenMovModal('${p.id}','saida')">${ICON_MINUS}</button>
-            <button class="wa-icon-btn" title="Transferência entre Escritório e Almoxarifado" onclick="waOpenMovModal('${p.id}','transferencia')">${ICON_TRANSFER}</button>` : '';
+            ${stockTemTransferencia() ? `<button class="wa-icon-btn" title="Transferência entre estoques centrais" onclick="waOpenMovModal('${p.id}','transferencia')">${ICON_TRANSFER}</button>` : ''}` : '';
         return `
           <tr>
             <td><span class="wa-mono-pill">${stockEsc(p.codigo_barras)}</span></td>
@@ -10729,7 +10737,7 @@ ${clipPlayerPills(n)}
       const wasEditing = !!editingProductId;
       waCloseProductModal();
       await loadStock();
-      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · use Entrada para abastecer o Escritório ou o Almoxarifado.`);
+      showScanFeedback('ok', wasEditing ? `${nome} atualizado.` : `${nome} cadastrado · use Entrada para abastecer o Almoxarifado.`);
     };
 
     window.waDeleteProduct = async function(id){
@@ -10916,7 +10924,7 @@ ${clipPlayerPills(n)}
       }
       const setor = waMovSetor.value;
       if(!setor){
-        waMovSummary.textContent = 'Escolha o estoque central (Escritório ou Almoxarifado).';
+        waMovSummary.textContent = 'Escolha o estoque central (Almoxarifado).';
         waMovSummary.classList.add('over');
         return;
       }
@@ -10978,7 +10986,7 @@ ${clipPlayerPills(n)}
       const travado = !!m && (m.tipo === 'origem' || m.transferencia);
       waMovTitle.textContent = m ? 'Editar Movimentação' : 'Nova Movimentação';
       waMovSaveBtn.textContent = m ? 'Salvar Alterações' : 'Registrar';
-      waMovTipoGroup.querySelector('[data-tipo="transferencia"]').hidden = !!m;
+      waMovTipoGroup.querySelector('[data-tipo="transferencia"]').hidden = !!m || !stockTemTransferencia();
       waMovTipoField.hidden = travado;
       waMovProduto.disabled = travado;
       waMovProduto.nextElementSibling.disabled = travado;
@@ -10994,7 +11002,7 @@ ${clipPlayerPills(n)}
       resetNfCampo();
       waMovSub.textContent = mov
         ? `Ajuste do lançamento de ${fmtDateTimeBR(mov.created_at)}${mov.usuario_email ? ' · ' + (userNameOf(mov.usuario_email) || mov.usuario_email) : ''}.`
-        : 'Entrada abastece uma central; na saída, informe o setor que consome.';
+        : 'Entrada abastece o Almoxarifado; na saída, informe o setor que consome.';
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
@@ -11067,7 +11075,7 @@ ${clipPlayerPills(n)}
         const tipo = m.tipo === 'origem' ? 'origem' : movTipo;
         const setor = waMovSetor.value;
         const consumo = tipo === 'saida' ? waMovConsumo.value : '';
-        if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Escritório ou Almoxarifado).'); return; }
+        if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Almoxarifado).'); return; }
         if(tipo === 'saida' && !STOCK_SETORES_CONSUMO.includes(consumo)){ alert('Informe o setor que vai consumir o produto.'); waMovConsumo.focus(); return; }
         const novo = saldoBase(p.id, setor) + (tipo === 'saida' ? -q : q);
         if(novo < 0){ alert(`Saldo insuficiente em ${setor}: ${p.nome} ficaria com ${fmtQty(novo)} ${p.unidade}.`); return; }
@@ -11275,7 +11283,7 @@ ${clipPlayerPills(n)}
 
       const setor = waMovSetor.value;
       const consumo = movTipo === 'saida' ? waMovConsumo.value : '';
-      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Escritório ou Almoxarifado).'); return; }
+      if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Almoxarifado).'); return; }
       if(movTipo === 'saida' && !STOCK_SETORES_CONSUMO.includes(consumo)){
         alert('Informe o setor que vai consumir o produto.');
         waMovConsumo.focus();
@@ -19123,7 +19131,7 @@ ${quadro}
       x.fillStyle = '#0B2A5B'; x.font = '700 32px Inter'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
       x.fillText(relCortar(x, `CONTROLE DE ESTOQUE – ${consolidado ? 'CONSOLIDADO' : 'CONSUMO ' + setor.toUpperCase()}`, 970), 52, 228);
       x.fillStyle = RC_MUTED; x.font = '600 19px Inter';
-      x.fillText(`Período: ${relRot(meses[0])} a ${relRot(meses[5])} · ${consolidado ? 'Estoques centrais (Escritório e Almoxarifado) e consumo de todos os setores' : `Setor de consumo: ${setor}`}`, 52, 312);
+      x.fillText(`Período: ${relRot(meses[0])} a ${relRot(meses[5])} · ${consolidado ? 'Estoque central (Almoxarifado) e consumo de todos os setores' : `Setor de consumo: ${setor}`}`, 52, 312);
 
       // ---- KPIs ----
       let y = 334;

@@ -157,6 +157,7 @@ begin
   end if;
 end $$;
 
+
 create index if not exists movimentacoes_estoque_produto_idx
   on public.movimentacoes_estoque (produto_id, created_at desc);
 
@@ -325,3 +326,28 @@ revoke all on public.cadastro_de_produtos, public.movimentacoes_estoque, public.
 notify pgrst, 'reload schema';
 
 -- Próximo passo obrigatório: supabase/schema_seguranca_rls.sql
+
+-- ---------------------------------------------------------------------
+-- 7. Estoque central único: o Escritório foi extinto e todo o estoque fica no Almoxarifado.
+--    Os lançamentos do Escritório passam para o Almoxarifado: o saldo dos dois se soma e uma
+--    transferência antiga Escritório → Almoxarifado vira saída + entrada na mesma central (soma
+--    zero). O gatilho de ajuste fica desligado só durante a troca (ele barra mudar a central de
+--    uma transferência e confere o saldo linha a linha, no meio da troca); o resultado final tem
+--    saldo = soma das duas centrais, nunca negativo. Depois, a regra aceita só o Almoxarifado.
+--    O app já lê o Escritório como Almoxarifado antes de este passo rodar.
+-- ---------------------------------------------------------------------
+alter table public.movimentacoes_estoque disable trigger trg_movimentacoes_estoque_valida_ajuste;
+update public.movimentacoes_estoque set setor = 'Almoxarifado' where setor = 'Escritório';
+alter table public.movimentacoes_estoque enable trigger trg_movimentacoes_estoque_valida_ajuste;
+do $$
+begin
+  if exists (select 1 from pg_constraint where conname = 'movimentacoes_estoque_setor_valido'
+              and pg_get_constraintdef(oid) like '%Escritório%') then
+    alter table public.movimentacoes_estoque drop constraint movimentacoes_estoque_setor_valido;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'movimentacoes_estoque_setor_valido') then
+    alter table public.movimentacoes_estoque
+      add constraint movimentacoes_estoque_setor_valido
+      check (setor in ('Almoxarifado')) not valid;
+  end if;
+end $$;
