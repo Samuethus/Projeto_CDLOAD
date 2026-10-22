@@ -1,5 +1,5 @@
 -- =====================================================================================
--- CDLoad · Seção INADIMPLÊNCIA — documentação do SPC Brasil (tabela + bucket de Storage)
+-- CDLoad · Seção DOCUMENTOS (antiga Inadimplência) — pastas CESPC e Inadimplência (tabela + bucket de Storage)
 -- =====================================================================================
 --
 -- COMO USAR
@@ -8,8 +8,8 @@
 --   (usa cdl_secao e cdl_pode_editar).
 --
 -- O QUE FAZ
---   A antiga seção "Configurações" passa a ser "Inadimplência" (a chave da seção continua
---   "configuracoes": quem já tinha a seção liberada continua com acesso).
+--   A antiga seção "Configurações" (depois "Inadimplência") passa a ser "Documentos" (a chave da seção continua
+--   "configuracoes": quem já tinha a seção liberada continua com acesso). Coluna "pasta": inadimplencia | cespc.
 --   Passo 1 — inadimplencia_arquivos: metadados de cada documento enviado
 --             (abrangência Cuiabá | Mato Grosso | Brasil, data de publicação — define a pasta Ano > Mês —,
 --             arquivo, quem enviou).
@@ -42,8 +42,21 @@ alter table public.inadimplencia_arquivos add column if not exists data_publicac
 update public.inadimplencia_arquivos set data_publicacao = referencia where data_publicacao is null;
 create index if not exists inadimplencia_arquivos_pub_idx on public.inadimplencia_arquivos (data_publicacao desc);
 
+-- Seção DOCUMENTOS (antiga Inadimplência): pastas "1. CESPC" e "2. Inadimplência". Todo documento já enviado
+-- fica na pasta Inadimplência (padrão). Abrangência só existe nela; nas outras pastas fica vazia.
+alter table public.inadimplencia_arquivos add column if not exists pasta text not null default 'inadimplencia';
+alter table public.inadimplencia_arquivos drop constraint if exists inadimplencia_arquivos_pasta_check;
+alter table public.inadimplencia_arquivos add constraint inadimplencia_arquivos_pasta_check
+  check (pasta in ('inadimplencia', 'cespc'));
+alter table public.inadimplencia_arquivos alter column abrangencia drop not null;
+alter table public.inadimplencia_arquivos drop constraint if exists inadimplencia_arquivos_abrangencia_check;
+alter table public.inadimplencia_arquivos add constraint inadimplencia_arquivos_abrangencia_check
+  check ((pasta = 'inadimplencia' and abrangencia in ('Cuiabá', 'Mato Grosso', 'Brasil'))
+      or (pasta <> 'inadimplencia' and abrangencia is null));
+create index if not exists inadimplencia_arquivos_pasta_idx on public.inadimplencia_arquivos (pasta, data_publicacao desc);
+
 comment on table public.inadimplencia_arquivos is
-  'Inadimplência: documentos do SPC Brasil por abrangência (Cuiabá, Mato Grosso, Brasil) e mês de referência.';
+  'Documentos (seção de chave configuracoes): pastas inadimplencia (SPC Brasil, por abrangência Cuiabá, Mato Grosso, Brasil) e cespc; pasta Ano > Mês pela data de publicação.';
 
 -- Passo 2
 insert into storage.buckets (id, name, public)
