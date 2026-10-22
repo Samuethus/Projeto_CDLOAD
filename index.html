@@ -1733,6 +1733,18 @@
   /* Percentual de representação de cada linha (opcional, ex.: Valor (R$) por setor). */
   .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,108px) 1fr minmax(34px,auto) 34px;}
   .cd-barra-pct{color:var(--cd-muted);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;}
+  /* SPC MT: % do total de MT nas barras por entidade; rankings (até 10) com o nome do associado/produto mais largo. */
+  .cd-barras.sp-pct .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,108px) 1fr minmax(34px,auto) 44px;gap:10px;}
+  .cd-barras.sp-rank .cd-barra, .cd-barras.sp-rank .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,46%) 1fr minmax(34px,auto) 44px;gap:8px;min-height:17px;font-size:12px;}
+  .cd-barras.sp-rank .cd-barra:not(:has(.cd-barra-pct)){grid-template-columns:minmax(0,46%) 1fr minmax(34px,auto);}
+  .cd-barras.sp-rank .cd-barra-trilho{height:9px;}
+  /* SPC MT: destaques compactos (os 6 cabem também em telas de 900px de altura). */
+  #stkGrid.cd-fit .cd-dest.sp-dest li > div{padding:1px 2px;gap:10px;line-height:1.25;}
+  #stkGrid.cd-fit .cd-dest.sp-dest .cd-dest-ic{width:24px;height:24px;}
+  #stkGrid.cd-fit .cd-dest.sp-dest .cd-dest-ic svg{width:13px;height:13px;}
+  #stkGrid.cd-fit .cd-dest.sp-dest .cd-dest-txt{gap:0;}
+  #stkGrid.cd-fit .cd-dest.sp-dest .cd-dest-tit{font-size:12.5px;}
+  #stkGrid.cd-fit .cd-dest.sp-dest .cd-dest-meta{font-size:11px;}
   .cd-barra-rot > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cd-barra-rot svg{width:16px;height:16px;stroke-width:2;flex:0 0 auto;color:var(--cd-texto);}
   /* Logo da marca ao lado do nome (Viabilidade › Custo anual por ferramenta): coluna do rótulo um pouco mais larga. */
@@ -15595,12 +15607,14 @@ ${clipPlayerPills(n)}
         const ka = assoc(e, l[i['COD A']], l[i['ASSOCIADO']]);
         if(!acons.has(ka)) acons.set(ka, new Array(12).fill(0)); acons.get(ka)[m] += q;
       }
-      const inc = new Map(), incA = new Map();
+      const inc = new Map(), incA = new Map(), ainc = new Map();
       [i, L] = base('BASE_REGISTROS');
       for(const l of L){
         const m = mesDe(i, l), e = ent(l[i['COD E']], l[i['ENTIDADE']]);
         add(inc, `${m}|${e}`, num(l[i['QTD']]));
         if(!incA.has(`${m}|${e}`)) incA.set(`${m}|${e}`, new Set()); incA.get(`${m}|${e}`).add(l[i['COD ASSOCIADO']]);
+        const ka = assoc(e, l[i['COD ASSOCIADO']], l[i['ASSOCIADO']]);
+        if(!ainc.has(ka)) ainc.set(ka, new Array(12).fill(0)); ainc.get(ka)[m] += num(l[i['QTD']]);
       }
       let ref = '';
       const dataIso = v => typeof v === 'number' ? new Date(Date.UTC(1899, 11, 30) + Math.trunc(v) * 864e5).toISOString().slice(0, 10) : String(v).slice(0, 10);
@@ -15628,7 +15642,7 @@ ${clipPlayerPills(n)}
         return { faixas: fx, valores: fx.map(f => Array.from({ length: nE }, (_, e) => Math.round(mp.get(`${f}|${e}`) || 0))) }; };
       const prodQtd = [...prod.entries()].map(([k, q]) => [...k.split('|').map(Number), Math.round(q)])
         .sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).flat();
-      // Maiores associados (relatório Dados CESPC): os n maiores de cada entidade + os n maiores de MT.
+      // Maiores associados (relatório Dados CESPC): os n maiores de cada entidade + os n maiores de MT (n=Infinity: todos).
       // Empate: nome do associado, depois o código (mesma ordem do script em Python).
       const kE = k => Number(k.split('|')[0]), kC = k => Number(k.split('|')[1]);
       const cmpTxt = (a, b) => a < b ? -1 : a > b ? 1 : 0;
@@ -15651,7 +15665,8 @@ ${clipPlayerPills(n)}
         ativos: Array.from({ length: nE }, (_, e) => Math.round(ativos.get(`|${e}`) || 0)),
         usoConsultas: faixas(usoC), usoRegistros: faixas(usoR), registrosAtivos: faixas(regTP), recuperacao: faixas(rec),
         consumoConsultas: porEnt(aUsoC), consumoRegistros: porEnt(aUsoR),
-        assocConsultas: top([...acons.keys()], totC, 15).map(k => [kE(k), nomesA.get(k), ...acons.get(k).slice(0, nM).map(Math.round)]),
+        assocConsultas: top([...acons.keys()], totC, Infinity).map(k => [kE(k), nomesA.get(k), ...acons.get(k).slice(0, nM).map(Math.round)]),
+        assocInclusao: top([...ainc.keys()], k => ainc.get(k).reduce((s, v) => s + v, 0), Infinity).map(k => [kE(k), nomesA.get(k), ...ainc.get(k).slice(0, nM).map(Math.round)]),
         assocRegistros: top(regRec, k => aReg.get(k) || 0, 25).map(k => [kE(k), nomesA.get(k), Math.round(aReg.get(k) || 0), Math.round(aRec.get(k) || 0)]),
         assocUsoConsultas: top([...aUsoC.keys()], k => aUsoC.get(k), 25).map(k => [kE(k), nomesA.get(k), Math.round(aUsoC.get(k))]),
         assocUsoRegistros: top([...aUsoR.keys()], k => aUsoR.get(k), 25).map(k => [kE(k), nomesA.get(k), Math.round(aUsoR.get(k))]) };
@@ -15685,6 +15700,7 @@ ${clipPlayerPills(n)}
       return { arquivo: R.arquivo, ano: R.ano, nMeses: R.meses, ref: R.ref,
         fluxo: Object.fromEntries(['captacao', 'cancelamento', 'suspensao', 'consultas', 'consultasAssoc', 'inclusao', 'inclusaoAssoc'].map(k => [k, R[k].map(porEnt)])),
         prod, assocConsultas: aE(R.assocConsultas, (e, n, v) => ({ ent: e, nome: n, meses: v })),
+        assocInclusao: aE(R.assocInclusao, (e, n, v) => ({ ent: e, nome: n, meses: v })),
         retrato: { ref: R.ref, ativos: porEnt(R.ativos), usoConsultas: fx(R.usoConsultas), usoRegistros: fx(R.usoRegistros),
           registrosAtivos: fx(R.registrosAtivos), recuperacao: fx(R.recuperacao),
           consumoConsultas: porEnt(R.consumoConsultas || []), consumoRegistros: porEnt(R.consumoRegistros || []),
@@ -15722,7 +15738,7 @@ ${clipPlayerPills(n)}
       const lidos = [];
       for(const r of docs){
         try {
-          const chave = `spmt-v2|${r.id}|${r.arquivo_path}`;
+          const chave = `spmt-v3|${r.id}|${r.arquivo_path}`;
           let R = await thumbCache('get', chave);
           if(!R){
             await riCarregarJsZip();
@@ -15813,18 +15829,45 @@ ${clipPlayerPills(n)}
       const refR = [...refs].reverse().find(r => r <= alvo) || refs[0], R = M.retratos[refR];
       const refAnt = refs[refs.indexOf(refR) - 1], RA = refAnt ? M.retratos[refAnt] : null;
       const rotRef = r => `${PAN_MES_CURTO[Number(r.slice(5, 7)) - 1]}/${r.slice(2, 4)}`;
-      const destHtml = itens => itens.length ? `<ul class="cd-dest">${itens.slice(0, 6).map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
+      const destHtml = itens => itens.length ? `<ul class="cd-dest sp-dest">${itens.slice(0, 6).map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
           <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
           <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>` : '<div class="stk-vazio">Sem destaques no período.</div>';
+      // Por entidade: valor e % do total de MT (o todo da análise) em cada barra.
       const barrasEnt = (o, titulo, fmt, cor, vazio) => {
-        const top = ordenarB(o).slice(0, 7);
+        const top = ordenarB(o).slice(0, 7), totO = Object.values(o || {}).reduce((s, v) => s + v, 0);
         if(ent && casa(ent) && !top.some(([k]) => k === ent) && o[ent]) top.splice(6, 1, [ent, o[ent]]);
-        return cdBarras(top.map(([k, v], i) => ({ nome: k, valor: v, rotulo: fmt(v),
-          cor: ent ? (k === ent ? cor : stkMisturarCor(cor, '#FFFFFF', 0.6)) : stkMisturarCor(cor, '#D6E4F5', top.length > 1 ? i / (top.length - 1) : 0) })), titulo, vazio);
+        return cdBarras(top.map(([k, v], i) => ({ nome: k, valor: v, rotulo: fmt(v), pct: pct(totO ? v / totO : 0), dica: `${fmt(v)} · ${pct(totO ? v / totO : 0)} de Mato Grosso`,
+          cor: ent ? (k === ent ? cor : stkMisturarCor(cor, '#FFFFFF', 0.6)) : stkMisturarCor(cor, '#D6E4F5', top.length > 1 ? i / (top.length - 1) : 0) })), titulo, vazio)
+          .replace('<div class="cd-barras">', '<div class="cd-barras sp-pct">');
       };
-      const rankHtml = (lista, totRef, fmt) => lista.length ? `<ol class="cd-rank">${lista.map(([nome, v], i) => `
-          <li><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome" title="${esc(nome)}">${esc(nome)}</span><strong>${fmt(v)}</strong><span class="cd-rank-pct">${pct(totRef ? v / totRef : 0)}</span></li>`).join('')}</ol>`
-        : '<div class="stk-vazio">Sem dados no período.</div>';
+      // Rankings (barras horizontais, até 10): [nome, valor, dica] | valor | % do total da análise (tot null: sem %).
+      const rankBarras = (lista, o) => cdBarras(lista.slice(0, 10).map(([nome, v, dica], i, l) => ({ nome, valor: v, rotulo: (o.fmt || N)(v),
+          pct: o.tot ? pct(v / o.tot) : null, dica: dica || `${(o.fmt || N)(v)}${o.tot ? ` · ${pct(v / o.tot)} do total` : ''}`,
+          cor: stkMisturarCor(o.cor, '#D6E4F5', l.length > 1 ? i / (l.length - 1) * 0.85 : 0) })), o.titulo, o.vazio)
+        .replace('<div class="cd-barras">', `<div class="cd-barras sp-pct sp-rank">`);
+      // Associados: filtro de entidade + busca (pelo nome do associado ou da entidade); nome curto nos destaques.
+      const daEnt = lst => (lst || []).filter(a => !ent || a.ent === ent);
+      const casaA = a => casa(a.nome) || casa(a.ent);
+      const curtoA = n => String(n).replace(/[.,]?\s+(LTDA|S\.?\s?\/?\s?A|EIRELI|EPP|ME|MEI)\.?$/i, '').split(/\s+/).slice(0, 3).join(' ')
+        .replace(/\s+(DE|DA|DO|DAS|DOS|E|&|-)$/i, '').toLowerCase().replace(/(^|\s|\/|-)\S/g, c => c.toUpperCase());
+      const somaAte = (meses, ate) => meses.slice(0, ate + 1).reduce((s, x) => s + (x || 0), 0);
+      // Destaques: pico e maior queda (mês contra o anterior) de uma série; top 3 de variação do mês.
+      const destPico = (serie, rot, tom, inverso) => {
+        const s = serie.slice(0, m + 1), pk = s.indexOf(Math.max(...s));
+        let qk = -1, qv = 0;
+        for(let k = 1; k < s.length; k++) if(s[k - 1] > 0 && (s[k] - s[k - 1]) / s[k - 1] < qv){ qv = (s[k] - s[k - 1]) / s[k - 1]; qk = k; }
+        return [{ ic: 'trendUp', tom, tit: `Pico do ano: ${rotMes(pk)} (${N(s[pk])})`, meta: `${rot} · média de ${N(s.reduce((a, b) => a + b, 0) / s.length)} por mês · ${local}` },
+          qk < 0 ? { ic: 'trendDown', tom: 'azul', tit: 'Maior queda do ano: nenhuma', meta: `Nenhum mês abaixo do anterior em ${ano} · ${local}` }
+            : { ic: 'trendDown', tom: inverso ? 'verde' : 'vermelho', tit: `Maior queda do ano: ${rotMes(qk)} (${pct(qv).replace('-', '−')})`, meta: `${N(s[qk])} contra ${N(s[qk - 1])} em ${rotMes(qk - 1)} · ${local}` }];
+      };
+      // itens: [nome, valor no mês, valor no mês anterior]
+      const destTop3 = (oQue, itens, inverso, anual) => [1, -1].map(sinal => {
+        const l = itens.map(([n, a, b]) => [n, a - b]).filter(([, d]) => d * sinal > 0).sort((x, y) => (y[1] - x[1]) * sinal).slice(0, 3);
+        const bom = (sinal > 0) !== !!inverso;
+        return { ic: sinal > 0 ? 'trendUp' : 'trendDown', tom: bom ? 'verde' : 'vermelho', tit: `Top 03 maiores ${sinal > 0 ? 'crescimentos' : 'reduções'} · por ${oQue}`,
+          meta: !m && !anual ? 'Sem mês anterior no ano' : l.length ? l.map(([n, d], i) => `${i + 1}. ${n} (${cagSinal(d)})`).join(' · ')
+            : `Nenhum${oQue === 'entidade' ? 'a' : ''} ${oQue} ${sinal > 0 ? 'cresceu' : 'reduziu'} ${anual ? 'no ano' : `em ${mesTxt}`}` };
+      });
       const roscaHtml = (dados, centro, rot) => `<div class="cd-rosca-wrap">
           <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${centro}</strong><span>${esc(rot)}</span></div></div>
           <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dados.map(d => `<li title="${esc(d.nome)}: ${N(d.valor)}"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${pct(d.total ? d.valor / d.total : 0)}</strong></li>`).join('')}</ul></div>`;
@@ -15887,26 +15930,61 @@ ${clipPlayerPills(n)}
         rosca = topOutras(acEnt);
         const totRosca = rosca.reduce((s, d) => s + d.valor, 0);
         const wRosca = cdCard('Participação por entidade', `Acumulado do ano · ${N(totRosca)} ${F.un}`, rosca.length ? roscaHtml(rosca, pct(totRosca ? rosca[0].valor / totRosca : 0, 0), rosca[0].nome) : '<div class="stk-vazio">Sem registros no período.</div>');
-        // Linha B
-        const dif = Object.keys({ ...(S[m] || {}), ...(m ? S[m - 1] || {} : {}) }).map(k => [k, (S[m][k] || 0) - (m ? (S[m - 1][k] || 0) : 0)]);
-        const altas = m ? dif.filter(([k, d]) => d > 0 && casa(k)).sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
-        const wAltas = cdCard(F.inverso ? 'Maiores aumentos no mês' : 'Maiores altas no mês', antTxt ? `${mesTxt} contra ${antTxt} · por entidade` : 'Sem mês anterior no ano',
-          cdBarras(altas.map(([k, d]) => ({ nome: k, valor: d, rotulo: cagSinal(d), cor: F.inverso ? CD_COR.vermelho : CD_COR.verde, dica: `${N(S[m][k] || 0)} em ${mesTxt} · ${N(S[m - 1][k] || 0)} em ${antTxt}` })), 'Maiores altas no mês', 'Nenhuma entidade com alta no mês.'));
-        const noMes = ordenarB(S[m]).slice(0, 5), totMes = Object.values(S[m] || {}).reduce((s, x) => s + x, 0);
-        const wRank = cdCard(`${F.rot} em ${mesTxt}`, 'Entidades com mais no mês · % do total de MT', rankHtml(noMes, totMes, N));
-        const dest = [];
-        const serieTot = S.map(tot), pico = serieTot.slice(0, m + 1).indexOf(Math.max(...serieTot.slice(0, m + 1)));
-        dest.push({ ic: 'trendUp', tom: F.tom, tit: `Pico do ano: ${rotMes(pico)} (${N(serieTot[pico])})`, meta: `Média de ${N(media)} por mês em ${ano} · ${local}` });
-        if(m && dif.length){ const q = dif.slice().sort((a, b) => a[1] - b[1])[0]; if(q[1] < 0) dest.push({ ic: 'setaBaixo', tom: F.inverso ? 'verde' : 'vermelho', tit: `Maior queda: ${q[0]} (${cagSinal(q[1])})`, meta: `${mesTxt} contra ${antTxt}` }); }
-        const acl = ordenar(acEnt), acT = acl.reduce((s, [, x]) => s + x, 0);
-        if(acl.length >= 3) dest.push({ ic: 'pizza', tom: 'azul', tit: `3 maiores CDLs: ${pct(acl.slice(0, 3).reduce((s, [, x]) => s + x, 0) / acT)} do ano`, meta: acl.slice(0, 3).map(([k]) => k).join(', ') });
-        const iCba = acl.findIndex(([k]) => k === 'Cuiabá');
-        if(iCba >= 0) dest.push({ ic: 'mapa', tom: 'verde', tit: `Cuiabá: ${iCba + 1}º lugar no ano`, meta: `${N(acl[iCba][1])} ${F.un} · ${pct(acl[iCba][1] / acT)} de MT` });
-        if(spAba === 'captacao' || spAba === 'cancelamento'){ const salAc = soma(A.fluxo.captacao, m) - soma(A.fluxo.cancelamento, m);
-          dest.push({ ic: 'transferencia', tom: salAc >= 0 ? 'verde' : 'vermelho', tit: `Saldo no ano: ${cagSinal(salAc)} associados`, meta: `${N(soma(A.fluxo.captacao, m))} captações e ${N(soma(A.fluxo.cancelamento, m))} cancelamentos · ${local}` }); }
-        if(mesAA != null) dest.push({ ic: 'barras', tom: 'azul', tit: `${mesTxt} vs. ${PAN_MES_CURTO[m]}/${String(ano - 1).slice(2)}: ${mesAA ? pct((v - mesAA) / mesAA) : '—'}`, meta: `${N(v)} contra ${N(mesAA)}` });
-        const wDest = cdCard('Destaques', `${local} · ${mesTxt}`, destHtml(dest));
-        html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wEvol}${wEnt}${wRosca}</div><div class="cd-row cd-row-b">${wAltas}${wRank}${wDest}</div>`;
+        // Linha B: rankings (até 10, barras horizontais com % do total da análise) + destaques do período.
+        const subRank = `jan a ${PAN_MES_CURTO[m]} · ${local} · % do total`;
+        const entMov = Object.keys({ ...(S[m] || {}), ...(m ? S[m - 1] || {} : {}) }).filter(casa).map(k => [k, (S[m] || {})[k] || 0, m ? (S[m - 1] || {})[k] || 0 : 0]);
+        const dest = destPico(S.map(tot), `${F.rot} por mês`, F.tom, F.inverso);
+        let wR1, wR2;
+        if(F.assoc){
+          // Consultas e inclusões: associados (base completa do arquivo, mês a mês).
+          const AS = daEnt(spAba === 'consultas' ? A.assocConsultas : A.assocInclusao);
+          const acA = AS.map(a => [a, somaAte(a.meses, m)]).filter(([a, x]) => x > 0 && casaA(a)).sort((x, y) => y[1] - x[1]);
+          wR1 = cdCard('Ranking · Top Associados', `${F.rot} de ${subRank}`, rankBarras(acA.slice(0, 10).map(([a, x]) => [a.nome, x, `${a.ent} · ${N(x)} no ano (${pct(acum ? x / acum : 0)}) · ${N(a.meses[m] || 0)} em ${mesTxt}`]),
+            { tot: acum, cor: F.cor, titulo: 'Top Associados', vazio: 'Sem associados no período.' }));
+          dest.push(...destTop3('associado', AS.filter(casaA).map(a => [curtoA(a.nome), a.meses[m] || 0, m ? a.meses[m - 1] || 0 : 0]), F.inverso));
+          if(spAba === 'consultas'){
+            const pm = k => { const o = {}; Object.entries(A.prod[k] || {}).forEach(([p, es]) => { const x = tot(es); if(x) o[p] = x; }); return o; };
+            const acP = {}; for(let k = 0; k <= m; k++) Object.entries(pm(k)).forEach(([p, x]) => { acP[p] = (acP[p] || 0) + x; });
+            const curtoP = p => p.replace(/\s+\.$/, '').replace(/\.$/, '');
+            const pa = pm(m), pb = m ? pm(m - 1) : {};
+            wR2 = cdCard('Ranking · Top Produtos', `Consultas de ${subRank}`, rankBarras(ordenarB(acP).map(([p, x]) => [curtoP(p), x, `${N(x)} consultas no ano (${pct(acum ? x / acum : 0)}) · ${N(pa[p] || 0)} em ${mesTxt}`]),
+              { tot: acum, cor: CD_COR.verde, titulo: 'Top Produtos', vazio: 'Sem consultas no período.' }));
+            dest.push(...destTop3('produto', Object.keys({ ...pa, ...pb }).filter(casa).map(p => [curtoP(p), pa[p] || 0, pb[p] || 0])));
+          } else {
+            // Inclusões: quem mais tem registros ativos (retrato) e a variação por entidade.
+            const totRegA = R.registrosAtivos.valores.reduce((s, o) => s + tot(o), 0);
+            const rg = daEnt(R.assocRegistros).filter(a => a.reg > 0 && casaA(a)).sort((x, y) => y.reg - x.reg);
+            wR2 = cdCard('Ranking · Top Associados · registros ativos', `Negativações ativas · ${rotRef(refR)} · ${local} · % do total`, rankBarras(rg.map(a => [a.nome, a.reg, `${a.ent} · ${N(a.reg)} registros ativos (${pct(totRegA ? a.reg / totRegA : 0)})`]),
+              { tot: totRegA, cor: CD_COR.azul, titulo: 'Top Associados · registros ativos', vazio: 'Sem registros ativos.' }));
+            dest.push(...destTop3('entidade', entMov));
+          }
+        } else {
+          // Captação e cancelamento: a base traz só a entidade (sem associado nem produto).
+          const totMes = Object.values(S[m] || {}).reduce((s, x) => s + x, 0);
+          wR1 = cdCard('Ranking · Top Entidades', `${F.rot} em ${mesTxt} · % do total de MT`, rankBarras(ordenarB(S[m]).map(([k, x]) => [k, x, `${N(x)} em ${mesTxt} (${pct(totMes ? x / totMes : 0)}) · ${N(acEnt[k] || 0)} no ano`]),
+            { tot: totMes, cor: F.cor, titulo: 'Top Entidades', vazio: `Sem ${F.rot.toLowerCase()} em ${mesTxt}.` }));
+          const capE = somaEnt(A.fluxo.captacao, m), canE = somaEnt(A.fluxo.cancelamento, m);
+          if(spAba === 'captacao'){
+            const sal = Object.keys({ ...capE, ...canE }).map(k => [k, (capE[k] || 0) - (canE[k] || 0)]).filter(([k, x]) => x > 0 && casa(k)).sort((x, y) => y[1] - x[1]);
+            wR2 = cdCard('Ranking · Saldo por entidade', `Captações − cancelamentos · jan a ${PAN_MES_CURTO[m]} · CDLs com saldo positivo`, rankBarras(sal.map(([k, x]) => [k, x, `${N(capE[k] || 0)} captações − ${N(canE[k] || 0)} cancelamentos`]),
+              { fmt: cagSinal, cor: CD_COR.verde, titulo: 'Saldo por entidade', vazio: 'Nenhuma CDL com saldo positivo no ano.' }));
+          } else {
+            const tx = Object.entries(R.ativos).filter(([k, a]) => a >= 50 && casa(k)).map(([k, a]) => [k, (canE[k] || 0) / a, a]).filter(([, t]) => t > 0).sort((x, y) => y[1] - x[1]);
+            wR2 = cdCard('Ranking · Taxa de cancelamento', `Cancelamentos jan a ${PAN_MES_CURTO[m]} ÷ ativos em ${rotRef(refR)} · CDLs com 50+ associados`, rankBarras(tx.map(([k, t, a]) => [k, t, `${N(canE[k] || 0)} cancelamentos ÷ ${N(a)} ativos`]),
+              { fmt: x => pct(x, 2), cor: CD_COR.vermelho, titulo: 'Taxa de cancelamento', vazio: 'Sem cancelamentos no ano.' }));
+          }
+          dest.push(...destTop3('entidade', entMov, F.inverso));
+          const salAc = soma(A.fluxo.captacao, m) - soma(A.fluxo.cancelamento, m);
+          dest.push({ ic: 'transferencia', tom: salAc >= 0 ? 'verde' : 'vermelho', tit: `Saldo no ano: ${cagSinal(salAc)} associados`, meta: `${N(soma(A.fluxo.captacao, m))} captações e ${N(soma(A.fluxo.cancelamento, m))} cancelamentos · ${local}` });
+          if(mesAA != null) dest.push({ ic: 'barras', tom: 'azul', tit: `${mesTxt} vs. ${PAN_MES_CURTO[m]}/${String(ano - 1).slice(2)}: ${mesAA ? pct((v - mesAA) / mesAA) : '—'}`, meta: `${N(v)} contra ${N(mesAA)}` });
+          else {
+            // Sem o ano anterior: posição de Cuiabá (ou da entidade filtrada) no ano.
+            const acl = ordenar(acEnt), acT = acl.reduce((s, [, x]) => s + x, 0), quem = ent || 'Cuiabá', iE = acl.findIndex(([k]) => k === quem);
+            if(iE >= 0) dest.push({ ic: 'mapa', tom: 'azul', tit: `${quem}: ${iE + 1}º lugar no ano`, meta: `${N(acl[iE][1])} ${F.un} · ${pct(acT ? acl[iE][1] / acT : 0)} de MT` });
+          }
+        }
+        const wDest = cdCard('Destaques', `${local} · ${mesTxt}${antTxt ? ` contra ${antTxt}` : ''}`, destHtml(dest));
+        html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wEvol}${wEnt}${wRosca}</div><div class="cd-row cd-row-b">${wR1}${wR2}${wDest}</div>`;
         csv = [['Mês', 'Entidade', F.rot]];
         S.forEach((o, k) => Object.entries(o).sort().forEach(([e, q]) => csv.push([rotMes(k), e, q])));
       }
@@ -15931,19 +16009,25 @@ ${clipPlayerPills(n)}
         const grupos = [['Sem registro', 0, 0], ['1 a 5', 1, 1], ['6 a 25', 2, 2], ['26 a 100', 3, 4], ['Mais de 100', 5, 99]];
         rosca = grupos.map(([n, a, b], i) => ({ nome: n, sigla: n, cor: [CD_COR.cinza, CD_COR.azulClaro, CD_COR.azul, CD_COR.verde, '#E3AE1F'][i], valor: ur.slice(a, b + 1).reduce((s, [, o]) => s + tot(o), 0), total: totUR })).filter(d => d.valor);
         const wRosca = cdCard('Faixa de consumo · registros', `Associados por quantidade de registros · ${rotRef(refR)}`, rosca.length ? roscaHtml(rosca, pct(totUR ? semR / totUR : 0, 0), 'sem registro') : '<div class="stk-vazio">Sem dados.</div>');
-        const uso = Object.entries(R.ativos).filter(([, a]) => a >= 50).map(([k, a]) => [k, (A.fluxo.consultasAssoc[m][k] || 0) / a]).sort((a, b) => b[1] - a[1]).slice(0, 7);
-        const wUso = cdCard('Uso de consultas por entidade', `% dos ativos que consultaram em ${mesTxt} · CDLs com 50+ associados`, cdBarras(uso.map(([k, t]) => ({ nome: k, valor: t, rotulo: pct(t), cor: k === ent ? CD_COR.verde : stkMisturarCor(CD_COR.verde, '#FFFFFF', 0.25), dica: `${N(A.fluxo.consultasAssoc[m][k] || 0)} de ${N(R.ativos[k])} associados` })), 'Uso de consultas por entidade', 'Sem dados.'));
-        const totAt = Object.values(R.ativos).reduce((s, x) => s + x, 0);
-        const wRank = cdCard('Mais associados ativos', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenarB(R.ativos).slice(0, 5), totAt, N));
-        const dest = [];
-        const lst = ordenar(R.ativos), iCba = lst.findIndex(([k]) => k === 'Cuiabá');
-        if(iCba >= 0) dest.push({ ic: 'mapa', tom: 'verde', tit: `Cuiabá: ${N(lst[iCba][1])} associados (${iCba + 1}º)`, meta: `${pct(lst[iCba][1] / totAt)} dos associados ativos de MT` });
-        if(lst.length >= 3) dest.push({ ic: 'pizza', tom: 'azul', tit: `3 maiores CDLs: ${pct(lst.slice(0, 3).reduce((s, [, x]) => s + x, 0) / totAt)} dos ativos`, meta: lst.slice(0, 3).map(([k]) => k).join(', ') });
+        // Linha B: quem mais consome (bases de consumo do retrato), até 10 cada, com % do total.
+        const totCC = tot(R.consumoConsultas), totCR = tot(R.consumoRegistros);
+        const uCons = daEnt(R.assocUsoConsultas).filter(a => a.q > 0 && casaA(a)).sort((x, y) => y.q - x.q);
+        const uReg = daEnt(R.assocUsoRegistros).filter(a => a.q > 0 && casaA(a)).sort((x, y) => y.q - x.q);
+        const wUso = cdCard('Ranking · Top Associados · consultas', `Consumo na base de ${rotRef(refR)} · ${local} · % do total`, rankBarras(uCons.map(a => [a.nome, a.q, `${a.ent} · ${N(a.q)} consultas (${pct(totCC ? a.q / totCC : 0)})`]),
+          { tot: totCC, cor: CD_COR.azul, titulo: 'Top Associados · consultas', vazio: 'Sem consumo de consultas.' }));
+        const wRank = cdCard('Ranking · Top Associados · registros', `Consumo na base de ${rotRef(refR)} · ${local} · % do total`, rankBarras(uReg.map(a => [a.nome, a.q, `${a.ent} · ${N(a.q)} registros (${pct(totCR ? a.q / totCR : 0)})`]),
+          { tot: totCR, cor: '#E3AE1F', titulo: 'Top Associados · registros', vazio: 'Sem consumo de registros.' }));
+        // Destaques: saldo de associados por mês (captações − cancelamentos) e por entidade no ano.
+        const cap = A.fluxo.captacao, can = A.fluxo.cancelamento, sal = cap.slice(0, m + 1).map((o, k) => tot(o) - tot(can[k]));
+        const kMax = sal.indexOf(Math.max(...sal)), kMin = sal.indexOf(Math.min(...sal));
+        const metaSal = k => `${N(tot(cap[k]))} captações e ${N(tot(can[k]))} cancelamentos · ${local}`;
+        const dest = [{ ic: 'trendUp', tom: 'verde', tit: `Melhor saldo do ano: ${rotMes(kMax)} (${cagSinal(sal[kMax])})`, meta: metaSal(kMax) },
+          { ic: 'trendDown', tom: sal[kMin] < 0 ? 'vermelho' : 'azul', tit: `Pior saldo do ano: ${rotMes(kMin)} (${cagSinal(sal[kMin])})`, meta: metaSal(kMin) }];
+        const capE = somaEnt(cap, m), canE = somaEnt(can, m);
+        dest.push(...destTop3('entidade', Object.keys({ ...capE, ...canE }).filter(casa).map(k => [k, capE[k] || 0, canE[k] || 0]), false, true));
         dest.push({ ic: 'documento', tom: 'azul', tit: `${pct(totUC ? 1 - semC / totUC : 0)} têm consumo de consultas`, meta: `${N(totUC - semC)} associados fora da faixa "sem consulta" · ${local}` });
         dest.push({ ic: 'layers', tom: 'amarelo', tit: `${pct(totUR ? 1 - semR / totUR : 0)} têm consumo de registros`, meta: `${N(totUR - semR)} associados fora da faixa "sem registro" · ${local}` });
-        const capM = tot(A.fluxo.captacao[m]), canM = tot(A.fluxo.cancelamento[m]);
-        dest.push({ ic: 'transferencia', tom: capM - canM >= 0 ? 'verde' : 'vermelho', tit: `Saldo de ${mesTxt}: ${cagSinal(capM - canM)} associados`, meta: `${N(capM)} captações e ${N(canM)} cancelamentos` });
-        const wDest = cdCard('Destaques', `${local} · ${rotRef(refR)}`, destHtml(dest));
+        const wDest = cdCard('Destaques', `${local} · jan a ${PAN_MES_CURTO[m]}`, destHtml(dest));
         html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wUC}${wEnt}${wRosca}</div><div class="cd-row cd-row-b">${wUso}${wRank}${wDest}</div>`;
         csv = [['Entidade', 'Associados ativos', 'Consultaram no mês', 'Incluíram no mês']];
         Object.entries(R.ativos).sort().forEach(([e, a]) => csv.push([e, a, A.fluxo.consultasAssoc[m][e] || 0, A.fluxo.inclusaoAssoc[m][e] || 0]));
@@ -15975,18 +16059,18 @@ ${clipPlayerPills(n)}
         const FAM_COR = { 'Consultas SPC': CD_COR.azul, 'Score': CD_COR.verde, 'Insumos': '#E3AE1F', 'Cheque': '#7C3AED', 'Outros': CD_COR.cinza };
         rosca = ordenar(famO).map(([n, v]) => ({ nome: n, sigla: n, cor: FAM_COR[n], valor: v, total: totM }));
         const wRosca = cdCard('Famílias de produtos', `Consultas de ${mesTxt} por tipo de produto`, rosca.length ? roscaHtml(rosca, pct(totM ? rosca[0].valor / totM : 0, 0), rosca[0].nome) : '<div class="stk-vazio">Sem consultas no mês.</div>');
-        const cres = ant ? Object.keys({ ...atual, ...ant }).map(p => [p, (atual[p] || 0) - (ant[p] || 0)]).filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
-        const wCres = cdCard('Produtos que mais cresceram', antTxt ? `${mesTxt} contra ${antTxt}` : 'Sem mês anterior no ano', cdBarras(cres.map(([p, d]) => ({ nome: curto(p), valor: d, rotulo: cagSinal(d), cor: CD_COR.verde, dica: `${N(atual[p] || 0)} em ${mesTxt} · ${N(ant[p] || 0)} em ${antTxt}` })), 'Produtos que mais cresceram', 'Nenhum produto cresceu no mês.'));
+        // Linha B: Top Produtos do ano e produtos em alta no mês (até 10 cada); destaques com produtos e associados.
         const acT = Object.values(acum).reduce((s, v) => s + v, 0);
-        const wRank = cdCard(`Mais consultados em ${ano}`, `Acumulado de jan a ${PAN_MES_CURTO[m]} · ${local}`, rankHtml(ordenarB(acum).slice(0, 5).map(([p, v]) => [curto(p), v]), acT, N));
-        const dest = [];
-        if(lst.length) dest.push({ ic: 'trendUp', tom: 'azul', tit: `${curto(lst[0][0])}: ${pct(lst[0][1] / totM)} do mês`, meta: `${N(lst[0][1])} consultas em ${mesTxt}` });
-        if(ant){ const q = Object.keys({ ...atual, ...ant }).map(p => [p, (atual[p] || 0) - (ant[p] || 0)]).sort((a, b) => a[1] - b[1])[0]; if(q && q[1] < 0) dest.push({ ic: 'setaBaixo', tom: 'vermelho', tit: `Maior queda: ${curto(q[0])} (${cagSinal(q[1])})`, meta: `${mesTxt} contra ${antTxt}` }); }
-        const famL = ordenar(famO); famL.slice(0, 2).forEach(([n, v]) => dest.push({ ic: 'pizza', tom: 'verde', tit: `${n}: ${pct(v / totM)} das consultas`, meta: `Família de produtos · ${mesTxt}` }));
-        const novos = ant ? lst.filter(([p]) => !ant[p]).length : 0;
-        if(ant) dest.push({ ic: 'layers', tom: 'amarelo', tit: `${N(novos)} produto${novos === 1 ? '' : 's'} sem uso em ${antTxt}`, meta: `Consultados em ${mesTxt} e não no mês anterior` });
-        const wDest = cdCard('Destaques', `${local} · ${mesTxt}`, destHtml(dest));
-        html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wEvol}${wTop}${wRosca}</div><div class="cd-row cd-row-b">${wCres}${wRank}${wDest}</div>`;
+        const wTopAno = cdCard('Ranking · Top Produtos', `Consultas de jan a ${PAN_MES_CURTO[m]} · ${local} · % do total`, rankBarras(ordenarB(acum).map(([p, v]) => [curto(p), v, `${N(v)} no ano (${pct(acT ? v / acT : 0)}) · ${N(atual[p] || 0)} em ${mesTxt}`]),
+          { tot: acT, cor: CD_COR.azul, titulo: 'Top Produtos', vazio: 'Sem consultas no período.' }));
+        const cres = ant ? Object.keys({ ...atual, ...ant }).filter(casa).map(p => [p, (atual[p] || 0) - (ant[p] || 0)]).filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]) : [];
+        const wCres = cdCard('Ranking · Produtos em alta', antTxt ? `Crescimento de ${mesTxt} contra ${antTxt} · ${local}` : 'Sem mês anterior no ano', rankBarras(cres.map(([p, d]) => [curto(p), d, `${N(atual[p] || 0)} em ${mesTxt} · ${N(ant[p] || 0)} em ${antTxt}`]),
+          { fmt: cagSinal, cor: CD_COR.verde, titulo: 'Produtos em alta', vazio: 'Nenhum produto cresceu no mês.' }));
+        const dest = destPico(Array.from({ length: A.nMeses }, (_, k) => Object.values(pm(k)).reduce((s, v) => s + v, 0)), 'Consultas por mês', 'azul');
+        dest.push(...destTop3('produto', Object.keys({ ...atual, ...(ant || {}) }).filter(casa).map(p => [curto(p), atual[p] || 0, ant ? ant[p] || 0 : 0])));
+        dest.push(...destTop3('associado', daEnt(A.assocConsultas).filter(casaA).map(a => [curtoA(a.nome), a.meses[m] || 0, m ? a.meses[m - 1] || 0 : 0])));
+        const wDest = cdCard('Destaques', `${local} · ${mesTxt}${antTxt ? ` contra ${antTxt}` : ''}`, destHtml(dest));
+        html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wEvol}${wTop}${wRosca}</div><div class="cd-row cd-row-b">${wTopAno}${wCres}${wDest}</div>`;
         csv = [['Mês', 'Produto', 'Consultas']];
         for(let k = 0; k < A.nMeses; k++) ordenar(pm(k)).forEach(([p, v]) => csv.push([rotMes(k), p, v]));
       }
@@ -16013,19 +16097,26 @@ ${clipPlayerPills(n)}
         const grupos = [['Até 90 dias', 0, 90], ['91 a 360 dias', 91, 360], ['1 a 2 anos', 361, 730], ['2 a 5 anos', 731, 1825]];
         rosca = grupos.map(([n, a, b], i) => ({ nome: n, sigla: n, cor: [CD_COR.verde, CD_COR.azulClaro, CD_COR.azul, '#E3AE1F'][i], valor: reg.filter(([f]) => dias(f) >= a && dias(f) <= b).reduce((s, [, o]) => s + tot(o), 0), total: totReg })).filter(d => d.valor);
         const wRosca = cdCard('Registros ativos por tempo', `Tempo de permanência dos registros ativos · ${rotRef(refR)}`, rosca.length ? roscaHtml(rosca, totReg >= 1e6 ? (totReg / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : N(Math.round(totReg / 1000)) + ' mil', 'registros ativos') : '<div class="stk-vazio">Sem dados.</div>');
-        const wReg = cdCard('Registros ativos por entidade', ent ? `${ent} em destaque` : `CDLs com mais registros ativos · ${rotRef(refR)}`, barrasEnt(regEnt, 'Registros ativos por entidade', N, CD_COR.azul, 'Sem dados.'));
+        // Linha B: associados com mais recuperações e mais registros ativos (até 10 cada, % do total).
         const totRE = Object.values(recEnt).reduce((s, v) => s + v, 0);
-        const wRank = cdCard('Mais recuperações', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenarB(recEnt).slice(0, 5), totRE, N));
+        const AR = daEnt(R.assocRegistros).filter(casaA);
+        const topRec = AR.filter(a => a.rec > 0).sort((x, y) => y.rec - x.rec), topReg = AR.filter(a => a.reg > 0).sort((x, y) => y.reg - x.reg);
+        const wReg = cdCard('Ranking · Top Associados · recuperação', `Registros recuperados · ${rotRef(refR)} · ${local} · % do total`, rankBarras(topRec.map(a => [a.nome, a.rec, `${a.ent} · ${N(a.rec)} recuperações (${pct(totRec ? a.rec / totRec : 0)}) · ${N(a.reg)} registros ativos`]),
+          { tot: totRec, cor: CD_COR.verde, titulo: 'Top Associados · recuperação', vazio: 'Sem recuperações.' }));
+        const wRank = cdCard('Ranking · Top Associados · registros ativos', `Negativações ativas · ${rotRef(refR)} · ${local} · % do total`, rankBarras(topReg.map(a => [a.nome, a.reg, `${a.ent} · ${N(a.reg)} registros ativos (${pct(totReg ? a.reg / totReg : 0)}) · ${N(a.rec)} recuperações`]),
+          { tot: totReg, cor: CD_COR.azul, titulo: 'Top Associados · registros ativos', vazio: 'Sem registros ativos.' }));
         const dest = [];
-        const lst = ordenar(recEnt), iCba = lst.findIndex(([k]) => k === 'Cuiabá');
-        if(iCba >= 0) dest.push({ ic: 'mapa', tom: 'verde', tit: `Cuiabá: ${N(lst[iCba][1])} recuperações (${iCba + 1}º)`, meta: `${pct(lst[iCba][1] / totRE)} das recuperações de MT` });
-        const fxTop = rec.slice().sort((a, b) => tot(b[1]) - tot(a[1]))[0];
-        if(fxTop) dest.push({ ic: 'raio', tom: 'azul', tit: `Faixa mais comum: ${fxTop[0].toLowerCase()}`, meta: `${pct(totRec ? tot(fxTop[1]) / totRec : 0)} das recuperações` });
-        const taxa = Object.entries(recEnt).filter(([k]) => (regEnt[k] || 0) >= 1000).map(([k, v]) => [k, v / ((regEnt[k] || 0) + v)]).sort((a, b) => b[1] - a[1])[0];
-        if(taxa) dest.push({ ic: 'trendUp', tom: 'verde', tit: `Maior taxa de recuperação: ${taxa[0]}`, meta: `${pct(taxa[1])} = recuperações ÷ (recuperações + registros ativos) · CDLs com 1.000+ registros` });
-        dest.push({ ic: 'layers', tom: 'amarelo', tit: `${N(totReg)} registros ativos`, meta: `${pct(totReg ? ate(reg, 90) / totReg : 0)} com até 90 dias · ${local}` });
-        const incM = tot(A.fluxo.inclusao[m]);
-        dest.push({ ic: 'documento', tom: 'azul', tit: `${N(incM)} inclusões em ${mesTxt}`, meta: `Novos registros no mês · ${local}` });
+        const fxMais = (lst, totL) => { const f = lst.slice().sort((a, b) => tot(b[1]) - tot(a[1]))[0]; return f ? [f[0].toLowerCase(), tot(f[1]), totL ? tot(f[1]) / totL : 0] : null; };
+        const fRec = fxMais(rec, totRec), fReg = fxMais(reg, totReg);
+        if(fRec) dest.push({ ic: 'raio', tom: 'verde', tit: `Faixa com mais recuperações: ${fRec[0]}`, meta: `${N(fRec[1])} · ${pct(fRec[2])} das recuperações · ${local}` });
+        if(fReg) dest.push({ ic: 'layers', tom: 'amarelo', tit: `Faixa com mais registros ativos: ${fReg[0]}`, meta: `${N(fReg[1])} · ${pct(fReg[2])} dos registros ativos · ${local}` });
+        const top3A = (l, f) => l.slice(0, 3).map((a, i) => `${i + 1}. ${curtoA(a.nome)} (${N(f(a))})`).join(' · ');
+        dest.push({ ic: 'trendUp', tom: 'verde', tit: 'Top 03 maiores recuperações · por associado', meta: topRec.length ? top3A(topRec, a => a.rec) : 'Sem recuperações' });
+        dest.push({ ic: 'alerta', tom: 'vermelho', tit: 'Top 03 mais registros ativos · por associado', meta: topReg.length ? top3A(topReg, a => a.reg) : 'Sem registros ativos' });
+        const taxa = Object.entries(recEnt).filter(([k]) => (regEnt[k] || 0) >= 1000 && casa(k)).map(([k, x]) => [k, x / ((regEnt[k] || 0) + x)]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        if(taxa.length) dest.push({ ic: 'percent', tom: 'verde', tit: 'Top 03 maiores taxas de recuperação · por entidade', meta: taxa.map(([k, t], i) => `${i + 1}. ${k} (${pct(t)})`).join(' · ') });
+        const topE = ordenar(recEnt).filter(([k]) => casa(k)).slice(0, 3);
+        if(topE.length) dest.push({ ic: 'pizza', tom: 'azul', tit: 'Top 03 mais recuperações · por entidade', meta: topE.map(([k, x], i) => `${i + 1}. ${k} (${pct(totRE ? x / totRE : 0)})`).join(' · ') });
         const wDest = cdCard('Destaques', `${local} · ${rotRef(refR)}`, destHtml(dest));
         html = `<div class="cd-kpis">${k1}${k2}${k3}${k4}${k5}</div><div class="cd-row cd-row-a">${wFx}${wEnt}${wRosca}</div><div class="cd-row cd-row-b">${wReg}${wRank}${wDest}</div>`;
         csv = [['Entidade', 'Recuperações', 'Registros ativos']];
