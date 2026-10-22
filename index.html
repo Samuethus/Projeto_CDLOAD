@@ -1603,8 +1603,13 @@
   /* Intenção de compra: nome da data + ano inteiros e, ao lado do %, a variação vs. o ano anterior (p.p.) */
   /* SPC Mato Grosso: switch com os 7 indicadores sempre inteiro (sem quebrar linha nem cortar o texto) */
   #page-dashboard .filter-bar .sp-abas{flex:0 0 auto;flex-wrap:nowrap;white-space:nowrap;}
+  /* SPC MT: largura mínima confortável (abaixo disso o filtro vai para o menu, em vez de virar "En…") */
+  #page-dashboard.stk-sp .filter-bar .filter-select{min-width:118px;}
+  #page-dashboard.stk-sp .filter-bar .wa-clip-search{min-width:168px;flex:1 1 0;}
   #page-dashboard .filter-bar .sp-abas .stk-seg-btn{flex:0 0 auto;white-space:nowrap;overflow:visible;text-overflow:clip;padding-left:9px;padding-right:9px;}
   @media (max-width:1400px){ #page-dashboard .filter-bar .sp-abas .stk-seg-btn{padding-left:7px;padding-right:7px;font-size:12.5px;} }
+  @media (max-width:1300px){ #page-dashboard .filter-bar .sp-abas .stk-seg-btn{padding-left:5px;padding-right:5px;font-size:11.5px;}
+    #page-dashboard.stk-sp .filter-bar #stkPainelFiltro{min-width:96px;} }
   .cd-barras.ic-barras .cd-barra, .cd-barras.ic-barras .cd-barra:has(.cd-barra-pct){grid-template-columns:minmax(0,142px) 1fr minmax(40px,auto) 62px;gap:10px;}
   .cd-barras.ic-barras .cd-barra-pct.ic-sobe{color:var(--cd-verde);font-weight:600;}
   .cd-barras.ic-barras .cd-barra-pct.ic-cai{color:var(--cd-verm);font-weight:600;}
@@ -12585,8 +12590,9 @@ ${clipPlayerPills(n)}
       const ic = stkPainel() === 'intencao';
       const sp = stkPainel() === 'spcmt';
       document.getElementById('stkIcDatasFiltro').hidden = !ic;
-      // SPC Mato Grosso: switch dos 7 indicadores + Entidade; sem a busca, para o switch caber inteiro na barra.
+      // SPC Mato Grosso: busca + switch dos 7 indicadores + Entidade, Mês e Ano (os que não cabem vão para o menu).
       document.getElementById('stkSpAbas').hidden = !sp;
+      document.getElementById('page-dashboard').classList.toggle('stk-sp', sp);
       document.getElementById('stkSpEntFiltro').hidden = !sp;
       if(!ic) document.getElementById('stkIcDatasLista').hidden = true;
       stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp;
@@ -12608,7 +12614,7 @@ ${clipPlayerPills(n)}
       stkInadRegiaoEl.hidden = !inad || inadVisao !== 'graf';
       // INADIMPLÊNCIA: busca como nos demais painéis — no Dashboard filtra as listas (região, setor credor, faixa,
       // valor, atraso); no Gráfico escolhe a região pelo nome ("centro" → Centro-Oeste), no lugar do filtro Região.
-      stkBuscaInput.closest('.wa-clip-search').hidden = sp;
+      stkBuscaInput.closest('.wa-clip-search').hidden = false;
       stkIbgeLocalEl.hidden = !ibge;
       stkPeriodoClipEl.hidden = !clipping;
       document.getElementById('stkIndicadorFiltro').hidden = stkPainelEl.value !== 'panorama';
@@ -12622,19 +12628,20 @@ ${clipPlayerPills(n)}
       // EMPRESAS: barra com Busca + 5 filtros (Painel, Indicador, Mês, Ano, Cidade) + switch + filtro + Limpar + Exportar;
       // Regime, SIMEI, Situação, Subclasse e Ramo ficam só no menu flutuante (selo "+5").
       [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
-      // SPC Mato Grosso: a barra fica com Painel + switch dos 7 indicadores (inteiro, sem quebrar linha);
-      // Entidade, Mês e Ano vão para o menu flutuante (selo "+3").
-      [document.getElementById('stkSpEntFiltro'), stkMesEl, stkAnoEl].forEach(el => el.classList.toggle('stk-so-menu', sp));
-      stkFiltrosBtn.hidden = !emp && !sp;
+      // SPC Mato Grosso: os filtros ocupam a barra toda; sem espaço, saem um a um para o menu flutuante (selo "+N").
+      const spMenu = spAjustarBarra(sp);
+      stkFiltrosBtn.hidden = !emp && !spMenu;
       stkFiltrosAtualizar();
-      if(!emp && !sp) stkFiltrosFechar();
+      if(!emp && !spMenu) stkFiltrosFechar();
       const mapa = emp && empVisao === 'mapa';
       stkGrid.hidden = mapa;
       document.getElementById('empMapa').hidden = !mapa;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
-      stkBuscaInput.placeholder = ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
+      stkBuscaInput.placeholder = sp ? 'Buscar entidade ou produto (ex.: Sinop, SPC Mix)...' : ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
         : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade econômica (CNAE)...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+      // SPC MT: o encaixe é medido de novo no fim, com todos os filtros do painel já mostrados/escondidos.
+      if(sp){ stkFiltrosBtn.hidden = !spAjustarBarra(true); stkFiltrosAtualizar(); }
     }
 
     function stkPreencherFiltros(){
@@ -15509,6 +15516,9 @@ ${clipPlayerPills(n)}
       const ents = new Map(), nomes = [];
       const ent = (cod, nome) => { cod = Math.trunc(Number(cod)); if(!ents.has(cod)){ ents.set(cod, nomes.length); nomes.push([cod, nome]); } return ents.get(cod); };
       const num = v => Number(v || 0);
+      // Associados: chave "entidade|código"; nome sem o "-<código>" do final (como no script).
+      const nomesA = new Map();
+      const assoc = (e, cod, nome) => { const k = `${e}|${Math.trunc(num(cod))}`; if(!nomesA.has(k)) nomesA.set(k, String(nome == null ? '' : nome).trim().replace(/-\d+$/, '').trim()); return k; };
       let ano = null;
       const mesDe = (i, l) => { ano = ano || Math.trunc(Number(l[i['ANO']])); const t = String(l[i['MÊS']]).trim().slice(0, 3); return SP_MESES_ABREV.indexOf(t[0].toUpperCase() + t.slice(1).toLowerCase()); };
       const add = (mp, k, q) => mp.set(k, (mp.get(k) || 0) + q);
@@ -15518,13 +15528,15 @@ ${clipPlayerPills(n)}
         const op = String(l[i['OPERAÇÃO']]).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z]/g, '');
         add(cap, `${op}|${mesDe(i, l)}|${ent(l[i['COD E']], l[i['ENTIDADE']])}`, num(l[i['QTD']]));
       }
-      const cons = new Map(), consA = new Map(), prod = new Map(), produtos = new Map();
+      const cons = new Map(), consA = new Map(), prod = new Map(), produtos = new Map(), acons = new Map();
       [i, L] = base('BASE_CONSULTAS');
       for(const l of L){
         const m = mesDe(i, l), e = ent(l[i['COD E']], l[i['ENTIDADE']]), q = num(l[i['QTD']]), p = String(l[i['PRODUTO']]).trim();
         if(!produtos.has(p)) produtos.set(p, produtos.size);
         add(cons, `${m}|${e}`, q); add(prod, `${m}|${e}|${produtos.get(p)}`, q);
         if(!consA.has(`${m}|${e}`)) consA.set(`${m}|${e}`, new Set()); consA.get(`${m}|${e}`).add(l[i['COD A']]);
+        const ka = assoc(e, l[i['COD A']], l[i['ASSOCIADO']]);
+        if(!acons.has(ka)) acons.set(ka, new Array(12).fill(0)); acons.get(ka)[m] += q;
       }
       const inc = new Map(), incA = new Map();
       [i, L] = base('BASE_REGISTROS');
@@ -15535,19 +15547,22 @@ ${clipPlayerPills(n)}
       }
       let ref = '';
       const dataIso = v => typeof v === 'number' ? new Date(Date.UTC(1899, 11, 30) + Math.trunc(v) * 864e5).toISOString().slice(0, 10) : String(v).slice(0, 10);
-      const retrato = (pre, qtd, faixa) => {
+      // Soma por (faixa, entidade); com qtdAssoc, também a soma dessa coluna por associado (porA).
+      const retrato = (pre, qtd, faixa, qtdAssoc, porA) => {
         const [i, L] = base(pre), out = new Map();
         for(const l of L){
           const d = dataIso(l[i['DATA REFERENCIA']]); if(d > ref) ref = d;
           const e = ent(l[i['COD ENTIDADE']], l[i['ENTIDADE']]);
           const f = faixa ? String(l[i[faixa]]).trim().replace(/^'+|'+$/g, '').trim() : '';
           add(out, `${f}|${e}`, num(l[i[qtd]]));
+          if(qtdAssoc) add(porA, assoc(e, l[i['COD ASSOCIADO']], l[i['NOM ASSOCIADO']]), num(l[i[qtdAssoc]]));
         }
         return out;
       };
-      const ativos = retrato('BASE_ATIVOS', 'QTD ASSOCIADO'), usoC = retrato('BASE_CONSUMO CONSULTAS', 'QTD ASSOCIADO', 'USO');
-      const usoR = retrato('BASE_CONSUMO REGISTROS', 'QTD ASSOCIADO', 'USO'), regTP = retrato('BASE_REG ATIVO', 'QTD. REGISTROS', 'DES FAIXA TEMPO PERMANENCIA');
-      const rec = retrato('BASE_RECUPERA', 'QTD. RECUPERAÇÃO', 'DES FAIXA TEMPO PERMANENCIA');
+      const aUsoC = new Map(), aUsoR = new Map(), aReg = new Map(), aRec = new Map();
+      const ativos = retrato('BASE_ATIVOS', 'QTD ASSOCIADO'), usoC = retrato('BASE_CONSUMO CONSULTAS', 'QTD ASSOCIADO', 'USO', 'QTD CONSULTAS', aUsoC);
+      const usoR = retrato('BASE_CONSUMO REGISTROS', 'QTD ASSOCIADO', 'USO', 'QTD REGISTROS', aUsoR), regTP = retrato('BASE_REG ATIVO', 'QTD. REGISTROS', 'DES FAIXA TEMPO PERMANENCIA', 'QTD. REGISTROS', aReg);
+      const rec = retrato('BASE_RECUPERA', 'QTD. RECUPERAÇÃO', 'DES FAIXA TEMPO PERMANENCIA', 'QTD. RECUPERAÇÃO', aRec);
       const nE = nomes.length;
       const meses = [...cap.keys()].map(k => Number(k.split('|')[1])).concat([...cons.keys(), ...inc.keys()].map(k => Number(k.split('|')[0])));
       const nM = Math.max(...meses) + 1;
@@ -15556,6 +15571,20 @@ ${clipPlayerPills(n)}
         return { faixas: fx, valores: fx.map(f => Array.from({ length: nE }, (_, e) => Math.round(mp.get(`${f}|${e}`) || 0))) }; };
       const prodQtd = [...prod.entries()].map(([k, q]) => [...k.split('|').map(Number), Math.round(q)])
         .sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).flat();
+      // Maiores associados (relatório Dados CESPC): os n maiores de cada entidade + os n maiores de MT.
+      // Empate: nome do associado, depois o código (mesma ordem do script em Python).
+      const kE = k => Number(k.split('|')[0]), kC = k => Number(k.split('|')[1]);
+      const cmpTxt = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+      const top = (chaves, val, n) => {
+        const ordem = ks => ks.slice().sort((a, b) => val(b) - val(a) || cmpTxt(nomesA.get(a), nomesA.get(b)) || kC(a) - kC(b));
+        const sel = new Set(ordem(chaves).slice(0, n)), porE = new Map();
+        chaves.forEach(k => { if(!porE.has(kE(k))) porE.set(kE(k), []); porE.get(kE(k)).push(k); });
+        porE.forEach(ks => ordem(ks).slice(0, n).forEach(k => sel.add(k)));
+        return [...sel].sort((a, b) => kE(a) - kE(b) || val(b) - val(a) || cmpTxt(nomesA.get(a), nomesA.get(b)) || kC(a) - kC(b));
+      };
+      const totC = k => acons.get(k).reduce((s, v) => s + v, 0);
+      const regRec = [...new Set([...aReg.keys(), ...aRec.keys()])];
+      const porEnt = mp => { const o = new Array(nE).fill(0); mp.forEach((v, k) => { o[kE(k)] += v; }); return o.map(Math.round); };
       return { arquivo, ano, meses: nM, ref, entidades: nomes,
         captacao: mat((m, e) => cap.get(`CAPTACAO|${m}|${e}`) || 0), cancelamento: mat((m, e) => cap.get(`CANCELAMENTO|${m}|${e}`) || 0),
         suspensao: mat((m, e) => cap.get(`SUSPENSO|${m}|${e}`) || 0), consultas: mat((m, e) => cons.get(`${m}|${e}`) || 0),
@@ -15563,7 +15592,12 @@ ${clipPlayerPills(n)}
         inclusaoAssoc: mat((m, e) => (incA.get(`${m}|${e}`) || new Set()).size),
         produtos: [...produtos.keys()], produtoQtd: prodQtd,
         ativos: Array.from({ length: nE }, (_, e) => Math.round(ativos.get(`|${e}`) || 0)),
-        usoConsultas: faixas(usoC), usoRegistros: faixas(usoR), registrosAtivos: faixas(regTP), recuperacao: faixas(rec) };
+        usoConsultas: faixas(usoC), usoRegistros: faixas(usoR), registrosAtivos: faixas(regTP), recuperacao: faixas(rec),
+        consumoConsultas: porEnt(aUsoC), consumoRegistros: porEnt(aUsoR),
+        assocConsultas: top([...acons.keys()], totC, 15).map(k => [kE(k), nomesA.get(k), ...acons.get(k).slice(0, nM).map(Math.round)]),
+        assocRegistros: top(regRec, k => aReg.get(k) || 0, 25).map(k => [kE(k), nomesA.get(k), Math.round(aReg.get(k) || 0), Math.round(aRec.get(k) || 0)]),
+        assocUsoConsultas: top([...aUsoC.keys()], k => aUsoC.get(k), 25).map(k => [kE(k), nomesA.get(k), Math.round(aUsoC.get(k))]),
+        assocUsoRegistros: top([...aUsoR.keys()], k => aUsoR.get(k), 25).map(k => [kE(k), nomesA.get(k), Math.round(aUsoR.get(k))]) };
     }
 
     // ---- Entidades: "CDL CUIABA/MT-2603" → "Cuiabá" (nome do município com acento, de municipios_geo.js) ----
@@ -15589,10 +15623,17 @@ ${clipPlayerPills(n)}
         const [m, e, p, q] = R.produtoQtd.slice(k, k + 4), P = prod[m][R.produtos[p]] = prod[m][R.produtos[p]] || {};
         P[nome[e]] = (P[nome[e]] || 0) + q;
       }
+      // Associados (relatório Dados CESPC): [entidade, associado, ...valores]; resumos antigos (sem associados) ficam vazios.
+      const aE = (lst, f) => (lst || []).map(([e, n, ...v]) => f(nome[e], n, v));
       return { arquivo: R.arquivo, ano: R.ano, nMeses: R.meses, ref: R.ref,
         fluxo: Object.fromEntries(['captacao', 'cancelamento', 'suspensao', 'consultas', 'consultasAssoc', 'inclusao', 'inclusaoAssoc'].map(k => [k, R[k].map(porEnt)])),
-        prod, retrato: { ref: R.ref, ativos: porEnt(R.ativos), usoConsultas: fx(R.usoConsultas), usoRegistros: fx(R.usoRegistros),
-          registrosAtivos: fx(R.registrosAtivos), recuperacao: fx(R.recuperacao) } };
+        prod, assocConsultas: aE(R.assocConsultas, (e, n, v) => ({ ent: e, nome: n, meses: v })),
+        retrato: { ref: R.ref, ativos: porEnt(R.ativos), usoConsultas: fx(R.usoConsultas), usoRegistros: fx(R.usoRegistros),
+          registrosAtivos: fx(R.registrosAtivos), recuperacao: fx(R.recuperacao),
+          consumoConsultas: porEnt(R.consumoConsultas || []), consumoRegistros: porEnt(R.consumoRegistros || []),
+          assocRegistros: aE(R.assocRegistros, (e, n, v) => ({ ent: e, nome: n, reg: v[0], rec: v[1] })),
+          assocUsoConsultas: aE(R.assocUsoConsultas, (e, n, v) => ({ ent: e, nome: n, q: v[0] })),
+          assocUsoRegistros: aE(R.assocUsoRegistros, (e, n, v) => ({ ent: e, nome: n, q: v[0] })) } };
     }
     // Vários arquivos: fluxos do mais recente de cada ano; retratos por data de referência (o mais novo vence).
     function spMontar(resumos){
@@ -15624,7 +15665,7 @@ ${clipPlayerPills(n)}
       const lidos = [];
       for(const r of docs){
         try {
-          const chave = `spmt-v1|${r.id}|${r.arquivo_path}`;
+          const chave = `spmt-v2|${r.id}|${r.arquivo_path}`;
           let R = await thumbCache('get', chave);
           if(!R){
             await riCarregarJsZip();
@@ -15649,7 +15690,7 @@ ${clipPlayerPills(n)}
       const anos = Object.keys(M.anos).sort().reverse(), curAno = stkAnoEl.value, curEnt = stkSpEntEl.value;
       stkAnoEl.innerHTML = '<option value="">Ano</option>' + anos.map(a => `<option value="${a}">${a}</option>`).join('');
       if(anos.includes(curAno)) stkAnoEl.value = curAno;
-      stkSpEntEl.innerHTML = '<option value="">Entidade · Todas (MT)</option>' + M.ents.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      stkSpEntEl.innerHTML = '<option value="">Entidade · Todas</option>' + M.ents.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
       if(M.ents.includes(curEnt)) stkSpEntEl.value = curEnt;
       stkSpEntEl.classList.toggle('ativo', !!stkSpEntEl.value);
     }
@@ -15663,6 +15704,21 @@ ${clipPlayerPills(n)}
     });
     stkSpEntEl.addEventListener('change', () => spRender());
     function spFiltrosLimpar(){ stkSpEntEl.value = ''; }
+    // Barra do SPC MT: tudo na barra enquanto couber (largura mínima confortável, sem "En…"); se não couber, Ano, Mês,
+    // Entidade, a busca e, em tela bem estreita, o Painel passam para o menu flutuante, nessa ordem. Recalculado a cada desenho (e no resize).
+    function spAjustarBarra(sp){
+      const busca = stkBuscaInput.closest('.wa-clip-search'), bar = busca.parentElement;
+      const fila = [stkAnoEl, stkMesEl, document.getElementById('stkSpEntFiltro'), busca, stkPainelEl];   // Painel: último recurso (telas estreitas)
+      fila.forEach(el => el.classList.remove('stk-so-menu'));
+      if(!sp || !bar.offsetParent) return false;
+      const cabe = () => bar.scrollWidth <= bar.clientWidth + 1;
+      stkFiltrosBtn.hidden = true;
+      if(cabe()) return false;
+      stkFiltrosBtn.hidden = false;
+      let n = 0;
+      while(n < fila.length && !cabe()) fila[n++].classList.add('stk-so-menu');
+      return true;
+    }
 
     // ---- Render ----
     function spRender(){
@@ -15692,6 +15748,9 @@ ${clipPlayerPills(n)}
       const pct = (v, c = 1) => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }) + '%';
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       const ordenar = o => Object.entries(o || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+      // Busca: filtra as listas de entidades e de produtos pelo nome (os totais e KPIs não mudam).
+      const termos = ibgeTermo(), casa = n => !termos.length || ibgeCasa(n, termos);
+      const ordenarB = o => ordenar(o).filter(([k]) => casa(k));
       // Retrato: o mais recente até o mês escolhido (e o anterior, para comparar).
       const refs = Object.keys(M.retratos).sort(), alvo = `${anoTxt}-${String(m + 1).padStart(2, '0')}`;
       const refR = [...refs].reverse().find(r => r <= alvo) || refs[0], R = M.retratos[refR];
@@ -15701,8 +15760,8 @@ ${clipPlayerPills(n)}
           <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
           <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>` : '<div class="stk-vazio">Sem destaques no período.</div>';
       const barrasEnt = (o, titulo, fmt, cor, vazio) => {
-        const top = ordenar(o).slice(0, 7);
-        if(ent && !top.some(([k]) => k === ent) && o[ent]) top.splice(6, 1, [ent, o[ent]]);
+        const top = ordenarB(o).slice(0, 7);
+        if(ent && casa(ent) && !top.some(([k]) => k === ent) && o[ent]) top.splice(6, 1, [ent, o[ent]]);
         return cdBarras(top.map(([k, v], i) => ({ nome: k, valor: v, rotulo: fmt(v),
           cor: ent ? (k === ent ? cor : stkMisturarCor(cor, '#FFFFFF', 0.6)) : stkMisturarCor(cor, '#D6E4F5', top.length > 1 ? i / (top.length - 1) : 0) })), titulo, vazio);
       };
@@ -15773,10 +15832,10 @@ ${clipPlayerPills(n)}
         const wRosca = cdCard('Participação por entidade', `Acumulado do ano · ${N(totRosca)} ${F.un}`, rosca.length ? roscaHtml(rosca, pct(totRosca ? rosca[0].valor / totRosca : 0, 0), rosca[0].nome) : '<div class="stk-vazio">Sem registros no período.</div>');
         // Linha B
         const dif = Object.keys({ ...(S[m] || {}), ...(m ? S[m - 1] || {} : {}) }).map(k => [k, (S[m][k] || 0) - (m ? (S[m - 1][k] || 0) : 0)]);
-        const altas = m ? dif.filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
+        const altas = m ? dif.filter(([k, d]) => d > 0 && casa(k)).sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
         const wAltas = cdCard(F.inverso ? 'Maiores aumentos no mês' : 'Maiores altas no mês', antTxt ? `${mesTxt} contra ${antTxt} · por entidade` : 'Sem mês anterior no ano',
           cdBarras(altas.map(([k, d]) => ({ nome: k, valor: d, rotulo: cagSinal(d), cor: F.inverso ? CD_COR.vermelho : CD_COR.verde, dica: `${N(S[m][k] || 0)} em ${mesTxt} · ${N(S[m - 1][k] || 0)} em ${antTxt}` })), 'Maiores altas no mês', 'Nenhuma entidade com alta no mês.'));
-        const noMes = ordenar(S[m]).slice(0, 5), totMes = Object.values(S[m] || {}).reduce((s, x) => s + x, 0);
+        const noMes = ordenarB(S[m]).slice(0, 5), totMes = Object.values(S[m] || {}).reduce((s, x) => s + x, 0);
         const wRank = cdCard(`${F.rot} em ${mesTxt}`, 'Entidades com mais no mês · % do total de MT', rankHtml(noMes, totMes, N));
         const dest = [];
         const serieTot = S.map(tot), pico = serieTot.slice(0, m + 1).indexOf(Math.max(...serieTot.slice(0, m + 1)));
@@ -15818,7 +15877,7 @@ ${clipPlayerPills(n)}
         const uso = Object.entries(R.ativos).filter(([, a]) => a >= 50).map(([k, a]) => [k, (A.fluxo.consultasAssoc[m][k] || 0) / a]).sort((a, b) => b[1] - a[1]).slice(0, 7);
         const wUso = cdCard('Uso de consultas por entidade', `% dos ativos que consultaram em ${mesTxt} · CDLs com 50+ associados`, cdBarras(uso.map(([k, t]) => ({ nome: k, valor: t, rotulo: pct(t), cor: k === ent ? CD_COR.verde : stkMisturarCor(CD_COR.verde, '#FFFFFF', 0.25), dica: `${N(A.fluxo.consultasAssoc[m][k] || 0)} de ${N(R.ativos[k])} associados` })), 'Uso de consultas por entidade', 'Sem dados.'));
         const totAt = Object.values(R.ativos).reduce((s, x) => s + x, 0);
-        const wRank = cdCard('Mais associados ativos', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenar(R.ativos).slice(0, 5), totAt, N));
+        const wRank = cdCard('Mais associados ativos', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenarB(R.ativos).slice(0, 5), totAt, N));
         const dest = [];
         const lst = ordenar(R.ativos), iCba = lst.findIndex(([k]) => k === 'Cuiabá');
         if(iCba >= 0) dest.push({ ic: 'mapa', tom: 'verde', tit: `Cuiabá: ${N(lst[iCba][1])} associados (${iCba + 1}º)`, meta: `${pct(lst[iCba][1] / totAt)} dos associados ativos de MT` });
@@ -15855,14 +15914,14 @@ ${clipPlayerPills(n)}
         const series = top3.map((p, i) => ({ nome: curto(p).length > 16 ? curto(p).slice(0, 15) + '…' : curto(p), cor: cores[i], valores: Array.from({ length: A.nMeses }, (_, k) => tot((P[k] || {})[p])) }));
         linha = { cats: PAN_MES_CURTO.slice(0, A.nMeses), series };
         const wEvol = cdCard('Evolução dos 3 mais consultados', `Consultas por mês · ${local} · ${ano}`, '<div id="stkFluxoGraf"></div>', legendaDots(series));
-        const wTop = cdCard(`Mais consultados em ${mesTxt}`, '% das consultas do mês', cdBarras(lst.slice(0, 7).map(([p, v], i) => ({ nome: curto(p), valor: v, rotulo: pct(v / totM), cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', i / 6), dica: `${N(v)} consultas` })), 'Mais consultados', 'Sem consultas no mês.'));
+        const wTop = cdCard(`Mais consultados em ${mesTxt}`, '% das consultas do mês', cdBarras(lst.filter(([p]) => casa(p)).slice(0, 7).map(([p, v], i) => ({ nome: curto(p), valor: v, rotulo: pct(v / totM), cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', i / 6), dica: `${N(v)} consultas` })), 'Mais consultados', 'Sem consultas no mês.'));
         const FAM_COR = { 'Consultas SPC': CD_COR.azul, 'Score': CD_COR.verde, 'Insumos': '#E3AE1F', 'Cheque': '#7C3AED', 'Outros': CD_COR.cinza };
         rosca = ordenar(famO).map(([n, v]) => ({ nome: n, sigla: n, cor: FAM_COR[n], valor: v, total: totM }));
         const wRosca = cdCard('Famílias de produtos', `Consultas de ${mesTxt} por tipo de produto`, rosca.length ? roscaHtml(rosca, pct(totM ? rosca[0].valor / totM : 0, 0), rosca[0].nome) : '<div class="stk-vazio">Sem consultas no mês.</div>');
         const cres = ant ? Object.keys({ ...atual, ...ant }).map(p => [p, (atual[p] || 0) - (ant[p] || 0)]).filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
         const wCres = cdCard('Produtos que mais cresceram', antTxt ? `${mesTxt} contra ${antTxt}` : 'Sem mês anterior no ano', cdBarras(cres.map(([p, d]) => ({ nome: curto(p), valor: d, rotulo: cagSinal(d), cor: CD_COR.verde, dica: `${N(atual[p] || 0)} em ${mesTxt} · ${N(ant[p] || 0)} em ${antTxt}` })), 'Produtos que mais cresceram', 'Nenhum produto cresceu no mês.'));
         const acT = Object.values(acum).reduce((s, v) => s + v, 0);
-        const wRank = cdCard(`Mais consultados em ${ano}`, `Acumulado de jan a ${PAN_MES_CURTO[m]} · ${local}`, rankHtml(ordenar(acum).slice(0, 5).map(([p, v]) => [curto(p), v]), acT, N));
+        const wRank = cdCard(`Mais consultados em ${ano}`, `Acumulado de jan a ${PAN_MES_CURTO[m]} · ${local}`, rankHtml(ordenarB(acum).slice(0, 5).map(([p, v]) => [curto(p), v]), acT, N));
         const dest = [];
         if(lst.length) dest.push({ ic: 'trendUp', tom: 'azul', tit: `${curto(lst[0][0])}: ${pct(lst[0][1] / totM)} do mês`, meta: `${N(lst[0][1])} consultas em ${mesTxt}` });
         if(ant){ const q = Object.keys({ ...atual, ...ant }).map(p => [p, (atual[p] || 0) - (ant[p] || 0)]).sort((a, b) => a[1] - b[1])[0]; if(q && q[1] < 0) dest.push({ ic: 'setaBaixo', tom: 'vermelho', tit: `Maior queda: ${curto(q[0])} (${cagSinal(q[1])})`, meta: `${mesTxt} contra ${antTxt}` }); }
@@ -15899,7 +15958,7 @@ ${clipPlayerPills(n)}
         const wRosca = cdCard('Registros ativos por tempo', `Tempo de permanência dos registros ativos · ${rotRef(refR)}`, rosca.length ? roscaHtml(rosca, totReg >= 1e6 ? (totReg / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : N(Math.round(totReg / 1000)) + ' mil', 'registros ativos') : '<div class="stk-vazio">Sem dados.</div>');
         const wReg = cdCard('Registros ativos por entidade', ent ? `${ent} em destaque` : `CDLs com mais registros ativos · ${rotRef(refR)}`, barrasEnt(regEnt, 'Registros ativos por entidade', N, CD_COR.azul, 'Sem dados.'));
         const totRE = Object.values(recEnt).reduce((s, v) => s + v, 0);
-        const wRank = cdCard('Mais recuperações', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenar(recEnt).slice(0, 5), totRE, N));
+        const wRank = cdCard('Mais recuperações', `Participação em MT · ${rotRef(refR)}`, rankHtml(ordenarB(recEnt).slice(0, 5), totRE, N));
         const dest = [];
         const lst = ordenar(recEnt), iCba = lst.findIndex(([k]) => k === 'Cuiabá');
         if(iCba >= 0) dest.push({ ic: 'mapa', tom: 'verde', tit: `Cuiabá: ${N(lst[iCba][1])} recuperações (${iCba + 1}º)`, meta: `${pct(lst[iCba][1] / totRE)} das recuperações de MT` });
@@ -17558,7 +17617,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao', 'spcmt'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {

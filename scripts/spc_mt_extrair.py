@@ -67,6 +67,12 @@ def resumir(caminho):
             nomes.append([cod, nome])
         return ents[cod]
     num = lambda v: float(v or 0)
+    # Associados: chave (entidade, código do associado); nome sem o "-<código>" do final.
+    nomes_a = {}
+    def assoc(e, cod, nome):
+        k = (e, int(num(cod)))
+        nomes_a.setdefault(k, re.sub(r'-\d+$', '', str(nome or '').strip()).strip())
+        return k
 
     # ---- fluxos (ano, mês) ----
     ano = None
@@ -80,6 +86,7 @@ def resumir(caminho):
         op = re.sub(r'[^A-Z]', '', html.unescape(str(l[i['OPERAÇÃO']])).upper().replace('Ã', 'A').replace('Ç', 'C'))
         cap[(op, mes_de(i, l), ent(l[i['COD E']], l[i['ENTIDADE']]))] += num(l[i['QTD']])
     cons, consA, prod = defaultdict(float), defaultdict(set), defaultdict(float)
+    acons = defaultdict(lambda: [0.0] * 12)   # (entidade, associado) -> consultas por mês
     produtos = {}
     i, L = base('BASE_CONSULTAS')
     for l in L:
@@ -87,6 +94,7 @@ def resumir(caminho):
         q = num(l[i['QTD']]); p = str(l[i['PRODUTO']]).strip()
         produtos.setdefault(p, len(produtos))
         cons[(m, e)] += q; consA[(m, e)].add(l[i['COD A']]); prod[(m, e, produtos[p])] += q
+        acons[assoc(e, l[i['COD A']], l[i['ASSOCIADO']])][m] += q
     inc, incA = defaultdict(float), defaultdict(set)
     i, L = base('BASE_REGISTROS')
     for l in L:
@@ -99,21 +107,24 @@ def resumir(caminho):
         if isinstance(v, float):
             return (datetime.date(1899, 12, 30) + datetime.timedelta(days=int(v))).isoformat()
         return str(v)[:10]
-    def retrato(prefixo, qtd, faixa=None):
+    def retrato(prefixo, qtd, faixa=None, qtd_assoc=None):
+        """Soma por (faixa, entidade); com qtd_assoc, também a soma dessa coluna por associado."""
         nonlocal ref
         i, L = base(prefixo)
-        out = defaultdict(float)
+        out, por_a = defaultdict(float), defaultdict(float)
         for l in L:
             ref = max(ref or '', data_iso(l[i['DATA REFERENCIA']]))
             e = ent(l[i['COD ENTIDADE']], l[i['ENTIDADE']])
             f = str(l[i[faixa]]).strip().strip("'").strip() if faixa else ''
             out[(f, e)] += num(l[i[qtd]])
-        return out
+            if qtd_assoc:
+                por_a[assoc(e, l[i['COD ASSOCIADO']], l[i['NOM ASSOCIADO']])] += num(l[i[qtd_assoc]])
+        return (out, por_a) if qtd_assoc else out
     ativos = retrato('BASE_ATIVOS', 'QTD ASSOCIADO')
-    usoC = retrato('BASE_CONSUMO CONSULTAS', 'QTD ASSOCIADO', 'USO')
-    usoR = retrato('BASE_CONSUMO REGISTROS', 'QTD ASSOCIADO', 'USO')
-    regTP = retrato('BASE_REG ATIVO', 'QTD. REGISTROS', 'DES FAIXA TEMPO PERMANENCIA')
-    rec = retrato('BASE_RECUPERA', 'QTD. RECUPERAÇÃO', 'DES FAIXA TEMPO PERMANENCIA')
+    usoC, aUsoC = retrato('BASE_CONSUMO CONSULTAS', 'QTD ASSOCIADO', 'USO', 'QTD CONSULTAS')
+    usoR, aUsoR = retrato('BASE_CONSUMO REGISTROS', 'QTD ASSOCIADO', 'USO', 'QTD REGISTROS')
+    regTP, aReg = retrato('BASE_REG ATIVO', 'QTD. REGISTROS', 'DES FAIXA TEMPO PERMANENCIA', 'QTD. REGISTROS')
+    rec, aRec = retrato('BASE_RECUPERA', 'QTD. RECUPERAÇÃO', 'DES FAIXA TEMPO PERMANENCIA', 'QTD. RECUPERAÇÃO')
 
     nE = len(nomes)
     meses = sorted({k[1] for k in cap} | {k[0] for k in cons} | {k[0] for k in inc})
@@ -123,6 +134,20 @@ def resumir(caminho):
         fx = sorted({f for f, _ in d})
         return {'faixas': fx, 'valores': [[round(d.get((f, e), 0)) for e in range(nE)] for f in fx]}
     prods = sorted(produtos, key=produtos.get)
+    # Maiores associados (relatório Dados CESPC): os n maiores de cada entidade + os n maiores de MT.
+    # Empate: nome do associado, depois o código (a leitura do navegador usa a mesma ordem).
+    def top(chaves, val, n):
+        ordem = lambda ks: sorted(ks, key=lambda k: (-val(k), nomes_a[k], k[1]))
+        por_e = defaultdict(list)
+        for k in chaves:
+            por_e[k[0]].append(k)
+        sel = set(ordem(list(chaves))[:n])
+        for ks in por_e.values():
+            sel.update(ordem(ks)[:n])
+        return sorted(sel, key=lambda k: (k[0], -val(k), nomes_a[k], k[1]))
+    tot_c = lambda k: sum(acons[k])
+    regrec = set(aReg) | set(aRec)
+    porE = lambda d: [round(sum(v for (e2, _), v in d.items() if e2 == e)) for e in range(nE)]
     return {
         'arquivo': os.path.basename(caminho), 'ano': ano, 'meses': nM, 'ref': ref,
         'entidades': nomes,
@@ -139,6 +164,14 @@ def resumir(caminho):
         'ativos': [round(ativos.get(('', e), 0)) for e in range(nE)],
         'usoConsultas': faixas(usoC), 'usoRegistros': faixas(usoR),
         'registrosAtivos': faixas(regTP), 'recuperacao': faixas(rec),
+        'consumoConsultas': porE(aUsoC), 'consumoRegistros': porE(aUsoR),
+        # [entidade, associado, consultas jan..último mês]
+        'assocConsultas': [[k[0], nomes_a[k], *[round(v) for v in acons[k][:nM]]] for k in top(list(acons), tot_c, 15)],
+        # [entidade, associado, registros ativos, recuperação]
+        'assocRegistros': [[k[0], nomes_a[k], round(aReg.get(k, 0)), round(aRec.get(k, 0))] for k in top(list(regrec), lambda k: aReg.get(k, 0), 25)],
+        # [entidade, associado, consultas | registros] (base de consumo: página das faixas)
+        'assocUsoConsultas': [[k[0], nomes_a[k], round(aUsoC[k])] for k in top(list(aUsoC), lambda k: aUsoC[k], 25)],
+        'assocUsoRegistros': [[k[0], nomes_a[k], round(aUsoR[k])] for k in top(list(aUsoR), lambda k: aUsoR[k], 25)],
     }
 
 
