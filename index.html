@@ -1537,6 +1537,7 @@
   .stk-busca-item:hover,.stk-busca-item:focus-visible{background:var(--stk-neutral-bg,#F1F5F9);outline:none;}
   .stk-busca-nome{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .stk-busca-meta{font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;flex:0 0 auto;}
+  .stk-busca-sec{padding:8px 10px 4px;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--wa-text-muted);}
   .stk-busca-vazio{padding:12px 10px;font-size:12.5px;color:var(--wa-text-muted);text-align:center;}
   /* Seleção múltipla: checkbox em cada resultado + contador na busca */
   #page-dashboard .stk-busca-lista{min-width:min(420px,calc(100vw - 48px));}
@@ -12436,7 +12437,7 @@ ${clipPlayerPills(n)}
     // EMPRESAS: switch Dashboard | Mapa (o mapa ocupa a área dos gráficos).
     const stkVisaoEmpEl = document.getElementById('stkVisaoEmp');
     let empVisao = 'dash';
-    let empRegiao = null;   // EMPRESAS: bairro ou CEP escolhido nas sugestões da busca (ver empSugerirRegiao) ou área desenhada no mapa
+    let empRegiao = null;   // EMPRESAS: rua, bairro ou CEP escolhido nas sugestões da busca (ver empSugerirRegiao) ou área desenhada no mapa
     // INADIMPLÊNCIA: switch Dashboard | Gráfico (taxa de inadimplência por região) e o filtro Região do Gráfico.
     const stkVisaoInadEl = document.getElementById('stkVisaoInad');
     const stkInadRegiaoEl = document.getElementById('stkInadRegiaoFiltro');
@@ -12722,7 +12723,7 @@ ${clipPlayerPills(n)}
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
       stkBuscaInput.placeholder = sp ? 'Buscar entidade ou produto (ex.: Sinop, SPC Mix)...' : ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
-        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade (CNAE), bairro ou CEP...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
+        : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade (CNAE), rua, bairro ou CEP...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
       // SPC MT: o encaixe é medido de novo no fim, com todos os filtros do painel já mostrados/escondidos.
       if(sp){ stkFiltrosBtn.hidden = !spAjustarBarra(true); stkFiltrosAtualizar(); }
     }
@@ -15347,12 +15348,15 @@ ${clipPlayerPills(n)}
       const vet = t => { const v = new Int32Array(nM); if(t) t.split(',').forEach((x, i) => { if(x) v[i] = Number(x); }); return v; };
       return (C._prep = C.d.map(([i, r, at, a, b]) => ({ i, r, at, a: vet(a), b: vet(b) })));
     }
-    // ---- Região de análise na busca do indicador EMPRESAS: Bairro ou CEP ----
-    // A busca aceita, além da atividade (CNAE): um BAIRRO (escolhido na lista de sugestões, que aparece ao digitar) ou um
-    // CEP (5 a 8 dígitos: "78005" = a faixa, "78005-010" = o CEP; vale digitado ou escolhido na lista). O bairro de cada
-    // CEP vem do CNPJ_CEPS: o do CEP geral da cidade ou o do endereço geocodificado ("Rua X · Bairro"); CEP ainda sem
-    // endereço entra só pela busca por CEP. Escolhida a região, a Cidade acompanha e o selo na busca permite removê-la.
-    // empRegiao: { tipo: 'bairro', nome, mun } | { tipo: 'cep', pref, mun } escolhido nas sugestões (declarado com empVisao).
+    // ---- Região de análise na busca do indicador EMPRESAS: Rua, Bairro ou CEP ----
+    // A busca aceita, além da atividade (CNAE): uma RUA ou um BAIRRO (escolhidos na lista de sugestões, que aparece ao
+    // digitar) ou um CEP (5 a 8 dígitos: "78005" = a faixa, "78005-010" = o CEP; vale digitado ou escolhido na lista).
+    // Rua e bairro de cada CEP vêm do CNPJ_CEPS: o do CEP geral da cidade ou o do endereço geocodificado ("Rua X · Bairro");
+    // CEP ainda sem endereço entra só pela busca por CEP. A lista também consulta as ruas do próprio mapa (geocodificação
+    // do Mapbox): escolhida uma delas, a região é a área em volta da rua (os CEPs com coordenada dentro dela).
+    // Escolhida a região, a Cidade acompanha e o selo na busca permite removê-la.
+    // empRegiao: { tipo: 'rua' | 'bairro', nome, mun } | { tipo: 'cep', pref, mun } | { tipo: 'area', bbox, mun, nome? }
+    // (declarado com empVisao).
     const empCepTexto = () => { const t = stkBuscaInput.value.trim().replace(/[.\s]/g, ''); return /^78\d{3}-?\d{0,3}$/.test(t) ? t.replace('-', '') : ''; };
     const empFmtCep = c => c.length > 5 ? `${c.slice(0, 5)}-${c.slice(5)}` : c;
     const empChaveBairro = n => stkNorm(n).replace(/[^a-z0-9]/g, '');
@@ -15363,17 +15367,31 @@ ${clipPlayerPills(n)}
       C.d.forEach(([i, , v]) => { at[i] += v; });
       return (C._bairro = { nome, chave: nome.map(empChaveBairro), at });
     }
+    // Rua de cada CEP: a 1ª parte de "Rua X · Bairro"; endereço de uma parte só conta como rua se começa por um tipo de logradouro.
+    // CEP de grande usuário traz o número ("Avenida X, 553"): sai, para a rua reunir todos os CEPs dela.
+    const EMP_RUA_TIPO = /^(rua|avenida|av\.?|travessa|pra[cç]a|rodovia|estrada|alameda|via|largo|ladeira|beco|viela|passagem|servid[aã]o|acesso|marginal|quadra)\s/i;
+    // Abreviação no início da busca ("av. getulio" = "avenida getulio").
+    const EMP_RUA_ABREV = { 'av': 'avenida', 'av.': 'avenida', 'r': 'rua', 'r.': 'rua', 'tv': 'travessa', 'tv.': 'travessa', 'pc': 'praca', 'pc.': 'praca', 'rod': 'rodovia', 'rod.': 'rodovia', 'al': 'alameda', 'al.': 'alameda', 'est': 'estrada', 'est.': 'estrada' };
+    function empRuas(C){
+      if(C._rua) return C._rua;
+      const nome = C.ceps.map((_, i) => {
+        const p = ((C.end && C.end[i]) || '').split(' · ');
+        return (p.length > 1 || EMP_RUA_TIPO.test(p[0]) ? p[0] : '').replace(/,\s*(\d|s\/?n\b|km\b).*$/i, '').trim();
+      });
+      return (C._rua = { nome, chave: nome.map(empChaveBairro) });
+    }
     // Região ativa: a escolhida nas sugestões ou o CEP digitado; null sem região.
     function empRegiaoAtual(){
       if(empRegiao) return empRegiao;
       const cep = empCepTexto();
       return cep ? { tipo: 'cep', pref: cep, mun: -1 } : null;
     }
-    const empRegiaoRot = R => R.tipo === 'bairro' ? `Bairro ${R.nome}` : R.tipo === 'area' ? 'Área do mapa' : `CEP ${empFmtCep(R.pref)}${R.pref.length < 8 ? '…' : ''}`;
+    const empRegiaoRot = R => R.tipo === 'bairro' ? `Bairro ${R.nome}` : R.tipo === 'rua' ? R.nome : R.tipo === 'area' ? (R.nome || 'Área do mapa') : `CEP ${empFmtCep(R.pref)}${R.pref.length < 8 ? '…' : ''}`;
     // Índices de C (CEP | bairro) dentro da região.
     function empRegiaoIdx(C, R){
       const B = empBairros(C), s = new Set();
       if(R.tipo === 'bairro'){ const k = empChaveBairro(R.nome); C.ceps.forEach((_, i) => { if(C.mun[i] === R.mun && B.chave[i] === k) s.add(i); }); }
+      else if(R.tipo === 'rua'){ const k = empChaveBairro(R.nome), U = empRuas(C); C.ceps.forEach((_, i) => { if(C.mun[i] === R.mun && U.chave[i] === k) s.add(i); }); }
       else if(R.tipo === 'area'){   // retângulo desenhado no mapa: [oeste, sul, leste, norte] (na cidade filtrada, se houver)
         const [w, so, e, n] = R.bbox;
         C.ceps.forEach((_, i) => { const ll = C.ll[i]; if(ll && ll[0] >= w && ll[0] <= e && ll[1] >= so && ll[1] <= n && (R.mun < 0 || C.mun[i] === R.mun)) s.add(i); });
@@ -15381,20 +15399,81 @@ ${clipPlayerPills(n)}
       else C.ceps.forEach((c, i) => { if(c.startsWith(R.pref) && (R.mun < 0 || C.mun[i] === R.mun)) s.add(i); });
       return s;
     }
-    // Sugestões ao digitar: bairros (texto) ou CEPs (dígitos) da cidade filtrada (ou de MT), com as empresas ativas.
+    // ---- Ruas do próprio mapa (Mapbox Geocoding) ----
+    // Complementa as ruas do cadastro: acha também rua sem CNPJ geocodificado nela. Consulta com atraso (digitação) e
+    // descarta resposta velha (empGeoSeq). empGeoRes: null = falhou; [] = sem resultado.
+    const EMP_MT_BBOX = [-61.7, -18.1, -50.2, -7.3];
+    const EMP_RUA_FOLGA = 0.0015;   // graus (~160 m) em volta da rua: pega os CEPs dos dois lados e das esquinas
+    let empGeoSeq = 0, empGeoTimer = 0, empGeoRes = [];
+    function empGeoCancelar(){ clearTimeout(empGeoTimer); empGeoSeq++; empGeoRes = []; }
+    // Município (índice de D.mun) pelo nome que o Mapbox devolve; só vale se o município tem CEP no cadastro de MT.
+    function empMunPorNome(D, C, nome){
+      const k = stkNorm(nome);
+      if(!k) return -1;
+      for(let m = 0; m < D.mun.nome.length; m++) if(stkNorm(D.mun.nome[m]) === k && C.mun.includes(m)) return m;
+      return -1;
+    }
+    // Centro da cidade filtrada (ponto da sede ou o 1º CEP com coordenada), para o Mapbox priorizar ruas dela.
+    function empMunCentro(C, imun){
+      if(imun < 0) return null;
+      let i = C.mun.findIndex((m, j) => m === imun && C.aprox[j] && C.ll[j]);
+      if(i < 0) i = C.mun.findIndex((m, j) => m === imun && C.ll[j]);
+      return i < 0 ? null : C.ll[i];
+    }
+    function empGeoBuscar(txt, D, C, imun, ruasCad){
+      empGeoCancelar();
+      const tk = empMapaToken(), seq = empGeoSeq;
+      if(!tk || txt.length < 4) return false;
+      empGeoTimer = setTimeout(() => {
+        const cidade = imun >= 0 ? D.mun.nome[imun] : '';
+        const q = encodeURIComponent(`${txt}${cidade ? ', ' + cidade : ''}, Mato Grosso`.replace(/;/g, ' ').slice(0, 200));
+        const px = empMunCentro(C, imun);
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${encodeURIComponent(tk)}&country=br&language=pt&types=address&autocomplete=true&limit=6&bbox=${EMP_MT_BBOX.join(',')}${px ? `&proximity=${px[0]},${px[1]}` : ''}`)
+          .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
+          .then(j => {
+            if(seq !== empGeoSeq) return;
+            const vistos = new Set();
+            empGeoRes = (j.features || []).map(f => {
+              const ctx = f.context || [], de = p => (ctx.find(c => String(c.id).startsWith(p)) || {}).text || '';
+              const cid = de('place.'), mun = empMunPorNome(D, C, cid), [x, y] = f.center, bb = f.bbox || [x, y, x, y];
+              return { nome: f.text, bairro: de('neighborhood.') || de('locality.'), cidade: cid, mun,
+                bbox: [bb[0] - EMP_RUA_FOLGA, bb[1] - EMP_RUA_FOLGA, bb[2] + EMP_RUA_FOLGA, bb[3] + EMP_RUA_FOLGA] };
+            }).filter(g => {
+              // A mesma rua já listada pelo cadastro (mais exata: os CEPs dela) não se repete.
+              const k = g.mun + '|' + empChaveBairro(g.nome) + '|' + empChaveBairro(g.bairro);
+              if(!g.nome || ruasCad.has(g.mun + '|' + empChaveBairro(g.nome)) || vistos.has(k)) return false;
+              vistos.add(k); return true;
+            }).slice(0, 5);
+            empSugMapaPintar();
+          })
+          .catch(() => { if(seq === empGeoSeq){ empGeoRes = null; empSugMapaPintar(); } });
+      }, 350);
+      return true;
+    }
+    function empSugMapaPintar(){
+      const box = stkBuscaLista.querySelector('[data-emp-mapa]');
+      if(!box) return;
+      box.innerHTML = !empGeoRes ? '<div class="stk-busca-vazio">Não foi possível consultar as ruas do mapa.</div>'
+        : empGeoRes.length ? empGeoRes.map((g, k) => `<button type="button" class="stk-busca-item" data-emp-reg="mapa" data-k="${k}">
+            <span class="stk-busca-nome">${esc(g.nome)}</span><span class="stk-busca-meta">${esc([g.bairro, g.cidade].filter(Boolean).join(' · ') || 'Mato Grosso')} · área no mapa</span></button>`).join('')
+        : '<div class="stk-busca-vazio">Nenhuma outra rua com esse nome no mapa.</div>';
+    }
+    // Sugestões ao digitar: ruas e bairros (texto) ou CEPs (dígitos) da cidade filtrada (ou de MT), com as empresas
+    // ativas; com texto, também as ruas do mapa (Mapbox).
     function empSugerirRegiao(){
       const txt = stkBuscaInput.value.trim(), D = window.CNPJ_EMPRESAS, C = window.CNPJ_CEPS;
-      if(!D || txt.length < 3){ stkBuscaLista.hidden = true; return; }
+      if(!D || txt.length < 3){ empGeoCancelar(); stkBuscaLista.hidden = true; return; }
       if(!C){
-        stkBuscaLista.innerHTML = '<div class="stk-busca-vazio">Carregando bairros e CEPs…</div>'; empSugAbrir();
+        stkBuscaLista.innerHTML = '<div class="stk-busca-vazio">Carregando ruas, bairros e CEPs…</div>'; empSugAbrir();
         ibgeCarregar('empCeps').then(() => { if(stkPainel() === 'empresas' && document.activeElement === stkBuscaInput) empSugerirRegiao(); }).catch(() => { stkBuscaLista.hidden = true; });
         return;
       }
       if(C.edicao !== D.edicao){ stkBuscaLista.hidden = true; return; }
       const B = empBairros(C), imun = stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1;
       const soDig = /^[\d.\s-]+$/.test(txt), dig = txt.replace(/\D/g, ''), m = new Map();
-      let itens = [];
+      let itens = [], ruas = [], mapa = false;
       if(soDig){
+        empGeoCancelar();
         C.ceps.forEach((c, i) => {
           if(!c.startsWith(dig)) return;
           const o = m.get(c) || { cep: c, at: 0, mun: C.mun[i], b: B.nome[i] }; o.at += B.at[i]; m.set(c, o);
@@ -15403,22 +15482,43 @@ ${clipPlayerPills(n)}
           .map(o => ({ tipo: 'cep', val: o.cep, mun: o.mun, nome: `CEP ${empFmtCep(o.cep)}`, meta: `${o.b ? o.b + ' · ' : ''}${D.mun.nome[o.mun]} · ${stkNum(o.at)} ativas` }));
       } else {
         const termos = stkNorm(txt).split(/\s+/).filter(Boolean);
+        if(EMP_RUA_ABREV[termos[0]]) termos[0] = EMP_RUA_ABREV[termos[0]];
+        const casa = n => { const s = stkNorm(n); return termos.every(t => s.includes(t)); };
+        const U = empRuas(C), mr = new Map();
         C.ceps.forEach((_, i) => {
-          const n = B.nome[i];
-          if(!n || (imun >= 0 && C.mun[i] !== imun)) return;
-          const k = C.mun[i] + '|' + B.chave[i];
-          if(!m.has(k)) m.set(k, termos.every(t => stkNorm(n).includes(t)) ? { mun: C.mun[i], nome: n, at: 0 } : null);
-          const o = m.get(k); if(o) o.at += B.at[i];
+          if(imun >= 0 && C.mun[i] !== imun) return;
+          const n = B.nome[i], r = U.nome[i];
+          if(n){
+            const k = C.mun[i] + '|' + B.chave[i];
+            if(!m.has(k)) m.set(k, casa(n) ? { mun: C.mun[i], nome: n, at: 0 } : null);
+            const o = m.get(k); if(o) o.at += B.at[i];
+          }
+          if(r){
+            const k = C.mun[i] + '|' + U.chave[i];
+            if(!mr.has(k)) mr.set(k, casa(r) ? { mun: C.mun[i], nome: r, at: 0, b: new Set() } : null);
+            const o = mr.get(k); if(o){ o.at += B.at[i]; if(n) o.b.add(n); }
+          }
         });
-        itens = [...m.values()].filter(Boolean).sort((a, b) => b.at - a.at).slice(0, 8)
+        itens = [...m.values()].filter(Boolean).sort((a, b) => b.at - a.at).slice(0, 5)
           .map(o => ({ tipo: 'bairro', val: o.nome, mun: o.mun, nome: o.nome, meta: `${D.mun.nome[o.mun]} · ${stkNum(o.at)} ativas` }));
+        ruas = [...mr.values()].filter(Boolean).sort((a, b) => b.at - a.at).slice(0, 6)
+          .map(o => { const bs = [...o.b]; return { tipo: 'rua', val: o.nome, mun: o.mun, nome: o.nome,
+            meta: `${bs.length ? bs.slice(0, 2).join(', ') + (bs.length > 2 ? '…' : '') + ' · ' : ''}${D.mun.nome[o.mun]} · ${stkNum(o.at)} ativas` }; });
+        mapa = empGeoBuscar(txt, D, C, imun, new Set([...mr.keys()].filter(k => mr.get(k))));
       }
       const onde = imun >= 0 && !soDig ? `em ${esc(D.mun.nome[imun])}` : 'em Mato Grosso';
-      stkBuscaLista.innerHTML = `<div class="stk-busca-topo"><span>${soDig ? 'CEPs' : 'Bairros'} ${onde} · escolha para analisar a região</span></div>`
-        + (itens.length ? itens.map(o => `<button type="button" class="stk-busca-item" data-emp-reg="${o.tipo}" data-val="${esc(o.val)}" data-mun="${o.mun}">
-            <span class="stk-busca-nome">${esc(o.nome)}</span><span class="stk-busca-meta">${esc(o.meta)}</span></button>`).join('')
-          : `<div class="stk-busca-vazio">${soDig ? 'Nenhum CEP começa com esses dígitos' : 'Nenhum bairro com esse nome'} ${onde}.</div>`)
-        + (soDig ? '' : '<div class="stk-busca-vazio">Sem escolher um bairro, o texto filtra a atividade econômica (CNAE).</div>');
+      const botoes = l => l.map(o => `<button type="button" class="stk-busca-item" data-emp-reg="${o.tipo}" data-val="${esc(o.val)}" data-mun="${o.mun}">
+            <span class="stk-busca-nome">${esc(o.nome)}</span><span class="stk-busca-meta">${esc(o.meta)}</span></button>`).join('');
+      stkBuscaLista.innerHTML = soDig
+        ? `<div class="stk-busca-topo"><span>CEPs ${onde} · escolha para analisar a região</span></div>`
+          + (itens.length ? botoes(itens) : `<div class="stk-busca-vazio">Nenhum CEP começa com esses dígitos ${onde}.</div>`)
+        : `<div class="stk-busca-topo"><span>Ruas e bairros ${onde} · escolha para analisar a região</span></div>`
+          + `<div class="stk-busca-sec">Ruas · endereço dos CNPJs</div>`
+          + (ruas.length ? botoes(ruas) : `<div class="stk-busca-vazio">Nenhuma rua com esse nome nos endereços dos CNPJs ${onde}.</div>`)
+          + `<div class="stk-busca-sec">Bairros</div>`
+          + (itens.length ? botoes(itens) : `<div class="stk-busca-vazio">Nenhum bairro com esse nome ${onde}.</div>`)
+          + (mapa ? `<div class="stk-busca-sec">Ruas no mapa</div><div data-emp-mapa><div class="stk-busca-vazio">Buscando no mapa…</div></div>` : '')
+          + '<div class="stk-busca-vazio">Sem escolher uma rua ou bairro, o texto filtra a atividade econômica (CNAE).</div>';
       empSugAbrir();
     }
     // A barra de filtros corta o que passa da sua altura: a lista fica fixa na tela, logo abaixo da busca.
@@ -15432,16 +15532,31 @@ ${clipPlayerPills(n)}
     window.addEventListener('resize', () => { if(stkBuscaLista.classList.contains('emp-sug')) stkBuscaLista.hidden = true; });
     document.addEventListener('scroll', ev => { if(stkBuscaLista.classList.contains('emp-sug') && !stkBuscaLista.contains(ev.target)) stkBuscaLista.hidden = true; }, true);
     function empEscolherRegiao(tipo, val, mun){
-      empRegiao = tipo === 'bairro' ? { tipo, nome: val, mun } : { tipo, pref: val, mun };
+      empGeoCancelar();
+      empRegiao = tipo === 'bairro' || tipo === 'rua' ? { tipo, nome: val, mun } : { tipo, pref: val, mun };
       stkBuscaInput.value = ''; stkBuscaLista.hidden = true;
       if(stkCidadeEl.value !== String(mun)) stkCidadeEl.value = String(mun);
       stkRender();
     }
+    // Rua do mapa: a região é a área em volta dela (como a área desenhada, com o nome da rua); a Cidade acompanha o
+    // município que o Mapbox indica (se não o reconhece, fica a do filtro).
+    function empEscolherMapa(g){
+      empGeoCancelar();
+      if(!g) return;
+      const imun = stkCidadeEl.value !== '' ? Number(stkCidadeEl.value) : -1, mun = g.mun >= 0 ? g.mun : imun;
+      empRegiao = { tipo: 'area', bbox: g.bbox, mun, nome: g.nome + (g.bairro ? ` (${g.bairro})` : '') };
+      stkBuscaInput.value = ''; stkBuscaLista.hidden = true;
+      const alvo = mun >= 0 ? String(mun) : '';
+      if(stkCidadeEl.value !== alvo) stkCidadeEl.value = alvo;
+      stkRender();
+    }
     stkBuscaLista.addEventListener('click', ev => {
       const b = ev.target.closest('[data-emp-reg]');
-      if(b) empEscolherRegiao(b.dataset.empReg, b.dataset.val, Number(b.dataset.mun));
+      if(!b) return;
+      if(b.dataset.empReg === 'mapa') empEscolherMapa((empGeoRes || [])[Number(b.dataset.k)]);
+      else empEscolherRegiao(b.dataset.empReg, b.dataset.val, Number(b.dataset.mun));
     });
-    // Enter na busca: escolhe a primeira sugestão de bairro/CEP.
+    // Enter na busca: escolhe a primeira sugestão de rua/bairro/CEP.
     stkBuscaInput.addEventListener('keydown', ev => {
       if(ev.key !== 'Enter' || stkPainel() !== 'empresas' || stkBuscaLista.hidden) return;
       const b = stkBuscaLista.querySelector('[data-emp-reg]');
@@ -15457,7 +15572,7 @@ ${clipPlayerPills(n)}
       const cidade = munCtx >= 0 ? D.mun.nome[munCtx] : '', rotR = empRegiaoRot(RG), local = `${rotR}${cidade ? ' · ' + cidade : ''}`;
       if(!idx.size){
         stkGrid.classList.remove('cd-carregando');
-        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhum CNPJ registrado em ${esc(rotR)}${imun >= 0 ? ' em ' + esc(D.mun.nome[imun]) : ''}. Confira o CEP ou escolha o bairro na lista de sugestões da busca.</div></div>`;
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">Nenhum CNPJ registrado em ${esc(rotR)}${imun >= 0 ? ' em ' + esc(D.mun.nome[imun]) : ''}. Confira o CEP ou escolha a rua ou o bairro na lista de sugestões da busca.</div></div>`;
         return;
       }
       const fReg = stkEmpRegimeEl.value, fSimei = stkEmpSimeiEl.value;
@@ -15652,7 +15767,7 @@ ${clipPlayerPills(n)}
           properties: { n, cep: C.ceps[i], bairro: (C.bairro && C.bairro[i]) || '', end: (C.end && C.end[i]) || '', mun: C.mun[i], aprox: C.aprox[i] || 0, ramo: nomeRamo,
             dentro: !area || rIdx.has(i) ? 1 : 0 } });
       });
-      return { C, feats, baixadas: nomeRamo ? false : baixadas, nAprox, ramo: nomeRamo, regiao: RG ? empRegiaoRot(RG) : '', area: area ? RG.bbox : null };
+      return { C, feats, baixadas: nomeRamo ? false : baixadas, nAprox, ramo: nomeRamo, regiao: RG ? empRegiaoRot(RG) : '', area: area ? RG.bbox : null, areaRua: area && !!RG.nome };
     }
 
     function empMapaCriar(){
@@ -15976,11 +16091,13 @@ ${clipPlayerPills(n)}
       if(!R.feats.length) empMapaMsg('Nenhum CNPJ no recorte escolhido.');
 
       // Enquadra o recorte quando muda a Cidade (não a cada troca de filtro).
-      const geo = `${imun}|${R.area ? '' : R.regiao || ''}`;   // desenhar/limpar a área não reenquadra o mapa
-      if(geo !== empMapaGeo && R.feats.length){
+      // Desenhar/limpar a área não reenquadra o mapa; a área de uma rua do mapa (busca) enquadra a rua.
+      const geo = `${imun}|${R.area && !R.areaRua ? '' : R.regiao || ''}`;
+      if(geo !== empMapaGeo && (R.feats.length || R.areaRua)){
         empMapaGeo = geo;
         const b = new mapboxgl.LngLatBounds();
-        R.feats.forEach(f => b.extend(f.geometry.coordinates));
+        if(R.areaRua) b.extend([R.area[0], R.area[1]]).extend([R.area[2], R.area[3]]);
+        else R.feats.forEach(f => b.extend(f.geometry.coordinates));
         const w = empMapaEl.clientWidth;
         empMapa.fitBounds(b, { padding: { top: 50, bottom: 40, left: Math.min(300, w * 0.35), right: 60 }, maxZoom: R.regiao ? 15 : imun >= 0 ? 14 : 11, duration: 700 });
       }
@@ -18184,7 +18301,7 @@ ${clipPlayerPills(n)}
     function stkAtualizarContagem(){
       if(stkPainel() === 'empresas'){
         stkBuscaContagem.hidden = !empRegiao;
-        if(empRegiao){ stkBuscaContagem.textContent = `${empRegiaoRot(empRegiao)} ×`; stkBuscaContagem.title = 'Remover a região (bairro/CEP)'; }
+        if(empRegiao){ stkBuscaContagem.textContent = `${empRegiaoRot(empRegiao)} ×`; stkBuscaContagem.title = 'Remover a região (rua/bairro/CEP)'; }
         return;
       }
       stkBuscaContagem.title = 'Limpar seleção';
@@ -18366,8 +18483,12 @@ ${clipPlayerPills(n)}
           if(AM){
             const okC = empCnaesFiltro(D), ev = baixadas ? 1 : 0;
             const RG = empRegiaoAtual(), iCepA = AM.colunas.indexOf('CEP'), iBaiA = AM.colunas.indexOf('Bairro');
-            const cepsArea = RG && RG.tipo === 'area' && window.CNPJ_CEPS ? new Set([...empRegiaoIdx(window.CNPJ_CEPS, RG)].map(i => window.CNPJ_CEPS.ceps[i])) : null;
-            const naRegiao = l => !RG || (cepsArea ? cepsArea.has(String(l[iCepA] || '').replace(/\D/g, '')) : RG.tipo === 'cep' ? String(l[iCepA] || '').replace(/\D/g, '').startsWith(RG.pref) : empChaveBairro(l[iBaiA] || '') === empChaveBairro(RG.nome));
+            const iTipoA = AM.colunas.indexOf('Tipo de logradouro'), iLogA = AM.colunas.indexOf('Logradouro');
+            const cepsArea = RG && (RG.tipo === 'area' || RG.tipo === 'rua') && window.CNPJ_CEPS ? new Set([...empRegiaoIdx(window.CNPJ_CEPS, RG)].map(i => window.CNPJ_CEPS.ceps[i])) : null;
+            // Rua: os CEPs dela ou o logradouro registrado na Receita ("RUA" + "PEDRO CELESTINO").
+            const chRua = RG && RG.tipo === 'rua' ? empChaveBairro(RG.nome) : '';
+            const naRegiao = l => !RG || (chRua && empChaveBairro(`${l[iTipoA] || ''} ${l[iLogA] || ''}`) === chRua)
+              || (cepsArea ? cepsArea.has(String(l[iCepA] || '').replace(/\D/g, '')) : RG.tipo === 'cep' ? String(l[iCepA] || '').replace(/\D/g, '').startsWith(RG.pref) : empChaveBairro(l[iBaiA] || '') === empChaveBairro(RG.nome));
             colunas = AM.colunas; linhas = [];
             // AM.idx vem do mais recente para o mais antigo: [município, subclasse, evento, regime, mês do evento].
             for(let k = 0; k < AM.idx.length && linhas.length < EMP_AMOSTRA_MAX; k++){
