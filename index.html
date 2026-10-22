@@ -9828,6 +9828,7 @@ ${clipPlayerPills(n)}
     // Saídas antigas (antes do setor de consumo) aparecem com este rótulo nas análises.
     const STOCK_CONSUMO_SEM = 'Não informado';
     const STOCK_SETOR_TODOS = 'Todos';
+    const STOCK_SETOR_RETIRADA = 'Almoxarifado';   // estoque padrão das retiradas (saídas)
     const STOCK_SETOR_STORAGE_KEY = 'cdload_estoque_setor';
     // Consumo = saída que não é transferência entre centrais; compra = entrada/origem idem.
     const stockEhConsumo = m => m.tipo === 'saida' && !m.transferencia;
@@ -10865,6 +10866,8 @@ ${clipPlayerPills(n)}
       waMovConsumoField.hidden = tipo !== 'saida';
       waMovNfField.hidden = tipo !== 'entrada';
       waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : tipo === 'origem' ? 'Estoque central (origem)' : 'Estoque central';
+      // Retirada nova: sai do Almoxarifado por padrão (a central filtrada na tela, se houver, prevalece; edição mantém a do lançamento).
+      if(tipo === 'saida' && !editingMov && currentSetor === STOCK_SETOR_TODOS) waMovSetor.value = STOCK_SETOR_RETIRADA;
       if(isTransfer){
         // Reinicia a animação mesmo se o usuário alternar rapidamente entre os tipos.
         waMovTransferGrid.classList.remove('wa-fade-in');
