@@ -865,6 +865,30 @@
     border-color:var(--wa-primary);box-shadow:0 0 0 2px var(--wa-primary-soft);
   }
   /* ---- Relatórios › Gerar relatório (assistente de PDF) ---- */
+  /* Dados CESPC: lista suspensa de entidades com caixas de seleção + contagem de PDFs na geração */
+  .rel-sp-sel{margin-top:12px;}
+  .rel-sp-sel[hidden], .rel-sp-sel-lista[hidden], .rel-progresso[hidden]{display:none !important;}
+  .rel-sp-sel-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:8px 14px;border:1.5px solid var(--wa-border, #D5DEEA);
+    border-radius:10px;background:var(--wa-surface, #fff);color:inherit;font:inherit;font-size:14px;cursor:pointer;}
+  .rel-sp-sel-btn b{color:#1D5FD3;margin-left:6px;}
+  .rel-sp-sel-btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;transition:transform .15s;}
+  .rel-sp-sel-btn[aria-expanded="true"]{border-color:#1D5FD3;}
+  .rel-sp-sel-btn[aria-expanded="true"] svg{transform:rotate(180deg);}
+  .rel-sp-sel-lista{margin-top:6px;border:1.5px solid #1D5FD3;border-radius:10px;background:var(--wa-surface, #fff);overflow:hidden;}
+  .rel-sp-sel-topo{display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--wa-border, #E2E8F0);}
+  .rel-sp-sel-topo input{flex:1 1 auto;min-width:0;height:34px;padding:0 10px;border:1px solid var(--wa-border, #D5DEEA);border-radius:8px;font:inherit;font-size:13px;background:transparent;color:inherit;}
+  .rel-sp-sel-topo button{flex:0 0 auto;border:0;background:transparent;color:#1D5FD3;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 6px;}
+  .rel-sp-sel-itens{max-height:240px;overflow:auto;padding:4px 0;}
+  .rel-sp-sel-item{display:flex;align-items:center;gap:10px;padding:7px 12px;font-size:13.5px;cursor:pointer;}
+  .rel-sp-sel-item:hover{background:rgba(29,95,211,.06);}
+  .rel-sp-sel-item input{width:16px;height:16px;accent-color:#1D5FD3;}
+  .rel-sp-sel-item span:last-child{margin-left:auto;color:var(--wa-text-muted, #64748B);font-size:12px;}
+  .rel-sp-sel-vazio{padding:12px;font-size:13px;color:var(--wa-text-muted, #64748B);}
+  .rel-progresso{width:min(420px,100%);margin:16px auto 0;}
+  .rel-progresso-topo{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:8px;}
+  .rel-progresso-topo span{color:var(--wa-text-muted, #64748B);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rel-progresso-barra{height:10px;border-radius:999px;background:var(--wa-border, #E2E8F0);overflow:hidden;}
+  .rel-progresso-barra i{display:block;height:100%;width:0;border-radius:999px;background:#1D5FD3;transition:width .25s;}
   #relGerarModal [hidden], #inadModal [hidden]{display:none !important;}
   #relBaixarBtn{text-decoration:none;}
   .rel-fade{animation:relFade .35s ease both;}
@@ -3422,9 +3446,10 @@
                   <select id="relTipo">
                     <option value="">Selecione o relatório</option>
                     <option value="estoque">1. Controle de Estoque</option>
-                    <option value="caged">2. Empregos Formais (CAGED)</option>
-                    <option value="inadimplencia">3. Inadimplência (SPC Brasil)</option>
-                    <option value="panorama">4. Panorama Econômico</option>
+                    <option value="spc">2. Dados CESPC (SPC MT)</option>
+                    <option value="caged">3. Empregos Formais (CAGED)</option>
+                    <option value="inadimplencia">4. Inadimplência (SPC Brasil)</option>
+                    <option value="panorama">5. Panorama Econômico</option>
                   </select>
                 </div>
                 <div id="relOpcoes" hidden>
@@ -3454,6 +3479,33 @@
                     <div class="rel-not-grid rel-mod-grid" id="relModOpcoes">
                       <label class="rel-not-card"><input type="radio" name="relMod" value="pdf" checked><span><span class="rel-ind-nome">Modelo .pdf (Documentação)</span><span class="rel-ind-info" style="display:block;">Relatório completo com capa, gráficos e tabelas</span></span></label>
                       <label class="rel-not-card"><input type="radio" name="relMod" value="doc"><span><span class="rel-ind-nome">Modelo .doc (Assessoria)</span><span class="rel-ind-info" style="display:block;">Release em texto editável, pronto para publicação (até 2 páginas)</span></span></label>
+                    </div>
+                  </div>
+                  <div id="relOpcoesSpc" hidden>
+                    <h3 class="wa-step-title" style="margin-top:22px;">3. Entidades</h3>
+                    <div class="wa-empty-hint" style="margin-bottom:10px;">CDLs do relatório OPERAÇÃO_MT de Documentos › CESPC (o mesmo do Painel · SPC Mato Grosso).</div>
+                    <div class="rel-not-grid rel-mod-grid" id="relSpEntOpcoes">
+                      <label class="rel-not-card"><input type="radio" name="relSpEnt" value="todas" checked><span><span class="rel-ind-nome">Todas as entidades</span><span class="rel-ind-info" style="display:block;" id="relSpTodasInfo">Todas as CDLs de Mato Grosso</span></span></label>
+                      <label class="rel-not-card"><input type="radio" name="relSpEnt" value="especificas"><span><span class="rel-ind-nome">Específicas</span><span class="rel-ind-info" style="display:block;">Marque as entidades na lista</span></span></label>
+                    </div>
+                    <div class="rel-sp-sel" id="relSpSel" hidden>
+                      <button type="button" class="rel-sp-sel-btn" id="relSpSelBtn" aria-expanded="false" aria-controls="relSpSelLista">
+                        <span>Entidades <b id="relSpSelQtd">nenhuma marcada</b></span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                      </button>
+                      <div class="rel-sp-sel-lista" id="relSpSelLista" hidden>
+                        <div class="rel-sp-sel-topo">
+                          <input type="search" id="relSpSelBusca" placeholder="Buscar entidade (ex.: Sinop)..." autocomplete="off">
+                          <button type="button" data-sp-sel="todas">Marcar todas</button>
+                          <button type="button" data-sp-sel="nenhuma">Desmarcar</button>
+                        </div>
+                        <div class="rel-sp-sel-itens" id="relSpSelItens" role="listbox" aria-multiselectable="true"></div>
+                      </div>
+                    </div>
+                    <h3 class="wa-step-title" style="margin-top:22px;">4. Modelo de consolidação</h3>
+                    <div class="rel-not-grid rel-mod-grid" id="relSpConsOpcoes">
+                      <label class="rel-not-card"><input type="radio" name="relSpCons" value="total" checked><span><span class="rel-ind-nome">Total</span><span class="rel-ind-info" style="display:block;">Arquivo único somando as entidades escolhidas</span></span></label>
+                      <label class="rel-not-card"><input type="radio" name="relSpCons" value="individual"><span><span class="rel-ind-nome">Individual</span><span class="rel-ind-info" style="display:block;">Um PDF por entidade (vários saem num .zip)</span></span></label>
                     </div>
                   </div>
                   <div id="relOpcoesInad" hidden>
@@ -3500,6 +3552,10 @@
                 <div class="rel-status-ic"><div class="rel-spinner"></div></div>
                 <div class="rel-status-tit">Gerando o relatório…</div>
                 <div class="rel-status-txt" id="relGerandoTxt">Preparando os dados.</div>
+                <div class="rel-progresso" id="relProgresso" hidden>
+                  <div class="rel-progresso-topo"><strong id="relProgressoNum">0 de 0 PDFs</strong><span id="relProgressoAtual"></span></div>
+                  <div class="rel-progresso-barra"><i id="relProgressoBarra"></i></div>
+                </div>
               </div>
 
               <div class="rel-status" id="relEtapaPronto" hidden>
@@ -15478,6 +15534,7 @@ ${clipPlayerPills(n)}
     const SP_MESES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const stkSpAbasEl = document.getElementById('stkSpAbas'), stkSpEntEl = document.getElementById('stkSpEntFiltro');
     stkSpAbasEl.innerHTML = SP_ABAS.map(([k, rot], i) => `<button type="button" class="stk-seg-btn${i ? '' : ' active'}" data-sp-aba="${k}" role="tab" aria-selected="${!i}">${rot}</button>`).join('');
+    let spPlatProm = null;   // leitura dos OPERAÇÃO_MT de Documentos › CESPC (o relatório Dados CESPC espera por ela)
     let spAba = 'captacao', spModelo = null, spProm = null, spLendo = 0, spUltimo = null, spPainelUltimo = null, spRoscaVisao = 'ent';
 
     // ---- Leitura do arquivo (caches das tabelas dinâmicas) ----
@@ -15651,7 +15708,7 @@ ${clipPlayerPills(n)}
     function spCarregar(){
       if(spProm) return spProm;
       spProm = Promise.all([spScript('assets/data/spc_mt.js', 'SPC_MT'), spScript('assets/data/municipios_geo.js', 'MUNICIPIOS_GEO').catch(() => null)])
-        .then(() => { spModelo = spMontar(window.SPC_MT.arquivos); spLerPlataforma(); })
+        .then(() => { spModelo = spMontar(window.SPC_MT.arquivos); spPlatProm = spLerPlataforma(); })
         .catch(e => { spProm = null; throw e; });
       return spProm;
     }
@@ -19226,6 +19283,264 @@ ${quadro}
       };
     }
 
+    // ===== Relatório "Dados CESPC (SPC MT)" — Relatório de Monitoramento =====
+    // Escopo: report/spc/escopo/instruções.md. Dados: os mesmos do Painel · SPC Mato Grosso (spModelo: OPERAÇÃO_MT de
+    // Documentos › CESPC + reserva spc_mt.js). Layouts: report/spc/branding (1.jpg = capa, 2.png = páginas), no tamanho
+    // deles (mais altos que o A4). Entidades: todas ou específicas; consolidação Total (1 PDF somando as escolhidas) ou
+    // Individual (1 PDF por entidade; vários PDFs saem num .zip). Páginas: capa, visão geral, tempo de permanência e as
+    // faixas de consumo de consultas e de registros (esquema de "modelo para preenchimento dos dados.pdf").
+    const SR_W = 1414, SR_H = 2512, SR_ESC = 1.25;
+    const SR_NAVY = '#0A2A8A', SR_AZUL = '#2563EB', SR_VERM = '#D32F2F', SR_VERDE = '#10B26C', SR_AMARELO = '#F5C518', SR_TXT = '#1F2937', SR_MUTED = '#64748B';
+    const srN = v => relNum(Math.round(v || 0));
+    const srPct = v => `${relNum(v, 2)}%`;
+    function srPagina(){
+      const c = document.createElement('canvas');
+      c.width = Math.round(SR_W * SR_ESC); c.height = Math.round(SR_H * SR_ESC);
+      const x = c.getContext('2d');
+      x.scale(SR_ESC, SR_ESC);
+      return { c, x };
+    }
+    // Página de análise: layout 2 + título, abrangência e período no canto superior direito.
+    async function srPaginaBase(titulo, abrang, periodo){
+      const pg = srPagina(), x = pg.x;
+      x.drawImage(await relImg('2.png', 'spc'), 0, 0, SR_W, SR_H);
+      x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+      x.fillStyle = SR_NAVY; x.font = '800 34px Inter'; x.fillText(relCortar(x, titulo, 720), SR_W - 64, 168);
+      x.fillStyle = SR_TXT; x.font = '600 23px Inter'; x.fillText(relCortar(x, abrang, 720), SR_W - 64, 210);
+      x.fillStyle = SR_MUTED; x.font = '500 20px Inter'; x.fillText(relCortar(x, periodo, 720), SR_W - 64, 244);
+      x.textAlign = 'left';
+      return pg;
+    }
+    function srCard(x, a, b, w, h, titulo, sub){
+      x.save();
+      x.shadowColor = 'rgba(15,23,42,.10)'; x.shadowBlur = 12; x.shadowOffsetY = 3;
+      relRetArred(x, a, b, w, h, 14); x.fillStyle = '#fff'; x.fill();
+      x.restore();
+      x.strokeStyle = '#E5E7EB'; x.lineWidth = 1.2; relRetArred(x, a, b, w, h, 14); x.stroke();
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      x.fillStyle = SR_TXT; x.font = '700 24px Inter'; x.fillText(relCortar(x, titulo, w - 40), a + 22, b + 40);
+      if(sub){ x.fillStyle = SR_MUTED; x.font = '500 16px Inter'; x.fillText(relCortar(x, sub, w - 40), a + 22, b + 64); }
+      return b + (sub ? 84 : 62);
+    }
+    function srKpi(x, a, b, w, h, rotulo, valor){
+      x.save();
+      x.shadowColor = 'rgba(15,23,42,.10)'; x.shadowBlur = 10; x.shadowOffsetY = 3;
+      relRetArred(x, a, b, w, h, 12); x.fillStyle = '#fff'; x.fill();
+      x.restore();
+      x.strokeStyle = '#E5E7EB'; x.lineWidth = 1.2; relRetArred(x, a, b, w, h, 12); x.stroke();
+      x.fillStyle = SR_AMARELO; x.fillRect(a, b + 10, 6, h - 20);
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      x.fillStyle = '#475569'; x.font = '500 23px Inter'; x.fillText(relCortar(x, rotulo, w - 36), a + 22, b + 46);
+      let tam = 40; x.font = `800 ${tam}px Inter`;
+      while(x.measureText(valor).width > w - 36 && tam > 24){ tam -= 2; x.font = `800 ${tam}px Inter`; }
+      x.fillStyle = SR_TXT; x.fillText(valor, a + 22, b + h - 26);
+    }
+    // Colunas verticais por categoria; series: [{nome, cor, vals}]; dets: variação % sobre a categoria anterior (↑ verde / ↓ vermelho).
+    function srColunas(x, a, b, w, h, cats, series, opts){
+      opts = opts || {};
+      const n = cats.length, passo = w / Math.max(1, n), grupo = Math.min(passo * .78, series.length > 1 ? 120 : 92);
+      const larg = (grupo - (series.length - 1) * 6) / series.length;
+      const todos = series.flatMap(s => s.vals), mx = Math.max(1, ...todos);
+      const rotH = opts.rotuloLinhas ? 22 * opts.rotuloLinhas : 30, legH = opts.legenda ? 34 : 0;
+      const topo = b + (opts.dets ? 54 : 32), base = b + h - rotH - legH - 8, alt = base - topo;
+      x.strokeStyle = '#E2E8F0'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(a, base + .5); x.lineTo(a + w, base + .5); x.stroke();
+      cats.forEach((c, i) => {
+        const g0 = a + i * passo + (passo - grupo) / 2;
+        series.forEach((s, k) => {
+          const v = s.vals[i] || 0, bh = Math.max(v ? 2 : 0, v / mx * alt), bx = g0 + k * (larg + 6);
+          x.fillStyle = s.cor; x.fillRect(bx, base - bh, larg, bh);
+          x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+          let yTxt = base - bh - 8;
+          if(opts.dets && k === series.length - 1){
+            const d = opts.dets[i];
+            if(d != null){
+              x.font = '700 15px Inter'; x.fillStyle = d > 0 ? '#15803D' : d < 0 ? SR_VERM : SR_MUTED;
+              x.fillText(`${d > 0 ? '↑ +' : d < 0 ? '↓ ' : ''}${relNum(d, 2)}%`, bx + larg / 2, yTxt);
+              yTxt -= 20;
+            }
+          }
+          x.font = `600 ${opts.fonteValor || (series.length > 1 ? 15 : 16)}px Inter`; x.fillStyle = '#334155';
+          x.fillText((opts.fmt || srN)(v), bx + larg / 2, yTxt);
+        });
+        x.fillStyle = '#334155'; x.font = `500 ${opts.fonteRotulo || 16}px Inter`; x.textAlign = 'center';
+        const linhas = opts.rotuloLinhas ? relLinhas(x, c, passo - 6, opts.rotuloLinhas) : [c];
+        linhas.forEach((l, j) => x.fillText(l, a + i * passo + passo / 2, base + 24 + j * 20));
+      });
+      if(opts.legenda){
+        x.font = '500 16px Inter'; x.textBaseline = 'middle';
+        const larguras = series.map(s => x.measureText(s.nome).width + 34), totL = larguras.reduce((s, v) => s + v, 0);
+        let lx = a + (w - totL) / 2;
+        series.forEach((s, k) => { x.fillStyle = s.cor; x.beginPath(); x.arc(lx + 7, b + h - 16, 7, 0, Math.PI * 2); x.fill();
+          x.fillStyle = SR_TXT; x.textAlign = 'left'; x.fillText(s.nome, lx + 20, b + h - 15); lx += larguras[k]; });
+        x.textBaseline = 'alphabetic';
+      }
+      x.textAlign = 'left';
+    }
+    const srDias = f => /prescri/i.test(f) ? 1e5 : (Number((String(f).match(/(\d+)/) || [])[1]) || 0) * (/ano/i.test(f) ? 365 : 1);
+    const srFaixaRot = f => String(f).replace(/^[A-Z]\s*-\s*/, '').trim();
+
+    async function srCapa(ano, abrang, periodo){
+      const pg = srPagina(), x = pg.x;
+      x.drawImage(await relImg('1.jpg', 'spc'), 0, 0, SR_W, SR_H);
+      // Selo verde do ano (no layout: 559–699 × 85–137 de 768 × 1376): cobre o ano gravado e escreve o do relatório.
+      const kx = SR_W / 768, ky = SR_H / 1376, bx = 559 * kx, by = 85 * ky, bw = 140 * kx, bh = 52 * ky;
+      const px = x.getImageData(Math.round((bx + 6) * SR_ESC), Math.round((by + 6) * SR_ESC), 1, 1).data;
+      x.fillStyle = `rgb(${px[0]},${px[1]},${px[2]})`; x.fillRect(bx + 3, by + 3, bw - 6, bh - 6);
+      x.fillStyle = '#fff'; x.font = '700 46px Inter'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(String(ano), bx + bw / 2, by + bh / 2 + 2);
+      // Abrangência e período, no espaço branco entre os logos e o título.
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      let tam = 50; x.font = `800 ${tam}px Inter`;
+      while(x.measureText(abrang).width > SR_W - 150 && tam > 30){ tam -= 2; x.font = `800 ${tam}px Inter`; }
+      x.fillStyle = '#0B3C8C'; x.fillText(abrang, 72, 560);
+      x.fillStyle = '#475569'; x.font = '500 30px Inter'; x.fillText(periodo, 72, 612);
+      return pg;
+    }
+
+    // Páginas de uma abrangência (S = conjunto de entidades; null = todas).
+    async function srPaginas(M, anoTxt, m, S, abrang){
+      const A = M.anos[anoTxt], ano = Number(anoTxt), inS = e => !S || S.has(e);
+      const tot = o => { let s = 0; for(const [k, v] of Object.entries(o || {})) if(inS(k)) s += v; return s; };
+      const refs = Object.keys(M.retratos).sort(), alvoRef = `${anoTxt}-${String(m + 1).padStart(2, '0')}`;
+      const R = M.retratos[[...refs].reverse().find(r => r <= alvoRef) || refs[refs.length - 1]];
+      const mesLongo = REL_MES_LONGO[m], periodo = m ? `Janeiro a ${mesLongo} de ${ano}` : `Janeiro de ${ano}`;
+      const posicao = `Posição em ${fmtDateBR(R.ref)}`;
+      const meses = Array.from({ length: m + 1 }, (_, k) => SP_MESES_ABREV[k]);
+      const serie = k => A.fluxo[k].slice(0, m + 1).map(tot);
+      const dets = v => v.map((x, i) => i && v[i - 1] ? (x - v[i - 1]) / v[i - 1] * 100 : null);
+      const soma = v => v.reduce((s, x) => s + x, 0);
+      const paginas = [await srCapa(ano, abrang, periodo)];
+      const W = SR_W - 140, X0 = 70;
+
+      // ---- Página 2: visão geral ----
+      {
+        const pg = await srPaginaBase('Visão geral', abrang, periodo), x = pg.x;
+        const cap = serie('captacao'), can = serie('cancelamento'), inc = serie('inclusao'), con = serie('consultas');
+        const kw = (W - 4 * 18) / 5;
+        [['Associados', srN(tot(R.ativos))], ['Consultas', srN(soma(con))], ['Captação', srN(soma(cap))], ['Cancelamentos', srN(soma(can))], ['Inclusão', srN(soma(inc))]]
+          .forEach(([r, v], i) => srKpi(x, X0 + i * (kw + 18), 320, kw, 130, r, v));
+        let y = srCard(x, X0, 476, W, 420, 'Evolução de Captação x Cancelamento', 'Associados captados e cancelados por mês');
+        srColunas(x, X0 + 20, y, W - 40, 476 + 420 - y - 10, meses, [{ nome: 'Cancelamentos', cor: SR_VERM, vals: can }, { nome: 'Captação', cor: SR_AZUL, vals: cap }], { legenda: true });
+        y = srCard(x, X0, 916, W, 390, 'Evolução Inclusão', 'Comparativo com o mês anterior (percentual inclusão)');
+        srColunas(x, X0 + 20, y, W - 40, 916 + 390 - y - 10, meses, [{ nome: 'Inclusão', cor: '#0B1F7A', vals: inc }], { dets: dets(inc) });
+        y = srCard(x, X0, 1326, W, 390, 'Evolução Consultas', 'Comparativo com o mês anterior (percentual consultas)');
+        srColunas(x, X0 + 20, y, W - 40, 1326 + 390 - y - 10, meses, [{ nome: 'Consultas', cor: SR_VERDE, vals: con }], { dets: dets(con) });
+        const cw = (W - 20) / 2;
+        // Top 10 associados por consultas (jan..mês) e top 10 produtos.
+        const assoc = (A.assocConsultas || []).filter(a => inS(a.ent)).map(a => [a.nome, soma(a.meses.slice(0, m + 1))])
+          .filter(([, v]) => v > 0).sort((p, q) => q[1] - p[1]).slice(0, 10);
+        const prodTot = {};
+        for(let k = 0; k <= m; k++) Object.entries(A.prod[k] || {}).forEach(([p, es]) => { const v = tot(es); if(v) prodTot[p] = (prodTot[p] || 0) + v; });
+        const prods = Object.entries(prodTot).sort((p, q) => q[1] - p[1]).slice(0, 10);
+        [[X0, 'Top 10 Associados', assoc], [X0 + cw + 20, 'Top 10 Produtos', prods]].forEach(([a, tit, lst]) => {
+          const yc = srCard(x, a, 1736, cw, 430, tit, 'Consultas no período');
+          if(lst.length) rcBarras(x, a + 14, yc + 8, cw - 28, lst.map(([n]) => n), [{ nome: '', cor: SR_VERDE, vals: lst.map(([, v]) => v) }],
+            { rotulo: 290, fmt: srN, espessura: 22, passo: 8, fonteRotulo: 15, folga: 88 });
+          else { x.fillStyle = SR_MUTED; x.font = '500 18px Inter'; x.fillText('Sem consultas no período.', a + 22, yc + 30); }
+        });
+        paginas.push(pg);
+      }
+
+      // ---- Página 3: tempo de permanência ----
+      {
+        const pg = await srPaginaBase('Tempo de permanência', abrang, posicao), x = pg.x;
+        const fx = F => F.faixas.map((f, i) => [srFaixaRot(f), tot(F.valores[i])]).sort((p, q) => srDias(p[0]) - srDias(q[0]));
+        const reg = fx(R.registrosAtivos), rec = fx(R.recuperacao);
+        let y = srCard(x, X0, 320, W, 430, 'Registros Ativos por Tempo de Permanência', 'Registros (negativações) ativos na base, por tempo no cadastro');
+        srColunas(x, X0 + 20, y, W - 40, 320 + 430 - y - 10, reg.map(([f]) => f), [{ nome: '', cor: SR_AZUL, vals: reg.map(([, v]) => v) }], { rotuloLinhas: 2, fonteRotulo: 15 });
+        y = srCard(x, X0, 770, W, 430, 'Recuperação por Tempo de Permanência', 'Registros recuperados (quitados), por tempo até a recuperação');
+        srColunas(x, X0 + 20, y, W - 40, 770 + 430 - y - 10, rec.map(([f]) => f), [{ nome: '', cor: SR_AZUL, vals: rec.map(([, v]) => v) }], { rotuloLinhas: 2, fonteRotulo: 15 });
+        const linhasA = (R.assocRegistros || []).filter(a => inS(a.ent)).sort((p, q) => q.reg - p.reg || q.rec - p.rec).slice(0, 22);
+        const totReg = soma(reg.map(([, v]) => v)), totRec = soma(rec.map(([, v]) => v));
+        // Várias entidades: coluna Entidade (filiais com o mesmo nome em CDLs diferentes ficam distinguíveis).
+        const comEnt = new Set(linhasA.map(a => a.ent)).size > 1;
+        rcTabela(x, X0, 1224, W, (comEnt ? [{ t: 'Associado', w: .46 }, { t: 'Entidade', w: .18 }] : [{ t: 'Associado', w: .6 }])
+            .concat([{ t: 'Registros Ativos', w: comEnt ? .18 : .2, al: 'r' }, { t: 'Recuperação', w: comEnt ? .18 : .2, al: 'r' }]),
+          linhasA.map(a => ({ cel: [{ t: a.nome }].concat(comEnt ? [{ t: a.ent }] : [], [{ t: srN(a.reg) }, { t: srN(a.rec) }]) }))
+            .concat([{ total: true, cel: [{ t: 'Total' }].concat(comEnt ? [{ t: '' }] : [], [{ t: srN(totReg) }, { t: srN(totRec) }]) }]), 36, 17);
+        paginas.push(pg);
+      }
+
+      // ---- Páginas 4 e 5: faixas de consumo (consultas e registros) ----
+      const faixaPagina = async (titulo, F, consumo, assocUso, rotQtd) => {
+        const pg = await srPaginaBase(titulo, abrang, posicao), x = pg.x;
+        const fx = F.faixas.map((f, i) => [srFaixaRot(f).replace(/^(\d.*?)\s+(Consultas?|Registros?)$/i, '$1'), tot(F.valores[i])]);
+        const totA = soma(fx.map(([, v]) => v));
+        const y = srCard(x, X0, 320, W, 470, `Percentual de Associados por Faixa de ${rotQtd === 'Consultas' ? 'Consumo' : 'Registros'}`, `${srN(totA)} associados na base de consumo`);
+        srColunas(x, X0 + 20, y, W - 40, 320 + 470 - y - 10, fx.map(([f]) => f), [{ nome: '', cor: '#0B1F7A', vals: fx.map(([, v]) => totA ? v / totA * 100 : 0) }],
+          { fmt: srPct, rotuloLinhas: 2, fonteRotulo: 15, fonteValor: 15 });
+        let linhas, cols;
+        if(S && S.size === 1){
+          const ent = [...S][0], totE = consumo[ent] || 0;
+          cols = [{ t: 'Associado', w: .6 }, { t: rotQtd, w: .2, al: 'r' }, { t: '% da entidade', w: .2, al: 'r' }];
+          linhas = (assocUso || []).filter(a => a.ent === ent && a.q > 0).sort((p, q) => q.q - p.q).slice(0, 38)
+            .map(a => ({ cel: [{ t: a.nome }, { t: srN(a.q) }, { t: totE ? srPct(a.q / totE * 100) : '—' }] }));
+          linhas.push({ total: true, cel: [{ t: 'Total' }, { t: srN(totE) }, { t: '100,00%' }] });
+        } else {
+          cols = [{ t: 'Entidade', w: .56 }, { t: 'Quantidade de Associados', w: .24, al: 'r' }, { t: rotQtd, w: .2, al: 'r' }];
+          const qtdA = {}; F.valores.forEach(o => Object.entries(o).forEach(([k, v]) => { if(inS(k)) qtdA[k] = (qtdA[k] || 0) + v; }));
+          const ents = Object.keys({ ...qtdA, ...Object.fromEntries(Object.entries(consumo).filter(([k]) => inS(k))) })
+            .map(k => [k, qtdA[k] || 0, consumo[k] || 0]).sort((p, q) => q[2] - p[2] || q[1] - p[1]);
+          const MAX = 40, vis = ents.slice(0, ents.length > MAX ? MAX - 1 : MAX), resto = ents.slice(vis.length);
+          linhas = vis.map(([k, a, q]) => ({ cel: [{ t: k }, { t: srN(a) }, { t: srN(q) }] }));
+          if(resto.length) linhas.push({ cel: [{ t: `Demais ${resto.length} entidades` }, { t: srN(soma(resto.map(r => r[1]))) }, { t: srN(soma(resto.map(r => r[2]))) }] });
+          linhas.push({ total: true, cel: [{ t: 'Total' }, { t: srN(soma(ents.map(r => r[1]))) }, { t: srN(soma(ents.map(r => r[2]))) }] });
+        }
+        rcTabela(x, X0, 812, W, cols, linhas, 30, 17);
+        return pg;
+      };
+      paginas.push(await faixaPagina('Faixa de consumo · consultas', R.usoConsultas, R.consumoConsultas || {}, R.assocUsoConsultas, 'Consultas'));
+      paginas.push(await faixaPagina('Faixa de consumo · registros', R.usoRegistros, R.consumoRegistros || {}, R.assocUsoRegistros, 'Registros'));
+      return paginas;
+    }
+    function srPdf(paginas, titulo){
+      const { jsPDF } = window.jspdf, PW = 595.28, PH = PW * SR_H / SR_W;
+      const pdf = new jsPDF({ unit: 'pt', format: [PW, PH], compress: true });
+      paginas.forEach((pg, i) => { if(i) pdf.addPage([PW, PH]); pdf.addImage(pg.c.toDataURL('image/jpeg', 0.86), 'JPEG', 0, 0, PW, PH, undefined, 'FAST'); });
+      pdf.setProperties({ title: titulo, author: 'NIM · CDL Cuiabá' });
+      return pdf.output('blob');
+    }
+    // grupos: [{ S: Set|null, nome }]. progresso(feitos, total, atual).
+    async function srGerar(alvo, todas, escolhidas, individual, passo, progresso){
+      passo('Carregando os dados do SPC Mato Grosso…');
+      await spCarregar();
+      if(spPlatProm) await spPlatProm;   // arquivos OPERAÇÃO_MT de Documentos › CESPC
+      await relCarregarJsPdf();
+      await Promise.all(['800 34px Inter', '700 24px Inter', '600 23px Inter', '500 16px Inter', '800 40px Inter'].map(f => document.fonts.load(f)));
+      const M = spModelo, anos = Object.keys(M.anos).sort();
+      const anoTxt = anos.includes(alvo.slice(0, 4)) ? alvo.slice(0, 4) : anos.filter(a => a <= alvo.slice(0, 4)).pop() || anos[anos.length - 1];
+      const A = M.anos[anoTxt], m = Math.min(Number(alvo.slice(5, 7)) - 1, A.nMeses - 1, anoTxt < alvo.slice(0, 4) ? 11 : 99);
+      const ents = todas ? M.ents : escolhidas.filter(e => M.ents.includes(e));
+      if(!ents.length) throw new Error('nenhuma entidade escolhida.');
+      const grupos = !individual
+        ? [{ S: todas ? null : new Set(ents), nome: todas ? 'Todas as entidades · Mato Grosso' : ents.length === 1 ? ents[0] : `${ents.length} entidades selecionadas` }]
+        : ents.map(e => ({ S: new Set([e]), nome: e }));
+      const mm = String(m + 1).padStart(2, '0'), slug = s => stkNorm(s).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const arquivos = [];
+      for(let i = 0; i < grupos.length; i++){
+        const g = grupos[i];
+        progresso(i, grupos.length, g.nome);
+        passo(`Montando o PDF de ${g.nome}…`);
+        const paginas = await srPaginas(M, anoTxt, m, g.S, g.nome);
+        const nomeArq = `CESPC_SPC_MT_${!individual && todas ? 'Todas_as_entidades' : !individual && ents.length > 1 ? `${ents.length}_entidades` : slug(g.nome)}_${mm}-${anoTxt}.pdf`;
+        arquivos.push({ nome: nomeArq, blob: srPdf(paginas, `Relatório de Monitoramento SPC · ${g.nome} · ${REL_MES_LONGO[m]}/${anoTxt}`) });
+        progresso(i + 1, grupos.length, g.nome);
+        await new Promise(ok => setTimeout(ok, 0));   // deixa a tela atualizar a contagem
+      }
+      const rotPer = `${m ? `janeiro a ${REL_MES_LONGO[m]}` : 'janeiro'} de ${anoTxt}`;
+      const resumoBase = [`<li><strong>Dados de ${esc(rotPer)}</strong>${Number(alvo.slice(5, 7)) - 1 > m || anoTxt < alvo.slice(0, 4) ? ' <span>· último mês no arquivo do CESPC</span>' : ''}</li>`,
+        `<li><strong>${todas ? 'Todas as entidades' : `${ents.length} entidade${ents.length === 1 ? '' : 's'}`}</strong> <span>· ${individual ? 'um PDF por entidade' : 'consolidado em um PDF'}</span></li>`,
+        `<li><strong>${arquivos.length} PDF${arquivos.length === 1 ? '' : 's'}</strong> <span>· 5 páginas cada (capa, visão geral, permanência e faixas de consumo)</span></li>`];
+      if(arquivos.length === 1) return { blob: arquivos[0].blob, arquivo: arquivos[0].nome, pronto: `Relatório de Monitoramento SPC · ${grupos[0].nome} · ${rotPer}.`, resumo: resumoBase.join('') };
+      passo('Compactando os PDFs (.zip)…');
+      await riCarregarJsZip();
+      const zip = new window.JSZip();
+      arquivos.forEach(a => zip.file(a.nome, a.blob));
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      return { blob, zip: true, arquivo: `CESPC_SPC_MT_${arquivos.length}_entidades_${mm}-${anoTxt}.zip`,
+        pronto: `${arquivos.length} relatórios (um por entidade) · ${rotPer} · compactados em .zip.`, resumo: resumoBase.join('') };
+    }
+
     // ===== Relatório "Controle de Estoque" (página única) =====
     // Dados do próprio módulo Estoque (produtos, saldos e movimentações). Período: os 6 meses
     // até o mês de referência. Modelo: report/estoque/branding/1.png.
@@ -19414,6 +19729,50 @@ ${quadro}
     const relRodape = document.getElementById('relRodape');
     const relDocCaged = () => relTipo.value === 'caged' && document.querySelector('input[name="relMod"]:checked')?.value === 'doc';
     const relInadRef = () => document.querySelector('input[name="relInadRef"]:checked')?.value || 'cuiaba';
+    // Dados CESPC: Todas | Específicas (lista suspensa com caixas de seleção) e Total | Individual.
+    const relSpTodas = () => (document.querySelector('input[name="relSpEnt"]:checked') || {}).value !== 'especificas';
+    const relSpIndividual = () => (document.querySelector('input[name="relSpCons"]:checked') || {}).value === 'individual';
+    let relSpMarcadas = new Set(), relSpEnts = [];
+    const relSpSelLista = document.getElementById('relSpSelLista'), relSpSelBtn = document.getElementById('relSpSelBtn');
+    async function relSpPreparar(){
+      try { await spCarregar(); } catch(e){ return; }
+      relSpEnts = spModelo.ents.slice();
+      const refs = Object.keys(spModelo.retratos).sort(), R = spModelo.retratos[refs[refs.length - 1]];
+      relSpEnts.ativos = R ? R.ativos : {};
+      document.getElementById('relSpTodasInfo').textContent = `As ${relSpEnts.length} CDLs de Mato Grosso`;
+      relSpListar();
+      relAtualizar();
+    }
+    function relSpListar(){
+      const q = stkNorm(document.getElementById('relSpSelBusca').value.trim()), at = relSpEnts.ativos || {};
+      const lst = relSpEnts.filter(e => !q || stkNorm(e).includes(q));
+      document.getElementById('relSpSelItens').innerHTML = lst.length ? lst.map(e => `<label class="rel-sp-sel-item" role="option" aria-selected="${relSpMarcadas.has(e)}">
+          <input type="checkbox" data-sp-ent="${esc(e)}"${relSpMarcadas.has(e) ? ' checked' : ''}><span>${esc(e)}</span><span>${at[e] ? `${relNum(at[e])} associado${at[e] === 1 ? '' : 's'}` : ''}</span></label>`).join('')
+        : '<div class="rel-sp-sel-vazio">Nenhuma entidade com esse nome.</div>';
+      const n = relSpMarcadas.size;
+      document.getElementById('relSpSelQtd').textContent = !n ? 'nenhuma marcada' : n === 1 ? [...relSpMarcadas][0] : `${n} marcadas`;
+    }
+    const relSpAbrirLista = abrir => { relSpSelLista.hidden = !abrir; relSpSelBtn.setAttribute('aria-expanded', String(abrir)); if(abrir) setTimeout(() => document.getElementById('relSpSelBusca').focus(), 30); };
+    relSpSelBtn.addEventListener('click', () => relSpAbrirLista(relSpSelLista.hidden));
+    document.getElementById('relSpSelBusca').addEventListener('input', relSpListar);
+    document.getElementById('relSpSelItens').addEventListener('change', ev => {
+      const cb = ev.target.closest('[data-sp-ent]'); if(!cb) return;
+      if(cb.checked) relSpMarcadas.add(cb.dataset.spEnt); else relSpMarcadas.delete(cb.dataset.spEnt);
+      relSpListar(); relAtualizar();
+    });
+    relSpSelLista.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-sp-sel]'); if(!b) return;
+      const q = stkNorm(document.getElementById('relSpSelBusca').value.trim()), vis = relSpEnts.filter(e => !q || stkNorm(e).includes(q));
+      if(b.dataset.spSel === 'todas') vis.forEach(e => relSpMarcadas.add(e)); else vis.forEach(e => relSpMarcadas.delete(e));
+      relSpListar(); relAtualizar();
+    });
+    document.getElementById('relSpEntOpcoes').addEventListener('change', () => {
+      const esp = !relSpTodas();
+      document.getElementById('relSpSel').hidden = !esp;
+      relSpAbrirLista(esp && !relSpMarcadas.size);
+      relAtualizar();
+    });
+    document.getElementById('relSpConsOpcoes').addEventListener('change', () => relAtualizar());
     const relEtapa = nome =>['Config', 'Gerando', 'Pronto'].forEach(e => { document.getElementById('relEtapa' + e).hidden = e !== nome; });
     let relSel = new Set(), relUrl = null, relSelItens = [];
     const relSelBox = document.getElementById('relSelBox'), relSelTexto = document.getElementById('relSelTexto');
@@ -19502,6 +19861,15 @@ ${quadro}
         relRodape.textContent = `Empregos Formais (CAGED) · ${mesTxt} · ${doc ? 'release .doc (Assessoria)' : 'PDF (Documentação)'}`;
         return;
       }
+      if(relTipo.value === 'spc'){
+        const n = relSpTodas() ? relSpEnts.length : relSpMarcadas.size, ind = relSpIndividual(), arqs = ind ? n : 1;
+        relGerarBtn.textContent = arqs > 1 ? `Gerar ${arqs} PDFs (.zip)` : 'Gerar PDF';
+        relBaixarBtn.textContent = arqs > 1 ? 'Baixar .zip' : 'Baixar PDF';
+        relGerarBtn.disabled = !n;
+        relRodape.textContent = !relSpEnts.length ? 'Carregando as entidades…' : !n ? 'Marque ao menos uma entidade'
+          : `Dados CESPC (SPC MT) · até ${mesTxt} · ${relSpTodas() ? 'todas as entidades' : `${n} entidade${n === 1 ? '' : 's'}`} · ${ind ? `${n} PDF${n === 1 ? '' : 's'}${n > 1 ? ' em .zip' : ''}` : 'arquivo único'}`;
+        return;
+      }
       if(relTipo.value === 'inadimplencia'){
         relGerarBtn.textContent = 'Gerar .docx';
         relBaixarBtn.textContent = 'Baixar .docx';
@@ -19530,6 +19898,8 @@ ${quadro}
       document.getElementById('relOpcoesEstoque').hidden = relTipo.value !== 'estoque';
       document.getElementById('relOpcoesCaged').hidden = relTipo.value !== 'caged';
       document.getElementById('relOpcoesInad').hidden = relTipo.value !== 'inadimplencia';
+      document.getElementById('relOpcoesSpc').hidden = relTipo.value !== 'spc';
+      if(relTipo.value === 'spc') relSpPreparar();
       relOpcoes.classList.remove('rel-fade');
       if(panorama){ void relOpcoes.offsetWidth; relOpcoes.classList.add('rel-fade'); relPreencherLista(); }
       relAtualizar();
@@ -19548,6 +19918,7 @@ ${quadro}
 
     window.relReiniciar = function(){
       if(relUrl){ URL.revokeObjectURL(relUrl); relUrl = null; }
+      document.getElementById('relProgresso').hidden = true;
       relEtapa('Config');
       relGerarBtn.hidden = false; relBaixarBtn.hidden = true;
       document.getElementById('relNovoBtn').hidden = true;
@@ -19561,6 +19932,9 @@ ${quadro}
       document.querySelector('input[name="relNot"][value="10"]').checked = true;
       document.querySelector('input[name="relMod"][value="pdf"]').checked = true;
       document.querySelector('input[name="relInadRef"][value="cuiaba"]').checked = true;
+      document.querySelector('input[name="relSpEnt"][value="todas"]').checked = true;
+      document.querySelector('input[name="relSpCons"][value="total"]').checked = true;
+      relSpMarcadas = new Set(); document.getElementById('relSpSel').hidden = true; relSpAbrirLista(false); document.getElementById('relSpSelBusca').value = '';
       relSelBox.hidden = true; relSelTexto.value = ''; relSelItens = []; relSelCsv = false;
       relSelArquivoNome.textContent = 'Nenhum arquivo'; relSelPrevia.hidden = true; relSelContagem.textContent = '0 notícias reconhecidas';
       relMes.value = String(ant.getMonth() + 1).padStart(2, '0');
@@ -19599,6 +19973,18 @@ ${quadro}
         let res;
         if(relDocCaged()) res = await rcRelease(alvo, passo);
         else if(relTipo.value === 'inadimplencia') res = await riRelease(alvo, relInadRef(), passo);
+        else if(relTipo.value === 'spc'){
+          // Contagem de PDFs consolidados (como o envio de e-mails aos leads): "X de N" + barra + entidade da vez.
+          const prog = document.getElementById('relProgresso');
+          const progresso = (feitos, total, atual) => {
+            prog.hidden = false;
+            document.getElementById('relProgressoNum').textContent = `${feitos} de ${total} PDF${total === 1 ? '' : 's'}`;
+            document.getElementById('relProgressoAtual').textContent = feitos < total ? atual : 'concluído';
+            document.getElementById('relProgressoBarra').style.width = `${total ? feitos / total * 100 : 0}%`;
+            relRodape.textContent = `Gerando ${feitos} de ${total}…`;
+          };
+          res = await srGerar(alvo, relSpTodas(), [...relSpMarcadas], relSpIndividual(), passo, progresso);
+        }
         else {
           passo('Carregando o gerador de PDF…');
           await relCarregarJsPdf();
