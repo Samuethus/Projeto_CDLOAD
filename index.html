@@ -2493,15 +2493,22 @@
   :root[data-theme="dark"] #page-roadmap .wa-btn-outline{background:var(--wa-card);color:var(--wa-text-muted);}
 
   /* KPIs compactos */
-  .rm-kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
-  @media (max-width:1100px){ .rm-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  /* 5 cartões: os de setores (sem/com interação) ficam mais largos para os nomes caberem ao lado do número. */
+  .rm-kpis{display:grid;grid-template-columns:1.3fr .9fr 1.45fr 1.45fr .9fr;gap:14px;margin-bottom:14px;}
+  @media (max-width:1300px){ .rm-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .rm-kpi-indice{grid-column:1 / -1;} }
   @media (max-width:560px){ .rm-kpis{grid-template-columns:1fr;} }
   .rm-kpi{background:var(--wa-card);border:1px solid var(--wa-border);border-radius:14px;padding:14px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:0;}
+  /* Número à esquerda e setores ao lado, na mesma faixa; a faixa ocupa o espaço abaixo do título e
+     os setores ficam centralizados na vertical (no máximo 2 linhas — o excedente vira "+N", ver rmAjustarChips). */
+  .rm-kpi-setores{display:flex;flex-direction:column;}
+  .rm-kpi-linha{flex:1;display:flex;align-items:center;gap:16px;margin-top:4px;min-height:48px;}
+  .rm-kpi-linha .rm-kpi-val{margin-top:0;flex:0 0 auto;min-width:22px;}
+  .rm-kpi-linha .rm-sem-lista{flex:1;min-width:0;margin-top:0;align-content:center;}
   .rm-kpi-rot{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--wa-text-muted);}
   .rm-kpi-val{font-size:24px;font-weight:800;color:var(--wa-text);margin-top:4px;line-height:1.1;font-variant-numeric:tabular-nums;}
   .rm-kpi-sub{font-size:12px;color:var(--wa-text-muted);margin-top:3px;}
-  .rm-kpi-indice{display:flex;align-items:center;gap:16px;}
-  .rm-anel{width:64px;height:64px;flex:0 0 auto;transform:rotate(-90deg);}
+  .rm-kpi-indice{display:flex;align-items:center;gap:12px;}
+  .rm-anel{width:56px;height:56px;flex:0 0 auto;transform:rotate(-90deg);}
   .rm-anel circle{fill:none;stroke-width:9;}
   .rm-anel .trilho{stroke:var(--wa-slate-bg);}
   .rm-anel .valor{stroke:var(--wa-primary);stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
@@ -2510,13 +2517,14 @@
   .rm-previa{display:inline-block;margin-top:5px;font-size:11.5px;font-weight:600;color:var(--wa-primary);background:var(--wa-primary-soft);padding:2px 9px;border-radius:9999px;}
   .rm-var.sobe{color:var(--rm-ok);}
   .rm-var.desce{color:var(--rm-critico);}
-  .rm-sem-lista{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
-  .rm-chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
+  .rm-sem-lista{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+  .rm-chip{font-size:11px;font-weight:600;line-height:16px;padding:2px 8px;border-radius:9999px;background:var(--wa-rejected-bg);color:var(--wa-rejected-text);
+    white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;}
   .rm-chip.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
+  .rm-chip.neutro{background:var(--wa-slate-bg);color:var(--wa-text-muted);}
 
-  /* Corpo da visão Roadmap: calendário à esquerda, radar à direita */
-  .rm-corpo{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start;}
-  @media (max-width:1200px){ .rm-corpo{grid-template-columns:minmax(0,1fr);} }
+  /* Corpo da visão Roadmap: calendário na largura toda */
+  .rm-corpo{min-width:0;}
   .rm-board-head{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--wa-border);}
   .rm-board-tits{min-width:0;margin-right:auto;}
   .rm-board-tits h3{margin:0;font-size:16px;font-weight:700;color:var(--wa-text);}
@@ -2566,21 +2574,6 @@
   .rm-leg-item{display:inline-flex;align-items:center;gap:6px;}
   .rm-leg-janela{width:16px;height:12px;border-radius:3px;background:var(--rm-janela);border:1px solid var(--wa-border);}
   .rm-leg-pend{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--wa-border);box-shadow:0 0 0 2px var(--wa-card),0 0 0 3.5px var(--rm-atencao);}
-
-  /* Radar de setores (coluna da direita) */
-  .rm-painel-tit{padding:14px 18px 2px;font-size:16px;font-weight:700;color:var(--wa-text);}
-  .rm-painel-sub{padding:0 18px 6px;font-size:12px;color:var(--wa-text-muted);}
-  .rm-radar{list-style:none;margin:0;padding:2px 10px 10px;}
-  .rm-radar li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px;padding:7px 8px;border-bottom:1px solid var(--wa-border);}
-  .rm-radar li:last-child{border-bottom:none;}
-  .rm-radar-nome{font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .rm-radar-ult{grid-column:1;font-size:11.5px;color:var(--wa-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .rm-radar .rm-badge{grid-row:1 / span 2;grid-column:2;}
-  .rm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:9999px;white-space:nowrap;}
-  .rm-badge svg{width:12px;height:12px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;}
-  .rm-badge.ok{background:var(--wa-approved-bg);color:var(--wa-approved-text);}
-  .rm-badge.atencao{background:var(--wa-pending-bg);color:var(--wa-pending-text);}
-  .rm-badge.critico{background:var(--wa-rejected-bg);color:var(--wa-rejected-text);}
 
   /* Visão Gráfico: cartão .cd-card do Dashboard; legenda + switch Semana | Mês no cabeçalho */
   .rm-grafico .cd-card{min-height:420px;}
@@ -2860,10 +2853,20 @@
             <div class="rm-kpi-val" id="rmTotal">—</div>
             <div class="rm-kpi-sub" id="rmTotalSub">—</div>
           </div>
-          <div class="rm-kpi">
+          <!-- Setores sem / com interação: o número à esquerda e os setores ao lado (no máximo 2 linhas, centralizados) -->
+          <div class="rm-kpi rm-kpi-setores">
             <div class="rm-kpi-rot">Setores sem interação</div>
-            <div class="rm-kpi-val" id="rmSem">—</div>
-            <div class="rm-sem-lista" id="rmSemLista"></div>
+            <div class="rm-kpi-linha">
+              <div class="rm-kpi-val" id="rmSem">—</div>
+              <div class="rm-sem-lista" id="rmSemLista"></div>
+            </div>
+          </div>
+          <div class="rm-kpi rm-kpi-setores">
+            <div class="rm-kpi-rot">Setores com interação</div>
+            <div class="rm-kpi-linha">
+              <div class="rm-kpi-val" id="rmCom">—</div>
+              <div class="rm-sem-lista" id="rmComLista"></div>
+            </div>
           </div>
           <div class="rm-kpi">
             <div class="rm-kpi-rot">Variação</div>
@@ -2872,7 +2875,7 @@
           </div>
         </div>
 
-        <!-- Visão Roadmap: calendário (até a data de referência) e, à direita, o radar de setores -->
+        <!-- Visão Roadmap: calendário (até a data de referência) -->
         <div class="rm-corpo" id="rmVisaoRoadmap">
           <div class="wa-card rm-board">
             <div class="rm-board-head">
@@ -2904,11 +2907,6 @@
               <span class="rm-leg-item"><span class="rm-leg-pend"></span>Pendente (clique em Salvar)</span>
               <span class="rm-leg-item"><span class="rm-st-dot ok"></span>Em dia · <span class="rm-st-dot atencao"></span>Atenção · <span class="rm-st-dot critico"></span>Sem contato</span>
             </div>
-          </div>
-          <div class="wa-card rm-radar-card">
-            <div class="rm-painel-tit">Radar de setores</div>
-            <div class="rm-painel-sub">Tempo desde a última interação registrada</div>
-            <ul class="rm-radar" id="rmRadar"></ul>
           </div>
         </div>
 
@@ -18927,7 +18925,7 @@ ${quadro}
   // ---------------- Roadmap: interações do Núcleo de Inteligência com os setores ----------------
   // Cada caixa (setor × dia) é uma flag de interação/reunião. O índice olha a janela de 7 dias que termina na data de
   // referência (hoje; num mês passado, o último dia dele): % dos setores filtrados com ao menos uma interação.
-  // Os cliques ficam pendentes até "Salvar alterações"; KPIs, radar e gráfico usam só o que foi salvo.
+  // Os cliques ficam pendentes até "Salvar alterações"; KPIs e gráfico usam só o que foi salvo.
   // Barra de filtros no padrão do Dashboard: busca e Setor (setores analisados), Tipo (flags consideradas), Mês/Ano e o
   // switch Roadmap | Gráfico. O Gráfico reaproveita o componente da Inadimplência (window.__cdGrafico).
   // Dados: tabela `roadmap_interacoes` (supabase/schema_roadmap.sql); sem Supabase, no localStorage (demonstração).
@@ -18943,19 +18941,14 @@ ${quadro}
       demanda: { rotulo: 'Demanda', letra: 'D' }
     };
     const JANELA = 7;            // dias da janela do índice (data de referência + 6 anteriores)
-    const HISTORICO = 60;        // dias carregados para trás (radar "última interação")
+    const HISTORICO = 60;        // dias carregados para trás (ponto de situação de cada setor: última interação)
     const TABELA = 'roadmap_interacoes';
     const CHAVE_LOCAL = 'cdload-roadmap';
     const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const DIA_SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const ICO = {
-      ok: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-      atencao: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>',
-      critico: '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
-    };
 
     const $ = id => document.getElementById(id);
-    const grade = $('rmGrade'), radar = $('rmRadar'), grafEl = $('rmVisaoGrafico');
+    const grade = $('rmGrade'), grafEl = $('rmVisaoGrafico');
     const btnSalvar = $('rmSalvar'), btnDescartar = $('rmDescartar');
     const fBusca = $('rmBusca'), fSetor = $('rmSetorFiltro'), fTipo = $('rmTipoFiltro'), fMes = $('rmMesFiltro'), fAno = $('rmAnoFiltro');
 
@@ -19043,7 +19036,7 @@ ${quadro}
     }
 
     // ---------- Carga ----------
-    // Do mês anterior ao escolhido (comparativo do gráfico, -6 dias da janela) e dos últimos 60 dias (radar) até a referência.
+    // Do mês anterior ao escolhido (comparativo do gráfico, -6 dias da janela) e dos últimos 60 dias (situação dos setores) até a referência.
     function intervalo(){
       const ref = dataRef() || fimMes();
       const iniAnt = iso(new Date(anoSel(), mesSel() - 1, 1));
@@ -19097,15 +19090,33 @@ ${quadro}
       if(dias != null && dias < 2 * JANELA) return { cls: 'atencao', rotulo: 'Atenção' };
       return { cls: 'critico', rotulo: 'Sem contato' };
     }
-    const haQuanto = d => d === 0 ? 'no dia' : d === 1 ? 'há 1 dia' : `há ${d} dias`;
+    // Setores em chips, no máximo em 2 linhas ao lado do número. Encaixa cada nome que couber (um nome longo não
+    // empurra os demais para fora) e o restante vira "+N" (a lista completa fica no title).
+    // Sem largura (seção oculta) mostra todos; o resize/render reajusta.
+    function preencherChips(el, nomes, cls, vazio){
+      el.title = nomes.join(', ');
+      el.innerHTML = '';
+      const chip = (t, c) => { const s = document.createElement('span'); s.className = 'rm-chip' + (c ? ' ' + c : ''); s.textContent = t; return el.appendChild(s); };
+      if(!nomes.length){ if(vazio) chip(vazio[0], vazio[1]); return; }
+      const cabe = () => !el.clientWidth || new Set([...el.children].map(c => c.offsetTop)).size <= 2;
+      // Mais curtos primeiro: cabe o maior número de setores (um nome longo ocuparia uma linha inteira).
+      const fora = [];
+      nomes.slice().sort((a, b) => a.length - b.length).forEach(s => { const c = chip(s, cls); if(!cabe()){ c.remove(); fora.push(s); } });
+      if(!fora.length) return;
+      const mais = chip('', cls);
+      const atualizar = () => { mais.textContent = '+' + fora.length; mais.title = fora.join(', '); };
+      atualizar();
+      // Abre espaço para o "+N" tirando os últimos nomes visíveis, se preciso.
+      while(!cabe() && el.children.length > 1){ const ult = mais.previousElementSibling; fora.unshift(ult.textContent); ult.remove(); atualizar(); }
+    }
 
     // ---------- Render ----------
     function renderKpis(){
       const ref = dataRef(), setores = setoresVis(), A = doTipo(registros);
       if(!ref){
-        ['rmIndiceValor', 'rmTotal', 'rmSem', 'rmVar'].forEach(id => { $(id).textContent = '—'; });
+        ['rmIndiceValor', 'rmTotal', 'rmSem', 'rmCom', 'rmVar'].forEach(id => { $(id).textContent = '—'; });
         ['rmIndiceSub', 'rmTotalSub', 'rmVarSub'].forEach(id => { $(id).textContent = 'Mês futuro'; });
-        $('rmSemLista').innerHTML = ''; $('rmPrevia').hidden = true; $('rmAnel').style.strokeDashoffset = '213.63';
+        $('rmSemLista').innerHTML = ''; $('rmComLista').innerHTML = ''; $('rmPrevia').hidden = true; $('rmAnel').style.strokeDashoffset = '213.63';
         return;
       }
       const atual = indice(ref, A, setores), anterior = indice(somaDias(ref, -JANELA), A, setores);
@@ -19122,11 +19133,11 @@ ${quadro}
       $('rmTotal').textContent = atual.total;
       $('rmTotalSub').textContent = `${atual.total === 1 ? 'flag registrada' : 'flags registradas'} de ${diaMes(atual.ini)} a ${diaMes(ref)}`;
 
-      const sem = setores.filter(s => !atual.cobertos.has(s));
+      const sem = setores.filter(s => !atual.cobertos.has(s)), com = setores.filter(s => atual.cobertos.has(s));
       $('rmSem').textContent = sem.length;
-      $('rmSemLista').innerHTML = !setores.length ? '' : sem.length
-        ? sem.slice(0, 4).map(s => `<span class="rm-chip">${esc(s)}</span>`).join('') + (sem.length > 4 ? `<span class="rm-chip">+${sem.length - 4}</span>` : '')
-        : '<span class="rm-chip ok">Todos os setores atendidos</span>';
+      $('rmCom').textContent = com.length;
+      preencherChips($('rmSemLista'), sem, '', setores.length ? ['Todos os setores atendidos', 'ok'] : null);
+      preencherChips($('rmComLista'), com, 'ok', setores.length ? ['Nenhum setor ainda', 'neutro'] : null);
 
       const delta = atual.pct - anterior.pct, v = $('rmVar');
       v.textContent = (delta > 0 ? '+' : '') + delta + ' p.p.';
@@ -19202,18 +19213,6 @@ ${quadro}
       grade.classList.toggle('carregando', carregando);
     }
 
-    function renderRadar(){
-      const ref = dataRef(), A = doTipo(registros);
-      if(!ref){ radar.innerHTML = '<li><span class="rm-radar-ult">Mês futuro.</span></li>'; return; }
-      const itens = setoresVis().map(setor => { const u = ultimaInteracao(setor, A, ref); return { setor, u, dd: u ? difDias(ref, u) : null }; })
-        .sort((a, b) => (b.dd == null ? 1e9 : b.dd) - (a.dd == null ? 1e9 : a.dd) || a.setor.localeCompare(b.setor, 'pt-BR'));
-      radar.innerHTML = itens.map(it => {
-        const st = situacao(it.dd);
-        return `<li><span class="rm-radar-nome" title="${esc(it.setor)}">${esc(it.setor)}</span><span class="rm-badge ${st.cls}">${ICO[st.cls]}${st.rotulo}</span>`
-          + `<span class="rm-radar-ult">${it.u ? `${dataBR(it.u)} · ${haQuanto(it.dd)}` : `sem registro em ${HISTORICO} dias`}</span></li>`;
-      }).join('') || '<li><span class="rm-radar-ult">Nenhum setor no filtro.</span></li>';
-    }
-
     // Gráfico: evolução diária do índice — período escolhido x anterior (Mês: mês x mês anterior, dia a dia;
     // Semana: 7 dias até a referência x os 7 anteriores). Mais recente em azul, anterior em azul claro (padrão da Inadimplência).
     let ultimoGrafico = null;
@@ -19282,7 +19281,7 @@ ${quadro}
     function render(){
       renderToolbar();
       renderKpis();
-      if(visao === 'roadmap'){ renderGrade(); renderRadar(); }
+      if(visao === 'roadmap') renderGrade();
       else renderGrafico();
     }
 
@@ -19400,8 +19399,8 @@ ${quadro}
     btnDescartar.addEventListener('click', () => { pendentes.clear(); msg(''); render(); });
     let redim = null;
     window.addEventListener('resize', () => {
-      if(visao !== 'grafico' || !page.classList.contains('active')) return;
-      clearTimeout(redim); redim = setTimeout(renderGrafico, 150);
+      if(!page.classList.contains('active')) return;
+      clearTimeout(redim); redim = setTimeout(() => { renderKpis(); renderGrafico(); }, 150);   // chips dos setores e gráfico
     });
     window.addEventListener('beforeunload', ev => { if(pendentes.size){ ev.preventDefault(); ev.returnValue = ''; } });
     document.addEventListener('cdload:pagechange', ev => { if(ev.detail.page === 'roadmap') carregar(); });
