@@ -15,8 +15,9 @@
 -- cada uma); as demais linhas não são ligadas a produto. A entrada manual
 -- (escolhendo a nota na Entrada) continua.
 --
---   notas_fiscais_itens  → linhas de produto da nota (descrição, código,
---                          NCM, CFOP, unidade, quantidade e valores)
+--   notas_fiscais_itens  → linhas de produto da nota (descrição, código EAN
+--                          comercial, código do fornecedor, NCM, CFOP,
+--                          unidade, quantidade e valores)
 --   notas_fiscais        → + tipo_arquivo, lida_do_pdf, aprovada_em, aprovada_por
 --
 -- Acesso: igual ao da nota — quem tem a seção Estoque lê e cadastra (o
@@ -65,12 +66,16 @@ alter table public.notas_fiscais_itens add column if not exists movimentacao_id 
   references public.movimentacoes_estoque(id) on delete set null;
 comment on column public.notas_fiscais_itens.entrada_aprovada is 'Linha aprovada para entrada automática no estoque (coluna Entrada da etapa 3).';
 comment on column public.notas_fiscais_itens.movimentacao_id is 'Entrada lançada automaticamente por esta linha.';
+-- Código EAN Comercial (GTIN) do produto na nota — a coluna "Código EAN Comercial" da etapa 3.
+-- `codigo` continua guardando o código do produto no fornecedor.
+alter table public.notas_fiscais_itens add column if not exists ean text;
+comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN) do produto na nota.';
 
 -- ---------------------------------------------------------------------
 -- Grava a nota e as linhas numa única transação (aprovação da etapa 3).
 --   p_id    null = nota nova; senão, a nota a alterar (as linhas são trocadas)
 --   p_nota  campos da nota (arquivo_* só são trocados quando vêm no JSON)
---   p_itens [{ ordem, codigo, descricao, ncm, cfop, unidade, quantidade,
+--   p_itens [{ ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade,
 --             valor_unitario, valor_total, produto_id, lancar_entrada,
 --             movimentacao_id, setor }]
 -- Linha com lancar_entrada e ainda sem movimentacao_id vira uma ENTRADA no
@@ -124,7 +129,7 @@ begin
 
   for x in select *
              from jsonb_to_recordset(coalesce(p_itens, '[]'::jsonb))
-                  as r(ordem int, codigo text, descricao text, ncm text, cfop text, unidade text, quantidade numeric, valor_unitario numeric,
+                  as r(ordem int, codigo text, ean text, descricao text, ncm text, cfop text, unidade text, quantidade numeric, valor_unitario numeric,
                        valor_total numeric, produto_id uuid, lancar_entrada boolean, movimentacao_id uuid, setor text)
             where nullif(btrim(r.descricao), '') is not null
   loop
@@ -142,9 +147,9 @@ begin
               auth.jwt() ->> 'email')
       returning id into v_mov;
     end if;
-    insert into public.notas_fiscais_itens (nota_id, ordem, codigo, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
+    insert into public.notas_fiscais_itens (nota_id, ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
                                             produto_id, entrada_aprovada, movimentacao_id)
-    values (v_id, coalesce(x.ordem, 0), nullif(btrim(x.codigo), ''), btrim(x.descricao), nullif(btrim(x.ncm), ''), nullif(btrim(x.cfop), ''),
+    values (v_id, coalesce(x.ordem, 0), nullif(btrim(x.codigo), ''), nullif(btrim(x.ean), ''), btrim(x.descricao), nullif(btrim(x.ncm), ''), nullif(btrim(x.cfop), ''),
             nullif(btrim(x.unidade), ''), x.quantidade, x.valor_unitario, x.valor_total,
             x.produto_id, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov);
   end loop;

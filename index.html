@@ -5588,7 +5588,7 @@
                     <thead>
                       <tr>
                         <th style="width:36px;">#</th>
-                        <th style="width:96px;">Código</th>
+                        <th style="width:124px;" title="Código de barras do produto na nota (GTIN/EAN)">Código EAN Comercial</th>
                         <th>Descrição do produto</th>
                         <th style="width:64px;">Un.</th>
                         <th style="width:92px;text-align:right;">Qtd.</th>
@@ -10779,7 +10779,7 @@ ${clipPlayerPills(n)}
         if(produto && !nfEntradas(n.id).some(m => m.produto_id === produto)) return false;
         if(term){
           const hay = [n.numero, n.serie, n.chave_acesso, n.fornecedor, n.fornecedor_cnpj, fmtCnpj(n.fornecedor_cnpj), n.observacao, n.arquivo_nome,
-            ...(n.itens || []).map(it => `${it.codigo || ''} ${it.descricao}`)].join(' ').toLowerCase();
+            ...(n.itens || []).map(it => `${it.ean || ''} ${it.codigo || ''} ${it.descricao}`)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -11647,6 +11647,8 @@ ${clipPlayerPills(n)}
         const m = mk.m, vu = nfNumBR(nfValorPerto(bloco, /VALOR\s+UNIT[ÁA]RIO\s+DE\s+COMERCIALIZA/i, /^(\d{1,3}(?:\.\d{3})*,\d+)$/, true));
         return {
           codigo: nfValorPerto(bloco, /C[ÓO]DIGO\s+DO\s+PRODUTO/i, /^([\w.\-\/]{1,30})$/, true) || '',
+          // Código de barras do produto (GTIN); "SEM GTIN" fica vazio.
+          ean: nfValorPerto(bloco, /C[ÓO]DIGO\s+EAN\s+COMERCIAL/i, /^(\d{8,14})$/, true) || '',
           descricao: m[2],
           ncm: nfValorPerto(bloco, /C[ÓO]DIGO\s+NCM/i, /^(\d{8})$/, true) || '',
           cfop: nfValorPerto(bloco, /\bCFOP\b/i, /^(\d{4})$/, true) || '',
@@ -11875,8 +11877,8 @@ ${clipPlayerPills(n)}
     // Produto do estoque para a linha: mesmo código de barras ou, sem ele, o nome com mais palavras em comum.
     function nfSugerirProduto(it){
       const ativos = stockProducts.filter(p => p.ativo);
-      const cod = String(it.codigo || '').trim();
-      const porCodigo = cod && ativos.find(p => p.codigo_barras === cod);
+      const ean = String(it.ean || '').trim(), cod = String(it.codigo || '').trim();
+      const porCodigo = (ean && ativos.find(p => p.codigo_barras === ean)) || (cod && ativos.find(p => p.codigo_barras === cod));
       if(porCodigo) return porCodigo.id;
       const palavras = s => new Set(nfNorm(s).split(/[^a-z0-9]+/).filter(w => w.length >= 3));
       const alvo = palavras(it.descricao);
@@ -11922,13 +11924,13 @@ ${clipPlayerPills(n)}
         <button type="button" class="wa-icon-btn" data-edit="${i}" title="${ed ? 'Concluir a edição da linha' : 'Editar a linha'}">${ed ? ICON_OK : ICON_EDIT}</button>
         <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
       const celulas = ed ? `
-          <td><input data-k="codigo" value="${stockEsc(it.codigo || '')}" aria-label="Código da linha ${i + 1}"></td>
+          <td><input data-k="ean" value="${stockEsc(it.ean || '')}" inputmode="numeric" aria-label="Código EAN Comercial da linha ${i + 1}"></td>
           <td><textarea data-k="descricao" rows="1" aria-label="Descrição da linha ${i + 1}">${stockEsc(it.descricao || '')}</textarea></td>
           <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}"></td>
           <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}"></td>
           <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}"></td>
           <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}"></td>` : `
-          <td class="wa-nf-txt">${stockEsc(it.codigo || '—')}</td>
+          <td class="wa-nf-txt"${it.codigo ? ` title="Código do produto no fornecedor: ${stockEsc(it.codigo)}"` : ''}>${stockEsc(it.ean || '—')}</td>
           <td class="wa-nf-txt">${stockEsc(it.descricao || '(sem descrição)')}</td>
           <td class="wa-nf-txt">${stockEsc(it.unidade || '—')}</td>
           <td class="wa-nf-txt num">${it.quantidade == null ? '—' : fmtQty(it.quantidade)}</td>
@@ -12017,7 +12019,7 @@ ${clipPlayerPills(n)}
       nfItensRender();
     });
     waNfItemAdd.addEventListener('click', () => {
-      nfItens.push({ codigo: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null, produto_id: '', lancar: false, movimentacao_id: null });
+      nfItens.push({ codigo: '', ean: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null, produto_id: '', lancar: false, movimentacao_id: null });
       nfEditando.add(nfItens.length - 1);   // linha nova já abre em edição
       nfItensRender();
       const ult = waNfItensBody.querySelector(`tr[data-i="${nfItens.length - 1}"] textarea`);
@@ -12084,7 +12086,7 @@ ${clipPlayerPills(n)}
       waNfObs.value = n ? (n.observacao || '') : '';
       Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
       nfItens = n ? (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => ({
-        codigo: it.codigo || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
+        codigo: it.codigo || '', ean: it.ean || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
         quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
         valor_total: it.valor_total == null ? null : Number(it.valor_total),
         produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada) })) : [];
@@ -12154,7 +12156,7 @@ ${clipPlayerPills(n)}
       const semQtd = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !(Number(it.quantidade) > 0));
       if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
       const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => ({
-        ordem: i + 1, codigo: String(it.codigo || '').trim() || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
+        ordem: i + 1, codigo: String(it.codigo || '').trim() || null, ean: nfDigitos(it.ean) || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
         ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidade || '').trim() || null,
         quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total,
         produto_id: it.produto_id || null, lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0] }));
@@ -12834,14 +12836,14 @@ ${clipPlayerPills(n)}
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else if(stockTab === 'notas'){
         // Uma linha por produto da nota (nota sem linhas sai numa linha só): documenta o que foi aprovado.
-        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Tipo de arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
+        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código EAN Comercial', 'Código do produto', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Tipo de arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
         getFilteredNotas().forEach(n => {
           const base = [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2)];
           const fim = [nfEntradas(n.id).length, n.arquivo_nome || '', NF_TIPOS[n.tipo_arquivo] ? NF_TIPOS[n.tipo_arquivo].rot : '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '',
             n.aprovada_em ? fmtDateTimeBR(n.aprovada_em) : '', userNameOf(n.aprovada_por) || n.aprovada_por || ''];
           const linhas = (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-          if(!linhas.length) rows.push(base.concat(['', '', '', '', '', '', '', '', ''], fim));
-          linhas.forEach(it => rows.push(base.concat([it.ordem, it.codigo || '', it.descricao, it.ncm || '', it.cfop || '', it.unidade || '',
+          if(!linhas.length) rows.push(base.concat(['', '', '', '', '', '', '', '', '', ''], fim));
+          linhas.forEach(it => rows.push(base.concat([it.ordem, it.ean || '', it.codigo || '', it.descricao, it.ncm || '', it.cfop || '', it.unidade || '',
             fmtNum(it.quantidade, 4), fmtNum(it.valor_unitario, 4), fmtNum(it.valor_total, 2)], fim)));
         });
         filename = 'estoque_notas_fiscais.csv';
