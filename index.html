@@ -11753,6 +11753,34 @@ ${clipPlayerPills(n)}
         waNfArquivoSub.textContent = 'Somente PDF · até 10 MB';
       }
     }
+    // Completa as linhas da nota em edição com as do PDF (mesma descrição): só EAN, código, NCM e CFOP vazios.
+    // Devolve as linhas do PDF que não correspondem a nenhuma linha da nota.
+    function nfCompletarItens(lidos){
+      const chave = it => nfNorm(it.descricao).replace(/[^a-z0-9]/g, '');
+      const livres = lidos.slice();
+      nfItens.forEach(it => {
+        const k = livres.findIndex(l => chave(l) === chave(it));
+        if(k < 0) return;
+        const l = livres.splice(k, 1)[0];
+        ['ean', 'codigo', 'ncm', 'cfop'].forEach(c => { if(!it[c] && l[c]) it[c] = l[c]; });
+      });
+      return livres;
+    }
+    // Nota gravada antes da leitura do EAN: ao editar, relê o PDF guardado e completa os EAN que faltam.
+    async function nfRelerPdfGuardado(n){
+      if(!supabaseReady || !n.arquivo_path || !nfItens.length || nfItens.every(it => nfDigitos(it.ean))) return;
+      try {
+        const { data, error } = await supabaseClient.storage.from(NF_BUCKET).download(n.arquivo_path);
+        if(error) throw error;
+        const lido = await nfLerPdf(data, nfTipoArq);
+        if(editingNfId !== n.id || nfArquivoNovo || !lido.itens.length) return;
+        const antes = nfItens.filter(it => nfDigitos(it.ean)).length;
+        nfCompletarItens(lido.itens);
+        if(nfItens.filter(it => nfDigitos(it.ean)).length > antes && nfEtapa === 3) nfItensRender();
+      } catch(e){
+        console.warn('Releitura do PDF guardado da nota fiscal:', e);
+      }
+    }
     // Põe o que foi lido no formulário (só os campos encontrados) e nas linhas de produto.
     function nfAplicarLeitura(lido){
       Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
@@ -11772,14 +11800,7 @@ ${clipPlayerPills(n)}
       // Edição de nota já gravada: o PDF lido de novo completa as linhas existentes (mesma descrição) com EAN,
       // código, NCM e CFOP, sem mexer em produto, cadastro e entrada; linhas que não existiam entram no fim.
       if(editingNfId && nfItens.length && lido.itens.length){
-        const chave = it => nfNorm(it.descricao).replace(/[^a-z0-9]/g, '');
-        const livres = lido.itens.slice();
-        nfItens.forEach(it => {
-          const k = livres.findIndex(l => chave(l) === chave(it));
-          if(k < 0) return;
-          const l = livres.splice(k, 1)[0];
-          ['ean', 'codigo', 'ncm', 'cfop'].forEach(c => { if(!it[c] && l[c]) it[c] = l[c]; });
-        });
+        const livres = nfCompletarItens(lido.itens);
         nfItens = nfItens.concat(livres.map(it => Object.assign({}, it, { produto_id: '', lancar: false, movimentacao_id: null })));
         nfEditando.clear();
       } else if(lido.itens.length || !editingNfId){
@@ -12173,6 +12194,7 @@ ${clipPlayerPills(n)}
       nfEtapa = nfSomenteLeitura ? 3 : n ? 2 : 1;
       if(nfEtapa === 3){ nfResumoRender(); nfItensRender(); }
       nfEtapaRender();
+      if(n && !nfSomenteLeitura) nfRelerPdfGuardado(n);
     }
 
     window.waOpenNfModal = function(id, opcoes){
