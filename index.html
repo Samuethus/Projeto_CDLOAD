@@ -15675,7 +15675,7 @@ ${clipPlayerPills(n)}
       if(!usoDados || Date.now() - usoEm > USO_TTL){
         if(!usoProm){
           stkGrid.classList.add('cd-carregando');
-          usoProm = usoCarregar().then(d => { usoDados = d; usoEm = Date.now(); usoErro = ''; })
+          usoProm = usoCarregar().then(d => { usoDados = d; usoEm = Date.now(); usoErro = ''; usoDiasCache.clear(); })
             .catch(e => {
               usoErro = e && e.code === '42501' ? 'Seu usuário não tem acesso aos dados do painel Usuários Ativos. Peça a liberação a um Administrador (Usuários › Acessos › Dashboards para consulta).'
                 : /uso_resumo|PGRST202|42883|uso_eventos|42P01/.test(((e && e.message) || '') + ((e && e.code) || '')) ? 'Falta o registro de uso no banco: rode supabase/schema_uso_eventos.sql no SQL Editor do Supabase.'
@@ -15711,9 +15711,50 @@ ${clipPlayerPills(n)}
         .filter(([u, mes]) => mes && !comLogin.has(`${u.email}|${mes}`))
         .map(([u, mes]) => ({ mes, email: u.email, tipo: 'login', secao: null, detalhe: null, qtd: 1, dias: dias.get(`${u.email}|${mes}`) || 1 }));
     }
+    // Visão Mensal do gráfico: logins por dia e usuário de um mês "AAAA-MM" (uso_logins_dia), lidos sob demanda e guardados.
+    const usoDiasCache = new Map();   // mês → { linhas: [{ dia, email, qtd }] } | { erro } | Promise
+    const usoDiasNoMes = mes => { const [a, m] = mes.split('-').map(Number), hoje = new Date();
+      return a === hoje.getFullYear() && m === hoje.getMonth() + 1 ? hoje.getDate() : new Date(a, m, 0).getDate(); };
+    function usoDiasCarregar(mes){
+      if(usoDiasCache.has(mes)) return;
+      const [a, m] = mes.split('-').map(Number), fim = `${mes}-${String(new Date(a, m, 0).getDate()).padStart(2, '0')}`;
+      const pr = (async () => {
+        if(!supabaseReady){
+          // Demonstração: os logins do mês espalhados pelos dias (estável a cada desenho).
+          const n = usoDiasNoMes(mes), linhas = [];
+          usoDados.linhas.filter(l => l.tipo === 'login' && l.mes === mes).forEach((l, i) => {
+            for(let k = 0; k < l.qtd; k++) linhas.push({ dia: ((i * 7 + k * 5) % n) + 1, email: l.email, qtd: 1 });
+          });
+          return { linhas };
+        }
+        const linhas = [];
+        for(let de = 0; ; de += 1000){
+          const { data, error } = await supabaseClient.rpc('uso_logins_dia', { p_ini: `${mes}-01`, p_fim: fim }).range(de, de + 999);
+          if(error) throw error;
+          (data || []).forEach(r => linhas.push({ dia: Number(String(r.dia).slice(8, 10)), email: String(r.usuario_email || '').toLowerCase(), qtd: Number(r.qtd) || 0 }));
+          if(!data || data.length < 1000) break;
+        }
+        return { linhas };
+      })().then(r => { usoDiasCache.set(mes, r); }, e => { usoDiasCache.set(mes, { erro: /uso_logins_dia|PGRST202|42883/.test(((e && e.message) || '') + ((e && e.code) || '')) ? 'falta-funcao' : 'erro' }); })
+        .finally(() => { if(stkPainel() === 'uso' && usoUltimo) usoDesenhar(usoModelo()); });
+      usoDiasCache.set(mes, pr);
+    }
+    // Logins por dia do mês (índice 0 = dia 1), com o último acesso de Usuários contando no seu dia quando o mês não tem login.
+    function usoSerieDias(M, mes){
+      const c = usoDiasCache.get(mes);
+      if(!c || c instanceof Promise || c.erro) return null;
+      const n = usoDiasNoMes(mes), v = Array(n).fill(0);
+      c.linhas.forEach(l => { if(l.dia >= 1 && l.dia <= n && M.loginOk(l.email)) v[l.dia - 1] += l.qtd; });
+      M.D.usuarios.forEach(u => {
+        if(!u.ultimo_acesso || !M.loginOk(u.email) || M.comLoginMes.has(`${u.email}|${mes}`)) return;
+        const d = new Date(u.ultimo_acesso);
+        if(usoMesDe(u.ultimo_acesso) === mes && d.getDate() <= n) v[d.getDate() - 1] += 1;
+      });
+      return v;
+    }
     // Seção Usuários: acessos (login) de cada e-mail no mês corrente — a mesma conta do painel.
     window.__usoAcessosMes = async () => {
-      if(!usoDados || Date.now() - usoEm > USO_TTL){ usoDados = await usoCarregar(); usoEm = Date.now(); }
+      if(!usoDados || Date.now() - usoEm > USO_TTL){ usoDados = await usoCarregar(); usoEm = Date.now(); usoDiasCache.clear(); }
       const mes = usoMesDe(new Date().toISOString());
       return usoDados.linhas.concat(usoLoginsDoUltimoAcesso(usoDados)).filter(l => l.tipo === 'login' && l.mes === mes)
         .reduce((m, l) => m.set(l.email, (m.get(l.email) || 0) + l.qtd), new Map());
@@ -15752,11 +15793,13 @@ ${clipPlayerPills(n)}
       const A = periodo(J.atual), B = periodo(J.anterior);
       // Base da adoção: usuários ativos no cadastro, criados até o fim de cada período (e que casam com a busca).
       const base = fim => D.usuarios.filter(u => u.status === 'Ativo' && String(u.created_at || '').slice(0, 10) <= fim && casaU(u));
-      // Acessos (login) por mês de cada ano e por ano — gráfico de linha (Mensal | Anual).
+      // Acessos (login) por mês de cada ano — gráfico de linha, visão Anual. A visão Mensal (dias) usa uso_logins_dia().
       const logins = linhas.filter(l => l.tipo === 'login');
       const mensal = a => Array.from({ length: 12 }, (_, i) => logins.filter(l => l.mes === `${a}-${String(i + 1).padStart(2, '0')}`).reduce((s, l) => s + l.qtd, 0));
-      const anual = logins.reduce((m, l) => m.set(l.mes.slice(0, 4), (m.get(l.mes.slice(0, 4)) || 0) + l.qtd), new Map());
-      return { J, D, A, B, porEmail, base: base(J.fim), baseAnt: base(J.fimAnt), mensal: { [J.ano]: mensal(J.ano), [J.anoAnt]: mensal(J.anoAnt) }, anual,
+      // Logins que entram na conta (mesmo recorte da busca e sem os perfis fora da análise) e quem já tem login em cada mês.
+      const loginOk = e => !fora.has(e) && casaU(porEmail.get(e) || { email: e });
+      const comLoginMes = new Set(usoDados.linhas.filter(l => l.tipo === 'login').map(l => `${l.email}|${l.mes}`));
+      return { J, D, A, B, porEmail, base: base(J.fim), baseAnt: base(J.fimAnt), mensal: { [J.ano]: mensal(J.ano), [J.anoAnt]: mensal(J.anoAnt) }, loginOk, comLoginMes,
         local: termos.length ? `“${stkBuscaInput.value.trim()}”` : 'Plataforma', filtrado: !!termos.length };
     }
 
@@ -15776,22 +15819,31 @@ ${clipPlayerPills(n)}
       const kAdocao = cdKpiCard('percent', 'verde', 'Adoção', stkPct(ad, 1), cdDelta(ad, adAnt, true, !M.baseAnt.length), vs(M.baseAnt.length ? stkPct(adAnt, 1) : '—'),
         `Usuários ativos ÷ usuários com cadastro ativo (${N(M.base.length)}) · ${J.rotulo}`);
 
-      // ---- Evolução dos acessos (login): Mensal = mês a mês, ano vs. ano anterior; Anual = total de cada ano ----
+      // ---- Evolução dos acessos (login): Mensal = dias do mês (o do filtro Mês ou o último do período) vs. o mesmo mês do
+      //      ano anterior; Anual = meses do ano vs. o ano anterior ----
       const anual = usoEvolVisao === 'anual';
-      const anosEv = [...M.anual.keys()].concat(String(J.ano)).filter((a, i, l) => l.indexOf(a) === i).sort();
-      const mesHoje = new Date().getMonth() + 1, anoHoje = String(new Date().getFullYear());
-      const V = anual
-        ? { categorias: anosEv.map(a => a === anoHoje && mesHoje < 12 ? `${a} (até ${PAN_MES_CURTO[mesHoje - 1]})` : a),
-            series: [{ nome: 'Acessos no ano', cor: CD_COR.azul, valores: anosEv.map(a => M.anual.get(a) || 0) }] }
-        : { categorias: PAN_MES_CURTO.slice(0, J.nMeses), series: [
-            { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, J.nMeses) },
-            { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, J.nMeses) }] };
+      const mm = String(Number(stkMesEl.value) || J.nMeses).padStart(2, '0'), mesA = `${J.ano}-${mm}`, mesB = `${anoAnt}-${mm}`;
+      let V, rotMes = `${PAN_MES_CURTO[Number(mm) - 1]}/${String(J.ano).slice(2)}`, statusDias = '';
+      if(anual){
+        V = { categorias: PAN_MES_CURTO.slice(0, J.nMeses), series: [
+          { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, J.nMeses) },
+          { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, J.nMeses) }] };
+      } else {
+        usoDiasCarregar(mesA); usoDiasCarregar(mesB);
+        const a = usoSerieDias(M, mesA), b = usoSerieDias(M, mesB), n = usoDiasNoMes(mesA);
+        const ca = usoDiasCache.get(mesA);
+        statusDias = ca && ca.erro === 'falta-funcao' ? 'Falta a função uso_logins_dia no banco: rode de novo supabase/schema_uso_eventos.sql.'
+          : ca && ca.erro ? 'Não foi possível ler os acessos por dia.' : !a ? 'Carregando os acessos por dia…' : '';
+        V = { categorias: Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0')), series: [
+          { nome: rotMes, cor: CD_COR.azul, valores: a || Array(n).fill(0) },
+          { nome: `${PAN_MES_CURTO[Number(mm) - 1]}/${String(anoAnt).slice(2)}`, cor: CD_COR.azulClaro, valores: (b || []).slice(0, n).concat(Array(Math.max(0, n - (b || []).length)).fill(0)) }] };
+      }
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
       const switchEvol = `<div class="cd-head-acoes"><div class="stk-segmented" id="usoEvolVisao" role="tablist" aria-label="Período do gráfico">
           ${[['mensal', 'Mensal'], ['anual', 'Anual']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${usoEvolVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${usoEvolVisao === k}">${rot}</button>`).join('')}
         </div></div>`;
-      const wEvol = cdCard('Evolução dos acessos', (anual ? 'Acessos (login) por ano' : `Acessos (login) por mês · ${J.ano} vs. ${anoAnt}`) + (M.filtrado ? ` · ${M.local}` : ''),
-        '<div id="stkFluxoGraf"></div>', legendaDots(V.series) + switchEvol);
+      const wEvol = cdCard('Evolução dos acessos', (anual ? 'Acessos (login) por mês' : 'Acessos (login) por dia') + (M.filtrado ? ` · ${M.local}` : ''),
+        (statusDias ? `<div class="wa-empty-hint" style="margin:0 0 6px;">${esc(statusDias)}</div>` : '') + '<div id="stkFluxoGraf"></div>', legendaDots(V.series) + switchEvol);
 
       // ---- Navegação por seção ----
       const secs = [...A.secoes.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 7);

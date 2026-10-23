@@ -83,6 +83,37 @@ revoke all on function public.uso_resumo(date, date) from public, anon;
 grant execute on function public.uso_resumo(date, date) to authenticated;
 
 -- ---------------------------------------------------------------------
+-- Acessos (login) por dia e usuário — gráfico "Evolução dos acessos" na
+-- visão Mensal (dias do mês). Mesmo controle de acesso do uso_resumo().
+-- ---------------------------------------------------------------------
+create or replace function public.uso_logins_dia(p_ini date, p_fim date)
+returns table (dia date, usuario_email text, qtd bigint)
+language plpgsql stable security definer
+set search_path = public, auth
+as $$
+begin
+  if not (public.cdl_admin() or exists (
+    select 1 from public.usuarios u
+     where lower(u.email) = lower(auth.jwt() ->> 'email')
+       and u.status = 'Ativo'
+       and u.secoes_permitidas ? 'dashboard'
+       and jsonb_typeof(u.dashboards_permitidos) = 'array'
+       and u.dashboards_permitidos ? 'uso')) then
+    raise exception 'Sem acesso ao painel Usuários Ativos.' using errcode = '42501';
+  end if;
+  return query
+    select (e.criado_em at time zone 'America/Cuiaba')::date, lower(e.usuario_email), count(*)::bigint
+      from public.uso_eventos e
+     where e.tipo = 'login' and (e.criado_em at time zone 'America/Cuiaba')::date between p_ini and p_fim
+     group by 1, 2
+     order by 1, 2;
+end;
+$$;
+
+revoke all on function public.uso_logins_dia(date, date) from public, anon;
+grant execute on function public.uso_logins_dia(date, date) to authenticated;
+
+-- ---------------------------------------------------------------------
 -- Integração com Usuários › Último acesso: uma entrada na plataforma é
 -- gravada uma vez só, no mesmo instante, nos dois lugares — a coluna
 -- usuarios.ultimo_acesso (seção Usuários) e o evento 'login' (painel).
@@ -129,7 +160,7 @@ notify pgrst, 'reload schema';
 -- Conferência: as 2 regras de acesso, as funções e, por usuário, o último
 -- acesso da seção Usuários ao lado do último login do painel (devem ser iguais).
 select policyname, cmd from pg_policies where schemaname = 'public' and tablename = 'uso_eventos' order by cmd;
-select proname from pg_proc where proname in ('uso_resumo', 'registrar_acesso') order by proname;
+select proname from pg_proc where proname in ('uso_resumo', 'uso_logins_dia', 'registrar_acesso') order by proname;
 select u.nome, u.ultimo_acesso as ultimo_acesso_usuarios,
        (select max(e.criado_em) from public.uso_eventos e where e.tipo = 'login' and lower(e.usuario_email) = lower(u.email)) as ultimo_login_painel
   from public.usuarios u
