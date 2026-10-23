@@ -29,7 +29,7 @@ with linhas as (
    where btrim(i.descricao) <> ''
 ),
 manual as (
-  select m.id as mov_id, m.produto_id, l.*
+  select m.id as mov_id, m.produto_id, l.nome_nf, l.numero, l.fornecedor, l.data_emissao, l.gravada_em
     from public.movimentacoes_estoque m
     join linhas l on l.nota_id = m.nota_fiscal_id
                  and l.quantidade = m.quantidade
