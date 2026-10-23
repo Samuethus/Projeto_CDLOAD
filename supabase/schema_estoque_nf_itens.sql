@@ -74,6 +74,12 @@ comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN
 -- e foi cadastrado pela linha ao aprovar a nota.
 alter table public.notas_fiscais_itens add column if not exists cadastro_pela_nota boolean not null default false;
 comment on column public.notas_fiscais_itens.cadastro_pela_nota is 'Produto cadastrado no estoque por esta linha (coluna Cadastro da etapa 3).';
+-- Coluna "Rateio" da etapa 3: com a unidade UN1, unidades em cada pacote da nota. A linha é gravada já por
+-- unidade (quantidade = pacotes × rateio; valor unitário = valor total ÷ quantidade; o total não muda).
+-- null = lançada como veio na nota (PC1).
+alter table public.notas_fiscais_itens add column if not exists rateio numeric(14,4)
+  check (rateio is null or rateio > 0);
+comment on column public.notas_fiscais_itens.rateio is 'Unidades por pacote (unidade UN1); null = como veio na nota (PC1).';
 
 -- ---------------------------------------------------------------------
 -- Grava a nota e as linhas numa única transação (aprovação da etapa 3).
@@ -82,7 +88,7 @@ comment on column public.notas_fiscais_itens.cadastro_pela_nota is 'Produto cada
 --   p_itens [{ ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade,
 --             valor_unitario, valor_total, produto_id, lancar_entrada,
 --             movimentacao_id, setor, cadastrar_produto, unidade_cadastro,
---             cadastro_pela_nota }]
+--             cadastro_pela_nota, rateio }]
 -- Linha com cadastrar_produto e EAN: se nenhum produto tem esse código de
 -- barras, cadastra o produto (EAN, descrição, unidade_cadastro e preço da
 -- linha); se já existe, usa o existente. A entrada da linha vai para ele.
@@ -141,7 +147,7 @@ begin
              from jsonb_to_recordset(coalesce(p_itens, '[]'::jsonb))
                   as r(ordem int, codigo text, ean text, descricao text, ncm text, cfop text, unidade text, quantidade numeric, valor_unitario numeric,
                        valor_total numeric, produto_id uuid, lancar_entrada boolean, movimentacao_id uuid, setor text,
-                       cadastrar_produto boolean, unidade_cadastro text, cadastro_pela_nota boolean)
+                       cadastrar_produto boolean, unidade_cadastro text, cadastro_pela_nota boolean, rateio numeric)
             where nullif(btrim(r.descricao), '') is not null
   loop
     v_mov  := x.movimentacao_id;
@@ -172,10 +178,10 @@ begin
       returning id into v_mov;
     end if;
     insert into public.notas_fiscais_itens (nota_id, ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
-                                            produto_id, entrada_aprovada, movimentacao_id, cadastro_pela_nota)
+                                            produto_id, entrada_aprovada, movimentacao_id, cadastro_pela_nota, rateio)
     values (v_id, coalesce(x.ordem, 0), nullif(btrim(x.codigo), ''), nullif(btrim(x.ean), ''), btrim(x.descricao), nullif(btrim(x.ncm), ''), nullif(btrim(x.cfop), ''),
             nullif(btrim(x.unidade), ''), x.quantidade, x.valor_unitario, x.valor_total,
-            v_prod, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov, v_cad);
+            v_prod, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov, v_cad, case when x.rateio > 0 then x.rateio end);
   end loop;
 
   return v_id;

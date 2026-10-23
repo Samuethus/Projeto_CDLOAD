@@ -2323,7 +2323,15 @@
   .wa-nf-itens th{position:sticky;top:0;z-index:1;background:#F8FAFC;}
   .wa-nf-itens td{padding:4px 6px;vertical-align:middle;}
   /* Uma linha por produto: larguras fixas, sem quebra; o texto longo termina em "…" (completo na dica). */
-  .wa-nf-itens{table-layout:fixed;width:100%;min-width:980px;}
+  .wa-nf-itens{table-layout:fixed;width:100%;min-width:860px;box-sizing:border-box;}
+  /* Un. (PC1/UN1) e Rateio: lista suspensa e campo sempre à vista; Qtd./V. unitário travados em UN1 (calculados). */
+  .wa-nf-itens select.wa-nf-un{width:100%;min-width:0;border:1px solid var(--wa-border);border-radius:7px;padding:5px 4px;font-family:inherit;font-size:12px;font-weight:600;color:var(--wa-text);background:#fff;cursor:pointer;}
+  .wa-nf-itens select.wa-nf-un.un1{border-color:#3B82F6;background:#EFF6FF;color:#1D4ED8;}
+  .wa-nf-itens select.wa-nf-un:disabled{cursor:not-allowed;opacity:.7;}
+  .wa-nf-itens input.wa-nf-rateio{border-color:#3B82F6;background:#fff;padding:5px 6px;}
+  .wa-nf-itens input.wa-nf-rateio.falta{border-color:#EF4444;box-shadow:0 0 0 2px rgba(239,68,68,.15);}
+  .wa-nf-itens td.wa-nf-calc{color:#1D4ED8;}
+  .wa-nf-itens td input.wa-nf-travado{background:#F1F5F9 !important;color:#1D4ED8;cursor:not-allowed;}
   .wa-nf-itens th, .wa-nf-itens td.wa-nf-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wa-nf-itens th .wa-nf-ent-todos{max-width:100%;overflow:hidden;}
   .wa-nf-itens th{font-size:10.5px;letter-spacing:.2px;padding:10px 6px;}
@@ -5477,20 +5485,21 @@
                   <table class="wa-table wa-nf-itens">
                     <thead>
                       <tr>
-                        <th style="width:36px;">#</th>
-                        <th style="width:162px;" title="Código de barras do produto na nota (GTIN/EAN)">Código EAN Comercial</th>
+                        <th style="width:28px;">#</th>
+                        <th style="width:124px;" title="Código EAN Comercial: código de barras do produto na nota (GTIN/EAN)">Código EAN</th>
                         <th title="Descrição do produto">Descrição do produto</th>
-                        <th style="width:56px;">Un.</th>
-                        <th style="width:72px;text-align:right;">Qtd.</th>
-                        <th style="width:104px;text-align:right;">V. unitário</th>
-                        <th style="width:104px;text-align:right;">V. total</th>
-                        <th style="width:108px;text-align:center;" title="Produto já cadastrado no estoque (pelo Código EAN Comercial) ou marque para cadastrá-lo ao aprovar a nota">
+                        <th style="width:68px;" title="PC1: lança como veio na nota (pacote). UN1: lança por unidade, com o Rateio (unidades por pacote)">Un.</th>
+                        <th style="width:62px;text-align:right;" title="Com UN1: unidades em cada pacote da nota. Ajusta a Qtd. e o V. unitário; o V. total não muda">Rateio</th>
+                        <th style="width:58px;text-align:right;">Qtd.</th>
+                        <th style="width:88px;text-align:right;">V. unitário</th>
+                        <th style="width:84px;text-align:right;">V. total</th>
+                        <th style="width:98px;text-align:center;" title="Produto já cadastrado no estoque (pelo Código EAN Comercial) ou marque para cadastrá-lo ao aprovar a nota">
                           <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfCadastrarTodos" aria-label="Marcar para cadastro todas as linhas sem produto no estoque"> Cadastro</label>
                         </th>
-                        <th style="width:100px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
+                        <th style="width:90px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
                           <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfLancarTodos" aria-label="Marcar todas as linhas para entrada"> Entrada</label>
                         </th>
-                        <th style="width:76px;"></th>
+                        <th style="width:70px;"></th>
                       </tr>
                     </thead>
                     <tbody id="waNfItensBody"></tbody>
@@ -8758,35 +8767,6 @@
       const data = d.toLocaleDateString('pt-BR'), hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       return `${data}<div class="wa-user-acesso-hora">${hora}</div>`;
     }
-    // Integração com Dashboard › Usuários Ativos: acessos do mês ao lado do último acesso (a mesma conta do painel);
-    // o link abre o painel já filtrado pelo usuário. Só para quem vê o painel (Administrador ou liberado).
-    let waUsoAcessosMes = null;
-    function waAcessosNoMes(u){
-      if(!waUsoAcessosMes) return '';
-      const n = waUsoAcessosMes.get(String(u.email || '').toLowerCase()) || 0;
-      const mes = PAN_MES_CURTO_U[new Date().getMonth()];
-      return `<div class="wa-user-acesso-hora"><a href="#" data-uso-ver="${esc(u.email)}" title="Ver o uso de ${esc(u.nome || u.email)} em Dashboard › Usuários Ativos">${n} ${n === 1 ? 'acesso' : 'acessos'} em ${mes}</a></div>`;
-    }
-    const PAN_MES_CURTO_U = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    function waCarregarAcessosMes(){
-      const cu = window.__getCurrentUser && window.__getCurrentUser();
-      const podeVer = cu && (cu.cargo === 'Administrador' || (Array.isArray(cu.dashboards) && cu.dashboards.includes('uso')));
-      if(!podeVer || !window.__usoAcessosMes) return;
-      window.__usoAcessosMes().then(m => { waUsoAcessosMes = m; renderUsers(); }).catch(() => {});
-    }
-    document.addEventListener('cdload:pagechange', e => { if(e.detail.page === 'usuarios') waCarregarAcessosMes(); });
-    waUserTableBody.addEventListener('click', e => {
-      const a = e.target.closest('[data-uso-ver]');
-      if(!a) return;
-      e.preventDefault();
-      const nav = document.querySelector('.nav-item[data-page="dashboard"]');
-      if(!nav || nav.hidden) return;
-      nav.click();
-      const painel = document.getElementById('stkPainelFiltro'), busca = document.getElementById('stkBusca');
-      if(painel.value !== 'uso'){ painel.value = 'uso'; painel.dispatchEvent(new Event('change', { bubbles: true })); }
-      busca.value = a.dataset.usoVer;
-      busca.dispatchEvent(new Event('input', { bubbles: true }));
-    });
     // Seções liberadas: mostra quantas cabem na largura da coluna, numa linha só; as que
     // sobram viram um selo "+N" (passe o mouse para ver quais são).
     function ajustarSecoesUsuarios(){
@@ -8905,7 +8885,7 @@
           <td class="wa-user-secoes-td"><div class="wa-channel-tags wa-secoes-linha">${sectionsHtml}</div></td>
           <td>${u.setor ? esc(u.setor) : '<span class="wa-empty-hint">—</span>'}</td>
           <td><span class="wa-badge ${u.status === 'Ativo' ? 'wa-status-ativo' : 'wa-status-inativo'}">${esc(u.status)}</span></td>
-          <td class="wa-user-acesso">${waFormatarAcesso(u.ultimo_acesso)}${waAcessosNoMes(u)}</td>
+          <td class="wa-user-acesso">${waFormatarAcesso(u.ultimo_acesso)}</td>
           <td class="wa-table-actions">
             ${window.__isAdmin() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenUserModal('${u.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
@@ -11896,25 +11876,47 @@ ${clipPlayerPills(n)}
       if(it.cadastrar){ it.produto_id = ''; it.produtoSugerido = false; }
       else if(it.lancar && !it.produto_id){ it.produto_id = nfSugerirProduto(it); it.produtoSugerido = !!it.produto_id; }
     }
+    // Coluna Un.: PC1 (padrão, lança como veio na nota) ou UN1 (lança por unidade). Em UN1 o Rateio (unidades em cada
+    // pacote) refaz a linha antes de salvar: Qtd. = pacotes × rateio e V. unitário = V. total ÷ Qtd. (o total não muda).
+    // qtdNf/vuNf guardam a quantidade e o valor unitário da nota para refazer a conta a cada rateio e ao voltar para PC1.
+    const nfR4 = v => Math.round(v * 10000) / 10000;
+    function nfPrepararLinha(it){
+      if(it.modo) return;
+      const r = Number(it.rateio) > 0 ? Number(it.rateio) : null;
+      it.modo = r ? 'UN1' : 'PC1';
+      it.rateio = r;
+      if(!['PC1', 'UN1'].includes(String(it.unidade || '').toUpperCase())) it.unidadeNf = it.unidade || '';
+      it.qtdNf = it.quantidade == null ? null : r ? nfR4(it.quantidade / r) : it.quantidade;
+      it.vuNf = !r ? it.valor_unitario : it.qtdNf ? nfR4((it.valor_total != null ? it.valor_total : it.valor_unitario * it.quantidade) / it.qtdNf) : null;
+      it.unidade = it.modo;
+    }
+    function nfAplicarRateio(it){
+      it.unidade = it.modo;
+      const r = it.modo === 'UN1' && Number(it.rateio) > 0 ? Number(it.rateio) : null;
+      if(!r || it.qtdNf == null){ it.quantidade = it.qtdNf; it.valor_unitario = it.vuNf; return; }
+      it.quantidade = nfR4(it.qtdNf * r);
+      it.valor_unitario = it.valor_total != null && it.quantidade ? nfR4(it.valor_total / it.quantidade) : it.vuNf != null ? nfR4(it.vuNf / r) : null;
+    }
+    const nfRateioTxt = r => r == null ? '' : String(r).replace('.', ',');
     // Linha de baixo (verde) da linha marcada: o produto do estoque e o que será lançado.
     function nfSubLinha(it, i){
       const p = stockProducts.find(x => x.id === it.produto_id);
       const destino = STOCK_SETORES[0];
       if(nfSomenteLeitura || it.movimentacao_id){
-        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
+        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
           ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}</div></td></tr>`;
       }
       const q = Number(it.quantidade) || 0;
       const resumo = q > 0 ? `→ entrada de ${fmtQty(q)} ${stockEsc(p ? p.unidade : nfUnidadeCadastro(it.unidade))} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha';
       if(nfVaiCadastrar(it)){
-        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
+        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
           <b>Produto do estoque:</b> ${stockEsc(String(it.descricao || '').toLocaleUpperCase('pt-BR'))}
           <span class="wa-nf-sug" title="O produto não existe no estoque: é cadastrado ao aprovar a nota">novo · EAN ${stockEsc(nfEanDe(it))}</span>
           <span data-resumo>${resumo}</span></div></td></tr>`;
       }
       const opcoes = stockProducts.filter(x => x.ativo || x.id === it.produto_id).slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
         .map(x => `<option value="${x.id}" ${x.id === it.produto_id ? 'selected' : ''}>${stockEsc(x.nome)} · ${stockEsc(x.codigo_barras)} · ${stockEsc(x.unidade)}</option>`).join('');
-      return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
+      return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
         <b>Produto do estoque:</b>
         <select data-prod aria-label="Produto do estoque da linha ${i + 1}" class="${it.produto_id ? '' : 'falta'}"><option value="">Escolha o produto…</option>${opcoes}</select>
         ${it.produtoSugerido && it.produto_id ? '<span class="wa-nf-sug" title="Escolhido pelo código ou pela descrição da linha; confira">sugerido</span>' : ''}
@@ -11936,18 +11938,29 @@ ${clipPlayerPills(n)}
       const acoes = nfSomenteLeitura ? '' : `
         <button type="button" class="wa-icon-btn" data-edit="${i}" title="${ed ? 'Concluir a edição da linha' : 'Editar a linha'}">${ed ? ICON_OK : ICON_EDIT}</button>
         <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
+      // Un. e Rateio: sempre à vista (não dependem do lápis); linha já lançada no estoque fica travada.
+      const un1 = it.modo === 'UN1', travada = !!it.movimentacao_id;
+      const naNota = it.unidadeNf ? ` · na nota: ${it.unidadeNf}` : '';
+      const celUn = nfSomenteLeitura
+        ? `<td class="wa-nf-txt" title="${un1 ? 'Lançada por unidade' : 'Lançada como veio na nota'}${stockEsc(naNota)}">${it.modo}</td>`
+        : `<td><select class="wa-nf-un${un1 ? ' un1' : ''}" data-un ${travada ? 'disabled' : ''} title="PC1: como veio na nota · UN1: por unidade, com o Rateio${stockEsc(naNota)}" aria-label="Unidade da linha ${i + 1}">
+            <option value="PC1"${un1 ? '' : ' selected'}>PC1</option><option value="UN1"${un1 ? ' selected' : ''}>UN1</option></select></td>`;
+      const celRateio = !un1 ? '<td class="wa-nf-txt num" title="Rateio só com a unidade UN1">—</td>'
+        : nfSomenteLeitura || travada ? `<td class="wa-nf-txt num" title="Unidades por pacote">${stockEsc(nfRateioTxt(it.rateio) || '—')}</td>`
+        : `<td><input class="num wa-nf-rateio${it.rateio ? '' : ' falta'}" data-rateio inputmode="decimal" value="${stockEsc(nfRateioTxt(it.rateio))}" placeholder="un." title="Unidades em cada pacote da nota" aria-label="Rateio da linha ${i + 1}: unidades por pacote"></td>`;
+      const travaCalc = un1 ? ' wa-nf-travado" disabled title="Calculado pelo Rateio (unidade UN1)' : '';
       const celulas = ed ? `
           <td><input data-k="ean" value="${stockEsc(it.ean || '')}" inputmode="numeric" aria-label="Código EAN Comercial da linha ${i + 1}"></td>
           <td><input data-k="descricao" value="${stockEsc(it.descricao || '')}" title="${stockEsc(it.descricao || '')}" aria-label="Descrição da linha ${i + 1}"></td>
-          <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}"></td>
-          <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}"></td>
-          <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}"></td>
+          ${celUn}${celRateio}
+          <td><input class="num${travaCalc}" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}"></td>
+          <td><input class="num${travaCalc}" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}"></td>
           <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}"></td>` : `
           <td class="wa-nf-txt" title="${stockEsc((it.ean ? 'EAN ' + it.ean : 'Sem código EAN') + (it.codigo ? ' · código do produto no fornecedor: ' + it.codigo : ''))}">${stockEsc(it.ean || '—')}</td>
           <td class="wa-nf-txt" title="${stockEsc(it.descricao || '')}">${stockEsc(it.descricao || '(sem descrição)')}</td>
-          <td class="wa-nf-txt" title="${stockEsc(it.unidade || '')}">${stockEsc(it.unidade || '—')}</td>
-          <td class="wa-nf-txt num">${it.quantidade == null ? '—' : fmtQty(it.quantidade)}</td>
-          <td class="wa-nf-txt num">${fmtValorNf(it.valor_unitario)}</td>
+          ${celUn}${celRateio}
+          <td class="wa-nf-txt num${un1 ? ' wa-nf-calc' : ''}" data-col="quantidade"${un1 ? ` title="${stockEsc(fmtQty(it.qtdNf || 0))} pacote(s) × rateio"` : ''}>${it.quantidade == null ? '—' : fmtQty(it.quantidade)}</td>
+          <td class="wa-nf-txt num${un1 ? ' wa-nf-calc' : ''}" data-col="valor_unitario"${un1 ? ` title="V. total ÷ Qtd. · na nota: ${stockEsc(fmtValorNf(it.vuNf))} por pacote"` : ''}>${fmtValorNf(it.valor_unitario)}</td>
           <td class="wa-nf-txt num">${fmtValorNf(it.valor_total)}</td>`;
       return `<tr data-i="${i}" class="${ed ? 'wa-nf-editando' : ''}${erro}">
           <td class="wa-nf-ord">${i + 1}</td>${celulas}
@@ -11970,17 +11983,48 @@ ${clipPlayerPills(n)}
     }
     function nfItensRender(){
       waNfItemAdd.hidden = nfSomenteLeitura;
+      nfItens.forEach(nfPrepararLinha);
       waNfItensBody.innerHTML = nfItens.length ? nfItens.map(nfLinha).join('')
-        : `<tr class="wa-empty-row"><td colspan="10">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
+        : `<tr class="wa-empty-row"><td colspan="11">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
       nfTotaisRender();
       nfAprovarTexto();
     }
+    // Qtd. e V. unitário da linha na tela (texto ou campo em edição), a linha verde e os totais — sem redesenhar a tabela.
+    function nfAtualizarCalculo(tr, i){
+      const it = nfItens[i];
+      tr.querySelectorAll('[data-col="quantidade"]').forEach(td => { td.textContent = it.quantidade == null ? '—' : fmtQty(it.quantidade); });
+      tr.querySelectorAll('[data-col="valor_unitario"]').forEach(td => { td.textContent = fmtValorNf(it.valor_unitario); });
+      const q = tr.querySelector('[data-k="quantidade"]'), v = tr.querySelector('[data-k="valor_unitario"]');
+      if(q) q.value = nfNumIn(it.quantidade, 4);
+      if(v) v.value = nfNumIn(it.valor_unitario, 4);
+      const sub = waNfItensBody.querySelector(`tr.wa-nf-sub[data-i="${i}"]`);
+      if(sub) sub.outerHTML = nfSubLinha(it, i);
+      tr.classList.toggle('wa-nf-item-erro', nfItemErro(it));
+      nfTotaisRender();
+    }
     waNfItensBody.addEventListener('input', e => {
-      const el = e.target.closest('[data-k]'), tr = e.target.closest('tr[data-i]');
+      const tr = e.target.closest('tr[data-i]');
+      // Rateio (UN1): unidades por pacote — Qtd. e V. unitário acompanham na hora, antes de salvar.
+      if(tr && e.target.matches('[data-rateio]')){
+        const i = Number(tr.dataset.i), it = nfItens[i], r = nfNumBR(e.target.value);
+        it.rateio = r > 0 ? r : null;
+        e.target.classList.toggle('falta', !it.rateio);
+        nfAplicarRateio(it);
+        return nfAtualizarCalculo(tr, i);
+      }
+      const el = e.target.closest('[data-k]');
       if(!el || !tr) return;
       const i = Number(tr.dataset.i), it = nfItens[i], k = el.dataset.k;
       if(['quantidade', 'valor_unitario', 'valor_total'].includes(k)){
         it[k] = el.value.trim() === '' ? null : nfNumBR(el.value);
+        // PC1: a quantidade e o valor unitário digitados passam a ser os "da nota" (base do rateio, se mudar para UN1).
+        if(it.modo !== 'UN1'){ if(k === 'quantidade') it.qtdNf = it.quantidade; if(k === 'valor_unitario') it.vuNf = it.valor_unitario; }
+        // UN1: o total mudou — o valor unitário por unidade é refeito (Qtd. continua a do rateio).
+        if(it.modo === 'UN1' && k === 'valor_total'){
+          if(it.qtdNf) it.vuNf = it.valor_total == null ? null : nfR4(it.valor_total / it.qtdNf);
+          nfAplicarRateio(it);
+          return nfAtualizarCalculo(tr, i);
+        }
         // Quantidade ou valor unitário mudou: o total da linha acompanha.
         if(k !== 'valor_total' && it.quantidade != null && it.valor_unitario != null){
           it.valor_total = Math.round(it.quantidade * it.valor_unitario * 100) / 100;
@@ -11999,6 +12043,16 @@ ${clipPlayerPills(n)}
       const tr = e.target.closest('tr[data-i]');
       if(!tr) return;
       const it = nfItens[Number(tr.dataset.i)];
+      if(e.target.matches('[data-un]')){
+        // PC1 ↔ UN1: em UN1 a Qtd. e o V. unitário travam e o Rateio abre; em PC1 a linha volta aos valores da nota.
+        it.modo = e.target.value === 'UN1' ? 'UN1' : 'PC1';
+        if(it.modo === 'PC1') it.rateio = null;
+        nfAplicarRateio(it);
+        nfItensRender();
+        const r = waNfItensBody.querySelector(`tr[data-i="${tr.dataset.i}"] [data-rateio]`);
+        if(r) r.focus();
+        return;
+      }
       if(e.target.matches('[data-lancar]')){
         nfMarcarLancar(it, e.target.checked);
         nfItensRender();
@@ -12112,6 +12166,7 @@ ${clipPlayerPills(n)}
       Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
       nfItens = n ? (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => ({
         codigo: it.codigo || '', ean: it.ean || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
+        rateio: it.rateio == null ? null : Number(it.rateio),
         quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
         valor_total: it.valor_total == null ? null : Number(it.valor_total),
         produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada),
@@ -12182,9 +12237,12 @@ ${clipPlayerPills(n)}
       if(semProduto >= 0){ alert(`A linha ${semProduto + 1} está marcada para entrada: escolha o produto do estoque (ou desmarque a coluna Entrada).`); nfItensRender(); return; }
       const semQtd = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !(Number(it.quantidade) > 0));
       if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
+      const semRateio = nfItens.findIndex(it => it.modo === 'UN1' && !it.movimentacao_id && !nfItemErro(it) && !(Number(it.rateio) > 0));
+      if(semRateio >= 0){ alert(`A linha ${semRateio + 1} está em UN1: informe o Rateio (quantas unidades vêm em cada pacote) ou volte a unidade para PC1.`); return; }
       const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => ({
         ordem: i + 1, codigo: String(it.codigo || '').trim() || null, ean: nfDigitos(it.ean) || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
-        ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidade || '').trim() || null,
+        ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: it.modo || String(it.unidade || '').trim() || null,
+        rateio: it.modo === 'UN1' && Number(it.rateio) > 0 ? Number(it.rateio) : null,
         quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total,
         produto_id: nfVaiCadastrar(it) ? null : (it.produto_id || null), lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0],
         cadastrar_produto: nfVaiCadastrar(it), unidade_cadastro: nfUnidadeCadastro(it.unidade), cadastro_pela_nota: !!it.cadastro_pela_nota }));
@@ -12245,6 +12303,8 @@ ${clipPlayerPills(n)}
           // Banco sem a coluna do EAN (passo 24 ainda não rodado de novo): a nota é gravada, mas sem os códigos.
           const enviados = itens.filter(it => it.ean).length, gravados = (salva.itens || []).filter(it => it.ean).length;
           if(enviados && !gravados) alert('A nota foi gravada, mas o banco ainda não guarda o Código EAN Comercial das linhas (nem o cadastro de produtos pela nota). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase; depois edite a nota, anexe o PDF de novo na etapa 1 e aprove para gravar os códigos.');
+          // Banco sem a coluna Rateio: as linhas UN1 foram gravadas por unidade, mas sem o rateio (a edição volta a mostrar PC1).
+          else if(itens.some(it => it.rateio) && !(salva.itens || []).some(it => it.rateio)) alert('A nota foi gravada com as quantidades por unidade, mas o banco ainda não guarda o Rateio das linhas. Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase para que a edição da nota mostre o rateio usado.');
         }
         // PDF trocado: o antigo sai do Storage só depois de a nota ser gravada.
         if(antiga && antiga.arquivo_path && arquivo) await removerNfStorage([antiga.arquivo_path]);
@@ -15752,14 +15812,6 @@ ${clipPlayerPills(n)}
       });
       return v;
     }
-    // Seção Usuários: acessos (login) de cada e-mail no mês corrente — a mesma conta do painel.
-    window.__usoAcessosMes = async () => {
-      if(!usoDados || Date.now() - usoEm > USO_TTL){ usoDados = await usoCarregar(); usoEm = Date.now(); usoDiasCache.clear(); }
-      const mes = usoMesDe(new Date().toISOString());
-      return usoDados.linhas.concat(usoLoginsDoUltimoAcesso(usoDados)).filter(l => l.tipo === 'login' && l.mes === mes)
-        .reduce((m, l) => m.set(l.email, (m.get(l.email) || 0) + l.qtd), new Map());
-    };
-
     // Janela do período (Mês/Ano) e o mesmo período do ano anterior, em meses "AAAA-MM".
     function usoJanela(){
       const hoje = new Date(), anoHoje = hoje.getFullYear(), mesHoje = hoje.getMonth() + 1;
