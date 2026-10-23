@@ -2281,6 +2281,12 @@
   @keyframes waFadeIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
   .wa-fade-in{animation:waFadeIn .2s ease;}
   .wa-input-with-btn{display:flex;gap:8px;align-items:stretch;}
+  /* Entrada/Saída: busca do produto por nome ou código (filtra a lista logo abaixo). */
+  .wa-field input.wa-mov-busca{width:100%;box-sizing:border-box;border:1px solid var(--wa-border);border-radius:10px;padding:9px 14px;margin-bottom:8px;
+    font-family:inherit;font-size:13.5px;color:var(--wa-text);outline:none;background:#fff;transition:border-color .15s, box-shadow .15s;}
+  .wa-field input.wa-mov-busca:disabled{background:#F8FAFC;color:var(--wa-text-muted);cursor:not-allowed;}
+  .wa-mov-busca-info{margin:-4px 0 8px;font-size:11.5px;color:var(--wa-text-muted);}
+  .wa-mov-busca-info.nenhum{color:#B91C1C;}
   .wa-input-with-btn input, .wa-input-with-btn select{flex:1;min-width:0;}
   .wa-field[hidden]{display:none;}
   /* Nota fiscal (PDF) da Entrada: área de clique/arraste com altura moderada. */
@@ -5313,9 +5319,12 @@
             </div>
             <div class="wa-modal-body">
               <div class="wa-field">
-                <label for="waMovProduto">Produto</label>
+                <label for="waMovBusca">Produto</label>
+                <!-- Digitar o nome ou o código filtra a lista abaixo (e escolhe o primeiro); a lista continua para ver todos. -->
+                <input type="search" id="waMovBusca" class="wa-mov-busca" placeholder="Digite o nome ou o código do produto…" autocomplete="off" aria-describedby="waMovBuscaInfo">
+                <div class="wa-mov-busca-info" id="waMovBuscaInfo" hidden></div>
                 <div class="wa-input-with-btn">
-                  <select id="waMovProduto"></select>
+                  <select id="waMovProduto" aria-label="Lista de produtos"></select>
                   <button type="button" class="wa-btn wa-btn-outline" onclick="waScanIntoMovProduct()" title="Ler pela câmera">
                     <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
                   </button>
@@ -10243,6 +10252,7 @@ ${clipPlayerPills(n)}
     const waMovModal = document.getElementById('waMovModal');
     const waMovSub = document.getElementById('waMovSub');
     const waMovProduto = document.getElementById('waMovProduto');
+    const waMovBusca = document.getElementById('waMovBusca'), waMovBuscaInfo = document.getElementById('waMovBuscaInfo');
     const waMovTipoGroup = document.getElementById('waMovTipoGroup');
     const waMovTipoField = document.getElementById('waMovTipoField');
     const waMovTitle = document.getElementById('waMovTitle');
@@ -12553,6 +12563,34 @@ ${clipPlayerPills(n)}
     const outraCentral = s => STOCK_SETORES.find(x => x !== s) || s;
     waMovSetorOrigem.addEventListener('change', () => { waMovSetorDestino.value = outraCentral(waMovSetorOrigem.value); updateMovSummary(); });
     waMovSetorDestino.addEventListener('change', () => { waMovSetorOrigem.value = outraCentral(waMovSetorDestino.value); updateMovSummary(); });
+    // Busca do produto por nome ou código: filtra a lista abaixo (sem acento, todas as palavras) e já escolhe o primeiro
+    // encontrado; código de barras exato escolhe o produto direto. Enter confirma e segue para o próximo campo.
+    // Campo vazio: a lista volta inteira para escolher à mão.
+    const movNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    function movFiltrarProdutos(){
+      const q = waMovBusca.value.trim(), termos = movNorm(q).split(/\s+/).filter(Boolean);
+      const ops = [...waMovProduto.options].filter(o => o.value), achados = [];
+      ops.forEach(o => { const ok = !termos.length || termos.every(t => movNorm(o.textContent).includes(t)); o.hidden = !ok; if(ok) achados.push(o); });
+      const exato = termos.length ? stockProducts.find(p => String(p.codigo_barras) === q.replace(/\s+/g, '')) : null;
+      const alvo = exato ? ops.find(o => o.value === exato.id) || achados[0] : achados[0];
+      waMovBuscaInfo.hidden = !termos.length;
+      waMovBuscaInfo.classList.toggle('nenhum', !achados.length);
+      waMovBuscaInfo.textContent = !achados.length ? 'Nenhum produto ativo com esse nome ou código.'
+        : achados.length === 1 ? '1 produto encontrado e escolhido.' : `${achados.length} produtos encontrados: o primeiro já está escolhido — abra a lista para trocar.`;
+      const novo = termos.length ? (alvo ? alvo.value : '') : waMovProduto.value;
+      if(novo !== waMovProduto.value){ waMovProduto.value = novo; waMovProduto.dispatchEvent(new Event('change')); }
+    }
+    function movLimparBusca(){
+      waMovBusca.value = ''; waMovBuscaInfo.hidden = true;
+      [...waMovProduto.options].forEach(o => { o.hidden = false; });
+    }
+    waMovBusca.addEventListener('input', movFiltrarProdutos);
+    waMovBusca.addEventListener('keydown', e => {
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      if(!waMovProduto.value) return;
+      (movTipo === 'saida' && !waMovConsumo.value ? waMovConsumo : waMovQtd).focus();
+    });
     waMovQtd.addEventListener('input', updateMovSummary);
     waMovQtd.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
     waMovObs.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
@@ -12572,13 +12610,13 @@ ${clipPlayerPills(n)}
         waMovTitle.textContent = 'Saída de produto';
         waMovSub.textContent = 'Confira o produto, escolha o setor e a quantidade.';
         waMovSaveBtn.textContent = 'Confirmar saída';
-        waMovProduto.disabled = !!produtoId;
+        waMovProduto.disabled = waMovBusca.disabled = !!produtoId;
         waMovObs.placeholder = 'Opcional';
       }
       waMovModal.classList.add('open');
       setTimeout(() => {
         if(produtoId && tipo === 'saida') waMovConsumo.focus();
-        else if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovProduto.focus(); }
+        else if(produtoId){ waMovQtd.focus(); waMovQtd.select(); } else { waMovBusca.focus(); }
       }, 50);
     };
 
@@ -12593,7 +12631,7 @@ ${clipPlayerPills(n)}
       waMovSaveBtn.textContent = m ? 'Salvar Alterações' : 'Registrar';
       waMovTipoGroup.querySelector('[data-tipo="transferencia"]').hidden = !!m || !stockTemTransferencia();
       waMovTipoField.hidden = travado;
-      waMovProduto.disabled = travado;
+      waMovProduto.disabled = waMovBusca.disabled = travado;
       waMovProduto.nextElementSibling.disabled = travado;
       waMovSetorOrigem.disabled = waMovSetorDestino.disabled = !!m && m.transferencia;
     }
@@ -12611,6 +12649,7 @@ ${clipPlayerPills(n)}
       waMovProduto.innerHTML = '<option value="">Selecione o produto...</option>' +
         ativos.map(p => `<option value="${p.id}">${stockEsc(p.nome)} · ${stockEsc(p.codigo_barras)}</option>`).join('');
       waMovProduto.value = produtoId || '';
+      movLimparBusca();
       const setorPadrao = currentSetor !== STOCK_SETOR_TODOS ? currentSetor : STOCK_SETORES[0];
       waMovSetor.value = setorPadrao;
       waMovSetorOrigem.value = setorPadrao;
@@ -12729,7 +12768,7 @@ ${clipPlayerPills(n)}
     window.waCloseMovModal = function(){
       waMovModal.classList.remove('open');
       waMovModal.classList.remove('wa-mov-restrito');
-      waMovProduto.disabled = false;
+      waMovProduto.disabled = waMovBusca.disabled = false;
       waMovObs.placeholder = 'Ex: compra do mês, nome de quem retirou';
       setMovEdicao(null);
       nfSelecionar(null);
