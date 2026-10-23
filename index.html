@@ -13879,6 +13879,7 @@ ${clipPlayerPills(n)}
       document.getElementById('page-dashboard').classList.toggle('stk-sp', sp);
       document.getElementById('stkSpEntFiltro').hidden = !sp;
       document.getElementById('stkSpRefFiltro').hidden = !sp;
+      if(!sp) [...stkMesEl.options].forEach(o => { o.hidden = o.disabled = false; });   // SPC limita aos meses com dados
       if(!ic) document.getElementById('stkIcDatasLista').hidden = true;
       stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp;
       stkPlayerEl.hidden = !clipping;
@@ -17555,6 +17556,11 @@ ${clipPlayerPills(n)}
       if(M.ents.includes(curEnt)) stkSpEntEl.value = curEnt;
       stkSpEntEl.classList.toggle('ativo', !!stkSpEntEl.value);
       stkSpRefEl.classList.toggle('ativo', stkSpRefEl.value !== 'ano');
+      // Mês: só os meses com dados no ano escolhido (o arquivo do ano corrente vai até o último mês enviado);
+      // um mês que não existe no ano volta para o padrão (último mês do arquivo).
+      const anoSel = stkAnoEl.value || anos[0], nM = M.anos[anoSel] ? M.anos[anoSel].nMeses : 12;
+      [...stkMesEl.options].forEach(o => { o.hidden = o.disabled = !!o.value && Number(o.value) > nM; });
+      if(stkMesEl.value && Number(stkMesEl.value) > nM) stkMesEl.value = '';
     }
     stkSpAbasEl.addEventListener('click', ev => {
       const b = ev.target.closest('[data-sp-aba]');
@@ -17958,7 +17964,11 @@ ${clipPlayerPills(n)}
 
       stkGrid.classList.add('cd-fit');
       stkGrid.classList.remove('cd-carregando');
-      const aviso = spLendo ? `<div class="wa-empty-hint" style="margin:-6px 0 10px;">Lendo ${spLendo} arquivo${spLendo === 1 ? '' : 's'} OPERAÇÃO_MT de Documentos › CESPC…</div>` : '';
+      // Associados ativos e Recuperação são retratos de uma data: sem o arquivo do mês escolhido, vale a posição mais
+      // recente até ele — e a tela avisa de qual mês são os números.
+      const semRetrato = (spAba === 'ativos' || spAba === 'recuperacao') && refR !== alvo
+        ? `<div class="wa-empty-hint" style="margin:-6px 0 10px;">Sem a posição de ${rotRef(alvo)} nos arquivos do CESPC: os números desta aba são de ${rotRef(refR)} (posição mais recente até o mês escolhido). Envie o OPERAÇÃO_MT de ${rotRef(alvo)} em Documentos › CESPC para ver o mês exato.</div>` : '';
+      const aviso = (spLendo ? `<div class="wa-empty-hint" style="margin:-6px 0 10px;">Lendo ${spLendo} arquivo${spLendo === 1 ? '' : 's'} OPERAÇÃO_MT de Documentos › CESPC…</div>` : '') + semRetrato;
       stkGrid.innerHTML = `${aviso}<div class="cd-tela">${html}</div>`;
       if(rosca && rosca.length && document.getElementById('stkDistribGraf')) stkDesenharRoscaCd(rosca, SP_ABAS.find(a => a[0] === spAba)[1], 196);
       const graf = document.getElementById('stkFluxoGraf');
