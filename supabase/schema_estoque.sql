@@ -31,6 +31,10 @@
 --
 -- Banco que já usava o modelo antigo (entradas/saídas em RH, Institucional,
 -- Espaço): rode supabase/schema_migracao_estoque_centrais.sql uma vez.
+--
+-- Preço praticado, histórico de preços, nome em maiúsculas e cadastro de
+-- notas fiscais: supabase/schema_estoque_precos_nf.sql (rode depois dos
+-- scripts de acesso — ver supabase/LEIA-ME.md, passo 23).
 -- =====================================================================
 
 create extension if not exists pgcrypto;

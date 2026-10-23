@@ -2300,6 +2300,16 @@
   .wa-nf-drop-txt{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .wa-nf-drop-tit{font-size:13.5px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .wa-nf-drop-sub{font-size:12px;color:var(--wa-text-muted);}
+  /* Entrada: Quantidade ocupa a linha toda quando o Preço não aparece (saída/transferência). */
+  #waMovQtdGrid:has(> #waMovPrecoField[hidden]){grid-template-columns:1fr;}
+  /* Entrada › Nota fiscal: lista suspensa com digitação e seleção única. */
+  .wa-nf-picker input{padding-right:34px;}
+  .wa-nf-picker-limpar{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:none;border-radius:50%;background:transparent;color:var(--wa-text-muted);font-size:17px;line-height:1;cursor:pointer;}
+  .wa-nf-picker-limpar:hover{background:var(--wa-primary-soft);color:var(--wa-text);}
+  .wa-nf-picker-limpar[hidden]{display:none;}
+  .wa-nf-op-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .wa-nf-op-txt .wa-p-name, .wa-nf-op-txt .wa-p-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wa-participant-option.wa-nf-op-nova{color:var(--wa-primary);font-size:13px;font-weight:600;border-top:1px solid var(--wa-border);border-radius:0 0 8px 8px;margin-top:2px;}
   .wa-nf-remover{position:absolute;top:8px;right:8px;font-size:18px;line-height:1;}
 
   /* ---- Leitor por câmera ---- */
@@ -5050,6 +5060,11 @@
               <span class="wa-stock-action-label">Saída</span>
               <span class="wa-stock-action-symbol" aria-hidden="true">-</span>
             </button>
+            <button class="wa-btn wa-btn-outline" id="waStockNfBtn" onclick="waOpenNfModal()" title="Cadastrar nota fiscal">
+              <svg class="wa-stock-action-icon" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+              <span class="wa-stock-action-label">Nota Fiscal</span>
+              <span class="wa-stock-action-symbol" aria-hidden="true">NF</span>
+            </button>
             <button class="wa-btn wa-btn-outline" id="waStockTransferBtn" onclick="waOpenMovModal(null,'transferencia')" title="Transferência entre estoques centrais" hidden>
               <svg class="wa-stock-action-icon wa-stock-action-icon-always" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               <span class="wa-stock-action-label">Transferência</span>
@@ -5114,6 +5129,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               Movimentações
             </button>
+            <button type="button" class="wa-view-toggle-btn" data-tab="notas">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              Notas fiscais
+            </button>
           </div>
           <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
             <div class="wa-sort-group">
@@ -5168,6 +5187,25 @@
           </div>
         </div>
 
+        <div class="wa-card" id="waNfCard" hidden>
+          <div class="wa-table-wrap">
+            <table class="wa-table">
+              <thead>
+                <tr>
+                  <th>Emissão</th>
+                  <th>Nota fiscal</th>
+                  <th>Fornecedor</th>
+                  <th style="text-align:right;">Valor total</th>
+                  <th>Entradas vinculadas</th>
+                  <th>Cadastrada por</th>
+                  <th class="wa-table-actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="waNfTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- ===== MODAL: CENTRAL DE OPERAÇÕES (abre ao acessar o Estoque) =====
              Mesmo layout da etapa 1 do "+ Adicionar Template". Os campos de cada
              operação não são duplicados: o corpo de #waMovModal / #waProductModal
@@ -5199,6 +5237,11 @@
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
                   <h4>Saída</h4>
                   <p>Retirada da central, informando o setor que consome.</p>
+                </div>
+                <div class="wa-category-card" data-acao="nf">
+                  <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+                  <h4>Nota Fiscal</h4>
+                  <p>Cadastro da NF de compra, com o arquivo.</p>
                 </div>
                 <div class="wa-category-card" data-acao="transferencia" hidden>
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
@@ -5252,7 +5295,8 @@
               </div>
               <div class="wa-field">
                 <label for="waProdNome">Nome do produto</label>
-                <input type="text" id="waProdNome" placeholder="Ex: Papel A4 75g (resma 500 folhas)">
+                <input type="text" id="waProdNome" placeholder="Ex: PAPEL A4 75G (RESMA 500 FOLHAS)" style="text-transform:uppercase;" autocapitalize="characters">
+                <div class="wa-field-hint">O nome é gravado sempre em letras maiúsculas.</div>
               </div>
               <div class="wa-form-grid">
                 <div class="wa-field">
@@ -5276,6 +5320,7 @@
                   <input type="number" id="waProdCusto" min="0" step="0.01" placeholder="0,00">
                 </div>
               </div>
+              <div class="wa-field-hint" id="waProdCustoInfo" style="margin:-6px 0 14px;" hidden></div>
               <div class="wa-field">
                 <label for="waProdDescricao">Descrição</label>
                 <textarea id="waProdDescricao" rows="2" placeholder="Detalhes opcionais do produto"></textarea>
@@ -5350,34 +5395,120 @@
                   <select id="waMovSetorDestino"></select>
                 </div>
               </div>
-              <div class="wa-field">
-                <label for="waMovQtd">Quantidade</label>
-                <input type="number" id="waMovQtd" min="0" step="any" value="1">
+              <div class="wa-form-grid" style="margin-bottom:0;" id="waMovQtdGrid">
+                <div class="wa-field">
+                  <label for="waMovQtd">Quantidade</label>
+                  <input type="number" id="waMovQtd" min="0" step="any" value="1">
+                </div>
+                <!-- Preço praticado (só na Entrada): vem do cadastro; digitar outro atualiza o produto. -->
+                <div class="wa-field" id="waMovPrecoField" hidden>
+                  <label for="waMovPreco">Preço unitário (R$)</label>
+                  <input type="number" id="waMovPreco" min="0" step="0.01" placeholder="0,00">
+                </div>
+              </div>
+              <!-- Nota fiscal da compra (só na Entrada): escolhida entre as cadastradas em "+ Nota Fiscal". -->
+              <div class="wa-field" id="waMovNfField" hidden>
+                <label for="waMovNfBusca">Nota fiscal</label>
+                <div class="wa-participant-picker wa-nf-picker">
+                  <input type="text" id="waMovNfBusca" placeholder="Digite o número ou o fornecedor..." autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="waMovNfLista" aria-autocomplete="list">
+                  <button type="button" class="wa-nf-picker-limpar" id="waMovNfLimpar" title="Tirar a nota fiscal" aria-label="Tirar a nota fiscal" hidden>&times;</button>
+                  <div class="wa-participant-dropdown" id="waMovNfLista" role="listbox" hidden></div>
+                </div>
+                <div class="wa-field-hint">Opcional. A nota precisa estar cadastrada em <strong>+ Nota Fiscal</strong>.</div>
               </div>
               <div class="wa-field">
                 <label for="waMovObs">Observação</label>
-                <input type="text" id="waMovObs" placeholder="Ex: NF 1234, compra do mês, nome de quem retirou">
-              </div>
-              <!-- Nota fiscal da compra (só na Entrada): PDF no bucket privado "notas_fiscais". -->
-              <div class="wa-field" id="waMovNfField" hidden>
-                <label for="waMovNf">Nota fiscal (PDF)</label>
-                <label class="wa-nf-drop" id="waMovNfDrop" for="waMovNf">
-                  <span class="wa-nf-drop-ic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
-                  </span>
-                  <span class="wa-nf-drop-txt">
-                    <span class="wa-nf-drop-tit" id="waMovNfTitulo">Clique ou arraste o PDF da nota fiscal</span>
-                    <span class="wa-nf-drop-sub" id="waMovNfSub">Somente PDF · até 10 MB</span>
-                  </span>
-                  <button type="button" class="wa-icon-btn danger wa-nf-remover" id="waMovNfRemover" title="Remover a nota fiscal" hidden>&times;</button>
-                </label>
-                <input type="file" id="waMovNf" accept="application/pdf,.pdf" hidden>
+                <input type="text" id="waMovObs" placeholder="Ex: compra do mês, nome de quem retirou">
               </div>
               <div class="wa-budget-summary" id="waMovSummary">Selecione um produto para ver o saldo.</div>
             </div>
             <div class="wa-modal-footer">
               <button class="wa-btn wa-btn-outline" onclick="waCloseMovModal()">Cancelar</button>
               <button class="wa-btn wa-btn-primary" id="waMovSaveBtn" onclick="waSaveMovement()">Registrar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== MODAL: NOTA FISCAL (cadastro / edição) =====
+             Documento da compra: identificação (número, série, chave de acesso), emitente,
+             emissão, valor e o arquivo (PDF ou XML) no bucket privado "notas_fiscais".
+             As entradas apontam para a nota (movimentacoes_estoque.nota_fiscal_id). -->
+        <div class="wa-modal-overlay" id="waNfModal">
+          <div class="wa-modal wa-modal-lg" style="max-width:720px;">
+            <div class="wa-modal-header">
+              <div class="wa-modal-header-left">
+                <div class="wa-modal-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                </div>
+                <div>
+                  <div class="wa-modal-title" id="waNfModalTitle">Nova Nota Fiscal</div>
+                  <div class="wa-modal-sub" id="waNfModalSub">Cadastro da nota fiscal de compra, para vincular às entradas</div>
+                </div>
+              </div>
+              <button class="wa-modal-close" onclick="waCloseNfModal()">&times;</button>
+            </div>
+            <div class="wa-modal-body">
+              <h3 class="wa-step-title">Identificação</h3>
+              <div class="wa-form-grid">
+                <div class="wa-field">
+                  <label for="waNfNumero">Número *</label>
+                  <input type="text" id="waNfNumero" placeholder="Ex: 4521" autocomplete="off" inputmode="numeric">
+                </div>
+                <div class="wa-field">
+                  <label for="waNfSerie">Série</label>
+                  <input type="text" id="waNfSerie" placeholder="Ex: 1" autocomplete="off">
+                </div>
+              </div>
+              <div class="wa-form-grid">
+                <div class="wa-field">
+                  <label for="waNfEmissao">Data de emissão *</label>
+                  <input type="date" id="waNfEmissao">
+                </div>
+                <div class="wa-field">
+                  <label for="waNfValor">Valor total (R$)</label>
+                  <input type="number" id="waNfValor" min="0" step="0.01" placeholder="0,00">
+                </div>
+              </div>
+              <div class="wa-field">
+                <label for="waNfChave">Chave de acesso</label>
+                <input type="text" id="waNfChave" placeholder="44 dígitos da NF-e (opcional)" autocomplete="off" inputmode="numeric" spellcheck="false">
+              </div>
+
+              <h3 class="wa-step-title">Fornecedor</h3>
+              <div class="wa-form-grid">
+                <div class="wa-field">
+                  <label for="waNfFornecedor">Razão social / nome *</label>
+                  <input type="text" id="waNfFornecedor" placeholder="Ex: Papelaria Central Ltda" autocomplete="off">
+                </div>
+                <div class="wa-field">
+                  <label for="waNfCnpj">CNPJ</label>
+                  <input type="text" id="waNfCnpj" placeholder="00.000.000/0000-00" autocomplete="off" inputmode="numeric">
+                </div>
+              </div>
+
+              <h3 class="wa-step-title">Arquivo e observação</h3>
+              <div class="wa-field">
+                <label for="waNfArquivo">Arquivo da nota (PDF ou XML)</label>
+                <label class="wa-nf-drop" id="waNfDrop" for="waNfArquivo">
+                  <span class="wa-nf-drop-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                  </span>
+                  <span class="wa-nf-drop-txt">
+                    <span class="wa-nf-drop-tit" id="waNfArquivoTitulo">Clique ou arraste o PDF ou o XML da nota</span>
+                    <span class="wa-nf-drop-sub" id="waNfArquivoSub">PDF ou XML · até 10 MB</span>
+                  </span>
+                  <button type="button" class="wa-icon-btn danger wa-nf-remover" id="waNfArquivoRemover" title="Remover o arquivo" hidden>&times;</button>
+                </label>
+                <input type="file" id="waNfArquivo" accept="application/pdf,.pdf,application/xml,text/xml,.xml" hidden>
+              </div>
+              <div class="wa-field" style="margin-bottom:0;">
+                <label for="waNfObs">Observação</label>
+                <textarea id="waNfObs" rows="2" placeholder="Ex: compra do mês, pedido 123"></textarea>
+              </div>
+            </div>
+            <div class="wa-modal-footer">
+              <button class="wa-btn wa-btn-outline" onclick="waCloseNfModal()">Cancelar</button>
+              <button class="wa-btn wa-btn-primary" id="waNfSaveBtn" onclick="waSaveNf()">Salvar Nota Fiscal</button>
             </div>
           </div>
         </div>
@@ -5528,11 +5659,12 @@
      create table if not exists public.cadastro_de_produtos (
        id              uuid primary key default gen_random_uuid(),  -- sem setor: produto é global
        codigo_barras   text not null unique,  -- único no catálogo inteiro
-       nome            text not null,
+       nome            text not null,  -- sempre em MAIÚSCULAS (gatilho estoque_produto_normaliza)
        descricao       text,
        unidade         text not null default 'UN',
        estoque_minimo  numeric(14,3) not null default 0,  -- total único (soma dos dois estoques centrais)
-       preco_custo     numeric(14,2),
+       preco_custo     numeric(14,2),  -- preço atual: vale para as próximas entradas
+       preco_atualizado_em timestamptz, -- última mudança do preço (cadastro ou Entrada)
        ativo           boolean not null default true,
        created_at / updated_at
      );
@@ -5550,8 +5682,13 @@
        created_at     timestamptz not null default now(),
        editado_em     timestamptz,  -- último ajuste (gravado pelo gatilho)
        editado_por    text,
-       nota_fiscal_nome / nota_fiscal_path / nota_fiscal_bytes  -- PDF da NF (só entrada), bucket privado "notas_fiscais"
+       preco_unitario numeric(14,4), -- entrada/origem: preço da compra; saída: custo das camadas consumidas (banco)
+       nota_fiscal_id uuid references notas_fiscais(id)  -- só entrada de compra
      );
+     -- notas_fiscais: número, série, chave de acesso, fornecedor + CNPJ, emissão, valor e o
+     --   arquivo (PDF/XML) no bucket privado "notas_fiscais" (botão "+ Nota Fiscal").
+     -- estoque_precos: histórico de preços — a cada mudança, o saldo que ficou no preço anterior.
+     --   (supabase/schema_estoque_precos_nf.sql)
      -- + trigger que bloqueia saldo negativo POR CENTRAL, view `vw_estoque_saldo`
      --   (saldo por produto+central = origem + entradas − saídas daquela central)
      --   e RLS no mesmo padrão das demais tabelas (movimentações:
@@ -9978,21 +10115,24 @@ ${clipPlayerPills(n)}
     };
 
     const FALLBACK_PRODUCTS = [
-      { id: 'p1', codigo_barras: '2000000000015', nome: 'Papel A4 75g (resma 500 folhas)', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, descricao: '', ativo: true },
-      { id: 'p2', codigo_barras: '2000000000022', nome: 'Caneta esferográfica azul (cx 50)', unidade: 'CX', estoque_minimo: 3, preco_custo: 42, descricao: '', ativo: true },
-      { id: 'p3', codigo_barras: '2000000000039', nome: 'Café torrado e moído 500g', unidade: 'UN', estoque_minimo: 10, preco_custo: 18.9, descricao: '', ativo: true },
-      { id: 'p4', codigo_barras: '2000000000046', nome: 'Copo descartável 180ml (pct 100)', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.4, descricao: '', ativo: true },
-      { id: 'p5', codigo_barras: '2000000000053', nome: 'Detergente neutro 500ml', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, descricao: '', ativo: true }
+      { id: 'p1', codigo_barras: '2000000000015', nome: 'PAPEL A4 75G (RESMA 500 FOLHAS)', unidade: 'PC', estoque_minimo: 20, preco_custo: 27.5, preco_atualizado_em: '2026-09-01T09:00:00', descricao: '', ativo: true },
+      { id: 'p2', codigo_barras: '2000000000022', nome: 'CANETA ESFEROGRÁFICA AZUL (CX 50)', unidade: 'CX', estoque_minimo: 3, preco_custo: 42, preco_atualizado_em: '2026-09-01T09:00:00', descricao: '', ativo: true },
+      { id: 'p3', codigo_barras: '2000000000039', nome: 'CAFÉ TORRADO E MOÍDO 500G', unidade: 'UN', estoque_minimo: 10, preco_custo: 18.9, preco_atualizado_em: '2026-09-01T09:00:00', descricao: '', ativo: true },
+      { id: 'p4', codigo_barras: '2000000000046', nome: 'COPO DESCARTÁVEL 180ML (PCT 100)', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.9, preco_atualizado_em: '2026-09-18T11:00:00', descricao: '', ativo: true },
+      { id: 'p5', codigo_barras: '2000000000053', nome: 'DETERGENTE NEUTRO 500ML', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, preco_atualizado_em: '2026-09-01T09:00:00', descricao: '', ativo: true }
+    ];
+    const FALLBACK_NOTAS = [
+      { id: 'nf1', numero: '4521', serie: '1', chave_acesso: null, fornecedor: 'Distribuidora Exemplo Ltda', fornecedor_cnpj: '12345678000190', data_emissao: '2026-09-17', valor_total: 69, observacao: 'Copos descartáveis', arquivo_nome: 'NF-4521.pdf', arquivo_path: null, arquivo_bytes: 184320, usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T10:55:00' }
     ];
     const FALLBACK_MOVEMENTS = [
-      { id: 'm1', produto_id: 'p1', tipo: 'origem', setor: 'Escritório', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
-      { id: 'm2', produto_id: 'p2', tipo: 'origem', setor: 'Escritório', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
-      { id: 'm3', produto_id: 'p3', tipo: 'origem', setor: 'Almoxarifado', quantidade: 12, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:10:00' },
-      { id: 'm4', produto_id: 'p4', tipo: 'origem', setor: 'Almoxarifado', quantidade: 30, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:15:00' },
-      { id: 'm5', produto_id: 'p5', tipo: 'origem', setor: 'Almoxarifado', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
+      { id: 'm1', produto_id: 'p1', tipo: 'origem', preco_unitario: 27.5, setor: 'Escritório', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
+      { id: 'm2', produto_id: 'p2', tipo: 'origem', preco_unitario: 42, setor: 'Escritório', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
+      { id: 'm3', produto_id: 'p3', tipo: 'origem', preco_unitario: 18.9, setor: 'Almoxarifado', quantidade: 12, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:10:00' },
+      { id: 'm4', produto_id: 'p4', tipo: 'origem', preco_unitario: 6.4, setor: 'Almoxarifado', quantidade: 30, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:15:00' },
+      { id: 'm5', produto_id: 'p5', tipo: 'origem', preco_unitario: 2.9, setor: 'Almoxarifado', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
       { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', setor_consumo: 'Comercial', quantidade: 25, observacao: 'Retirada para o Comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
       { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', setor_consumo: 'Térreo', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
-      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, observacao: 'NF 4521', nota_fiscal_nome: 'NF-4521.pdf', nota_fiscal_path: null, nota_fiscal_bytes: 184320, usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
+      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, preco_unitario: 6.9, observacao: 'Compra do mês', nota_fiscal_id: 'nf1', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
       // Transferência entre as centrais: sai do Escritório e entra no Almoxarifado (não é consumo).
       { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
       { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'Almoxarifado', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
@@ -10048,8 +10188,10 @@ ${clipPlayerPills(n)}
     const waStockCount = document.getElementById('waStockCount');
     const waStockProductsCard = document.getElementById('waStockProductsCard');
     const waMovCard = document.getElementById('waMovCard');
+    const waNfCard = document.getElementById('waNfCard');
     const waStockTableBody = document.getElementById('waStockTableBody');
     const waMovTableBody = document.getElementById('waMovTableBody');
+    const waNfTableBody = document.getElementById('waNfTableBody');
 
     const waProductModal = document.getElementById('waProductModal');
     const waProdCodigo = document.getElementById('waProdCodigo');
@@ -10059,6 +10201,7 @@ ${clipPlayerPills(n)}
     const waProdCusto = document.getElementById('waProdCusto');
     const waProdDescricao = document.getElementById('waProdDescricao');
     const waProdStatus = document.getElementById('waProdStatus');
+    const waProdCustoInfo = document.getElementById('waProdCustoInfo');
 
     const waMovModal = document.getElementById('waMovModal');
     const waMovSub = document.getElementById('waMovSub');
@@ -10078,17 +10221,19 @@ ${clipPlayerPills(n)}
     const waMovQtd = document.getElementById('waMovQtd');
     const waMovObs = document.getElementById('waMovObs');
     const waMovSummary = document.getElementById('waMovSummary');
+    const waMovPrecoField = document.getElementById('waMovPrecoField');
+    const waMovPreco = document.getElementById('waMovPreco');
     const waMovNfField = document.getElementById('waMovNfField');
-    const waMovNfDrop = document.getElementById('waMovNfDrop');
-    const waMovNf = document.getElementById('waMovNf');
-    const waMovNfTitulo = document.getElementById('waMovNfTitulo');
-    const waMovNfSub = document.getElementById('waMovNfSub');
-    const waMovNfRemover = document.getElementById('waMovNfRemover');
-    // Nota fiscal (PDF) da Entrada: bucket privado "notas_fiscais" (supabase/schema_estoque_nota_fiscal.sql).
+    const waMovNfBusca = document.getElementById('waMovNfBusca');
+    const waMovNfLista = document.getElementById('waMovNfLista');
+    const waMovNfLimpar = document.getElementById('waMovNfLimpar');
+    // Notas fiscais (cadastro em "+ Nota Fiscal"): arquivo no bucket privado "notas_fiscais"
+    // (supabase/schema_estoque_precos_nf.sql). A Entrada só aponta para a nota (nota_fiscal_id).
     const NF_BUCKET = 'notas_fiscais';
     const NF_MAX_BYTES = 10 * 1024 * 1024;
-    let movNfArquivo = null;    // PDF escolhido agora (ainda não enviado)
-    let movNfRemover = false;   // edição: tirar a NF que já estava anexada
+    let stockNotas = [];
+    let stockNotasErro = false;   // tabela ainda não criada: avisa uma vez e segue sem notas
+    let movNfId = null;           // nota escolhida na Entrada (seleção única)
     // Opções fixas do formulário: centrais (entrada, saída, transferência) e setores de consumo (saída).
     [waMovSetor, waMovSetorOrigem, waMovSetorDestino].forEach(sel => {
       sel.innerHTML = STOCK_SETORES.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -10157,6 +10302,13 @@ ${clipPlayerPills(n)}
         ativo: row.ativo !== false
       });
     }
+    function normalizeMovement(m){
+      return Object.assign({}, m, {
+        setor: stockCentral(m.setor),
+        quantidade: Number(m.quantidade) || 0,
+        preco_unitario: m.preco_unitario == null ? null : Number(m.preco_unitario)
+      });
+    }
     function recomputeFallbackBalances(){
       stockBalances = new Map();
       stockMovements.forEach(m => {
@@ -10165,7 +10317,54 @@ ${clipPlayerPills(n)}
         const bySetor = stockBalances.get(m.produto_id);
         bySetor.set(m.setor, (bySetor.get(m.setor) || 0) + delta);
       });
+      recomputeFallbackCustos();
     }
+
+    // ---- Preço praticado ----
+    // Cada entrada/origem guarda o preço da compra (preco_unitario); a saída guarda o custo médio das
+    // camadas que consumiu, da mais antiga para a mais nova. Mudar o preço não revaloriza o saldo que
+    // já existe: ele segue no preço anterior e o preço novo vale para o que entrar depois. No Supabase,
+    // quem grava o custo da saída é o banco (estoque_recalcula_custos em schema_estoque_precos_nf.sql);
+    // sem Supabase (demonstração), recomputeFallbackCustos faz a mesma conta aqui.
+    const fmtMoeda = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // Preço do lançamento; lançamento antigo sem preço gravado usa o preço atual do produto.
+    function stockPrecoMov(m, p){
+      if(m.preco_unitario != null) return Number(m.preco_unitario) || 0;
+      const prod = p || stockProducts.find(x => x.id === m.produto_id);
+      return prod && prod.preco_custo != null ? Number(prod.preco_custo) || 0 : 0;
+    }
+    const stockValorMov = (m, p) => (Number(m.quantidade) || 0) * stockPrecoMov(m, p);
+    function recomputeFallbackCustos(){
+      const porProduto = new Map();
+      stockMovements.filter(m => !m.transferencia).forEach(m => {
+        if(!porProduto.has(m.produto_id)) porProduto.set(m.produto_id, []);
+        porProduto.get(m.produto_id).push(m);
+      });
+      porProduto.forEach((movs, pid) => {
+        const p = stockProducts.find(x => x.id === pid);
+        const padrao = p && p.preco_custo != null ? p.preco_custo : 0;
+        const camadas = [];
+        let ultimo = null;
+        movs.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).forEach(m => {
+          if(m.tipo !== 'saida'){
+            const preco = m.preco_unitario != null ? m.preco_unitario : padrao;
+            camadas.push({ q: m.quantidade, preco });
+            ultimo = preco;
+            return;
+          }
+          let falta = m.quantidade, custo = 0;
+          while(falta > 0 && camadas.length){
+            const c = camadas[0], usa = Math.min(falta, c.q);
+            custo += usa * c.preco; c.q -= usa; falta -= usa;
+            if(c.q <= 0) camadas.shift();
+          }
+          if(falta > 0) custo += falta * (ultimo != null ? ultimo : padrao);
+          m.preco_unitario = m.quantidade ? Math.round(custo / m.quantidade * 10000) / 10000 : 0;
+        });
+      });
+    }
+    // "atualizado em 18/09/2026" do preço de custo do produto.
+    const stockPrecoData = p => p && p.preco_atualizado_em ? new Date(p.preco_atualizado_em).toLocaleDateString('pt-BR') : '';
 
     // Bipe curto de confirmação (leitura pela câmera ou leitor físico)
     function stockBeep(){
@@ -10196,7 +10395,8 @@ ${clipPlayerPills(n)}
       if(!supabaseReady){
         if(!stockFallbackSeeded){
           stockProducts = FALLBACK_PRODUCTS.map(p => ({ ...p, created_at: '2026-09-01T09:00:00' }));
-          stockMovements = FALLBACK_MOVEMENTS.map(m => ({ ...m, setor: stockCentral(m.setor) }));
+          stockMovements = FALLBACK_MOVEMENTS.map(normalizeMovement);
+          stockNotas = FALLBACK_NOTAS.map(n => ({ ...n }));
           stockFallbackSeeded = true;
         }
         stockUsers = FALLBACK_USERS.map(u => ({ nome: u.nome, email: u.email }));
@@ -10204,14 +10404,22 @@ ${clipPlayerPills(n)}
         renderStock();
         return;
       }
-      const [prodRes, saldoRes, movRes, userRes] = await Promise.all([
+      const [prodRes, saldoRes, movRes, userRes, nfRes] = await Promise.all([
         supabaseClient.from('cadastro_de_produtos').select('*').order('nome', { ascending: true }),
         supabaseClient.from('vw_estoque_saldo').select('produto_id,setor,saldo'),
         supabaseClient.from('movimentacoes_estoque').select('*').order('created_at', { ascending: false }).limit(500),
-        supabaseClient.from('usuarios').select('nome,email').order('nome', { ascending: true })
+        supabaseClient.from('usuarios').select('nome,email').order('nome', { ascending: true }),
+        supabaseClient.from('notas_fiscais').select('*').order('data_emissao', { ascending: false }).order('created_at', { ascending: false })
       ]);
       if(userRes.error) console.error('Erro ao carregar colaboradores (usuarios):', userRes.error);
       stockUsers = userRes.data || [];
+      // Sem a tabela de notas (script ainda não rodado), o restante do Estoque segue funcionando.
+      if(nfRes.error){
+        console.error('Erro ao carregar notas fiscais:', nfRes.error);
+        if(!stockNotasErro) alert('Não foi possível carregar as notas fiscais: ' + nfRes.error.message + '\n\nRode supabase/schema_estoque_precos_nf.sql no Supabase.');
+        stockNotasErro = true;
+      }
+      stockNotas = nfRes.data || [];
       const error = prodRes.error || saldoRes.error || movRes.error;
       if(error){
         console.error('Erro ao carregar estoque do Supabase:', error);
@@ -10224,7 +10432,7 @@ ${clipPlayerPills(n)}
         const bal = stockBalances.get(r.produto_id), c = stockCentral(r.setor);
         bal.set(c, (bal.get(c) || 0) + (Number(r.saldo) || 0));   // central extinta soma na que a substituiu
       });
-      stockMovements = (movRes.data || []).map(m => Object.assign({}, m, { setor: stockCentral(m.setor), quantidade: Number(m.quantidade) || 0 }));
+      stockMovements = (movRes.data || []).map(normalizeMovement);
       renderStock();
     }
 
@@ -10274,7 +10482,9 @@ ${clipPlayerPills(n)}
       const colabs = new Map(stockUsers.filter(u => u.email).map(u => [u.email.toLowerCase(), u.nome || u.email]));
       setorMovs.forEach(m => { if(m.usuario_email && !colabs.has(m.usuario_email.toLowerCase())) colabs.set(m.usuario_email.toLowerCase(), m.usuario_email); });
       fillSelect(waStockUserFilter, 'Colaborador', [...colabs].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).map(([value, label]) => ({ value, label })));
-      const anos = [...new Set(setorMovs.map(m => stockDia(m.created_at).slice(0, 4)))].sort().reverse();
+      const anos = [...new Set(stockTab === 'notas'
+        ? stockNotas.map(n => String(n.data_emissao || '').slice(0, 4)).filter(Boolean)
+        : setorMovs.map(m => stockDia(m.created_at).slice(0, 4)))].sort().reverse();
       fillSelect(waStockYearFilter, 'Ano', anos.map(a => ({ value: a, label: a })));
     }
 
@@ -10340,7 +10550,8 @@ ${clipPlayerPills(n)}
         if(ano && stockDia(m.created_at).slice(0, 4) !== ano) return false;
         if(mes && stockDia(m.created_at).slice(5, 7) !== mes) return false;
         if(term){
-          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', m.nota_fiscal_nome || '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
+          const nf = nfDe(m.nota_fiscal_id);
+          const hay = [p ? p.nome : '', p ? p.codigo_barras : '', m.setor || '', m.setor_consumo || '', m.observacao || '', nf ? `${nfRotulo(nf)} ${nf.fornecedor}` : '', m.usuario_email || '', userNameOf(m.usuario_email)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -10407,6 +10618,9 @@ ${clipPlayerPills(n)}
         const p = byId.get(m.produto_id);
         const sign = m.tipo === 'saida' ? '−' : '+';
         const qtyCls = m.tipo === 'saida' ? 'wa-qty-neg' : (m.tipo === 'entrada' ? 'wa-qty-pos' : '');
+        const nf = nfDe(m.nota_fiscal_id);
+        // Preço praticado: compra = preço da entrada; saída = custo das camadas consumidas.
+        const precoTxt = m.transferencia ? '' : `<div class="wa-td-sub" title="${m.tipo === 'saida' ? 'Custo das camadas consumidas (as mais antigas primeiro)' : 'Preço da compra'}">${fmtMoeda(stockPrecoMov(m, p))}/un · ${fmtMoeda(stockValorMov(m, p))}</div>`;
         return `
           <tr>
             <td style="white-space:nowrap;">${fmtDateTimeBR(m.created_at)}${m.editado_em ? `<div class="wa-td-sub" title="Ajustado em ${stockEsc(fmtDateTimeBR(m.editado_em))}${m.editado_por ? ' por ' + stockEsc(userNameOf(m.editado_por) || m.editado_por) : ''}">editado</div>` : ''}</td>
@@ -10419,13 +10633,79 @@ ${clipPlayerPills(n)}
               ? '<span class="wa-badge wa-badge-pending">Transferência</span>'   /* amarelo, o mesmo selo de "Estoque baixo" */
               : `<span class="wa-badge wa-mov-${m.tipo}">${MOV_LABEL[m.tipo] || m.tipo}</span>`}</td>
             <td>${stockEhConsumo(m) ? (m.setor_consumo ? stockEsc(m.setor_consumo) : `<span class="wa-empty-hint">${STOCK_CONSUMO_SEM}</span>`) : '—'}</td>
-            <td class="wa-td-num ${qtyCls}">${sign}${fmtQty(m.quantidade)} ${p ? stockEsc(p.unidade) : ''}</td>
-            <td>${m.observacao ? stockEsc(m.observacao) : '—'}</td>
+            <td class="wa-td-num ${qtyCls}">${sign}${fmtQty(m.quantidade)} ${p ? stockEsc(p.unidade) : ''}${precoTxt}</td>
+            <td>${m.observacao ? stockEsc(m.observacao) : (nf ? '' : '—')}${nf ? `<div class="wa-td-sub">${stockEsc(nfRotulo(nf))} · ${stockEsc(nf.fornecedor)}</div>` : ''}</td>
             <td>${m.usuario_email ? stockEsc(userNameOf(m.usuario_email) || m.usuario_email) : '—'}</td>
             <td class="wa-table-actions">
-              ${m.nota_fiscal_nome ? `<button class="wa-icon-btn" title="Ver nota fiscal · ${stockEsc(m.nota_fiscal_nome)}" onclick="waViewNotaFiscal('${m.id}')">${ICON_NF}</button>` : ''}
+              ${nf && nf.arquivo_nome ? `<button class="wa-icon-btn" title="Ver nota fiscal · ${stockEsc(nfRotulo(nf))} · ${stockEsc(nf.fornecedor)}" onclick="waOpenNfArquivo('${nf.id}')">${ICON_NF}</button>` : ''}
               ${podeEditarEstoque() && p ? `<button class="wa-icon-btn" title="Editar lançamento" onclick="waEditMovement('${m.id}')">${ICON_EDIT}</button>` : ''}
               ${m.tipo === 'origem' || !podeEditarEstoque() ? '' : `<button class="wa-icon-btn danger" title="Remover lançamento" onclick="waDeleteMovement('${m.id}')">${ICON_TRASH}</button>`}
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ---- Notas fiscais ----
+    const nfDigitos = s => String(s || '').replace(/\D/g, '');
+    const fmtCnpj = s => { const d = nfDigitos(s); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : (s || ''); };
+    const fmtDataBR = iso => iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const nfRotulo = n => n ? `NF ${n.numero}${n.serie ? ' · série ' + n.serie : ''}` : '';
+    const nfDe = id => (id && stockNotas.find(n => n.id === id)) || null;
+    // Entradas (carregadas) que apontam para a nota.
+    const nfEntradas = id => stockMovements.filter(m => m.nota_fiscal_id === id);
+
+    function getFilteredNotas(){
+      const term = waStockSearch.value.trim().toLowerCase();
+      const produto = waStockProductFilter.value;
+      const ano = waStockYearFilter.value, mes = waStockMonthFilter.value;
+      const list = stockNotas.filter(n => {
+        const d = String(n.data_emissao || '');
+        if(ano && d.slice(0, 4) !== ano) return false;
+        if(mes && d.slice(5, 7) !== mes) return false;
+        if(produto && !nfEntradas(n.id).some(m => m.produto_id === produto)) return false;
+        if(term){
+          const hay = [n.numero, n.serie, n.chave_acesso, n.fornecedor, n.fornecedor_cnpj, fmtCnpj(n.fornecedor_cnpj), n.observacao, n.arquivo_nome].join(' ').toLowerCase();
+          if(!hay.includes(term)) return false;
+        }
+        return true;
+      });
+      return list.sort((a, b) => {
+        if(stockSort === 'az') return String(a.fornecedor).localeCompare(String(b.fornecedor), 'pt-BR');
+        const d = String(a.data_emissao).localeCompare(String(b.data_emissao)) || String(a.created_at).localeCompare(String(b.created_at));
+        return stockSort === 'antiga' ? d : -d;
+      });
+    }
+
+    function renderStockNotas(){
+      const list = getFilteredNotas();
+      waStockCount.textContent = `${list.length} nota${list.length === 1 ? '' : 's'} fisca${list.length === 1 ? 'l' : 'is'}`;
+      if(!list.length){
+        waNfTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="7">${stockNotas.length ? 'Nenhuma nota fiscal encontrada com os filtros atuais.' : 'Nenhuma nota fiscal cadastrada. Use "+ Nota Fiscal" para cadastrar a primeira.'}</td></tr>`;
+        return;
+      }
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      waNfTableBody.innerHTML = list.map(n => {
+        const ents = nfEntradas(n.id);
+        const prods = [...new Set(ents.map(m => (byId.get(m.produto_id) || {}).nome).filter(Boolean))];
+        return `
+          <tr>
+            <td style="white-space:nowrap;">${fmtDataBR(n.data_emissao)}</td>
+            <td class="wa-td-name">
+              ${stockEsc(nfRotulo(n))}
+              ${n.chave_acesso ? `<div class="wa-td-sub" title="Chave de acesso">${stockEsc(n.chave_acesso)}</div>` : ''}
+            </td>
+            <td>
+              ${stockEsc(n.fornecedor)}
+              ${n.fornecedor_cnpj ? `<div class="wa-td-sub">${stockEsc(fmtCnpj(n.fornecedor_cnpj))}</div>` : ''}
+            </td>
+            <td class="wa-td-num">${n.valor_total != null ? fmtMoeda(n.valor_total) : '—'}</td>
+            <td>${ents.length ? `${ents.length} entrada${ents.length === 1 ? '' : 's'}<div class="wa-td-sub" title="${stockEsc(prods.join(', '))}">${stockEsc(prods.slice(0, 2).join(', '))}${prods.length > 2 ? '…' : ''}</div>` : '<span class="wa-empty-hint">Nenhuma</span>'}</td>
+            <td>${n.usuario_email ? stockEsc(userNameOf(n.usuario_email) || n.usuario_email) : '—'}</td>
+            <td class="wa-table-actions">
+              ${n.arquivo_nome ? `<button class="wa-icon-btn" title="Abrir arquivo · ${stockEsc(n.arquivo_nome)}" onclick="waOpenNfArquivo('${n.id}')">${ICON_NF}</button>` : ''}
+              ${ents.length ? `<button class="wa-icon-btn" title="Ver as entradas desta nota" onclick="waShowNfEntradas('${n.id}')">${ICON_HISTORY}</button>` : ''}
+              ${podeEditarEstoque() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenNfModal('${n.id}')">${ICON_EDIT}</button>
+              <button class="wa-icon-btn danger" title="Remover" onclick="waDeleteNf('${n.id}')">${ICON_TRASH}</button>` : ''}
             </td>
           </tr>`;
       }).join('');
@@ -10435,18 +10715,19 @@ ${clipPlayerPills(n)}
       refreshStockFilterOptions();
       waStockSortPills.querySelectorAll('.wa-sort-pill').forEach(b => b.classList.toggle('active', b.dataset.sort === stockSort));
       renderStockKpis();
-      const isProdutos = stockTab === 'produtos';
+      const isProdutos = stockTab === 'produtos', isNotas = stockTab === 'notas', isMov = stockTab === 'movimentacoes';
       waStockUnitFilter.hidden = !isProdutos;
-      waStockUserFilter.hidden = isProdutos;
-      waStockConsumoFilter.hidden = isProdutos;
+      waStockUserFilter.hidden = !isMov;
+      waStockConsumoFilter.hidden = !isMov;
       waStockYearFilter.hidden = isProdutos;
       waStockMonthFilter.hidden = isProdutos;
       waStockTabToggle.querySelectorAll('.wa-view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === stockTab));
       waStockProductsCard.hidden = !isProdutos;
-      waMovCard.hidden = isProdutos;
+      waMovCard.hidden = !isMov;
+      waNfCard.hidden = !isNotas;
       waStockStatusFilter.hidden = !isProdutos;
-      waMovTypeFilter.hidden = isProdutos;
-      if(isProdutos) renderStockProducts(); else renderStockMovements();
+      waMovTypeFilter.hidden = !isMov;
+      if(isProdutos) renderStockProducts(); else if(isNotas) renderStockNotas(); else renderStockMovements();
     }
 
     function setStockTab(tab){
@@ -10794,6 +11075,12 @@ ${clipPlayerPills(n)}
       waProdCusto.value = p && p.preco_custo != null ? p.preco_custo : '';
       waProdDescricao.value = p ? (p.descricao || '') : '';
       waProdStatus.value = p && !p.ativo ? 'false' : 'true';
+      // Preço praticado: mudar o preço não revaloriza o saldo que já está no estoque.
+      const saldo = p ? Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS)) : 0;
+      waProdCustoInfo.hidden = !p;
+      waProdCustoInfo.textContent = !p ? ''
+        : (p.preco_custo != null ? `Preço atual ${fmtMoeda(p.preco_custo)}${stockPrecoData(p) ? ', atualizado em ' + stockPrecoData(p) : ''}. ` : 'Produto sem preço de custo. ')
+          + (saldo > 0 ? `Ao mudar o preço, o saldo atual (${fmtQty(saldo)} ${p.unidade}) continua no preço anterior; o novo vale para as próximas entradas.` : 'O preço novo vale para as próximas entradas.');
     }
 
     window.waCloseProductModal = function(){
@@ -10808,7 +11095,8 @@ ${clipPlayerPills(n)}
 
     window.waSaveProduct = async function(){
       const codigo = waProdCodigo.value.trim();
-      const nome = waProdNome.value.trim();
+      // Nome sempre em maiúsculas, para qualquer usuário (o banco também garante: estoque_produto_normaliza).
+      const nome = waProdNome.value.trim().toLocaleUpperCase('pt-BR');
       if(!codigo || !nome){
         alert('Preencha o código de barras e o nome do produto.');
         return;
@@ -10836,12 +11124,14 @@ ${clipPlayerPills(n)}
       };
 
       if(!supabaseReady){
+        const now = new Date().toISOString();
         if(editingProductId){
-          Object.assign(stockProducts.find(x => x.id === editingProductId), payload);
+          const p = stockProducts.find(x => x.id === editingProductId);
+          if(p.preco_custo !== payload.preco_custo) p.preco_atualizado_em = now;
+          Object.assign(p, payload);
         } else {
           const id = 'p' + Date.now();
-          const now = new Date().toISOString();
-          stockProducts.push(Object.assign({ id, created_at: now }, payload));
+          stockProducts.push(Object.assign({ id, created_at: now, preco_atualizado_em: payload.preco_custo != null ? now : null }, payload));
         }
       } else if(editingProductId){
         if(!window.__exigirEdicao('estoque', 'editar produtos')) return;
@@ -10881,16 +11171,14 @@ ${clipPlayerPills(n)}
         await loadStock();
         return;
       }
-      // As movimentações saem em cascata com o produto; as NFs delas ficariam
-      // órfãs no Storage — guarda os caminhos antes para removê-las depois.
-      const { data: comNf } = await supabaseClient.from('movimentacoes_estoque').select('nota_fiscal_path').eq('produto_id', id).not('nota_fiscal_path', 'is', null);
+      // As movimentações saem em cascata com o produto; as notas fiscais ficam no
+      // cadastro de notas (podem servir a outros produtos da mesma compra).
       const { error } = await supabaseClient.from('cadastro_de_produtos').delete().eq('id', id);
       if(error){
         console.error('Erro ao remover produto no Supabase:', error);
         alert('Erro ao remover produto no Supabase: ' + error.message);
         return;
       }
-      await removerNfStorage((comNf || []).map(r => r.nota_fiscal_path));
       await loadStock();
     };
 
@@ -10908,80 +11196,323 @@ ${clipPlayerPills(n)}
     // junto entre as duas centrais (`transferencia` = true): soma zero, sem
     // efeito no saldo total do produto — não é compra nem consumo.
 
-    // ---- Nota fiscal (PDF) da Entrada ---- (fmtBytes: a mesma do módulo Relatórios)
-    // Mostra o estado do campo: PDF novo escolhido, NF já anexada (edição) ou vazio.
-    function renderNfCampo(){
-      const atual = editingMov && !movNfRemover && editingMov.m.nota_fiscal_nome ? editingMov.m : null;
-      const anexado = !!(movNfArquivo || atual);
-      waMovNfDrop.classList.toggle('anexado', anexado);
-      waMovNfRemover.hidden = !anexado;
-      if(movNfArquivo){
-        waMovNfTitulo.textContent = movNfArquivo.name;
-        waMovNfSub.textContent = `${fmtBytes(movNfArquivo.size)} · clique para trocar`;
-      } else if(atual){
-        waMovNfTitulo.textContent = atual.nota_fiscal_nome;
-        waMovNfSub.textContent = `${atual.nota_fiscal_bytes ? fmtBytes(Number(atual.nota_fiscal_bytes)) + ' · ' : ''}anexada · clique para substituir`;
+    // ---- Nota fiscal da Entrada: lista suspensa com digitação e seleção única ----
+    // Mostra as notas cadastradas em "+ Nota Fiscal" (as mais recentes primeiro) e filtra pelo que é
+    // digitado: número, série, fornecedor, CNPJ, chave ou data de emissão. Uma nota por entrada.
+    const nfNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const nfTextoSel = n => `${nfRotulo(n)} · ${n.fornecedor}`;
+    const nfOpSub = n => [n.fornecedor, 'emissão ' + fmtDataBR(n.data_emissao), n.valor_total != null ? fmtMoeda(n.valor_total) : ''].filter(Boolean).join(' · ');
+    let nfAtiva = -1;   // opção destacada pelas setas
+    function nfOpcoes(termo){
+      const termos = nfNorm(termo).split(/\s+/).filter(Boolean);
+      return stockNotas.filter(n => {
+        const hay = nfNorm([n.numero, n.serie, n.fornecedor, n.fornecedor_cnpj, fmtCnpj(n.fornecedor_cnpj), n.chave_acesso, fmtDataBR(n.data_emissao)].join(' '));
+        return termos.every(t => hay.includes(t));
+      }).slice(0, 30);
+    }
+    function nfListaRender(){
+      const sel = nfDe(movNfId);
+      // Com uma nota escolhida e o texto dela no campo, a lista mostra todas (para trocar).
+      const termo = sel && waMovNfBusca.value === nfTextoSel(sel) ? '' : waMovNfBusca.value;
+      const ops = nfOpcoes(termo);
+      nfAtiva = Math.min(nfAtiva, ops.length - 1);
+      waMovNfLista.innerHTML = (ops.length
+        ? ops.map((n, i) => `<button type="button" class="wa-participant-option${i === nfAtiva ? ' active' : ''}" role="option" aria-selected="${n.id === movNfId}" data-nf="${n.id}">
+            <div class="wa-nf-op-txt"><span class="wa-p-name">${stockEsc(nfRotulo(n))}${n.id === movNfId ? ' ✓' : ''}</span><span class="wa-p-email">${stockEsc(nfOpSub(n))}</span></div></button>`).join('')
+        : `<div class="wa-participant-empty">${stockNotas.length ? 'Nenhuma nota fiscal encontrada.' : 'Nenhuma nota fiscal cadastrada ainda.'}</div>`)
+        + (window.__isRestrito() ? '' : '<button type="button" class="wa-participant-option wa-nf-op-nova" data-nf-nova="1">+ Cadastrar nota fiscal</button>');
+      waMovNfLista.hidden = false;
+      waMovNfBusca.setAttribute('aria-expanded', 'true');
+    }
+    function nfListaFechar(){
+      waMovNfLista.hidden = true;
+      waMovNfBusca.setAttribute('aria-expanded', 'false');
+      nfAtiva = -1;
+    }
+    function nfSelecionar(id){
+      movNfId = nfDe(id) ? id : null;
+      const n = nfDe(movNfId);
+      waMovNfBusca.value = n ? nfTextoSel(n) : '';
+      waMovNfLimpar.hidden = !n;
+      nfListaFechar();
+    }
+    waMovNfBusca.addEventListener('focus', () => { waMovNfBusca.select(); nfListaRender(); });
+    waMovNfBusca.addEventListener('input', () => { nfAtiva = 0; nfListaRender(); });
+    // Saiu do campo sem escolher: volta a mostrar a nota escolhida (ou vazio).
+    waMovNfBusca.addEventListener('blur', () => nfSelecionar(movNfId));
+    waMovNfBusca.addEventListener('keydown', e => {
+      const ops = [...waMovNfLista.querySelectorAll('[data-nf]')];
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        e.preventDefault();
+        nfAtiva = Math.max(0, Math.min(ops.length - 1, nfAtiva + (e.key === 'ArrowDown' ? 1 : -1)));
+        nfListaRender();
+      } else if(e.key === 'Enter'){
+        e.preventDefault();   // Enter escolhe a nota, não registra a entrada
+        const op = ops[Math.max(0, nfAtiva)];
+        if(!waMovNfLista.hidden && op) nfSelecionar(op.dataset.nf);
+      } else if(e.key === 'Escape' && !waMovNfLista.hidden){
+        e.stopPropagation();  // fecha só a lista, não o modal
+        nfSelecionar(movNfId);
+      }
+    });
+    waMovNfLista.addEventListener('mousedown', e => e.preventDefault());   // mantém o foco no campo
+    waMovNfLista.addEventListener('click', e => {
+      const op = e.target.closest('[data-nf]');
+      if(op){ nfSelecionar(op.dataset.nf); return; }
+      if(e.target.closest('[data-nf-nova]')){
+        // Cadastra a nota sem sair da Entrada; ao salvar, ela já fica escolhida aqui.
+        const digitado = waMovNfBusca.value.trim();
+        nfListaFechar();
+        waOpenNfModal(null, { vincularEntrada: true, numero: /^\d+$/.test(digitado) ? digitado : '' });
+      }
+    });
+    waMovNfLimpar.addEventListener('click', () => { nfSelecionar(null); waMovNfBusca.focus(); });
+
+    // ---------------- CRUD: Notas fiscais ("+ Nota Fiscal") ----------------
+    // Documento da compra: número/série, chave de acesso, emitente (fornecedor + CNPJ), emissão,
+    // valor e o arquivo (PDF ou XML) no bucket privado "notas_fiscais". As entradas apontam para a
+    // nota; nota com entrada vinculada não é removida (o banco também impede).
+    const waNfModal = document.getElementById('waNfModal');
+    const waNfNumero = document.getElementById('waNfNumero');
+    const waNfSerie = document.getElementById('waNfSerie');
+    const waNfEmissao = document.getElementById('waNfEmissao');
+    const waNfValor = document.getElementById('waNfValor');
+    const waNfChave = document.getElementById('waNfChave');
+    const waNfFornecedor = document.getElementById('waNfFornecedor');
+    const waNfCnpj = document.getElementById('waNfCnpj');
+    const waNfObs = document.getElementById('waNfObs');
+    const waNfArquivo = document.getElementById('waNfArquivo');
+    const waNfDrop = document.getElementById('waNfDrop');
+    const waNfArquivoTitulo = document.getElementById('waNfArquivoTitulo');
+    const waNfArquivoSub = document.getElementById('waNfArquivoSub');
+    const waNfArquivoRemover = document.getElementById('waNfArquivoRemover');
+    const waNfSaveBtn = document.getElementById('waNfSaveBtn');
+    let editingNfId = null;
+    let nfArquivoNovo = null;        // arquivo escolhido agora (ainda não enviado)
+    let nfArquivoRemover = false;    // edição: tirar o arquivo que já estava na nota
+    let nfVincularEntrada = false;   // aberto pela Entrada: a nota salva já fica escolhida nela
+
+    function nfArquivoRender(){
+      const atual = editingNfId && !nfArquivoRemover ? nfDe(editingNfId) : null;
+      const temAtual = !!(atual && atual.arquivo_nome);
+      const anexado = !!nfArquivoNovo || temAtual;
+      waNfDrop.classList.toggle('anexado', anexado);
+      waNfArquivoRemover.hidden = !anexado;
+      if(nfArquivoNovo){
+        waNfArquivoTitulo.textContent = nfArquivoNovo.name;
+        waNfArquivoSub.textContent = `${fmtBytes(nfArquivoNovo.size)} · clique para trocar`;
+      } else if(temAtual){
+        waNfArquivoTitulo.textContent = atual.arquivo_nome;
+        waNfArquivoSub.textContent = `${atual.arquivo_bytes ? fmtBytes(Number(atual.arquivo_bytes)) + ' · ' : ''}anexado · clique para substituir`;
       } else {
-        waMovNfTitulo.textContent = 'Clique ou arraste o PDF da nota fiscal';
-        waMovNfSub.textContent = 'Somente PDF · até 10 MB';
+        waNfArquivoTitulo.textContent = 'Clique ou arraste o PDF ou o XML da nota';
+        waNfArquivoSub.textContent = 'PDF ou XML · até 10 MB';
       }
     }
-    function resetNfCampo(){
-      movNfArquivo = null;
-      movNfRemover = false;
-      waMovNf.value = '';
-      renderNfCampo();
-    }
-    function escolherNf(file){
+    const nfTipoArquivo = f => /\.xml$/i.test(f.name) || /xml/.test(f.type) ? 'application/xml'
+      : (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) ? 'application/pdf' : '';
+    function nfEscolherArquivo(file){
       if(!file) return;
-      const ehPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-      if(!ehPdf){ alert('A nota fiscal precisa ser um arquivo PDF.'); return; }
-      if(file.size > NF_MAX_BYTES){ alert(`O PDF tem ${fmtBytes(file.size)} — o limite é 10 MB.`); return; }
-      movNfArquivo = file;
-      renderNfCampo();
+      if(!nfTipoArquivo(file)){ alert('O arquivo da nota fiscal precisa ser PDF ou XML.'); return; }
+      if(file.size > NF_MAX_BYTES){ alert(`O arquivo tem ${fmtBytes(file.size)} — o limite é 10 MB.`); return; }
+      nfArquivoNovo = file;
+      nfArquivoRender();
     }
-    waMovNf.addEventListener('change', () => { escolherNf(waMovNf.files && waMovNf.files[0]); waMovNf.value = ''; });
-    ['dragenter', 'dragover'].forEach(ev => waMovNfDrop.addEventListener(ev, e => { e.preventDefault(); waMovNfDrop.classList.add('arrastando'); }));
-    ['dragleave', 'drop'].forEach(ev => waMovNfDrop.addEventListener(ev, () => waMovNfDrop.classList.remove('arrastando')));
-    waMovNfDrop.addEventListener('drop', e => { e.preventDefault(); escolherNf(e.dataTransfer.files && e.dataTransfer.files[0]); });
-    waMovNfRemover.addEventListener('click', e => {
+    waNfArquivo.addEventListener('change', () => { nfEscolherArquivo(waNfArquivo.files && waNfArquivo.files[0]); waNfArquivo.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => waNfDrop.addEventListener(ev, e => { e.preventDefault(); waNfDrop.classList.add('arrastando'); }));
+    ['dragleave', 'drop'].forEach(ev => waNfDrop.addEventListener(ev, () => waNfDrop.classList.remove('arrastando')));
+    waNfDrop.addEventListener('drop', e => { e.preventDefault(); nfEscolherArquivo(e.dataTransfer.files && e.dataTransfer.files[0]); });
+    waNfArquivoRemover.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();   // não reabre o seletor de arquivo
-      if(movNfArquivo) movNfArquivo = null; else movNfRemover = true;
-      renderNfCampo();
+      if(nfArquivoNovo) nfArquivoNovo = null; else nfArquivoRemover = true;
+      nfArquivoRender();
     });
-    // Caminho no bucket: ano/mês da compra + nome único (sem acentos/espaços).
+    // CNPJ e chave: só dígitos, com a máscara do CNPJ enquanto digita.
+    waNfCnpj.addEventListener('input', () => {
+      const d = nfDigitos(waNfCnpj.value).slice(0, 14);
+      waNfCnpj.value = d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+    });
+    waNfChave.addEventListener('input', () => { waNfChave.value = nfDigitos(waNfChave.value).slice(0, 44); });
+    // Chave da NF-e completa: preenche CNPJ do emitente, série e número (posições fixas da chave).
+    waNfChave.addEventListener('change', () => {
+      const c = nfDigitos(waNfChave.value);
+      if(c.length !== 44) return;
+      if(!nfDigitos(waNfCnpj.value)){ waNfCnpj.value = c.slice(6, 20); waNfCnpj.dispatchEvent(new Event('input')); }
+      if(!waNfSerie.value.trim()) waNfSerie.value = String(Number(c.slice(22, 25)));
+      if(!waNfNumero.value.trim()) waNfNumero.value = String(Number(c.slice(25, 34)));
+    });
+
+    // Preenche o formulário de nota sem abrir o modal (reusado pela central de operações).
+    function fillNfForm(id, opcoes){
+      const o = opcoes || {};
+      editingNfId = id || null;
+      nfVincularEntrada = !!o.vincularEntrada;
+      nfArquivoNovo = null;
+      nfArquivoRemover = false;
+      waNfArquivo.value = '';
+      const n = nfDe(editingNfId);
+      document.getElementById('waNfModalTitle').textContent = n ? 'Editar Nota Fiscal' : 'Nova Nota Fiscal';
+      document.getElementById('waNfModalSub').textContent = n
+        ? `Cadastrada ${n.usuario_email ? 'por ' + (userNameOf(n.usuario_email) || n.usuario_email) + ' ' : ''}em ${fmtDateTimeBR(n.created_at)}`
+        : 'Cadastro da nota fiscal de compra, para vincular às entradas';
+      waNfSaveBtn.textContent = n ? 'Salvar Alterações' : 'Salvar Nota Fiscal';
+      waNfNumero.value = n ? n.numero : (o.numero || '');
+      waNfSerie.value = n ? (n.serie || '') : '';
+      waNfEmissao.value = n ? String(n.data_emissao || '').slice(0, 10) : stockDia(new Date().toISOString());
+      waNfValor.value = n && n.valor_total != null ? n.valor_total : '';
+      waNfChave.value = n ? (n.chave_acesso || '') : '';
+      waNfFornecedor.value = n ? n.fornecedor : '';
+      waNfCnpj.value = n && n.fornecedor_cnpj ? fmtCnpj(n.fornecedor_cnpj) : '';
+      waNfObs.value = n ? (n.observacao || '') : '';
+      nfArquivoRender();
+    }
+
+    window.waOpenNfModal = function(id, opcoes){
+      if(window.__isRestrito()) return;
+      if(id && !window.__exigirEdicao('estoque', 'editar notas fiscais')) return;
+      fillNfForm(id, opcoes);
+      waNfModal.classList.add('open');
+      setTimeout(() => (waNfNumero.value ? waNfFornecedor : waNfNumero).focus(), 50);
+    };
+
+    window.waCloseNfModal = function(){
+      waNfModal.classList.remove('open');
+      nfVincularEntrada = false;
+      if(waStockHubModal.classList.contains('open') && hubAcao === 'nf') waCloseStockHub();
+    };
+
+    // Caminho no bucket: nf/ano-mês + nome único (sem acentos/espaços).
     function nfStoragePath(nome){
       const safe = String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
-      return `${new Date().toISOString().slice(0, 7)}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+      return `nf/${new Date().toISOString().slice(0, 7)}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
     }
-    // Envia o PDF escolhido e devolve as colunas nota_fiscal_* (ou null se não há PDF novo).
+    // Envia o arquivo escolhido e devolve as colunas arquivo_* (null se não há arquivo novo).
     // Sem Supabase (demonstração), guarda só o nome.
-    async function enviarNf(){
-      if(!movNfArquivo) return null;
-      const f = movNfArquivo;
-      if(!supabaseReady) return { nota_fiscal_nome: f.name, nota_fiscal_path: null, nota_fiscal_bytes: f.size };
+    async function enviarArquivoNf(){
+      if(!nfArquivoNovo) return null;
+      const f = nfArquivoNovo;
+      if(!supabaseReady) return { arquivo_nome: f.name, arquivo_path: null, arquivo_bytes: f.size };
       const path = nfStoragePath(f.name);
-      const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: 'application/pdf' });
-      if(error) throw new Error('Erro ao enviar a nota fiscal: ' + error.message + '\n\nConfira se supabase/schema_estoque_nota_fiscal.sql já foi executado.');
-      return { nota_fiscal_nome: f.name, nota_fiscal_path: path, nota_fiscal_bytes: f.size };
+      const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: nfTipoArquivo(f) });
+      if(error) throw new Error('Erro ao enviar o arquivo da nota fiscal: ' + error.message + '\n\nConfira se supabase/schema_estoque_precos_nf.sql já foi executado.');
+      return { arquivo_nome: f.name, arquivo_path: path, arquivo_bytes: f.size };
     }
     async function removerNfStorage(paths){
       const lista = paths.filter(Boolean);
       if(!supabaseReady || !lista.length) return;
       const { error } = await supabaseClient.storage.from(NF_BUCKET).remove(lista);
-      if(error) console.warn('Nota fiscal não removida do Storage:', error.message);
+      if(error) console.warn('Arquivo da nota fiscal não removido do Storage:', error.message);
+    }
+    // Atualiza a lista local de notas (sem recarregar o Estoque inteiro: a Entrada aberta não perde o que foi digitado).
+    function nfGuardarLocal(n){
+      stockNotas = [n].concat(stockNotas.filter(x => x.id !== n.id))
+        .sort((a, b) => String(b.data_emissao).localeCompare(String(a.data_emissao)) || String(b.created_at).localeCompare(String(a.created_at)));
     }
 
-    window.waViewNotaFiscal = async function(id){
-      const m = stockMovements.find(x => x.id === id);
-      if(!m || !m.nota_fiscal_nome) return;
-      if(!supabaseReady || !m.nota_fiscal_path){
-        alert(`Modo de demonstração: "${m.nota_fiscal_nome}" não tem um arquivo real armazenado.`);
+    window.waSaveNf = async function(){
+      const numero = waNfNumero.value.trim();
+      const serie = waNfSerie.value.trim() || null;
+      const fornecedor = waNfFornecedor.value.trim();
+      const data_emissao = waNfEmissao.value;
+      const cnpj = nfDigitos(waNfCnpj.value) || null;
+      const chave = nfDigitos(waNfChave.value) || null;
+      const valor = waNfValor.value === '' ? null : Number(waNfValor.value);
+      if(!numero || !fornecedor || !data_emissao){ alert('Preencha o número, a data de emissão e o fornecedor da nota fiscal.'); return; }
+      if(cnpj && cnpj.length !== 14){ alert('O CNPJ do fornecedor precisa ter 14 dígitos.'); waNfCnpj.focus(); return; }
+      if(chave && chave.length !== 44){ alert('A chave de acesso da NF-e tem 44 dígitos.'); waNfChave.focus(); return; }
+      if(valor !== null && !(valor >= 0)){ alert('O valor total não pode ser negativo.'); waNfValor.focus(); return; }
+      // Mesma nota já cadastrada: pela chave, pelo CNPJ + série + número ou (sem CNPJ) pelo fornecedor + série + número.
+      const outras = stockNotas.filter(n => n.id !== editingNfId);
+      const mesma = n => n.numero === numero && (n.serie || '') === (serie || '');
+      const dup = outras.find(n => chave && n.chave_acesso === chave) || outras.find(n => cnpj && n.fornecedor_cnpj === cnpj && mesma(n));
+      if(dup){ alert(`Esta nota já está cadastrada: ${nfRotulo(dup)} · ${dup.fornecedor} (emissão ${fmtDataBR(dup.data_emissao)}).`); return; }
+      const parecida = outras.find(n => !cnpj && nfNorm(n.fornecedor) === nfNorm(fornecedor) && mesma(n));
+      if(parecida && !confirm(`Já existe ${nfRotulo(parecida)} de ${parecida.fornecedor}. Cadastrar mesmo assim?`)) return;
+
+      const payload = { numero, serie, chave_acesso: chave, fornecedor, fornecedor_cnpj: cnpj, data_emissao, valor_total: valor, observacao: waNfObs.value.trim() || null };
+      const antiga = nfDe(editingNfId);
+      const vincular = nfVincularEntrada;
+      let arquivo = null;
+      waNfSaveBtn.disabled = true;
+      try {
+        if(nfArquivoNovo){
+          waNfSaveBtn.textContent = 'Enviando arquivo...';
+          arquivo = await enviarArquivoNf();
+          Object.assign(payload, arquivo);
+        } else if(antiga && nfArquivoRemover){
+          Object.assign(payload, { arquivo_nome: null, arquivo_path: null, arquivo_bytes: null });
+        }
+        let salva;
+        if(!supabaseReady){
+          salva = Object.assign({}, antiga || { id: 'nf' + Date.now(), created_at: new Date().toISOString(), usuario_email: currentUserEmail() }, payload);
+        } else if(antiga){
+          if(!window.__exigirEdicao('estoque', 'editar notas fiscais')) throw null;
+          const { data, error } = await supabaseClient.from('notas_fiscais').update(payload).eq('id', antiga.id).select('*');
+          if(error) throw error;
+          if(!data || !data.length) throw new Error('A nota não foi alterada: este usuário não tem permissão de Edição no Estoque.');
+          salva = data[0];
+        } else {
+          const { data, error } = await supabaseClient.from('notas_fiscais').insert(Object.assign({ usuario_email: currentUserEmail() }, payload)).select('*').single();
+          if(error) throw error;
+          salva = data;
+        }
+        // Arquivo trocado ou removido: o antigo sai do Storage só depois de a nota ser gravada.
+        if(antiga && antiga.arquivo_path && (arquivo || nfArquivoRemover)) await removerNfStorage([antiga.arquivo_path]);
+        nfGuardarLocal(salva);
+        waCloseNfModal();
+        renderStock();
+        if(vincular && waMovNfField && !waMovNfField.hidden) nfSelecionar(salva.id);
+        showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'}${vincular ? ' e escolhida na entrada' : ''}.`);
+      } catch(err){
+        if(arquivo) await removerNfStorage([arquivo.arquivo_path]);
+        if(err){
+          console.error('Erro ao salvar nota fiscal:', err);
+          alert(err.code === '23505' ? 'Esta nota fiscal já está cadastrada (mesma chave de acesso ou mesmo CNPJ, série e número).'
+            : 'Erro ao salvar a nota fiscal: ' + (err.message || err));
+        }
+      } finally {
+        waNfSaveBtn.disabled = false;
+        waNfSaveBtn.textContent = editingNfId ? 'Salvar Alterações' : 'Salvar Nota Fiscal';
+      }
+    };
+
+    window.waDeleteNf = async function(id){
+      const n = nfDe(id);
+      if(!n) return;
+      if(!podeEditarEstoque()){
+        alert('Você não tem permissão para remover notas fiscais. Peça a um Administrador o acesso de Edição.');
+        return;
+      }
+      const ents = nfEntradas(id);
+      if(ents.length){
+        alert(`${nfRotulo(n)} está vinculada a ${ents.length} entrada${ents.length === 1 ? '' : 's'}. Edite essas entradas e tire a nota antes de removê-la.`);
+        return;
+      }
+      if(!confirm(`Remover ${nfRotulo(n)} · ${n.fornecedor}?${n.arquivo_nome ? '\n\nO arquivo anexado também será apagado.' : ''}`)) return;
+      if(supabaseReady){
+        const { error } = await supabaseClient.from('notas_fiscais').delete().eq('id', id);
+        if(error){
+          console.error('Erro ao remover nota fiscal:', error);
+          alert(error.code === '23503' ? `${nfRotulo(n)} está vinculada a uma entrada. Edite a entrada e tire a nota antes de removê-la.` : 'Erro ao remover a nota fiscal: ' + error.message);
+          return;
+        }
+        await removerNfStorage([n.arquivo_path]);
+      }
+      stockNotas = stockNotas.filter(x => x.id !== id);
+      renderStock();
+    };
+
+    // Abre o arquivo da nota por link assinado e temporário (bucket privado).
+    window.waOpenNfArquivo = async function(id){
+      const n = nfDe(id);
+      if(!n || !n.arquivo_nome) return;
+      if(!supabaseReady || !n.arquivo_path){
+        alert(`Modo de demonstração: "${n.arquivo_nome}" não tem um arquivo real armazenado.`);
         return;
       }
       // Abre a aba antes do await (senão o navegador trata como pop-up e bloqueia).
       const aba = window.open('', '_blank');
-      const { data, error } = await supabaseClient.storage.from(NF_BUCKET).createSignedUrl(m.nota_fiscal_path, 120);
+      const { data, error } = await supabaseClient.storage.from(NF_BUCKET).createSignedUrl(n.arquivo_path, 120);
       if(error || !data){
         if(aba) aba.close();
         console.error('Erro ao gerar link da nota fiscal:', error);
@@ -10991,6 +11522,35 @@ ${clipPlayerPills(n)}
       if(aba){ aba.opener = null; aba.location.href = data.signedUrl; } else window.open(data.signedUrl, '_blank', 'noopener');
     };
 
+    // Lupa da nota: mostra as entradas vinculadas a ela.
+    window.waShowNfEntradas = function(id){
+      const n = nfDe(id);
+      if(!n) return;
+      waStockSearch.value = nfRotulo(n);
+      [waMovTypeFilter, waStockProductFilter, waStockUserFilter, waStockConsumoFilter, waStockYearFilter, waStockMonthFilter].forEach(el => { el.value = ''; });
+      setStockTab('movimentacoes');
+    };
+
+    // ---- Preço praticado na Entrada ----
+    // O campo vem com o preço atual do produto; digitar outro grava esse preço na entrada e
+    // atualiza o cadastro (o saldo que já existe continua no preço anterior).
+    const movPrecoVisivel = () => !waMovPrecoField.hidden;
+    function movPrecoPadrao(){
+      const p = stockProducts.find(x => x.id === waMovProduto.value);
+      waMovPreco.value = p && p.preco_custo != null ? p.preco_custo : '';
+    }
+    function movPrecoResumo(p, q){
+      if(!movPrecoVisivel()) return '';
+      const v = waMovPreco.value === '' ? null : Number(waMovPreco.value);
+      if(v === null) return p.preco_custo != null ? ` · preço do cadastro: ${fmtMoeda(p.preco_custo)}` : ' · sem preço de custo';
+      const total = ` · ${fmtMoeda(v)}/un = ${fmtMoeda(v * q)}`;
+      if(editingMov || p.preco_custo == null || Math.abs(v - p.preco_custo) < 0.005) return total;
+      const saldo = Math.max(0, saldoOf(p.id, STOCK_SETOR_TODOS));
+      return total + ` · preço novo: atualiza o cadastro (era ${fmtMoeda(p.preco_custo)})${saldo > 0 ? ` e o saldo atual (${fmtQty(saldo)} ${p.unidade}) mantém o preço anterior` : ''}`;
+    }
+    waMovPreco.addEventListener('input', () => updateMovSummary());
+    waMovPreco.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); waSaveMovement(); } });
+
     function setMovTipo(tipo){
       movTipo = tipo;
       waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(b => b.classList.toggle('selected', b.dataset.tipo === tipo));
@@ -10999,6 +11559,10 @@ ${clipPlayerPills(n)}
       waMovTransferGrid.hidden = !isTransfer;
       waMovConsumoField.hidden = tipo !== 'saida';
       waMovNfField.hidden = tipo !== 'entrada';
+      // Preço só na compra (entrada; origem na edição). A saída não tem campo de preço:
+      // o custo dela é o das camadas consumidas, calculado pelo banco.
+      waMovPrecoField.hidden = !(tipo === 'entrada' || tipo === 'origem');
+      if(waMovNfField.hidden) nfListaFechar();
       waMovSetorLabel.textContent = tipo === 'saida' ? 'Retirar do estoque' : tipo === 'origem' ? 'Estoque central (origem)' : 'Estoque central';
       // Retirada nova: sai do Almoxarifado por padrão (a central filtrada na tela, se houver, prevalece; edição mantém a do lançamento).
       if(tipo === 'saida' && !editingMov && currentSetor === STOCK_SETOR_TODOS) waMovSetor.value = STOCK_SETOR_RETIRADA;
@@ -11063,14 +11627,16 @@ ${clipPlayerPills(n)}
       const m = editingMov && editingMov.m;
       const saiuDe = m && (m.produto_id !== p.id || m.setor !== setor) && STOCK_SETORES.includes(m.setor) ? saldoBase(m.produto_id, m.setor) : null;
       waMovSummary.textContent = `${rotulo}: ${fmtQty(saldo)} ${p.unidade} → ${aposTxt}: ${fmtQty(apos)} ${p.unidade}${consumo}`
-        + (saiuDe === null ? '' : ` · ${m.setor} (antes): fica com ${fmtQty(saiuDe)}`);
+        + (saiuDe === null ? '' : ` · ${m.setor} (antes): fica com ${fmtQty(saiuDe)}`)
+        + movPrecoResumo(p, q);
       waMovSummary.classList.toggle('over', apos < 0 || (saiuDe !== null && saiuDe < 0));
     }
 
     waMovTipoGroup.querySelectorAll('.wa-toggle-chip').forEach(btn => {
       btn.addEventListener('click', () => setMovTipo(btn.dataset.tipo));
     });
-    waMovProduto.addEventListener('change', updateMovSummary);
+    // Trocou o produto num lançamento novo: o preço volta para o do cadastro do produto escolhido.
+    waMovProduto.addEventListener('change', () => { if(!editingMov) movPrecoPadrao(); updateMovSummary(); });
     waMovSetor.addEventListener('change', updateMovSummary);
     waMovConsumo.addEventListener('change', updateMovSummary);
     // Só existem duas centrais: escolher uma ponta da transferência ajusta a outra.
@@ -11125,7 +11691,7 @@ ${clipPlayerPills(n)}
       const ativos = stockProducts.filter(p => p.ativo || (mov && p.id === mov.produto_id));
       if(!ativos.length) return false;
       setMovEdicao(mov || null);
-      resetNfCampo();
+      nfSelecionar(mov ? mov.nota_fiscal_id : null);
       waMovSub.textContent = mov
         ? `Ajuste do lançamento de ${fmtDateTimeBR(mov.created_at)}${mov.usuario_email ? ' · ' + (userNameOf(mov.usuario_email) || mov.usuario_email) : ''}.`
         : 'Entrada abastece o Almoxarifado; na saída, informe o setor que consome.';
@@ -11139,12 +11705,15 @@ ${clipPlayerPills(n)}
       waMovConsumo.value = '';
       waMovQtd.value = '1';
       waMovObs.value = '';
+      movPrecoPadrao();
       if(mov){
         // Estoque fora das centrais (histórico antigo) fica em branco: o ajuste exige escolher uma central.
         waMovSetor.value = STOCK_SETORES.includes(mov.setor) ? mov.setor : '';
         waMovConsumo.value = STOCK_SETORES_CONSUMO.includes(mov.setor_consumo) ? mov.setor_consumo : '';
         waMovQtd.value = String(mov.quantidade);
         waMovObs.value = mov.observacao || '';
+        // Compra: o preço gravado nela (não o atual do cadastro).
+        waMovPreco.value = mov.tipo !== 'saida' && mov.preco_unitario != null ? mov.preco_unitario : waMovPreco.value;
         if(mov.transferencia){
           const saida = mov.tipo === 'saida' ? mov : editingMov.par, entrada = mov.tipo === 'saida' ? editingMov.par : mov;
           waMovSetorOrigem.value = saida ? saida.setor : outraCentral(entrada.setor);
@@ -11209,23 +11778,15 @@ ${clipPlayerPills(n)}
           alert(`Não é possível mover este lançamento: o saldo anterior em ${m.setor} ficaria negativo.`);
           return;
         }
-        ajustes = [{ r: m, payload: { produto_id: p.id, tipo, setor, setor_consumo: consumo || null, quantidade: q, observacao } }];
-      }
-
-      // Nota fiscal: só entrada (não transferência) fica com PDF. Trocar,
-      // remover ou deixar de ser entrada apaga o PDF antigo — depois que o
-      // ajuste for gravado, para nunca perder o arquivo de um lançamento.
-      const SEM_NF = { nota_fiscal_nome: null, nota_fiscal_path: null, nota_fiscal_bytes: null };
-      const tinhaNf = !!m.nota_fiscal_nome;
-      const ficaEntrada = !m.transferencia && ajustes[0].payload.tipo === 'entrada';
-      let nfNova = null, nfAntigaPath = null;
-      if(ficaEntrada && movNfArquivo){
-        try { nfNova = await enviarNf(); } catch(e){ alert(e.message); return; }
-        Object.assign(ajustes[0].payload, nfNova);
-        nfAntigaPath = m.nota_fiscal_path;
-      } else if(tinhaNf && (!ficaEntrada || movNfRemover) && !m.transferencia){
-        Object.assign(ajustes[0].payload, SEM_NF);
-        nfAntigaPath = m.nota_fiscal_path;
+        // Compra (entrada/origem) leva o preço do campo; a saída não tem preço digitado (o banco
+        // calcula o custo pelas camadas). A nota fiscal só fica em entrada.
+        const payload = { produto_id: p.id, tipo, setor, setor_consumo: consumo || null, quantidade: q, observacao, nota_fiscal_id: tipo === 'entrada' ? movNfId : null };
+        if(tipo !== 'saida'){
+          const preco = waMovPreco.value === '' ? (p.preco_custo != null ? p.preco_custo : null) : Number(waMovPreco.value);
+          if(preco !== null && !(preco >= 0)){ alert('O preço unitário não pode ser negativo.'); waMovPreco.focus(); return; }
+          payload.preco_unitario = preco;
+        }
+        ajustes = [{ r: m, payload }];
       }
 
       if(!supabaseReady){
@@ -11235,7 +11796,6 @@ ${clipPlayerPills(n)}
         for(const a of ajustes){
           const { data, error } = await supabaseClient.from('movimentacoes_estoque').update(a.payload).eq('id', a.r.id).select('id');
           if(error || !data || !data.length){
-            if(nfNova) await removerNfStorage([nfNova.nota_fiscal_path]);
             if(error){
               console.error('Erro ao ajustar movimentação no Supabase:', error);
               alert('Erro ao ajustar movimentação no Supabase: ' + error.message);
@@ -11246,7 +11806,6 @@ ${clipPlayerPills(n)}
             return;
           }
         }
-        await removerNfStorage([nfAntigaPath]);
       }
 
       waCloseMovModal();
@@ -11258,9 +11817,9 @@ ${clipPlayerPills(n)}
       waMovModal.classList.remove('open');
       waMovModal.classList.remove('wa-mov-restrito');
       waMovProduto.disabled = false;
-      waMovObs.placeholder = 'Ex: NF 1234, compra do mês, nome de quem retirou';
+      waMovObs.placeholder = 'Ex: compra do mês, nome de quem retirou';
       setMovEdicao(null);
-      resetNfCampo();
+      nfSelecionar(null);
       if(waStockHubModal.classList.contains('open')) waCloseStockHub();
       if(currentPage === 'estoque' && window.matchMedia('(pointer: fine)').matches) waScanInput.focus();
     };
@@ -11279,15 +11838,18 @@ ${clipPlayerPills(n)}
     // Corpos emprestados e onde devolvê-los (antes do rodapé do modal de origem).
     const hubForms = {
       mov: waMovModal.querySelector('.wa-modal-body'),
-      produto: waProductModal.querySelector('.wa-modal-body')
+      produto: waProductModal.querySelector('.wa-modal-body'),
+      nf: waNfModal.querySelector('.wa-modal-body')
     };
     const hubFormHome = {
       mov: { parent: hubForms.mov.parentNode, next: hubForms.mov.nextElementSibling },
-      produto: { parent: hubForms.produto.parentNode, next: hubForms.produto.nextElementSibling }
+      produto: { parent: hubForms.produto.parentNode, next: hubForms.produto.nextElementSibling },
+      nf: { parent: hubForms.nf.parentNode, next: hubForms.nf.nextElementSibling }
     };
     const HUB_ACOES = {
       entrada:       { titulo: '2. Dados da Entrada',       botao: 'Registrar Entrada' },
       saida:         { titulo: '2. Dados da Saída',         botao: 'Registrar Saída' },
+      nf:            { titulo: '2. Dados da Nota Fiscal',   botao: 'Salvar Nota Fiscal' },
       transferencia: { titulo: '2. Dados da Transferência', botao: 'Registrar Transferência' },
       produto:       { titulo: '2. Dados do Produto',       botao: 'Salvar Produto' }
     };
@@ -11307,6 +11869,9 @@ ${clipPlayerPills(n)}
       if(acao === 'produto'){
         fillProductForm(null);
         waStockHubPanel.appendChild(hubForms.produto);
+      } else if(acao === 'nf'){
+        fillNfForm(null);
+        waStockHubPanel.appendChild(hubForms.nf);
       } else {
         ok = fillMovForm(null, acao);
         if(ok) waStockHubPanel.appendChild(hubForms.mov);
@@ -11320,7 +11885,7 @@ ${clipPlayerPills(n)}
       waStockHubStep.classList.remove('wa-fade-in');
       void waStockHubStep.offsetWidth;
       waStockHubStep.classList.add('wa-fade-in');
-      if(ok) setTimeout(() => (acao === 'produto' ? waProdCodigo : waMovProduto).focus(), 50);
+      if(ok) setTimeout(() => (acao === 'produto' ? waProdCodigo : acao === 'nf' ? waNfNumero : waMovProduto).focus(), 50);
     }
 
     waStockHubGrid.querySelectorAll('.wa-category-card').forEach(card => {
@@ -11348,13 +11913,13 @@ ${clipPlayerPills(n)}
     // em caso de sucesso elas chamam waClose*Modal, que também fecha a central.
     window.waStockHubSave = function(){
       if(!hubAcao) return;
-      if(hubAcao === 'produto') waSaveProduct(); else waSaveMovement();
+      if(hubAcao === 'produto') waSaveProduct(); else if(hubAcao === 'nf') waSaveNf(); else waSaveMovement();
     };
 
     // Os produtos carregam depois que a central já abriu: se o usuário escolheu
     // uma movimentação antes disso, refaz a seleção com a lista completa.
     function hubAposCarregarEstoque(){
-      if(waStockHubModal.classList.contains('open') && hubAcao && hubAcao !== 'produto' && hubForms.mov.parentNode !== waStockHubPanel){
+      if(waStockHubModal.classList.contains('open') && hubAcao && hubAcao !== 'produto' && hubAcao !== 'nf' && hubForms.mov.parentNode !== waStockHubPanel){
         hubSelecionar(hubAcao);
       }
     }
@@ -11430,23 +11995,26 @@ ${clipPlayerPills(n)}
         usuario_email: currentUserEmail()
       };
 
-      // Entrada com nota fiscal: envia o PDF antes e grava o caminho no lançamento.
-      let nf = null;
-      if(movTipo === 'entrada' && movNfArquivo){
-        waMovSaveBtn.disabled = true;
-        waMovSaveBtn.textContent = 'Enviando nota fiscal...';
-        try { nf = await enviarNf(); }
-        catch(e){ alert(e.message); return; }
-        finally { waMovSaveBtn.disabled = false; waMovSaveBtn.textContent = 'Registrar'; }
-        Object.assign(payload, nf);
+      // Entrada: preço praticado (vazio = preço do cadastro, preenchido pelo banco) e a nota fiscal escolhida.
+      // Preço diferente do cadastro atualiza o produto; o saldo que já existe segue no preço anterior.
+      let precoNovo = false;
+      if(movTipo === 'entrada'){
+        const preco = waMovPreco.value === '' ? null : Number(waMovPreco.value);
+        if(preco !== null && !(preco >= 0)){ alert('O preço unitário não pode ser negativo.'); waMovPreco.focus(); return; }
+        payload.preco_unitario = preco;
+        payload.nota_fiscal_id = movNfId;
+        precoNovo = preco !== null && (p.preco_custo == null || Math.abs(preco - p.preco_custo) >= 0.005);
       }
+      const nf = nfDe(payload.nota_fiscal_id);
 
       if(!supabaseReady){
-        stockMovements.unshift(Object.assign({ id: 'm' + Date.now(), created_at: new Date().toISOString() }, payload));
+        const agora = new Date().toISOString();
+        if(movTipo === 'entrada' && payload.preco_unitario == null) payload.preco_unitario = p.preco_custo;
+        if(precoNovo){ p.preco_custo = Math.round(payload.preco_unitario * 100) / 100; p.preco_atualizado_em = agora; }
+        stockMovements.unshift(Object.assign({ id: 'm' + Date.now(), created_at: agora }, payload));
       } else {
         const { error } = await supabaseClient.from('movimentacoes_estoque').insert(payload);
         if(error){
-          if(nf) await removerNfStorage([nf.nota_fiscal_path]);
           console.error('Erro ao registrar movimentação no Supabase:', error);
           alert('Erro ao registrar movimentação no Supabase: ' + error.message);
           return;
@@ -11459,7 +12027,7 @@ ${clipPlayerPills(n)}
         ? `✓ Saída registrada: ${fmtQty(q)} ${p.unidade} de ${p.nome} para ${consumo}.`
         : movTipo === 'saida'
         ? `Saída de ${fmtQty(q)} ${p.unidade} · ${p.nome} · ${setor} → consumo: ${consumo} · saldo em ${setor}: ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}`
-        : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}${nf ? ` · NF anexada: ${nf.nota_fiscal_nome}` : ''}`);
+        : `${MOV_LABEL[movTipo]} de ${fmtQty(q)} ${p.unidade} registrada em ${setor} · ${p.nome} · saldo ${fmtQty(saldoOf(p.id, setor))} ${p.unidade}${precoNovo ? ` · preço atualizado para ${fmtMoeda(payload.preco_unitario)}` : ''}${nf ? ` · ${nfRotulo(nf)}` : ''}`);
     };
 
     window.waDeleteMovement = async function(id){
@@ -11490,8 +12058,7 @@ ${clipPlayerPills(n)}
         alert('Erro ao remover movimentação no Supabase: ' + error.message);
         return;
       }
-      await removerNfStorage([m.nota_fiscal_path]);   // a NF da entrada sai junto
-      await loadStock();
+      await loadStock();   // a nota fiscal da entrada continua no cadastro de notas
     };
 
     // ---------------- Filtros, abas e exportação ----------------
@@ -11517,17 +12084,24 @@ ${clipPlayerPills(n)}
         const s = String(v == null ? '' : v);
         return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       };
+      const fmtNum = (v, casas) => v == null ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
       let rows, filename;
       if(stockTab === 'produtos'){
-        rows = [['Código de barras', 'Produto', 'Unidade', `Saldo (${currentSetor})`, 'Estoque mínimo', 'Preço de custo', 'Situação']]
-          .concat(getFilteredProducts().map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), p.preco_custo == null ? '' : p.preco_custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), SITUACAO[situacaoOf(p)].label]));
+        rows = [['Código de barras', 'Produto', 'Unidade', `Saldo (${currentSetor})`, 'Estoque mínimo', 'Preço de custo', 'Preço atualizado em', 'Situação']]
+          .concat(getFilteredProducts().map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), fmtNum(p.preco_custo, 2), stockPrecoData(p), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_produtos_${currentSetor}.csv`;
+      } else if(stockTab === 'notas'){
+        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total', 'Entradas vinculadas', 'Arquivo', 'Observação', 'Cadastrada por', 'Cadastrada em']]
+          .concat(getFilteredNotas().map(n => [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2), nfEntradas(n.id).length, n.arquivo_nome || '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '', fmtDateTimeBR(n.created_at)]));
+        filename = 'estoque_notas_fiscais.csv';
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
-        rows = [['Data/hora', 'Estoque', 'Setor de consumo', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Observação', 'Nota fiscal', 'Usuário']]
+        rows = [['Data/hora', 'Estoque', 'Setor de consumo', 'Código de barras', 'Produto', 'Tipo', 'Quantidade', 'Unidade', 'Preço unitário', 'Valor', 'Observação', 'Nota fiscal', 'Fornecedor', 'Usuário']]
           .concat(getFilteredMovements().map(m => {
-            const p = byId.get(m.produto_id) || {};
-            return [fmtDateTimeBR(m.created_at), m.setor || '', stockEhConsumo(m) ? stockConsumoDe(m) : '', p.codigo_barras || '', p.nome || '', m.transferencia ? `${MOV_LABEL[m.tipo]} (transferência)` : MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '', m.observacao || '', m.nota_fiscal_nome || '', userNameOf(m.usuario_email) || m.usuario_email || ''];
+            const p = byId.get(m.produto_id) || {}, nf = nfDe(m.nota_fiscal_id);
+            return [fmtDateTimeBR(m.created_at), m.setor || '', stockEhConsumo(m) ? stockConsumoDe(m) : '', p.codigo_barras || '', p.nome || '', m.transferencia ? `${MOV_LABEL[m.tipo]} (transferência)` : MOV_LABEL[m.tipo], fmtQty(m.tipo === 'saida' ? -m.quantidade : m.quantidade), p.unidade || '',
+              m.transferencia ? '' : fmtNum(stockPrecoMov(m, p.id ? p : null), 4), m.transferencia ? '' : fmtNum(stockValorMov(m, p.id ? p : null), 2),
+              m.observacao || '', nf ? nfRotulo(nf) : '', nf ? nf.fornecedor : '', userNameOf(m.usuario_email) || m.usuario_email || ''];
           }));
         filename = `estoque_movimentacoes_${currentSetor}.csv`;
       }
@@ -12990,10 +13564,11 @@ ${clipPlayerPills(n)}
       </svg>`;
     }
 
-    // medida: 'valor' (quantidade × preço de custo do produto, em R$) | 'produtos' (unidades).
+    // medida: 'valor' (quantidade × preço praticado do lançamento, em R$: compra = preço da entrada,
+    // consumo = custo das camadas consumidas) | 'produtos' (unidades).
     function stkDadosFluxo(modo, medida){
-      const precoDe = new Map(stockProducts.map(p => [p.id, p.preco_custo != null ? Number(p.preco_custo) || 0 : 0]));
-      const peso = m => medida === 'valor' ? (precoDe.get(m.produto_id) || 0) : 1;
+      const byId = new Map(stockProducts.map(p => [p.id, p]));
+      const peso = m => medida === 'valor' ? stockPrecoMov(m, byId.get(m.produto_id)) : 1;
       const semanal = modo !== 'mensal';
       const hoje = stkHojeIso();
       const categorias = [], chaves = [];
@@ -13029,7 +13604,7 @@ ${clipPlayerPills(n)}
     }
 
     // Valor gasto com compras (entradas) por mês, últimos 6 meses:
-    // soma de preço de custo × quantidade de cada entrada/origem no mês.
+    // soma do preço da compra × quantidade de cada entrada/origem no mês.
     // Valor (R$) das compras por setor de entrada (central que recebeu: Escritório/Almoxarifado).
     // Mesma janela do consumo por setor: Mês/Ano quando escolhidos; sem eles, todo o histórico.
     // Respeita o filtro de central e a seleção de produtos.
@@ -13041,8 +13616,7 @@ ${clipPlayerPills(n)}
         if(!stockEhCompra(m) || !stkMovOkSetor(m) || !stkProdOk(m.produto_id)) return;
         const d = stockDia(m.created_at);
         if(janela && (d < janela.ini || d > janela.fim)) return;
-        const p = byId.get(m.produto_id);
-        const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
+        const preco = stockPrecoMov(m, byId.get(m.produto_id));
         const k = m.setor || 'Não informado', q = Number(m.quantidade) || 0;
         const v = porSetor.get(k) || { nome: k, valor: 0, compras: 0 };
         v.valor += preco * q; v.compras++;
@@ -13051,8 +13625,8 @@ ${clipPlayerPills(n)}
       return { rotulo: janela ? janela.rotulo : 'todo o histórico', porValor: [...porSetor.values()].sort((a, b) => b.valor - a.valor) };
     }
 
-    // Consumo por setor de consumo (quantidade e custo = preço × quantidade
-    // das saídas). Janela: Mês/Ano quando escolhidos; sem eles, todo o
+    // Consumo por setor de consumo (quantidade e custo = custo das camadas
+    // consumidas × quantidade das saídas). Janela: Mês/Ano quando escolhidos; sem eles, todo o
     // histórico (o objetivo é mapear quem mais demanda). Respeita a central
     // e a seleção de produtos, mas não o filtro de setor de consumo — o
     // widget compara os setores entre si. Só setores com consumo, do maior
@@ -13065,8 +13639,7 @@ ${clipPlayerPills(n)}
         if(!stockEhConsumo(m) || !stkMovOkSetor(m, true) || !stkProdOk(m.produto_id)) return;
         const d = stockDia(m.created_at);
         if(janela && (d < janela.ini || d > janela.fim)) return;
-        const p = byId.get(m.produto_id);
-        const preco = p && p.preco_custo != null ? Number(p.preco_custo) : 0;
+        const preco = stockPrecoMov(m, byId.get(m.produto_id));
         const k = stockConsumoDe(m), q = Number(m.quantidade) || 0;
         const v = porSetor.get(k) || { nome: k, qtd: 0, valor: 0, retiradas: 0 };
         v.qtd += q; v.valor += preco * q; v.retiradas++;
@@ -20255,7 +20828,8 @@ ${quadro}
       const consolidado = setor === 'Todas';
       const movs = await reMovimentos(meses[0], meses[5]);
       const byId = new Map(stockProducts.map(p => [p.id, p]));
-      const preco = id => { const p = byId.get(id); return p && p.preco_custo != null ? Number(p.preco_custo) : 0; };
+      // Preço praticado: compra = preço da entrada; consumo = custo das camadas consumidas.
+      const valorMov = m => stockValorMov(m, byId.get(m.produto_id));
       const nomeProd = id => (byId.get(id) || {}).nome || 'Produto removido';
       // compras = entradas nas centrais; consumo = saídas para os setores (sem transferências)
       const ent = movs.filter(stockEhCompra), consumoTodos = movs.filter(stockEhConsumo);
@@ -20266,10 +20840,10 @@ ${quadro}
       let saldo = 0;
       stockBalances.forEach(mp => mp.forEach(v => { saldo += Number(v) || 0; }));
       const ativos = stockProducts.filter(p => p.ativo !== false);
-      // valor gasto (entradas × preço de custo) por mês
-      const gastoMes = meses.map(mm => soma(ent.filter(m => stockDia(m.created_at).slice(0, 7) === mm), m => m.quantidade * preco(m.produto_id)));
+      // valor gasto (entradas × preço da compra) por mês
+      const gastoMes = meses.map(mm => soma(ent.filter(m => stockDia(m.created_at).slice(0, 7) === mm), valorMov));
       const gastoTot = gastoMes.reduce((a, b) => a + b, 0), gastoMed = gastoTot / 6;
-      const usado = m => m.quantidade * preco(m.produto_id);
+      const usado = valorMov;
       const usadoTot = soma(sai, usado), usadoTodos = soma(consumoTodos, usado);
       const moedaCurta = v => 'R$ ' + relNum(Math.round(Number(v) || 0));
 
