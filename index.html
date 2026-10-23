@@ -15598,7 +15598,9 @@ ${clipPlayerPills(n)}
     // Filtros: Mês e Ano (padrão: o ano até o mês atual), comparados com o mesmo período do ano anterior; a busca filtra
     // por usuário (nome, e-mail ou setor) ou seção, e todos os gráficos acompanham. Sem Supabase: dados de demonstração.
     const USO_TTL = 5 * 60000;
-    let usoDados = null, usoEm = 0, usoProm = null, usoErro = '', usoRoscaVisao = 'setor', usoUltimo = null, usoPainelUltimo = null;
+    let usoDados = null, usoEm = 0, usoProm = null, usoErro = '', usoRoscaVisao = 'setor', usoEvolVisao = 'mensal', usoUltimo = null, usoPainelUltimo = null;
+    // Perfis fora da análise (administrador de desenvolvimento): pelo nome do cadastro, sem acento e minúsculo.
+    const USO_FORA_NOMES = ['matheus costa'];
     const usoSecaoNome = k => (ALL_SECTIONS.find(s => s.key === k) || { label: k || '—' }).label;
     const usoPainelNome = k => { const o = [...stkPainelEl.options].find(x => x.value === k); return o ? o.textContent.replace(/^Painel\s*·\s*/, '') : (k || '—'); };
     const usoPerfil = u => !u ? 'Sem cadastro' : u.cargo === 'Administrador' ? 'Administrador' : u.restrito ? 'Restrito' : u.edicao ? 'Edição' : 'Usuário';
@@ -15606,7 +15608,7 @@ ${clipPlayerPills(n)}
 
     // Demonstração (sem Supabase): uso sintético e estável de 2025 até o mês atual, só para ver o painel montado.
     function usoDemo(){
-      const nomes = ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Prado', 'Fábio Nunes', 'Gabriela Reis', 'Heitor Alves', 'Isabela Melo', 'João Pires', 'Karen Lopes', 'Lucas Moura'];
+      const nomes = ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Prado', 'Fábio Nunes', 'Gabriela Reis', 'Heitor Alves', 'Isabela Melo', 'João Pires', 'Karen Lopes', 'Lucas Moura', 'Matheus Costa'];
       const setores = ['Marketing', 'Comercial', 'Financeiro', 'Núcleo Inteligência', 'CESPC', 'RH'];
       const usuarios = nomes.map((n, i) => ({ nome: n, email: n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@cdlcuiaba.com.br',
         setor: setores[i % setores.length], cargo: i === 0 ? 'Administrador' : 'Usuário', status: i === 11 ? 'Inativo' : 'Ativo', edicao: i % 4 === 1, restrito: i === 7,
@@ -15681,7 +15683,9 @@ ${clipPlayerPills(n)}
         fim: `${ano}-${String(mFim).padStart(2, '0')}-31`, fimAnt: `${ano - 1}-${String(mFim).padStart(2, '0')}-31` };
     }
     function usoModelo(){
-      const D = usoDados, J = usoJanela();
+      const J = usoJanela();
+      const fora = new Set(usoDados.usuarios.filter(u => USO_FORA_NOMES.includes(stkNorm(u.nome).replace(/\s+/g, ' ').trim())).map(u => u.email));
+      const D = { ...usoDados, usuarios: usoDados.usuarios.filter(u => !fora.has(u.email)), linhas: usoDados.linhas.filter(l => !fora.has(l.email)) };
       const porEmail = new Map(D.usuarios.map(u => [u.email, u]));
       const termos = ibgeTermo();
       const casaU = u => !termos.length || ibgeCasa(`${u ? u.nome : ''} ${u ? u.email : ''} ${u ? u.setor || '' : ''}`, termos);
@@ -15700,8 +15704,11 @@ ${clipPlayerPills(n)}
       const A = periodo(J.atual), B = periodo(J.anterior);
       // Base da adoção: usuários ativos no cadastro, criados até o fim de cada período (e que casam com a busca).
       const base = fim => D.usuarios.filter(u => u.status === 'Ativo' && String(u.created_at || '').slice(0, 10) <= fim && casaU(u));
-      const mensal = a => Array.from({ length: 12 }, (_, i) => new Set(linhas.filter(l => l.mes === `${a}-${String(i + 1).padStart(2, '0')}`).map(l => l.email)).size);
-      return { J, D, A, B, porEmail, base: base(J.fim), baseAnt: base(J.fimAnt), mensal: { [J.ano]: mensal(J.ano), [J.anoAnt]: mensal(J.anoAnt) },
+      // Acessos (login) por mês de cada ano e por ano — gráfico de linha (Mensal | Anual).
+      const logins = linhas.filter(l => l.tipo === 'login');
+      const mensal = a => Array.from({ length: 12 }, (_, i) => logins.filter(l => l.mes === `${a}-${String(i + 1).padStart(2, '0')}`).reduce((s, l) => s + l.qtd, 0));
+      const anual = logins.reduce((m, l) => m.set(l.mes.slice(0, 4), (m.get(l.mes.slice(0, 4)) || 0) + l.qtd), new Map());
+      return { J, D, A, B, porEmail, base: base(J.fim), baseAnt: base(J.fimAnt), mensal: { [J.ano]: mensal(J.ano), [J.anoAnt]: mensal(J.anoAnt) }, anual,
         local: termos.length ? `“${stkBuscaInput.value.trim()}”` : 'Plataforma', filtrado: !!termos.length };
     }
 
@@ -15721,13 +15728,22 @@ ${clipPlayerPills(n)}
       const kAdocao = cdKpiCard('percent', 'verde', 'Adoção', stkPct(ad, 1), cdDelta(ad, adAnt, true, !M.baseAnt.length), vs(M.baseAnt.length ? stkPct(adAnt, 1) : '—'),
         `Usuários ativos ÷ usuários com cadastro ativo (${N(M.base.length)}) · ${J.rotulo}`);
 
-      // ---- Evolução de usuários ativos (por mês, ano vs. ano anterior) ----
-      const V = { categorias: PAN_MES_CURTO.slice(0, J.nMeses), series: [
-        { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, J.nMeses) },
-        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, J.nMeses) }
-      ] };
+      // ---- Evolução dos acessos (login): Mensal = mês a mês, ano vs. ano anterior; Anual = total de cada ano ----
+      const anual = usoEvolVisao === 'anual';
+      const anosEv = [...M.anual.keys()].concat(String(J.ano)).filter((a, i, l) => l.indexOf(a) === i).sort();
+      const mesHoje = new Date().getMonth() + 1, anoHoje = String(new Date().getFullYear());
+      const V = anual
+        ? { categorias: anosEv.map(a => a === anoHoje && mesHoje < 12 ? `${a} (até ${PAN_MES_CURTO[mesHoje - 1]})` : a),
+            series: [{ nome: 'Acessos no ano', cor: CD_COR.azul, valores: anosEv.map(a => M.anual.get(a) || 0) }] }
+        : { categorias: PAN_MES_CURTO.slice(0, J.nMeses), series: [
+            { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, J.nMeses) },
+            { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, J.nMeses) }] };
       const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
-      const wEvol = cdCard('Evolução de usuários ativos', M.filtrado ? `${M.local} · usuários por mês` : 'Usuários com uso da plataforma por mês', '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+      const switchEvol = `<div class="cd-head-acoes"><div class="stk-segmented" id="usoEvolVisao" role="tablist" aria-label="Período do gráfico">
+          ${[['mensal', 'Mensal'], ['anual', 'Anual']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${usoEvolVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${usoEvolVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wEvol = cdCard('Evolução dos acessos', (anual ? 'Acessos (login) por ano' : `Acessos (login) por mês · ${J.ano} vs. ${anoAnt}`) + (M.filtrado ? ` · ${M.local}` : ''),
+        '<div id="stkFluxoGraf"></div>', legendaDots(V.series) + switchEvol);
 
       // ---- Navegação por seção ----
       const secs = [...A.secoes.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 7);
@@ -15807,9 +15823,10 @@ ${clipPlayerPills(n)}
               l.secao ? usoSecaoNome(l.secao) : '', l.tipo === 'painel' ? usoPainelNome(l.detalhe) : l.detalhe || '', l.qtd, l.dias]; })) };
     }
     stkGrid.addEventListener('click', ev => {
-      const btn = ev.target.closest('#usoRoscaVisao .stk-seg-btn');
-      if(!btn || btn.dataset.visao === usoRoscaVisao) return;
-      usoRoscaVisao = btn.dataset.visao;
+      const rosca = ev.target.closest('#usoRoscaVisao .stk-seg-btn'), evol = ev.target.closest('#usoEvolVisao .stk-seg-btn');
+      if(rosca && rosca.dataset.visao !== usoRoscaVisao) usoRoscaVisao = rosca.dataset.visao;
+      else if(evol && evol.dataset.visao !== usoEvolVisao) usoEvolVisao = evol.dataset.visao;
+      else return;
       if(usoUltimo && stkPainel() === 'uso') usoDesenhar(usoUltimo); else stkRender();
     });
 
