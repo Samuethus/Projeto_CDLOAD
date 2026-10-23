@@ -2329,7 +2329,13 @@
   .wa-btn.wa-btn-sm{padding:6px 12px;font-size:12px;}
   .wa-nf-itens-wrap{max-height:340px;overflow:auto;border:1px solid var(--wa-border);border-radius:10px;}
   .wa-nf-itens th{position:sticky;top:0;z-index:1;background:#F8FAFC;}
-  .wa-nf-itens td{padding:4px 6px;vertical-align:top;}
+  .wa-nf-itens td{padding:4px 6px;vertical-align:middle;}
+  /* Uma linha por produto: larguras fixas, sem quebra; o texto longo termina em "…" (completo na dica). */
+  .wa-nf-itens{table-layout:fixed;width:100%;min-width:980px;}
+  .wa-nf-itens th, .wa-nf-itens td.wa-nf-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wa-nf-itens th .wa-nf-ent-todos{max-width:100%;overflow:hidden;}
+  .wa-nf-itens th{font-size:10.5px;letter-spacing:.2px;padding:10px 6px;}
+  .wa-nf-itens th .wa-nf-ent-todos input{flex:0 0 auto;}
   .wa-nf-itens td.wa-nf-ord{padding-top:11px;color:var(--wa-text-muted);font-size:12px;}
   .wa-nf-itens input, .wa-nf-itens textarea{width:100%;min-width:0;border:1px solid transparent;border-radius:7px;padding:6px 7px;font-family:inherit;font-size:12.5px;color:var(--wa-text);background:transparent;}
   .wa-nf-itens textarea{resize:vertical;min-height:32px;line-height:1.35;}
@@ -2350,7 +2356,9 @@
   .wa-nf-ent-todos input{width:14px;height:14px;margin:0;accent-color:#16A34A;}
   .wa-nf-lancada{display:inline-block;padding:2px 7px;border-radius:9999px;background:#ECFDF5;color:#065F46;font-size:11px;font-weight:700;white-space:nowrap;}
   .wa-nf-itens tr.wa-nf-sub td{background:#F0FDF4;padding:6px 8px 9px;border-top:none;}
-  .wa-nf-prod{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#065F46;}
+  .wa-nf-prod{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;font-size:12px;color:#065F46;white-space:nowrap;min-width:0;}
+  .wa-nf-prod > *{flex:0 0 auto;}
+  .wa-nf-prod [data-resumo]{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}
   .wa-nf-prod b{font-weight:700;}
   .wa-nf-prod select{flex:1 1 260px;min-width:0;max-width:420px;border:1px solid var(--wa-border);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12.5px;color:var(--wa-text);background:#fff;}
   .wa-nf-prod select.falta{border-color:#EF4444;box-shadow:0 0 0 2px rgba(239,68,68,.15);}
@@ -5488,7 +5496,7 @@
              Grava nota + linhas juntas (estoque_nf_salvar, supabase/schema_estoque_nf_itens.sql); o PDF fica no
              bucket privado "notas_fiscais". As linhas não são ligadas a produtos: a Entrada escolhe a nota. -->
         <div class="wa-modal-overlay" id="waNfModal">
-          <div class="wa-modal wa-modal-lg" style="max-width:920px;">
+          <div class="wa-modal wa-modal-lg" style="max-width:1100px;">
             <div class="wa-modal-header">
               <div class="wa-modal-header-left">
                 <div class="wa-modal-icon">
@@ -5588,16 +5596,16 @@
                     <thead>
                       <tr>
                         <th style="width:36px;">#</th>
-                        <th style="width:124px;" title="Código de barras do produto na nota (GTIN/EAN)">Código EAN Comercial</th>
-                        <th>Descrição do produto</th>
-                        <th style="width:64px;">Un.</th>
-                        <th style="width:92px;text-align:right;">Qtd.</th>
-                        <th style="width:110px;text-align:right;">V. unitário</th>
-                        <th style="width:110px;text-align:right;">V. total</th>
-                        <th style="width:92px;text-align:center;" title="Produto já cadastrado no estoque (pelo Código EAN Comercial) ou marque para cadastrá-lo ao aprovar a nota">
+                        <th style="width:162px;" title="Código de barras do produto na nota (GTIN/EAN)">Código EAN Comercial</th>
+                        <th title="Descrição do produto">Descrição do produto</th>
+                        <th style="width:56px;">Un.</th>
+                        <th style="width:72px;text-align:right;">Qtd.</th>
+                        <th style="width:104px;text-align:right;">V. unitário</th>
+                        <th style="width:104px;text-align:right;">V. total</th>
+                        <th style="width:108px;text-align:center;" title="Produto já cadastrado no estoque (pelo Código EAN Comercial) ou marque para cadastrá-lo ao aprovar a nota">
                           <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfCadastrarTodos" aria-label="Marcar para cadastro todas as linhas sem produto no estoque"> Cadastro</label>
                         </th>
-                        <th style="width:78px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
+                        <th style="width:100px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
                           <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfLancarTodos" aria-label="Marcar todas as linhas para entrada"> Entrada</label>
                         </th>
                         <th style="width:76px;"></th>
@@ -11978,14 +11986,14 @@ ${clipPlayerPills(n)}
         <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
       const celulas = ed ? `
           <td><input data-k="ean" value="${stockEsc(it.ean || '')}" inputmode="numeric" aria-label="Código EAN Comercial da linha ${i + 1}"></td>
-          <td><textarea data-k="descricao" rows="1" aria-label="Descrição da linha ${i + 1}">${stockEsc(it.descricao || '')}</textarea></td>
+          <td><input data-k="descricao" value="${stockEsc(it.descricao || '')}" title="${stockEsc(it.descricao || '')}" aria-label="Descrição da linha ${i + 1}"></td>
           <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}"></td>
           <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}"></td>
           <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}"></td>
           <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}"></td>` : `
-          <td class="wa-nf-txt"${it.codigo ? ` title="Código do produto no fornecedor: ${stockEsc(it.codigo)}"` : ''}>${stockEsc(it.ean || '—')}</td>
-          <td class="wa-nf-txt">${stockEsc(it.descricao || '(sem descrição)')}</td>
-          <td class="wa-nf-txt">${stockEsc(it.unidade || '—')}</td>
+          <td class="wa-nf-txt" title="${stockEsc((it.ean ? 'EAN ' + it.ean : 'Sem código EAN') + (it.codigo ? ' · código do produto no fornecedor: ' + it.codigo : ''))}">${stockEsc(it.ean || '—')}</td>
+          <td class="wa-nf-txt" title="${stockEsc(it.descricao || '')}">${stockEsc(it.descricao || '(sem descrição)')}</td>
+          <td class="wa-nf-txt" title="${stockEsc(it.unidade || '')}">${stockEsc(it.unidade || '—')}</td>
           <td class="wa-nf-txt num">${it.quantidade == null ? '—' : fmtQty(it.quantidade)}</td>
           <td class="wa-nf-txt num">${fmtValorNf(it.valor_unitario)}</td>
           <td class="wa-nf-txt num">${fmtValorNf(it.valor_total)}</td>`;
@@ -12012,8 +12020,6 @@ ${clipPlayerPills(n)}
       waNfItemAdd.hidden = nfSomenteLeitura;
       waNfItensBody.innerHTML = nfItens.length ? nfItens.map(nfLinha).join('')
         : `<tr class="wa-empty-row"><td colspan="10">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
-      // A descrição longa abre na altura do texto.
-      waNfItensBody.querySelectorAll('textarea').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
       nfTotaisRender();
       nfAprovarTexto();
     }
@@ -12034,7 +12040,6 @@ ${clipPlayerPills(n)}
       } else {
         it[k] = el.value;
       }
-      if(el.tagName === 'TEXTAREA'){ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
       tr.classList.toggle('wa-nf-item-erro', nfItemErro(it));
       nfTotaisRender();
     });
@@ -12064,7 +12069,7 @@ ${clipPlayerPills(n)}
         const i = Number(ed.dataset.edit);
         if(nfEditando.has(i)) nfEditando.delete(i); else nfEditando.add(i);
         nfItensRender();
-        if(nfEditando.has(i)){ const f = waNfItensBody.querySelector(`tr[data-i="${i}"] textarea`); if(f) f.focus(); }
+        if(nfEditando.has(i)){ const f = waNfItensBody.querySelector(`tr[data-i="${i}"] [data-k="descricao"]`); if(f) f.focus(); }
         return;
       }
       const b = e.target.closest('[data-rm]');
@@ -12090,7 +12095,7 @@ ${clipPlayerPills(n)}
       nfItens.push({ codigo: '', ean: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null, produto_id: '', lancar: false, movimentacao_id: null });
       nfEditando.add(nfItens.length - 1);   // linha nova já abre em edição
       nfItensRender();
-      const ult = waNfItensBody.querySelector(`tr[data-i="${nfItens.length - 1}"] textarea`);
+      const ult = waNfItensBody.querySelector(`tr[data-i="${nfItens.length - 1}"] [data-k="descricao"]`);
       if(ult) ult.focus();
     });
     waNfAprovar.addEventListener('change', () => nfEtapaRender());
