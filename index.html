@@ -11437,8 +11437,8 @@ ${clipPlayerPills(n)}
       linhas.sort((a, b) => b.y - a.y);
       return { itens, linhas };
     }
-    // Valor de um campo do DANFE: fica abaixo do rótulo (na mesma coluna) ou à direita dele.
-    function nfValorPerto(paginas, rotulo, padrao){
+    // Valor de um campo: fica abaixo do rótulo (na mesma coluna) ou à direita dele (soAbaixo: só abaixo).
+    function nfValorPerto(paginas, rotulo, padrao, soAbaixo){
       for(const pg of paginas){
         for(let i = 0; i < pg.linhas.length; i++){
           const l = pg.linhas[i];
@@ -11454,7 +11454,7 @@ ${clipPlayerPills(n)}
           for(let k = i; k <= Math.min(i + 3, pg.linhas.length - 1); k++){
             for(const x of pg.linhas[k].itens){
               const m = x.s.match(padrao);
-              if(!m || (k === i && x.x < rFim - 1)) continue;   // na mesma linha, só à direita do rótulo
+              if(!m || (k === i && (soAbaixo || x.x < rFim - 1))) continue;   // na mesma linha, só à direita do rótulo
               const nota = (k - i) * 60 + Math.abs(x.x - rx);
               if(!melhor || nota < melhor.nota) melhor = { nota, v: m[1] || m[0] };
             }
@@ -11471,7 +11471,9 @@ ${clipPlayerPills(n)}
       // Chave de acesso: grupos de 4 dígitos em ordem de leitura (a chave pode quebrar em duas linhas);
       // vale a sequência de 44 dígitos de modelo 55/65 com o dígito verificador correto.
       const grupos = paginas.flatMap(p => p.linhas.flatMap(l => l.itens.map(i => i.s))).filter(s => /^\d{4}(?:[ .]?\d{4})*$/.test(s)).join('').replace(/\D/g, '');
-      const fontes = [grupos].concat([...corrido.matchAll(/\d{4}(?:[ .]?\d{4}){10}/g)].map(m => m[0].replace(/\D/g, '')));
+      // A consulta do portal da NF-e separa a chave em grupos irregulares ("51 2610 0605... 3"): vale
+      // também qualquer sequência de 44+ dígitos separados só por espaço ou ponto.
+      const fontes = [grupos].concat([...corrido.matchAll(/\d(?:[ .]?\d){43,}/g)].map(m => m[0].replace(/\D/g, '')));
       for(const d of fontes){
         for(let i = 0; i + 44 <= d.length && !c.chave_acesso; i++){
           const k = d.slice(i, i + 44);
@@ -11496,11 +11498,20 @@ ${clipPlayerPills(n)}
         const prox = i >= 0 ? linhas.slice(i + 1, i + 4).find(l => /[A-Za-zÀ-ú]{3}/.test(l) && !/DANFE|DOCUMENTO\s+AUXILIAR/i.test(l)) : null;
         if(prox) c.fornecedor = prox.replace(/\s+/g, ' ').trim();
       }
+      // Consulta do portal: quadro "Emitente" com "Nome / Razão Social" em cima e o nome embaixo
+      // (só depois do título Emitente, para não pegar o do Destinatário).
+      if(!c.fornecedor){
+        const todas = paginas.flatMap(p => p.linhas);
+        const ie = todas.findIndex(l => /^\s*(DADOS\s+DO\s+)?EMITENTE\s*$/i.test(l.texto));
+        const v = ie >= 0 ? nfValorPerto([{ linhas: todas.slice(ie, ie + 12) }], /NOME\s*\/\s*RAZ[ÃA]O\s+SOCIAL/i, /^(?=.*[A-Za-zÀ-ú]{3})(.{3,120})$/, true) : null;
+        if(v) c.fornecedor = v.replace(/\s+/g, ' ').trim();
+      }
       const data = nfValorPerto(paginas, /DATA\s+D[AE]\s+EMISS/i, /(\d{2}\/\d{2}\/\d{4})/)
         || (corrido.match(/EMISS[ÃA]O\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1];
       if(data){ const [d, m, a] = data.split('/'); c.data_emissao = `${a}-${m}-${d}`; }
-      const total = nfValorPerto(paginas, /V(?:ALOR|\.)\s*TOTAL\s+DA\s+NOTA/i, /^(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})$/)
-        || (corrido.match(/VALOR\s+TOTAL\s+DA\s+NOTA\D{0,20}(\d{1,3}(?:\.\d{3})*,\d{2})/i) || [])[1];
+      // Valor com 2 a 4 casas (o portal mostra "824,190"). Rótulos: DANFE ("VALOR TOTAL DA NOTA") e portal ("Valor Total da Nota Fiscal" / "Valor Total da NFe").
+      const total = nfValorPerto(paginas, /V(?:ALOR|\.)\s*TOTAL\s+DA\s+N(?:OTA|F-?E)/i, /^(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2,4})$/)
+        || (corrido.match(/VALOR\s+TOTAL\s+DA\s+NOTA\D{0,20}(\d{1,3}(?:\.\d{3})*,\d{2,4})/i) || [])[1];
       if(total != null) c.valor_total = nfNumBR(total);
       return c;
     }
@@ -11588,9 +11599,37 @@ ${clipPlayerPills(n)}
     }
     // Reserva: linha corrida "código descrição NCM CST CFOP UN qtd v.unit v.total" (DANFE sem cabeçalho legível).
     const NF_LINHA_ITEM = /^(\S+)\s+(.+?)\s+(\d{8})\s+(\d{2,4})\s+(\d\.?\d{3})\s+([A-Za-zÀ-ú]{1,6}\.?\d*)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/;
+    // Consulta do portal da NF-e (nfe.fazenda.gov.br): cada produto é uma linha "nº descrição qtd unidade valor"
+    // seguida do quadro de detalhes (rótulo em cima, valor embaixo) com código, NCM, CFOP e valor unitário.
+    // O valor da linha é o do produto (vProd), antes do desconto do item.
+    const NF_PORTAL_ITEM = /^(\d{1,3})\s+(.+?)\s+(\d{1,3}(?:\.\d{3})*,\d{2,4})\s+([A-Za-zÀ-ú]{1,6}\d{0,2})\s+(\d{1,3}(?:\.\d{3})*,\d{2,4})$/;
+    function nfLerItensPortal(paginas){
+      const linhas = paginas.flatMap(p => p.linhas);
+      const ini = linhas.findIndex(l => /DADOS\s+DOS\s+PRODUTOS\s+E\s+SERVI/i.test(l.texto));
+      if(ini < 0) return [];
+      let fim = linhas.findIndex((l, i) => i > ini && /^\s*TOTAIS\s*$/i.test(l.texto));
+      if(fim < 0) fim = linhas.length;
+      const marcas = [];
+      for(let i = ini + 1; i < fim; i++){ const m = linhas[i].texto.match(NF_PORTAL_ITEM); if(m) marcas.push({ i, m }); }
+      return marcas.map((mk, k) => {
+        const bloco = [{ linhas: linhas.slice(mk.i + 1, k + 1 < marcas.length ? marcas[k + 1].i : fim) }];
+        const m = mk.m, vu = nfNumBR(nfValorPerto(bloco, /VALOR\s+UNIT[ÁA]RIO\s+DE\s+COMERCIALIZA/i, /^(\d{1,3}(?:\.\d{3})*,\d+)$/, true));
+        return {
+          codigo: nfValorPerto(bloco, /C[ÓO]DIGO\s+DO\s+PRODUTO/i, /^([\w.\-\/]{1,30})$/, true) || '',
+          descricao: m[2],
+          ncm: nfValorPerto(bloco, /C[ÓO]DIGO\s+NCM/i, /^(\d{8})$/, true) || '',
+          cfop: nfValorPerto(bloco, /\bCFOP\b/i, /^(\d{4})$/, true) || '',
+          unidade: m[4],
+          quantidade: nfNumBR(m[3]),
+          valor_unitario: vu != null ? Math.round(vu * 10000) / 10000 : null,
+          valor_total: nfNumBR(m[5])
+        };
+      });
+    }
     function nfLerItens(paginas){
       let itens = [];
       paginas.forEach(pg => { const lidos = nfLerItensPagina(pg); if(lidos) itens = itens.concat(lidos); });
+      if(!itens.length) itens = nfLerItensPortal(paginas);
       if(!itens.length){
         paginas.forEach(pg => pg.linhas.forEach(l => {
           const m = l.texto.match(NF_LINHA_ITEM);
