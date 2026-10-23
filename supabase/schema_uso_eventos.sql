@@ -10,6 +10,9 @@
 --                  em lotes, com o e-mail de quem está logado.
 --   uso_resumo() → totais por mês, usuário, tipo e seção (com os dias ativos
 --                  do usuário no mês) para o painel. Não devolve eventos soltos.
+--   registrar_acesso() → passa a gravar o "Último acesso" da seção Usuários
+--                  e o evento de login do painel juntos (mesmo instante), e o
+--                  último acesso já existente vira histórico de login.
 --
 -- Acesso: cada usuário só grava os próprios eventos. Os eventos brutos só o
 -- Administrador lê. O resumo responde ao Administrador e a quem tem o painel
@@ -79,8 +82,55 @@ $$;
 revoke all on function public.uso_resumo(date, date) from public, anon;
 grant execute on function public.uso_resumo(date, date) to authenticated;
 
+-- ---------------------------------------------------------------------
+-- Integração com Usuários › Último acesso: uma entrada na plataforma é
+-- gravada uma vez só, no mesmo instante, nos dois lugares — a coluna
+-- usuarios.ultimo_acesso (seção Usuários) e o evento 'login' (painel).
+-- registrar_acesso() é a mesma função que o app já chama ao entrar.
+-- ---------------------------------------------------------------------
+create or replace function public.registrar_acesso()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
+  v_agora timestamptz := now();
+begin
+  update public.usuarios u
+     set ultimo_acesso = v_agora
+    from auth.users a
+   where a.id = auth.uid()
+     and a.email_confirmed_at is not null
+     and lower(a.email) = lower(u.email)
+     and u.status = 'Ativo'
+  returning lower(u.email) into v_email;
+  if v_email is not null then
+    insert into public.uso_eventos (criado_em, usuario_email, tipo) values (v_agora, v_email, 'login');
+  end if;
+end;
+$$;
+
+revoke all on function public.registrar_acesso() from public, anon;
+grant execute on function public.registrar_acesso() to authenticated;
+
+-- Histórico: o último acesso já gravado em Usuários vira o evento de login
+-- correspondente (uma vez só — rodar de novo não duplica).
+insert into public.uso_eventos (criado_em, usuario_email, tipo, detalhe)
+select u.ultimo_acesso, lower(u.email), 'login', 'ultimo_acesso'
+  from public.usuarios u
+ where u.ultimo_acesso is not null
+   and not exists (select 1 from public.uso_eventos e
+                    where e.tipo = 'login' and lower(e.usuario_email) = lower(u.email) and e.criado_em = u.ultimo_acesso);
+
 notify pgrst, 'reload schema';
 
--- Conferência: as 2 regras de acesso e a função.
+-- Conferência: as 2 regras de acesso, as funções e, por usuário, o último
+-- acesso da seção Usuários ao lado do último login do painel (devem ser iguais).
 select policyname, cmd from pg_policies where schemaname = 'public' and tablename = 'uso_eventos' order by cmd;
-select proname from pg_proc where proname = 'uso_resumo';
+select proname from pg_proc where proname in ('uso_resumo', 'registrar_acesso') order by proname;
+select u.nome, u.ultimo_acesso as ultimo_acesso_usuarios,
+       (select max(e.criado_em) from public.uso_eventos e where e.tipo = 'login' and lower(e.usuario_email) = lower(u.email)) as ultimo_login_painel
+  from public.usuarios u
+ order by u.ultimo_acesso desc nulls last;
