@@ -70,6 +70,10 @@ comment on column public.notas_fiscais_itens.movimentacao_id is 'Entrada lançad
 -- `codigo` continua guardando o código do produto no fornecedor.
 alter table public.notas_fiscais_itens add column if not exists ean text;
 comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN) do produto na nota.';
+-- Coluna "Cadastro" da etapa 3: produto que não existia no estoque (nenhum código de barras igual ao EAN)
+-- e foi cadastrado pela linha ao aprovar a nota.
+alter table public.notas_fiscais_itens add column if not exists cadastro_pela_nota boolean not null default false;
+comment on column public.notas_fiscais_itens.cadastro_pela_nota is 'Produto cadastrado no estoque por esta linha (coluna Cadastro da etapa 3).';
 
 -- ---------------------------------------------------------------------
 -- Grava a nota e as linhas numa única transação (aprovação da etapa 3).
@@ -77,7 +81,11 @@ comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN
 --   p_nota  campos da nota (arquivo_* só são trocados quando vêm no JSON)
 --   p_itens [{ ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade,
 --             valor_unitario, valor_total, produto_id, lancar_entrada,
---             movimentacao_id, setor }]
+--             movimentacao_id, setor, cadastrar_produto, unidade_cadastro,
+--             cadastro_pela_nota }]
+-- Linha com cadastrar_produto e EAN: se nenhum produto tem esse código de
+-- barras, cadastra o produto (EAN, descrição, unidade_cadastro e preço da
+-- linha); se já existe, usa o existente. A entrada da linha vai para ele.
 -- Linha com lancar_entrada e ainda sem movimentacao_id vira uma ENTRADA no
 -- estoque (produto_id, quantidade da linha, preço = valor unitário da linha,
 -- vinculada à nota), lançada agora — na data do cadastro da nota. O preço
@@ -90,9 +98,11 @@ comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN
 create or replace function public.estoque_nf_salvar(p_id uuid, p_nota jsonb, p_itens jsonb)
 returns uuid language plpgsql as $$
 declare
-  v_id  uuid;
-  v_mov uuid;
-  x     record;
+  v_id   uuid;
+  v_mov  uuid;
+  v_prod uuid;
+  v_cad  boolean;
+  x      record;
 begin
   if p_id is null then
     insert into public.notas_fiscais (numero, serie, chave_acesso, fornecedor, fornecedor_cnpj, data_emissao, valor_total, observacao,
@@ -130,28 +140,42 @@ begin
   for x in select *
              from jsonb_to_recordset(coalesce(p_itens, '[]'::jsonb))
                   as r(ordem int, codigo text, ean text, descricao text, ncm text, cfop text, unidade text, quantidade numeric, valor_unitario numeric,
-                       valor_total numeric, produto_id uuid, lancar_entrada boolean, movimentacao_id uuid, setor text)
+                       valor_total numeric, produto_id uuid, lancar_entrada boolean, movimentacao_id uuid, setor text,
+                       cadastrar_produto boolean, unidade_cadastro text, cadastro_pela_nota boolean)
             where nullif(btrim(r.descricao), '') is not null
   loop
-    v_mov := x.movimentacao_id;
+    v_mov  := x.movimentacao_id;
+    v_prod := x.produto_id;
+    v_cad  := coalesce(x.cadastro_pela_nota, false);
+    -- Cadastro pela nota: o produto com este EAN (já existente ou cadastrado agora).
+    if coalesce(x.cadastrar_produto, false) and nullif(btrim(x.ean), '') is not null then
+      select id into v_prod from public.cadastro_de_produtos where codigo_barras = btrim(x.ean);
+      if v_prod is null then
+        insert into public.cadastro_de_produtos (codigo_barras, nome, unidade, estoque_minimo, preco_custo, descricao, ativo)
+        values (btrim(x.ean), btrim(x.descricao), coalesce(nullif(btrim(x.unidade_cadastro), ''), 'UN'), 0, round(x.valor_unitario, 2),
+                left(format('Cadastrado pela NF %s (%s)', p_nota->>'numero', p_nota->>'fornecedor'), 300), true)
+        returning id into v_prod;
+        v_cad := true;
+      end if;
+    end if;
     if v_mov is null and coalesce(x.lancar_entrada, false) then
-      if x.produto_id is null then
+      if v_prod is null then
         raise exception 'Linha % (%): escolha o produto do estoque para lançar a entrada.', x.ordem, btrim(x.descricao) using errcode = 'check_violation';
       end if;
       if coalesce(x.quantidade, 0) <= 0 then
         raise exception 'Linha % (%): a quantidade da entrada precisa ser maior que zero.', x.ordem, btrim(x.descricao) using errcode = 'check_violation';
       end if;
       insert into public.movimentacoes_estoque (produto_id, tipo, setor, quantidade, preco_unitario, nota_fiscal_id, observacao, usuario_email)
-      values (x.produto_id, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), x.quantidade, x.valor_unitario, v_id,
+      values (v_prod, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), x.quantidade, x.valor_unitario, v_id,
               left(format('Entrada automática · NF %s · linha %s: %s', p_nota->>'numero', x.ordem, btrim(x.descricao)), 300),
               auth.jwt() ->> 'email')
       returning id into v_mov;
     end if;
     insert into public.notas_fiscais_itens (nota_id, ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
-                                            produto_id, entrada_aprovada, movimentacao_id)
+                                            produto_id, entrada_aprovada, movimentacao_id, cadastro_pela_nota)
     values (v_id, coalesce(x.ordem, 0), nullif(btrim(x.codigo), ''), nullif(btrim(x.ean), ''), btrim(x.descricao), nullif(btrim(x.ncm), ''), nullif(btrim(x.cfop), ''),
             nullif(btrim(x.unidade), ''), x.quantidade, x.valor_unitario, x.valor_total,
-            x.produto_id, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov);
+            v_prod, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov, v_cad);
   end loop;
 
   return v_id;

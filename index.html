@@ -5594,6 +5594,9 @@
                         <th style="width:92px;text-align:right;">Qtd.</th>
                         <th style="width:110px;text-align:right;">V. unitário</th>
                         <th style="width:110px;text-align:right;">V. total</th>
+                        <th style="width:92px;text-align:center;" title="Produto já cadastrado no estoque (pelo Código EAN Comercial) ou marque para cadastrá-lo ao aprovar a nota">
+                          <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfCadastrarTodos" aria-label="Marcar para cadastro todas as linhas sem produto no estoque"> Cadastro</label>
+                        </th>
                         <th style="width:78px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
                           <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfLancarTodos" aria-label="Marcar todas as linhas para entrada"> Entrada</label>
                         </th>
@@ -11874,6 +11877,21 @@ ${clipPlayerPills(n)}
     const fmtValorNf = v => v == null || v === '' ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
     const nfLancaveis = () => nfItens.filter(it => !it.movimentacao_id);
     const nfNovasEntradas = () => nfItens.filter(it => it.lancar && !it.movimentacao_id);
+    // Coluna Cadastro: o produto já existe no estoque quando um código de barras é igual ao Código EAN Comercial
+    // da linha; senão a linha pode ser marcada para cadastrar o produto ao aprovar a nota (EAN, descrição,
+    // unidade e preço da linha). Linha marcada também para Entrada lança a entrada no produto novo.
+    const waNfCadastrarTodos = document.getElementById('waNfCadastrarTodos');
+    const nfEanDe = it => nfDigitos(it.ean);
+    const nfProdutoPorEan = it => { const e = nfEanDe(it); return e ? stockProducts.find(p => p.codigo_barras === e) || null : null; };
+    const nfPodeCadastrar = it => !!nfEanDe(it) && !nfProdutoPorEan(it) && !it.movimentacao_id;
+    const nfVaiCadastrar = it => !!it.cadastrar && nfPodeCadastrar(it);
+    const nfNovosCadastros = () => nfItens.filter(nfVaiCadastrar);
+    // Unidade da nota ("UN1", "PCT", "LT") → unidade do cadastro de produto; sem correspondência, UN.
+    function nfUnidadeCadastro(u){
+      const s = String(u || '').toUpperCase().replace(/[^A-Z]/g, '');
+      const mapa = { PCT: 'PC', PACOTE: 'PC', CAIXA: 'CX', LT: 'L', LITRO: 'L', MT: 'M', PR: 'PAR' };
+      return ['UN', 'CX', 'PC', 'KG', 'L', 'M', 'PAR'].includes(s) ? s : mapa[s] || 'UN';
+    }
     // Produto do estoque para a linha: mesmo código de barras ou, sem ele, o nome com mais palavras em comum.
     function nfSugerirProduto(it){
       const ativos = stockProducts.filter(p => p.ativo);
@@ -11894,24 +11912,38 @@ ${clipPlayerPills(n)}
     }
     function nfMarcarLancar(it, sim){
       it.lancar = sim;
-      if(sim && !it.produto_id){ it.produto_id = nfSugerirProduto(it); it.produtoSugerido = !!it.produto_id; }
+      // Produto que será cadastrado pela linha: a entrada vai para ele (nada a sugerir).
+      if(sim && !it.produto_id && !nfVaiCadastrar(it)){ it.produto_id = nfSugerirProduto(it); it.produtoSugerido = !!it.produto_id; }
+    }
+    function nfMarcarCadastrar(it, sim){
+      it.cadastrar = sim && nfPodeCadastrar(it);
+      // Cadastrando, a entrada da linha vai para o produto novo; desmarcando, volta a sugerir um existente.
+      if(it.cadastrar){ it.produto_id = ''; it.produtoSugerido = false; }
+      else if(it.lancar && !it.produto_id){ it.produto_id = nfSugerirProduto(it); it.produtoSugerido = !!it.produto_id; }
     }
     // Linha de baixo (verde) da linha marcada: o produto do estoque e o que será lançado.
     function nfSubLinha(it, i){
       const p = stockProducts.find(x => x.id === it.produto_id);
       const destino = STOCK_SETORES[0];
       if(nfSomenteLeitura || it.movimentacao_id){
-        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="8"><div class="wa-nf-prod">
+        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
           ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}</div></td></tr>`;
+      }
+      const q = Number(it.quantidade) || 0;
+      const resumo = q > 0 ? `→ entrada de ${fmtQty(q)} ${stockEsc(p ? p.unidade : nfUnidadeCadastro(it.unidade))} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha';
+      if(nfVaiCadastrar(it)){
+        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
+          <b>Produto do estoque:</b> ${stockEsc(String(it.descricao || '').toLocaleUpperCase('pt-BR'))}
+          <span class="wa-nf-sug" title="O produto não existe no estoque: é cadastrado ao aprovar a nota">novo · EAN ${stockEsc(nfEanDe(it))}</span>
+          <span data-resumo>${resumo}</span></div></td></tr>`;
       }
       const opcoes = stockProducts.filter(x => x.ativo || x.id === it.produto_id).slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
         .map(x => `<option value="${x.id}" ${x.id === it.produto_id ? 'selected' : ''}>${stockEsc(x.nome)} · ${stockEsc(x.codigo_barras)} · ${stockEsc(x.unidade)}</option>`).join('');
-      const q = Number(it.quantidade) || 0;
-      return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="8"><div class="wa-nf-prod">
+      return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="9"><div class="wa-nf-prod">
         <b>Produto do estoque:</b>
         <select data-prod aria-label="Produto do estoque da linha ${i + 1}" class="${it.produto_id ? '' : 'falta'}"><option value="">Escolha o produto…</option>${opcoes}</select>
         ${it.produtoSugerido && it.produto_id ? '<span class="wa-nf-sug" title="Escolhido pelo código ou pela descrição da linha; confira">sugerido</span>' : ''}
-        <span data-resumo>${q > 0 ? `→ entrada de ${fmtQty(q)}${p ? ' ' + stockEsc(p.unidade) : ''} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha'}</span>
+        <span data-resumo>${resumo}</span>
       </div></td></tr>`;
     }
     function nfLinha(it, i){
@@ -11920,6 +11952,12 @@ ${clipPlayerPills(n)}
       const ent = it.movimentacao_id ? '<span class="wa-nf-lancada" title="A entrada desta linha já foi lançada no estoque">Lançada</span>'
         : nfSomenteLeitura ? (it.lancar ? '<span class="wa-nf-lancada">Sim</span>' : '—')
         : `<input type="checkbox" data-lancar ${it.lancar ? 'checked' : ''} aria-label="Lançar a linha ${i + 1} como entrada no estoque">`;
+      const pEan = nfProdutoPorEan(it);
+      const cad = pEan ? `<span class="wa-nf-lancada" title="Já cadastrado: ${stockEsc(pEan.nome)} (${stockEsc(pEan.codigo_barras)})">Cadastrado</span>`
+        : it.cadastro_pela_nota ? '<span class="wa-nf-lancada" title="Produto cadastrado por esta nota">Cadastrado</span>'
+        : !nfEanDe(it) ? '<span class="wa-empty-hint" title="Sem Código EAN Comercial: informe o EAN na edição da linha para cadastrar o produto">Sem EAN</span>'
+        : nfSomenteLeitura || it.movimentacao_id ? '—'
+        : `<input type="checkbox" data-cadastrar ${it.cadastrar ? 'checked' : ''} title="Produto não cadastrado: marque para cadastrar ao aprovar a nota" aria-label="Cadastrar o produto da linha ${i + 1} no estoque">`;
       const acoes = nfSomenteLeitura ? '' : `
         <button type="button" class="wa-icon-btn" data-edit="${i}" title="${ed ? 'Concluir a edição da linha' : 'Editar a linha'}">${ed ? ICON_OK : ICON_EDIT}</button>
         <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
@@ -11938,23 +11976,27 @@ ${clipPlayerPills(n)}
           <td class="wa-nf-txt num">${fmtValorNf(it.valor_total)}</td>`;
       return `<tr data-i="${i}" class="${ed ? 'wa-nf-editando' : ''}${erro}">
           <td class="wa-nf-ord">${i + 1}</td>${celulas}
+          <td class="wa-nf-ent">${cad}</td>
           <td class="wa-nf-ent">${ent}</td>
           <td class="wa-nf-acoes">${acoes}</td>
         </tr>` + (it.lancar || it.movimentacao_id ? nfSubLinha(it, i) : '');
     }
     function nfAprovarTexto(){
-      const n = nfNovasEntradas().length;
-      waNfAprovarTxt.textContent = 'Conferi os dados da nota e as linhas dos produtos.'
-        + (n ? ` Ao aprovar, ${n} linha${n === 1 ? ' entra' : 's entram'} no estoque automaticamente.` : '');
-      const livres = nfLancaveis();
-      waNfLancarTodos.disabled = nfSomenteLeitura || !livres.length;
-      waNfLancarTodos.checked = livres.length > 0 && livres.every(it => it.lancar);
-      waNfLancarTodos.indeterminate = !waNfLancarTodos.checked && livres.some(it => it.lancar);
+      const n = nfNovasEntradas().length, c = nfNovosCadastros().length;
+      const partes = [c ? `${c} produto${c === 1 ? ' novo é cadastrado' : 's novos são cadastrados'}` : '', n ? `${n} linha${n === 1 ? ' entra' : 's entram'} no estoque automaticamente` : ''].filter(Boolean);
+      waNfAprovarTxt.textContent = 'Conferi os dados da nota e as linhas dos produtos.' + (partes.length ? ` Ao aprovar, ${partes.join(' e ')}.` : '');
+      const caixaTodos = (caixa, lista, marcado) => {
+        caixa.disabled = nfSomenteLeitura || !lista.length;
+        caixa.checked = lista.length > 0 && lista.every(marcado);
+        caixa.indeterminate = !caixa.checked && lista.some(marcado);
+      };
+      caixaTodos(waNfLancarTodos, nfLancaveis(), it => it.lancar);
+      caixaTodos(waNfCadastrarTodos, nfItens.filter(nfPodeCadastrar), it => it.cadastrar);
     }
     function nfItensRender(){
       waNfItemAdd.hidden = nfSomenteLeitura;
       waNfItensBody.innerHTML = nfItens.length ? nfItens.map(nfLinha).join('')
-        : `<tr class="wa-empty-row"><td colspan="9">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
+        : `<tr class="wa-empty-row"><td colspan="10">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
       // A descrição longa abre na altura do texto.
       waNfItensBody.querySelectorAll('textarea').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
       nfTotaisRender();
@@ -11988,6 +12030,13 @@ ${clipPlayerPills(n)}
       if(e.target.matches('[data-lancar]')){
         nfMarcarLancar(it, e.target.checked);
         nfItensRender();
+      } else if(e.target.matches('[data-cadastrar]')){
+        nfMarcarCadastrar(it, e.target.checked);
+        nfItensRender();
+      } else if(e.target.matches('[data-k="ean"]')){
+        // EAN editado: refaz a conferência do cadastro (a linha continua em edição).
+        if(!nfPodeCadastrar(it)) it.cadastrar = false;
+        nfItensRender();
       } else if(e.target.matches('[data-prod]')){
         it.produto_id = e.target.value;
         it.produtoSugerido = false;
@@ -12016,6 +12065,10 @@ ${clipPlayerPills(n)}
     });
     waNfLancarTodos.addEventListener('change', () => {
       nfLancaveis().forEach(it => nfMarcarLancar(it, waNfLancarTodos.checked));
+      nfItensRender();
+    });
+    waNfCadastrarTodos.addEventListener('change', () => {
+      nfItens.filter(nfPodeCadastrar).forEach(it => nfMarcarCadastrar(it, waNfCadastrarTodos.checked));
       nfItensRender();
     });
     waNfItemAdd.addEventListener('click', () => {
@@ -12089,7 +12142,8 @@ ${clipPlayerPills(n)}
         codigo: it.codigo || '', ean: it.ean || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
         quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
         valor_total: it.valor_total == null ? null : Number(it.valor_total),
-        produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada) })) : [];
+        produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada),
+        cadastrar: false, cadastro_pela_nota: !!it.cadastro_pela_nota })) : [];
       nfEditando.clear();
       waNfLidoHint.hidden = true;
       nfLeituraMsg(null);
@@ -12151,7 +12205,7 @@ ${clipPlayerPills(n)}
       const semDescricao = nfItens.findIndex(it => nfItemErro(it) && (it.quantidade != null || it.valor_total != null || String(it.codigo || '').trim()));
       if(semDescricao >= 0){ alert(`A linha ${semDescricao + 1} está sem descrição do produto. Preencha ou remova a linha.`); return; }
       // Entrada automática: cada linha marcada (e ainda não lançada) precisa do produto do estoque e de quantidade.
-      const semProduto = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !it.produto_id);
+      const semProduto = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !it.produto_id && !nfVaiCadastrar(it));
       if(semProduto >= 0){ alert(`A linha ${semProduto + 1} está marcada para entrada: escolha o produto do estoque (ou desmarque a coluna Entrada).`); nfItensRender(); return; }
       const semQtd = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !(Number(it.quantidade) > 0));
       if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
@@ -12159,10 +12213,12 @@ ${clipPlayerPills(n)}
         ordem: i + 1, codigo: String(it.codigo || '').trim() || null, ean: nfDigitos(it.ean) || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
         ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidade || '').trim() || null,
         quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total,
-        produto_id: it.produto_id || null, lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0] }));
+        produto_id: nfVaiCadastrar(it) ? null : (it.produto_id || null), lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0],
+        cadastrar_produto: nfVaiCadastrar(it), unidade_cadastro: nfUnidadeCadastro(it.unidade), cadastro_pela_nota: !!it.cadastro_pela_nota }));
       if(itens.some(it => [it.quantidade, it.valor_unitario, it.valor_total].some(v => v != null && !(v >= 0)))){ alert('Quantidade e valores das linhas não podem ser negativos.'); return; }
       if(!itens.length && !confirm('A nota está sem linhas de produto. Aprovar mesmo assim?')) return;
       const novasEntradas = itens.filter(it => it.lancar_entrada && !it.movimentacao_id).length;
+      const novosCadastros = itens.filter(it => it.cadastrar_produto).length;
 
       const antiga = nfDe(editingNfId);
       const vincular = nfVincularEntrada;
@@ -12183,6 +12239,18 @@ ${clipPlayerPills(n)}
             { aprovada_em: agora, aprovada_por: currentUserEmail() });
           // Mesma regra do banco (estoque_nf_salvar): a linha marcada vira entrada com o preço da linha.
           salva.itens = itens.map((it, k) => {
+            // Cadastro pela nota: produto com o EAN, a descrição, a unidade e o preço da linha.
+            if(it.cadastrar_produto){
+              let novo = stockProducts.find(x => x.codigo_barras === it.ean);
+              if(!novo){
+                novo = { id: 'p' + Date.now() + '-' + k, codigo_barras: it.ean, nome: it.descricao.toLocaleUpperCase('pt-BR'), unidade: it.unidade_cadastro,
+                  estoque_minimo: 0, preco_custo: it.valor_unitario != null ? Math.round(it.valor_unitario * 100) / 100 : null, preco_atualizado_em: agora,
+                  descricao: `Cadastrado pela NF ${salva.numero} (${salva.fornecedor})`, ativo: true, created_at: agora };
+                stockProducts.push(novo);
+                it = Object.assign({}, it, { cadastro_pela_nota: true });
+              }
+              it = Object.assign({}, it, { produto_id: novo.id });
+            }
             if(!it.lancar_entrada || it.movimentacao_id) return it;
             const p = stockProducts.find(x => x.id === it.produto_id);
             const preco = it.valor_unitario != null ? it.valor_unitario : (p ? p.preco_custo : null);
@@ -12207,9 +12275,10 @@ ${clipPlayerPills(n)}
         nfGuardarLocal(salva);
         waCloseNfModal();
         // Entradas lançadas: recarrega saldos, preços e movimentações (a nota volta junto).
-        if(novasEntradas) await loadStock(); else renderStock();
+        if(novasEntradas || novosCadastros) await loadStock(); else renderStock();
         if(vincular && waMovNfField && !waMovNfField.hidden) nfSelecionar(salva.id);
         showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'} com ${itens.length} linha${itens.length === 1 ? '' : 's'} de produto`
+          + (novosCadastros ? ` · ${novosCadastros} produto${novosCadastros === 1 ? ' cadastrado' : 's cadastrados'}` : '')
           + (novasEntradas ? ` · ${novasEntradas} entrada${novasEntradas === 1 ? '' : 's'} lançada${novasEntradas === 1 ? '' : 's'} no estoque` : '') + `${vincular ? ' e escolhida na entrada' : ''}.`);
       } catch(err){
         if(arquivo) await removerNfStorage([arquivo.arquivo_path]);
