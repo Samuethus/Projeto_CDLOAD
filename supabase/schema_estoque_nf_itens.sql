@@ -233,13 +233,14 @@ begin
       returning id into v_mov;
     elsif x.movimentacao_id is not null and coalesce(v_qtd, 0) > 0 then
       -- Entrada já lançada por esta linha: acompanha a linha quando a referência (PC1 ↔ UN1), o rateio, a quantidade
-      -- ou o preço mudaram. Os gatilhos do estoque validam o saldo (não deixa negativo), carimbam quem ajustou e
-      -- recalculam o custo das saídas.
-      update public.movimentacoes_estoque m
-         set quantidade = v_qtd, preco_unitario = v_vu, observacao = v_obs
+      -- ou o preço mudaram. Ordem: primeiro o cadastro do produto (preço e unidade), depois a entrada — a atualização
+      -- da entrada dispara o recálculo do custo das saídas (preço praticado), que assim já usa o preço novo, inclusive
+      -- nas saídas sem compra anterior que as cubra (essas usam o preço do cadastro). Os gatilhos do estoque também
+      -- validam o saldo (não deixa negativo) e carimbam quem ajustou.
+      select m.produto_id, m.created_at into v_mp, v_md
+        from public.movimentacoes_estoque m
        where m.id = x.movimentacao_id and m.tipo = 'entrada'
-         and (m.quantidade is distinct from v_qtd or m.preco_unitario is distinct from v_vu)
-      returning m.produto_id, m.created_at into v_mp, v_md;
+         and (m.quantidade is distinct from v_qtd or m.preco_unitario is distinct from v_vu);
       if v_mp is not null then
         -- Preço do cadastro: segue o da entrada corrigida quando ela é a entrada mais recente do produto.
         if v_vu is not null and not exists (select 1 from public.movimentacoes_estoque o
@@ -259,6 +260,10 @@ begin
           update public.cadastro_de_produtos set unidade = btrim(x.unidade_cadastro)
            where id = v_mp and unidade is distinct from btrim(x.unidade_cadastro);
         end if;
+        -- A entrada, por último (recalcula o custo das saídas do produto com o preço já atualizado).
+        update public.movimentacoes_estoque
+           set quantidade = v_qtd, preco_unitario = v_vu, observacao = v_obs
+         where id = x.movimentacao_id;
       end if;
       v_mp := null;
     end if;
@@ -318,6 +323,24 @@ create policy nf_ajuste_update on public.notas_fiscais_itens_ajuste for update t
 create policy nf_ajuste_delete on public.notas_fiscais_itens_ajuste for delete to authenticated
   using (public.cdl_pode_editar('estoque'));
 
+-- Correção dos lançamentos já feitos: produtos com linha ajustada para unidade (UN1 + Rateio) têm o custo das saídas
+-- recalculado com a precificação atual (preço praticado). Ex.: saída anterior à compra, que usava o preço do pacote
+-- do cadastro, passa ao preço por unidade. Rodar de novo só refaz a mesma conta.
+do $$
+declare
+  r record;
+begin
+  for r in select p.id
+             from public.cadastro_de_produtos p
+            where exists (select 1
+                            from public.notas_fiscais_itens_ajuste a
+                            join public.notas_fiscais_itens i on i.id = a.item_id
+                            left join public.movimentacoes_estoque m on m.id = i.movimentacao_id
+                           where coalesce(i.produto_id, m.produto_id) = p.id) loop
+    perform public.estoque_recalcula_custos(r.id);
+  end loop;
+end $$;
+
 -- O cadastro novo exige o PDF: o bucket volta a aceitar só PDF.
 update storage.buckets set allowed_mime_types = array['application/pdf'] where id = 'notas_fiscais';
 
@@ -333,3 +356,12 @@ select n.numero as nf, i.ordem as linha, i.descricao, i.unidade as un_nota, i.qu
   join public.notas_fiscais_itens i on i.id = a.item_id
   join public.notas_fiscais n on n.id = i.nota_id
  order by n.numero, i.ordem;
+-- Lançamentos dos produtos ajustados para unidade, com o preço gravado (entradas: preço da compra; saídas: custo
+-- das camadas, já recalculado) — confira, por exemplo, o 041333001029.
+select p.codigo_barras, p.nome, m.created_at::date as data, m.tipo, m.quantidade, m.preco_unitario, p.preco_custo as preco_cadastro
+  from public.movimentacoes_estoque m
+  join public.cadastro_de_produtos p on p.id = m.produto_id
+ where exists (select 1 from public.notas_fiscais_itens_ajuste a join public.notas_fiscais_itens i on i.id = a.item_id
+                left join public.movimentacoes_estoque e on e.id = i.movimentacao_id
+               where coalesce(i.produto_id, e.produto_id) = p.id)
+ order by p.codigo_barras, m.created_at;

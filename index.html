@@ -5509,7 +5509,6 @@
                     <tbody id="waNfItensBody"></tbody>
                   </table>
                 </div>
-                <div class="wa-budget-summary" id="waNfItensTotal"></div>
                 <label class="wa-nf-aprovar" id="waNfAprovarBox">
                   <input type="checkbox" id="waNfAprovar">
                   <span id="waNfAprovarTxt">Conferi os dados da nota e as linhas dos produtos.</span>
@@ -11350,7 +11349,6 @@ ${clipPlayerPills(n)}
     const waNfResumo = document.getElementById('waNfResumo');
     const waNfItensBody = document.getElementById('waNfItensBody');
     const waNfItensQtd = document.getElementById('waNfItensQtd');
-    const waNfItensTotal = document.getElementById('waNfItensTotal');
     const waNfItemAdd = document.getElementById('waNfItemAdd');
     const waNfAprovar = document.getElementById('waNfAprovar');
     const waNfAprovarBox = document.getElementById('waNfAprovarBox');
@@ -11823,13 +11821,6 @@ ${clipPlayerPills(n)}
         + (d.chave_acesso ? cel('Chave de acesso', d.chave_acesso.replace(/(\d{4})(?=\d)/g, '$1 ')) : '');
     }
     function nfTotaisRender(){
-      const soma = nfItens.reduce((t, it) => t + (Number(it.valor_total) || 0), 0);
-      const n = nfDe(editingNfId);
-      const totalNota = nfSomenteLeitura ? (n && n.valor_total != null ? Number(n.valor_total) : null) : (waNfValor.value === '' ? null : Number(waNfValor.value));
-      const dif = totalNota == null ? 0 : Math.round((totalNota - soma) * 100) / 100;
-      waNfItensTotal.textContent = `Soma das linhas: ${fmtMoeda(soma)}` + (totalNota == null ? '' : ` · Valor total da nota: ${fmtMoeda(totalNota)}`)
-        + (Math.abs(dif) >= 0.05 ? ` · diferença de ${fmtMoeda(dif)} (frete, impostos ou descontos podem explicar — confira as linhas)` : totalNota == null ? '' : ' · confere');
-      waNfItensTotal.classList.toggle('over', Math.abs(dif) >= 0.05);
       waNfItensQtd.textContent = `(${nfItens.length} linha${nfItens.length === 1 ? '' : 's'})`;
     }
     // Linhas da etapa 3: em leitura (texto) por padrão; o lápis abre a edição da linha. A coluna Entrada marca
