@@ -5,7 +5,8 @@
 -- (passo 23 do LEIA-ME). É idempotente.
 --
 -- O cadastro da nota ("+ Nota Fiscal") passa a ser em 3 etapas:
---   1. anexar o PDF (DANFE) — o app lê o texto do PDF no navegador;
+--   1. escolher o tipo do PDF (DANFE ou NF-e da consulta do portal) e anexá-lo
+--      — o app lê o texto do PDF no navegador;
 --   2. conferir os dados da nota, já preenchidos pela leitura;
 --   3. conferir e aprovar as linhas de produto da nota.
 -- A aprovação grava a nota e as linhas juntas (estoque_nf_salvar) e registra
@@ -14,7 +15,7 @@
 --
 --   notas_fiscais_itens  → linhas de produto da nota (descrição, código,
 --                          NCM, CFOP, unidade, quantidade e valores)
---   notas_fiscais        → + lida_do_pdf, aprovada_em, aprovada_por
+--   notas_fiscais        → + tipo_arquivo, lida_do_pdf, aprovada_em, aprovada_por
 --
 -- Acesso: igual ao da nota — quem tem a seção Estoque lê e cadastra (o
 -- restrito não); editar e excluir é de quem pode editar o Estoque.
@@ -23,6 +24,16 @@
 alter table public.notas_fiscais add column if not exists lida_do_pdf  boolean not null default false;
 alter table public.notas_fiscais add column if not exists aprovada_em  timestamptz;
 alter table public.notas_fiscais add column if not exists aprovada_por text;
+-- Tipo do PDF escolhido na etapa 1: 'danfe' (documento do fornecedor) ou 'nfe' (consulta do portal da NF-e).
+alter table public.notas_fiscais add column if not exists tipo_arquivo text;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'notas_fiscais_tipo_arquivo_valido') then
+    alter table public.notas_fiscais
+      add constraint notas_fiscais_tipo_arquivo_valido check (tipo_arquivo is null or tipo_arquivo in ('danfe', 'nfe'));
+  end if;
+end $$;
+comment on column public.notas_fiscais.tipo_arquivo is 'Tipo do PDF: danfe (documento do fornecedor) ou nfe (consulta do portal da NF-e).';
 
 comment on column public.notas_fiscais.lida_do_pdf is 'Dados preenchidos pela leitura automática do PDF (conferidos pelo usuário).';
 comment on column public.notas_fiscais.aprovada_em is 'Quando o usuário conferiu e aprovou a nota e as linhas de produto.';
@@ -58,11 +69,11 @@ declare
 begin
   if p_id is null then
     insert into public.notas_fiscais (numero, serie, chave_acesso, fornecedor, fornecedor_cnpj, data_emissao, valor_total, observacao,
-                                      arquivo_nome, arquivo_path, arquivo_bytes, lida_do_pdf, usuario_email, aprovada_em, aprovada_por)
+                                      arquivo_nome, arquivo_path, arquivo_bytes, tipo_arquivo, lida_do_pdf, usuario_email, aprovada_em, aprovada_por)
     values (p_nota->>'numero', nullif(p_nota->>'serie', ''), nullif(p_nota->>'chave_acesso', ''), p_nota->>'fornecedor',
             nullif(p_nota->>'fornecedor_cnpj', ''), (p_nota->>'data_emissao')::date, (p_nota->>'valor_total')::numeric,
             nullif(p_nota->>'observacao', ''), p_nota->>'arquivo_nome', p_nota->>'arquivo_path', (p_nota->>'arquivo_bytes')::bigint,
-            coalesce((p_nota->>'lida_do_pdf')::boolean, false), p_nota->>'usuario_email', now(), public.estoque_email_sessao())
+            nullif(p_nota->>'tipo_arquivo', ''), coalesce((p_nota->>'lida_do_pdf')::boolean, false), p_nota->>'usuario_email', now(), public.estoque_email_sessao())
     returning id into v_id;
   else
     update public.notas_fiscais set
@@ -77,6 +88,7 @@ begin
            arquivo_nome    = case when p_nota ? 'arquivo_path' then p_nota->>'arquivo_nome' else arquivo_nome end,
            arquivo_path    = case when p_nota ? 'arquivo_path' then p_nota->>'arquivo_path' else arquivo_path end,
            arquivo_bytes   = case when p_nota ? 'arquivo_path' then (p_nota->>'arquivo_bytes')::bigint else arquivo_bytes end,
+           tipo_arquivo    = coalesce(nullif(p_nota->>'tipo_arquivo', ''), tipo_arquivo),
            lida_do_pdf     = coalesce((p_nota->>'lida_do_pdf')::boolean, lida_do_pdf),
            aprovada_em     = now(),
            aprovada_por    = public.estoque_email_sessao()

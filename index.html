@@ -5489,6 +5489,15 @@
               <!-- ETAPA 1: anexar o PDF -->
               <div id="waNfStep1">
                 <h3 class="wa-step-title">1. Anexar a nota fiscal (PDF)</h3>
+                <!-- Tipo do PDF: define como os produtos são lidos (DANFE: tabela de produtos; NF-e: consulta do portal). -->
+                <div class="wa-field">
+                  <label id="waNfTipoRot">Tipo de arquivo</label>
+                  <div class="wa-toggle-group" id="waNfTipoGroup" role="radiogroup" aria-labelledby="waNfTipoRot">
+                    <button type="button" class="wa-toggle-chip selected" data-tipo="danfe" role="radio" aria-checked="true">DANFE</button>
+                    <button type="button" class="wa-toggle-chip" data-tipo="nfe" role="radio" aria-checked="false">NF-e (consulta do portal)</button>
+                  </div>
+                  <div class="wa-field-hint" id="waNfTipoHint"></div>
+                </div>
                 <div class="wa-field">
                   <label class="wa-nf-drop" id="waNfDrop" for="waNfArquivo">
                     <span class="wa-nf-drop-ic">
@@ -10780,6 +10789,7 @@ ${clipPlayerPills(n)}
             <td class="wa-td-name">
               ${stockEsc(nfRotulo(n))}
               ${n.chave_acesso ? `<div class="wa-td-sub" title="Chave de acesso">${stockEsc(n.chave_acesso)}</div>` : ''}
+              ${NF_TIPOS[n.tipo_arquivo] ? `<div class="wa-td-sub">PDF: ${NF_TIPOS[n.tipo_arquivo].rot}</div>` : ''}
             </td>
             <td>
               ${stockEsc(n.fornecedor)}
@@ -11626,15 +11636,19 @@ ${clipPlayerPills(n)}
         };
       });
     }
-    function nfLerItens(paginas){
+    // Produtos conforme o tipo escolhido na etapa 1: 'danfe' (tabela "Dados do produto / serviço") ou
+    // 'nfe' (consulta do portal da NF-e).
+    function nfLerItens(paginas, tipo){
       let itens = [];
-      paginas.forEach(pg => { const lidos = nfLerItensPagina(pg); if(lidos) itens = itens.concat(lidos); });
-      if(!itens.length) itens = nfLerItensPortal(paginas);
-      if(!itens.length){
-        paginas.forEach(pg => pg.linhas.forEach(l => {
-          const m = l.texto.match(NF_LINHA_ITEM);
-          if(m) itens.push({ codigo: m[1], descricao: m[2], ncm: m[3], cfop: m[5], unidade: m[6], quantidade: nfNumBR(m[7]), valor_unitario: nfNumBR(m[8]), valor_total: nfNumBR(m[9]) });
-        }));
+      if(tipo === 'nfe') itens = nfLerItensPortal(paginas);
+      else {
+        paginas.forEach(pg => { const lidos = nfLerItensPagina(pg); if(lidos) itens = itens.concat(lidos); });
+        if(!itens.length){
+          paginas.forEach(pg => pg.linhas.forEach(l => {
+            const m = l.texto.match(NF_LINHA_ITEM);
+            if(m) itens.push({ codigo: m[1], descricao: m[2], ncm: m[3], cfop: m[5], unidade: m[6], quantidade: nfNumBR(m[7]), valor_unitario: nfNumBR(m[8]), valor_total: nfNumBR(m[9]) });
+          }));
+        }
       }
       return itens.filter(it => it.descricao).map(it => {
         if(it.valor_total == null && it.quantidade != null && it.valor_unitario != null) it.valor_total = Math.round(it.quantidade * it.valor_unitario * 100) / 100;
@@ -11643,21 +11657,47 @@ ${clipPlayerPills(n)}
         return it;
       });
     }
-    // Lê o PDF escolhido: { temTexto, campos, itens }.
-    async function nfLerDanfe(file){
+    // Lê o PDF escolhido no tipo informado: { temTexto, campos, itens, outroTipo }. outroTipo = produtos
+    // reconhecidos no outro formato (para sugerir a troca quando o tipo escolhido não acha nenhum).
+    async function nfLerPdf(file, tipo){
       const pdfjs = await loadPdfJs();
       const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
       try {
         const paginas = [];
         for(let p = 1; p <= pdf.numPages; p++) paginas.push(nfPaginaLinhas(await (await pdf.getPage(p)).getTextContent()));
-        if(paginas.reduce((t, p) => t + p.itens.length, 0) < 10) return { temTexto: false, campos: {}, itens: [] };
-        return { temTexto: true, campos: nfLerCampos(paginas), itens: nfLerItens(paginas) };
+        if(paginas.reduce((t, p) => t + p.itens.length, 0) < 10) return { temTexto: false, campos: {}, itens: [], outroTipo: 0 };
+        const itens = nfLerItens(paginas, tipo);
+        return { temTexto: true, campos: nfLerCampos(paginas), itens, outroTipo: itens.length ? 0 : nfLerItens(paginas, tipo === 'nfe' ? 'danfe' : 'nfe').length };
       } finally {
         pdf.destroy();
       }
     }
 
-    // ---- Etapa 1: anexar e ler ----
+    // ---- Etapa 1: tipo de arquivo, anexar e ler ----
+    const NF_TIPOS = {
+      danfe: { rot: 'DANFE', dica: 'Documento auxiliar impresso pelo sistema do fornecedor, com o quadro "Dados do produto / serviço".' },
+      nfe:   { rot: 'NF-e', dica: 'PDF da consulta no portal da NF-e (nfe.fazenda.gov.br), em que cada produto vem com um quadro de detalhes.' }
+    };
+    const waNfTipoGroup = document.getElementById('waNfTipoGroup');
+    const waNfTipoHint = document.getElementById('waNfTipoHint');
+    let nfTipoArq = 'danfe';
+    function nfTipoRender(){
+      waNfTipoGroup.querySelectorAll('[data-tipo]').forEach(b => {
+        const sel = b.dataset.tipo === nfTipoArq;
+        b.classList.toggle('selected', sel);
+        b.setAttribute('aria-checked', String(sel));
+      });
+      waNfTipoHint.textContent = NF_TIPOS[nfTipoArq].dica;
+    }
+    // Trocar o tipo com o PDF já anexado lê o mesmo arquivo de novo no formato escolhido.
+    waNfTipoGroup.addEventListener('click', e => {
+      const b = e.target.closest('[data-tipo]');
+      if(!b || b.dataset.tipo === nfTipoArq || nfLendo) return;
+      nfTipoArq = b.dataset.tipo;
+      nfTipoRender();
+      nfArquivoRender();
+      if(nfArquivoNovo) nfEscolherArquivo(nfArquivoNovo);
+    });
     function nfLeituraMsg(tipo, html){
       waNfLeitura.hidden = !tipo;
       waNfLeitura.className = 'wa-nf-leitura' + (tipo && tipo !== 'lendo' ? ' ' + tipo : '');
@@ -11674,7 +11714,7 @@ ${clipPlayerPills(n)}
         waNfArquivoTitulo.textContent = atual.arquivo_nome;
         waNfArquivoSub.textContent = `${atual.arquivo_bytes ? fmtBytes(Number(atual.arquivo_bytes)) + ' · ' : ''}anexado · clique para trocar e ler de novo`;
       } else {
-        waNfArquivoTitulo.textContent = 'Clique ou arraste o PDF da nota fiscal (DANFE)';
+        waNfArquivoTitulo.textContent = `Clique ou arraste o PDF da nota fiscal (${NF_TIPOS[nfTipoArq].rot})`;
         waNfArquivoSub.textContent = 'Somente PDF · até 10 MB';
       }
     }
@@ -11698,10 +11738,13 @@ ${clipPlayerPills(n)}
       waNfLidoHint.hidden = !achados.length;
       const faltam = Object.keys(NF_CAMPOS).filter(k => !achados.includes(k)).map(k => NF_CAMPOS_ROT[k]);
       const nItens = lido.itens.length;
+      const outro = NF_TIPOS[nfTipoArq === 'nfe' ? 'danfe' : 'nfe'].rot;
       nfLeituraMsg(achados.length || nItens ? (faltam.length || !nItens ? 'aviso' : 'ok') : 'aviso',
-        `<b>Leitura concluída:</b> ${achados.length} de ${Object.keys(NF_CAMPOS).length} dados da nota e ${nItens} linha${nItens === 1 ? '' : 's'} de produto.`
+        `<b>Leitura concluída (${NF_TIPOS[nfTipoArq].rot}):</b> ${achados.length} de ${Object.keys(NF_CAMPOS).length} dados da nota e ${nItens} linha${nItens === 1 ? '' : 's'} de produto.`
         + (faltam.length ? `<ul><li>Não encontrado no PDF: ${stockEsc(faltam.join(', '))} — preencha na etapa 2.</li></ul>` : '')
-        + (nItens ? '' : '<ul><li>Nenhuma linha de produto reconhecida — inclua os produtos na etapa 3.</li></ul>'));
+        + (nItens ? '' : lido.outroTipo
+          ? `<ul><li>Nenhum produto no formato ${NF_TIPOS[nfTipoArq].rot}, mas o arquivo parece ser <b>${outro}</b> (${lido.outroTipo} produto${lido.outroTipo === 1 ? '' : 's'} nesse formato). Escolha <b>${outro}</b> em "Tipo de arquivo" para ler os produtos.</li></ul>`
+          : '<ul><li>Nenhuma linha de produto reconhecida — confira o tipo de arquivo ou inclua os produtos na etapa 3.</li></ul>'));
     }
     async function nfEscolherArquivo(file){
       if(!file) return;
@@ -11710,11 +11753,12 @@ ${clipPlayerPills(n)}
       nfArquivoNovo = file;
       nfArquivoRender();
       nfLendo = true;
-      nfLeituraMsg('lendo', 'Lendo o PDF da nota fiscal…');
+      nfLeituraMsg('lendo', `Lendo o PDF da nota fiscal (${NF_TIPOS[nfTipoArq].rot})…`);
       nfEtapaRender();
+      const tipo = nfTipoArq;
       try {
-        const lido = await nfLerDanfe(file);
-        if(nfArquivoNovo === file) nfAplicarLeitura(lido);
+        const lido = await nfLerPdf(file, tipo);
+        if(nfArquivoNovo === file && nfTipoArq === tipo) nfAplicarLeitura(lido);
       } catch(e){
         console.warn('Leitura do PDF da nota fiscal:', e);
         if(nfArquivoNovo === file) nfLeituraMsg('erro', 'Não foi possível ler este PDF. Você pode seguir e preencher os dados à mão nas próximas etapas.');
@@ -11779,6 +11823,7 @@ ${clipPlayerPills(n)}
       waNfResumo.innerHTML = cel('Nota fiscal', nfRotulo(d) || '—') + cel('Emissão', fmtDataBR(d.data_emissao))
         + cel('Fornecedor', d.fornecedor || '—') + cel('CNPJ', d.fornecedor_cnpj ? fmtCnpj(d.fornecedor_cnpj) : '—')
         + cel('Valor total', d.valor_total != null ? fmtMoeda(d.valor_total) : '—') + cel('Arquivo', arq)
+        + cel('Tipo de arquivo', NF_TIPOS[nfSomenteLeitura && n ? n.tipo_arquivo : nfTipoArq] ? NF_TIPOS[nfSomenteLeitura && n ? n.tipo_arquivo : nfTipoArq].rot : '—')
         + (d.chave_acesso ? cel('Chave de acesso', d.chave_acesso.replace(/(\d{4})(?=\d)/g, '$1 ')) : '');
     }
     function nfTotaisRender(){
@@ -11884,6 +11929,8 @@ ${clipPlayerPills(n)}
       nfLidoDoPdf = false;
       waNfArquivo.value = '';
       const n = nfDe(editingNfId);
+      nfTipoArq = n && NF_TIPOS[n.tipo_arquivo] ? n.tipo_arquivo : 'danfe';
+      nfTipoRender();
       const quem = email => email ? ' por ' + (userNameOf(email) || email) : '';
       document.getElementById('waNfModalTitle').textContent = n ? (nfSomenteLeitura ? `${nfRotulo(n)} · ${n.fornecedor}` : 'Editar Nota Fiscal') : 'Nova Nota Fiscal';
       document.getElementById('waNfModalSub').textContent = n
@@ -11970,7 +12017,7 @@ ${clipPlayerPills(n)}
 
       const antiga = nfDe(editingNfId);
       const vincular = nfVincularEntrada;
-      const payload = Object.assign({}, dados, { lida_do_pdf: nfLidoDoPdf || !!(antiga && antiga.lida_do_pdf) });
+      const payload = Object.assign({}, dados, { tipo_arquivo: nfTipoArq, lida_do_pdf: nfLidoDoPdf || !!(antiga && antiga.lida_do_pdf) });
       let arquivo = null;
       waNfNextBtn.disabled = true;
       try {
@@ -12626,10 +12673,10 @@ ${clipPlayerPills(n)}
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else if(stockTab === 'notas'){
         // Uma linha por produto da nota (nota sem linhas sai numa linha só): documenta o que foi aprovado.
-        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
+        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Tipo de arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
         getFilteredNotas().forEach(n => {
           const base = [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2)];
-          const fim = [nfEntradas(n.id).length, n.arquivo_nome || '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '',
+          const fim = [nfEntradas(n.id).length, n.arquivo_nome || '', NF_TIPOS[n.tipo_arquivo] ? NF_TIPOS[n.tipo_arquivo].rot : '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '',
             n.aprovada_em ? fmtDateTimeBR(n.aprovada_em) : '', userNameOf(n.aprovada_por) || n.aprovada_por || ''];
           const linhas = (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
           if(!linhas.length) rows.push(base.concat(['', '', '', '', '', '', '', '', ''], fim));
