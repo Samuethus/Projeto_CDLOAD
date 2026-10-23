@@ -17,7 +17,11 @@
 --
 --   notas_fiscais_itens  → linhas de produto da nota (descrição, código EAN
 --                          comercial, código do fornecedor, NCM, CFOP,
---                          unidade, quantidade e valores)
+--                          unidade, quantidade e valores) — os dados oficiais,
+--                          exatamente como estão na nota
+--   notas_fiscais_itens_ajuste → ajuste de lançamento da linha (Un. UN1 +
+--                          Rateio: quantidade e valor unitário por unidade),
+--                          usado na entrada no estoque; não altera a linha oficial
 --   notas_fiscais        → + tipo_arquivo, lida_do_pdf, aprovada_em, aprovada_por
 --
 -- Acesso: igual ao da nota — quem tem a seção Estoque lê e cadastra (o
@@ -74,12 +78,49 @@ comment on column public.notas_fiscais_itens.ean is 'Código EAN Comercial (GTIN
 -- e foi cadastrado pela linha ao aprovar a nota.
 alter table public.notas_fiscais_itens add column if not exists cadastro_pela_nota boolean not null default false;
 comment on column public.notas_fiscais_itens.cadastro_pela_nota is 'Produto cadastrado no estoque por esta linha (coluna Cadastro da etapa 3).';
--- Coluna "Rateio" da etapa 3: com a unidade UN1, unidades em cada pacote da nota. A linha é gravada já por
--- unidade (quantidade = pacotes × rateio; valor unitário = valor total ÷ quantidade; o total não muda).
--- null = lançada como veio na nota (PC1).
-alter table public.notas_fiscais_itens add column if not exists rateio numeric(14,4)
-  check (rateio is null or rateio > 0);
-comment on column public.notas_fiscais_itens.rateio is 'Unidades por pacote (unidade UN1); null = como veio na nota (PC1).';
+-- ---------------------------------------------------------------------
+-- Ajustes de lançamento (colunas Un. e Rateio da etapa 3), separados dos
+-- dados oficiais da nota. notas_fiscais_itens guarda a linha exatamente como
+-- está na nota fiscal (unidade, quantidade, valor unitário e total); o ajuste
+-- fica em notas_fiscais_itens_ajuste e é o que vai para a entrada no estoque.
+-- Assim as análises das notas usam sempre os valores oficiais.
+--   UN1 com rateio N: quantidade = quantidade da nota × N;
+--                     valor unitário = valor total da linha ÷ quantidade.
+-- Linha sem ajuste = lançada como veio na nota (PC1).
+-- ---------------------------------------------------------------------
+create table if not exists public.notas_fiscais_itens_ajuste (
+  item_id         uuid primary key references public.notas_fiscais_itens(id) on delete cascade,
+  nota_id         uuid not null references public.notas_fiscais(id) on delete cascade,
+  unidade         text not null default 'UN1' check (unidade in ('PC1', 'UN1')),
+  rateio          numeric(14,4) not null check (rateio > 0),
+  quantidade      numeric(14,4) not null check (quantidade >= 0),
+  valor_unitario  numeric(14,4) check (valor_unitario is null or valor_unitario >= 0),
+  ajustado_em     timestamptz not null default now(),
+  ajustado_por    text default public.estoque_email_sessao()
+);
+create index if not exists notas_fiscais_itens_ajuste_nota_idx on public.notas_fiscais_itens_ajuste (nota_id);
+comment on table public.notas_fiscais_itens_ajuste is 'Ajuste de lançamento da linha da nota (Un. UN1 + Rateio). A linha oficial fica intacta em notas_fiscais_itens.';
+
+-- Migração: a primeira versão do Rateio gravava o ajuste na própria linha (coluna rateio, com a quantidade e o
+-- valor unitário já por unidade). O ajuste passa para a tabela acima e a linha volta aos valores da nota.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'notas_fiscais_itens' and column_name = 'rateio') then
+    insert into public.notas_fiscais_itens_ajuste (item_id, nota_id, unidade, rateio, quantidade, valor_unitario)
+    select i.id, i.nota_id, 'UN1', i.rateio, i.quantidade, i.valor_unitario
+      from public.notas_fiscais_itens i
+     where i.rateio > 0
+    on conflict (item_id) do nothing;
+    update public.notas_fiscais_itens i
+       set quantidade     = round(i.quantidade / i.rateio, 4),
+           valor_unitario = case when i.quantidade > 0
+                                 then round(coalesce(i.valor_total, i.valor_unitario * i.quantidade) / (i.quantidade / i.rateio), 4) end,
+           unidade        = case when i.unidade = 'UN1' then 'PC1' else i.unidade end
+     where i.rateio > 0;
+    alter table public.notas_fiscais_itens drop column rateio;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- Grava a nota e as linhas numa única transação (aprovação da etapa 3).
@@ -88,7 +129,11 @@ comment on column public.notas_fiscais_itens.rateio is 'Unidades por pacote (uni
 --   p_itens [{ ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade,
 --             valor_unitario, valor_total, produto_id, lancar_entrada,
 --             movimentacao_id, setor, cadastrar_produto, unidade_cadastro,
---             cadastro_pela_nota, rateio }]
+--             cadastro_pela_nota, lanc_unidade, lanc_rateio, lanc_quantidade,
+--             lanc_valor_unitario }]
+-- unidade/quantidade/valor_unitario/valor_total = dados oficiais da nota.
+-- lanc_* = ajuste de lançamento (UN1 + Rateio): gravado em
+-- notas_fiscais_itens_ajuste e usado na entrada e no cadastro do produto.
 -- Linha com cadastrar_produto e EAN: se nenhum produto tem esse código de
 -- barras, cadastra o produto (EAN, descrição, unidade_cadastro e preço da
 -- linha); se já existe, usa o existente. A entrada da linha vai para ele.
@@ -108,6 +153,9 @@ declare
   v_mov  uuid;
   v_prod uuid;
   v_cad  boolean;
+  v_item uuid;
+  v_qtd  numeric;   -- quantidade e preço do lançamento: os do ajuste (UN1 + Rateio) ou os da nota
+  v_vu   numeric;
   x      record;
 begin
   if p_id is null then
@@ -147,18 +195,21 @@ begin
              from jsonb_to_recordset(coalesce(p_itens, '[]'::jsonb))
                   as r(ordem int, codigo text, ean text, descricao text, ncm text, cfop text, unidade text, quantidade numeric, valor_unitario numeric,
                        valor_total numeric, produto_id uuid, lancar_entrada boolean, movimentacao_id uuid, setor text,
-                       cadastrar_produto boolean, unidade_cadastro text, cadastro_pela_nota boolean, rateio numeric)
+                       cadastrar_produto boolean, unidade_cadastro text, cadastro_pela_nota boolean,
+                       lanc_unidade text, lanc_rateio numeric, lanc_quantidade numeric, lanc_valor_unitario numeric)
             where nullif(btrim(r.descricao), '') is not null
   loop
     v_mov  := x.movimentacao_id;
     v_prod := x.produto_id;
     v_cad  := coalesce(x.cadastro_pela_nota, false);
+    v_qtd  := case when x.lanc_rateio > 0 then x.lanc_quantidade else x.quantidade end;
+    v_vu   := case when x.lanc_rateio > 0 then x.lanc_valor_unitario else x.valor_unitario end;
     -- Cadastro pela nota: o produto com este EAN (já existente ou cadastrado agora).
     if coalesce(x.cadastrar_produto, false) and nullif(btrim(x.ean), '') is not null then
       select id into v_prod from public.cadastro_de_produtos where codigo_barras = btrim(x.ean);
       if v_prod is null then
         insert into public.cadastro_de_produtos (codigo_barras, nome, unidade, estoque_minimo, preco_custo, descricao, ativo)
-        values (btrim(x.ean), btrim(x.descricao), coalesce(nullif(btrim(x.unidade_cadastro), ''), 'UN'), 0, round(x.valor_unitario, 2),
+        values (btrim(x.ean), btrim(x.descricao), coalesce(nullif(btrim(x.unidade_cadastro), ''), 'UN'), 0, round(v_vu, 2),
                 left(format('Cadastrado pela NF %s (%s)', p_nota->>'numero', p_nota->>'fornecedor'), 300), true)
         returning id into v_prod;
         v_cad := true;
@@ -168,20 +219,28 @@ begin
       if v_prod is null then
         raise exception 'Linha % (%): escolha o produto do estoque para lançar a entrada.', x.ordem, btrim(x.descricao) using errcode = 'check_violation';
       end if;
-      if coalesce(x.quantidade, 0) <= 0 then
+      if coalesce(v_qtd, 0) <= 0 then
         raise exception 'Linha % (%): a quantidade da entrada precisa ser maior que zero.', x.ordem, btrim(x.descricao) using errcode = 'check_violation';
       end if;
       insert into public.movimentacoes_estoque (produto_id, tipo, setor, quantidade, preco_unitario, nota_fiscal_id, observacao, usuario_email)
-      values (v_prod, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), x.quantidade, x.valor_unitario, v_id,
-              left(format('Entrada automática · NF %s · linha %s: %s', p_nota->>'numero', x.ordem, btrim(x.descricao)), 300),
+      values (v_prod, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), v_qtd, v_vu, v_id,
+              left(format('Entrada automática · NF %s · linha %s: %s%s', p_nota->>'numero', x.ordem, btrim(x.descricao),
+                          case when x.lanc_rateio > 0 then format(' (UN1 · rateio %s por pacote)', rtrim(rtrim(to_char(x.lanc_rateio, 'FM9999999990.9999'), '0'), '.')) else '' end), 300),
               auth.jwt() ->> 'email')
       returning id into v_mov;
     end if;
+    -- Linha oficial: exatamente como está na nota.
     insert into public.notas_fiscais_itens (nota_id, ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
-                                            produto_id, entrada_aprovada, movimentacao_id, cadastro_pela_nota, rateio)
+                                            produto_id, entrada_aprovada, movimentacao_id, cadastro_pela_nota)
     values (v_id, coalesce(x.ordem, 0), nullif(btrim(x.codigo), ''), nullif(btrim(x.ean), ''), btrim(x.descricao), nullif(btrim(x.ncm), ''), nullif(btrim(x.cfop), ''),
             nullif(btrim(x.unidade), ''), x.quantidade, x.valor_unitario, x.valor_total,
-            v_prod, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov, v_cad, case when x.rateio > 0 then x.rateio end);
+            v_prod, coalesce(x.lancar_entrada, false) or v_mov is not null, v_mov, v_cad)
+    returning id into v_item;
+    -- Ajuste de lançamento (UN1 + Rateio), à parte.
+    if x.lanc_rateio > 0 then
+      insert into public.notas_fiscais_itens_ajuste (item_id, nota_id, unidade, rateio, quantidade, valor_unitario)
+      values (v_item, v_id, coalesce(nullif(btrim(x.lanc_unidade), ''), 'UN1'), x.lanc_rateio, coalesce(x.lanc_quantidade, 0), x.lanc_valor_unitario);
+    end if;
   end loop;
 
   return v_id;
@@ -210,11 +269,34 @@ create policy nf_itens_update on public.notas_fiscais_itens for update to authen
 create policy nf_itens_delete on public.notas_fiscais_itens for delete to authenticated
   using (public.cdl_pode_editar('estoque'));
 
+-- Ajustes de lançamento: mesmo acesso das linhas da nota.
+alter table public.notas_fiscais_itens_ajuste enable row level security;
+revoke all on public.notas_fiscais_itens_ajuste from anon;
+grant select, insert, update, delete on public.notas_fiscais_itens_ajuste to authenticated;
+drop policy if exists nf_ajuste_select on public.notas_fiscais_itens_ajuste;
+drop policy if exists nf_ajuste_insert on public.notas_fiscais_itens_ajuste;
+drop policy if exists nf_ajuste_update on public.notas_fiscais_itens_ajuste;
+drop policy if exists nf_ajuste_delete on public.notas_fiscais_itens_ajuste;
+create policy nf_ajuste_select on public.notas_fiscais_itens_ajuste for select to authenticated using (public.cdl_secao('estoque'));
+create policy nf_ajuste_insert on public.notas_fiscais_itens_ajuste for insert to authenticated
+  with check (public.cdl_secao('estoque') and not public.cdl_restrito());
+create policy nf_ajuste_update on public.notas_fiscais_itens_ajuste for update to authenticated
+  using (public.cdl_pode_editar('estoque')) with check (public.cdl_pode_editar('estoque'));
+create policy nf_ajuste_delete on public.notas_fiscais_itens_ajuste for delete to authenticated
+  using (public.cdl_pode_editar('estoque'));
+
 -- O cadastro novo exige o PDF: o bucket volta a aceitar só PDF.
 update storage.buckets set allowed_mime_types = array['application/pdf'] where id = 'notas_fiscais';
 
 notify pgrst, 'reload schema';
 
--- Conferência: as 4 regras das linhas da nota e a função de gravação.
-select policyname, cmd from pg_policies where schemaname = 'public' and tablename = 'notas_fiscais_itens' order by cmd;
+-- Conferência: as 4 regras das linhas da nota, as 4 dos ajustes e a função de gravação; e, por linha ajustada,
+-- os dados oficiais da nota ao lado do ajuste de lançamento.
+select tablename, policyname, cmd from pg_policies where schemaname = 'public' and tablename in ('notas_fiscais_itens', 'notas_fiscais_itens_ajuste') order by tablename, cmd;
 select proname from pg_proc where proname = 'estoque_nf_salvar';
+select n.numero as nf, i.ordem as linha, i.descricao, i.unidade as un_nota, i.quantidade as qtd_nota, i.valor_unitario as vu_nota, i.valor_total,
+       a.unidade as un_lancamento, a.rateio, a.quantidade as qtd_lancamento, a.valor_unitario as vu_lancamento
+  from public.notas_fiscais_itens_ajuste a
+  join public.notas_fiscais_itens i on i.id = a.item_id
+  join public.notas_fiscais n on n.id = i.nota_id
+ order by n.numero, i.ordem;

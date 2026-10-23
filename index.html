@@ -10264,7 +10264,11 @@ ${clipPlayerPills(n)}
     const NF_BUCKET = 'notas_fiscais';
     const NF_MAX_BYTES = 10 * 1024 * 1024;
     // Nota com as linhas de produto (supabase/schema_estoque_nf_itens.sql).
-    const NF_SELECT = '*, itens:notas_fiscais_itens(*)';
+    // Linhas oficiais da nota + o ajuste de lançamento de cada uma (UN1 + Rateio, tabela à parte).
+    const NF_SELECT = '*, itens:notas_fiscais_itens(*, ajuste:notas_fiscais_itens_ajuste(*))';
+    const NF_SELECT_SEM_AJUSTE = '*, itens:notas_fiscais_itens(*)';
+    const nfAjusteDe = it => { const a = it && it.ajuste; return Array.isArray(a) ? a[0] || null : a || null; };
+    let nfComAjustes = true;   // o banco tem notas_fiscais_itens_ajuste (sem ela, a entrada de uma linha UN1 sairia por pacote)
     let stockNotas = [];
     let stockNotasErro = false;   // tabela ainda não criada: avisa uma vez e segue sem notas
     let movNfId = null;           // nota escolhida na Entrada (seleção única)
@@ -10444,7 +10448,8 @@ ${clipPlayerPills(n)}
         supabaseClient.from('movimentacoes_estoque').select('*').order('created_at', { ascending: false }).limit(500),
         supabaseClient.from('usuarios').select('nome,email').order('nome', { ascending: true }),
         supabaseClient.from('notas_fiscais').select(NF_SELECT).order('data_emissao', { ascending: false }).order('created_at', { ascending: false })
-          // Sem a tabela das linhas (script ainda não rodado): carrega só as notas.
+          // Sem a tabela dos ajustes: as linhas sem ajuste; sem a das linhas (script ainda não rodado): só as notas.
+          .then(r => { nfComAjustes = !r.error; return r.error ? supabaseClient.from('notas_fiscais').select(NF_SELECT_SEM_AJUSTE).order('data_emissao', { ascending: false }).order('created_at', { ascending: false }) : r; })
           .then(r => r.error ? supabaseClient.from('notas_fiscais').select('*').order('data_emissao', { ascending: false }).order('created_at', { ascending: false }) : r)
       ]);
       if(userRes.error) console.error('Erro ao carregar colaboradores (usuarios):', userRes.error);
@@ -11878,20 +11883,22 @@ ${clipPlayerPills(n)}
     }
     // Coluna Un.: PC1 (padrão, lança como veio na nota) ou UN1 (lança por unidade). Em UN1 o Rateio (unidades em cada
     // pacote) refaz a linha antes de salvar: Qtd. = pacotes × rateio e V. unitário = V. total ÷ Qtd. (o total não muda).
-    // qtdNf/vuNf guardam a quantidade e o valor unitário da nota para refazer a conta a cada rateio e ao voltar para PC1.
+    // Dados oficiais × ajuste: unidadeNf/qtdNf/vuNf são os da nota (gravados intactos em notas_fiscais_itens); quantidade e
+    // valor_unitario da linha na tela são os do lançamento (o ajuste vai para notas_fiscais_itens_ajuste e para a entrada).
     const nfR4 = v => Math.round(v * 10000) / 10000;
     function nfPrepararLinha(it){
       if(it.modo) return;
       const r = Number(it.rateio) > 0 ? Number(it.rateio) : null;
       it.modo = r ? 'UN1' : 'PC1';
       it.rateio = r;
-      if(!['PC1', 'UN1'].includes(String(it.unidade || '').toUpperCase())) it.unidadeNf = it.unidade || '';
-      it.qtdNf = it.quantidade == null ? null : r ? nfR4(it.quantidade / r) : it.quantidade;
-      it.vuNf = !r ? it.valor_unitario : it.qtdNf ? nfR4((it.valor_total != null ? it.valor_total : it.valor_unitario * it.quantidade) / it.qtdNf) : null;
-      it.unidade = it.modo;
+      it.unidadeNf = it.unidade || '';
+      it.qtdNf = it.quantidade;
+      it.vuNf = it.valor_unitario;
+      nfAplicarRateio(it);
     }
+    // Unidade do produto cadastrado pela linha: UN quando lançada por unidade; senão, a da nota.
+    const nfUnidadeLanc = it => it.modo === 'UN1' ? 'UN' : nfUnidadeCadastro(it.unidadeNf || it.unidade);
     function nfAplicarRateio(it){
-      it.unidade = it.modo;
       const r = it.modo === 'UN1' && Number(it.rateio) > 0 ? Number(it.rateio) : null;
       if(!r || it.qtdNf == null){ it.quantidade = it.qtdNf; it.valor_unitario = it.vuNf; return; }
       it.quantidade = nfR4(it.qtdNf * r);
@@ -11907,7 +11914,7 @@ ${clipPlayerPills(n)}
           ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}</div></td></tr>`;
       }
       const q = Number(it.quantidade) || 0;
-      const resumo = q > 0 ? `→ entrada de ${fmtQty(q)} ${stockEsc(p ? p.unidade : nfUnidadeCadastro(it.unidade))} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha';
+      const resumo = q > 0 ? `→ entrada de ${fmtQty(q)} ${stockEsc(p ? p.unidade : nfUnidadeLanc(it))} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha';
       if(nfVaiCadastrar(it)){
         return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
           <b>Produto do estoque:</b> ${stockEsc(String(it.descricao || '').toLocaleUpperCase('pt-BR'))}
@@ -12166,7 +12173,7 @@ ${clipPlayerPills(n)}
       Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
       nfItens = n ? (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => ({
         codigo: it.codigo || '', ean: it.ean || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
-        rateio: it.rateio == null ? null : Number(it.rateio),
+        rateio: nfAjusteDe(it) && Number(nfAjusteDe(it).rateio) > 0 ? Number(nfAjusteDe(it).rateio) : null,   // ajuste de lançamento (tabela à parte)
         quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
         valor_total: it.valor_total == null ? null : Number(it.valor_total),
         produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada),
@@ -12239,13 +12246,23 @@ ${clipPlayerPills(n)}
       if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
       const semRateio = nfItens.findIndex(it => it.modo === 'UN1' && !it.movimentacao_id && !nfItemErro(it) && !(Number(it.rateio) > 0));
       if(semRateio >= 0){ alert(`A linha ${semRateio + 1} está em UN1: informe o Rateio (quantas unidades vêm em cada pacote) ou volte a unidade para PC1.`); return; }
-      const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => ({
-        ordem: i + 1, codigo: String(it.codigo || '').trim() || null, ean: nfDigitos(it.ean) || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
-        ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: it.modo || String(it.unidade || '').trim() || null,
-        rateio: it.modo === 'UN1' && Number(it.rateio) > 0 ? Number(it.rateio) : null,
-        quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total,
-        produto_id: nfVaiCadastrar(it) ? null : (it.produto_id || null), lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0],
-        cadastrar_produto: nfVaiCadastrar(it), unidade_cadastro: nfUnidadeCadastro(it.unidade), cadastro_pela_nota: !!it.cadastro_pela_nota }));
+      if(supabaseReady && !nfComAjustes && nfItens.some(it => it.modo === 'UN1' && !it.movimentacao_id)){
+        alert('O banco ainda não tem a tabela dos ajustes de lançamento (UN1 + Rateio). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase e recarregue a página antes de aprovar linhas em UN1.');
+        return;
+      }
+      nfItens.forEach(nfPrepararLinha);
+      // Linha oficial (como está na nota) + ajuste de lançamento (lanc_*: UN1 + Rateio), gravados em tabelas separadas.
+      const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => {
+        const ajuste = it.modo === 'UN1' && Number(it.rateio) > 0;
+        return {
+          ordem: i + 1, codigo: String(it.codigo || '').trim() || null, ean: nfDigitos(it.ean) || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
+          ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidadeNf || '').trim() || null,
+          quantidade: it.qtdNf, valor_unitario: it.vuNf, valor_total: it.valor_total,
+          lanc_unidade: ajuste ? 'UN1' : null, lanc_rateio: ajuste ? Number(it.rateio) : null,
+          lanc_quantidade: ajuste ? it.quantidade : null, lanc_valor_unitario: ajuste ? it.valor_unitario : null,
+          produto_id: nfVaiCadastrar(it) ? null : (it.produto_id || null), lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0],
+          cadastrar_produto: nfVaiCadastrar(it), unidade_cadastro: nfUnidadeLanc(it), cadastro_pela_nota: !!it.cadastro_pela_nota };
+      });
       if(itens.some(it => [it.quantidade, it.valor_unitario, it.valor_total].some(v => v != null && !(v >= 0)))){ alert('Quantidade e valores das linhas não podem ser negativos.'); return; }
       if(!itens.length && !confirm('A nota está sem linhas de produto. Aprovar mesmo assim?')) return;
       const novasEntradas = itens.filter(it => it.lancar_entrada && !it.movimentacao_id).length;
@@ -12270,12 +12287,17 @@ ${clipPlayerPills(n)}
             { aprovada_em: agora, aprovada_por: currentUserEmail() });
           // Mesma regra do banco (estoque_nf_salvar): a linha marcada vira entrada com o preço da linha.
           salva.itens = itens.map((it, k) => {
-            // Cadastro pela nota: produto com o EAN, a descrição, a unidade e o preço da linha.
+            // Linha oficial como está na nota; o ajuste (UN1 + Rateio) fica à parte e vale para a entrada e o cadastro.
+            const aj = it.lanc_rateio > 0 ? { unidade: it.lanc_unidade || 'UN1', rateio: it.lanc_rateio, quantidade: it.lanc_quantidade, valor_unitario: it.lanc_valor_unitario } : null;
+            const qtdLanc = aj ? aj.quantidade : it.quantidade, vuLanc = aj ? aj.valor_unitario : it.valor_unitario;
+            it = Object.assign({}, it, { ajuste: aj });
+            ['lanc_unidade', 'lanc_rateio', 'lanc_quantidade', 'lanc_valor_unitario'].forEach(c => { delete it[c]; });
+            // Cadastro pela nota: produto com o EAN, a descrição, a unidade e o preço do lançamento.
             if(it.cadastrar_produto){
               let novo = stockProducts.find(x => x.codigo_barras === it.ean);
               if(!novo){
                 novo = { id: 'p' + Date.now() + '-' + k, codigo_barras: it.ean, nome: it.descricao.toLocaleUpperCase('pt-BR'), unidade: it.unidade_cadastro,
-                  estoque_minimo: 0, preco_custo: it.valor_unitario != null ? Math.round(it.valor_unitario * 100) / 100 : null, preco_atualizado_em: agora,
+                  estoque_minimo: 0, preco_custo: vuLanc != null ? Math.round(vuLanc * 100) / 100 : null, preco_atualizado_em: agora,
                   descricao: `Cadastrado pela NF ${salva.numero} (${salva.fornecedor})`, ativo: true, created_at: agora };
                 stockProducts.push(novo);
                 it = Object.assign({}, it, { cadastro_pela_nota: true });
@@ -12284,10 +12306,10 @@ ${clipPlayerPills(n)}
             }
             if(!it.lancar_entrada || it.movimentacao_id) return it;
             const p = stockProducts.find(x => x.id === it.produto_id);
-            const preco = it.valor_unitario != null ? it.valor_unitario : (p ? p.preco_custo : null);
+            const preco = vuLanc != null ? vuLanc : (p ? p.preco_custo : null);
             if(p && preco != null && Math.abs(preco - (p.preco_custo || 0)) >= 0.005){ p.preco_custo = Math.round(preco * 100) / 100; p.preco_atualizado_em = agora; }
-            const mov = { id: 'm' + Date.now() + '-' + k, produto_id: it.produto_id, tipo: 'entrada', setor: it.setor, quantidade: it.quantidade, preco_unitario: preco,
-              nota_fiscal_id: salva.id, observacao: `Entrada automática · NF ${salva.numero} · linha ${it.ordem}: ${it.descricao}`.slice(0, 300),
+            const mov = { id: 'm' + Date.now() + '-' + k, produto_id: it.produto_id, tipo: 'entrada', setor: it.setor, quantidade: qtdLanc, preco_unitario: preco,
+              nota_fiscal_id: salva.id, observacao: `Entrada automática · NF ${salva.numero} · linha ${it.ordem}: ${it.descricao}${aj ? ` (UN1 · rateio ${String(aj.rateio).replace('.', ',')} por pacote)` : ''}`.slice(0, 300),
               usuario_email: currentUserEmail(), created_at: agora };
             stockMovements.unshift(normalizeMovement(mov));
             return Object.assign({}, it, { movimentacao_id: mov.id, entrada_aprovada: true });
@@ -12297,14 +12319,15 @@ ${clipPlayerPills(n)}
           const { data: id, error } = await supabaseClient.rpc('estoque_nf_salvar', {
             p_id: antiga ? antiga.id : null, p_nota: Object.assign({ usuario_email: currentUserEmail() }, payload), p_itens: itens });
           if(error) throw error;
-          const lida = await supabaseClient.from('notas_fiscais').select(NF_SELECT).eq('id', id).single();
+          let lida = await supabaseClient.from('notas_fiscais').select(NF_SELECT).eq('id', id).single();
+          if(lida.error) lida = await supabaseClient.from('notas_fiscais').select(NF_SELECT_SEM_AJUSTE).eq('id', id).single();
           if(lida.error) throw lida.error;
           salva = lida.data;
           // Banco sem a coluna do EAN (passo 24 ainda não rodado de novo): a nota é gravada, mas sem os códigos.
           const enviados = itens.filter(it => it.ean).length, gravados = (salva.itens || []).filter(it => it.ean).length;
           if(enviados && !gravados) alert('A nota foi gravada, mas o banco ainda não guarda o Código EAN Comercial das linhas (nem o cadastro de produtos pela nota). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase; depois edite a nota, anexe o PDF de novo na etapa 1 e aprove para gravar os códigos.');
-          // Banco sem a coluna Rateio: as linhas UN1 foram gravadas por unidade, mas sem o rateio (a edição volta a mostrar PC1).
-          else if(itens.some(it => it.rateio) && !(salva.itens || []).some(it => it.rateio)) alert('A nota foi gravada com as quantidades por unidade, mas o banco ainda não guarda o Rateio das linhas. Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase para que a edição da nota mostre o rateio usado.');
+          // Banco sem a tabela de ajustes: a linha oficial foi gravada, mas o ajuste (UN1 + Rateio) não.
+          else if(itens.some(it => it.lanc_rateio) && !(salva.itens || []).some(nfAjusteDe)) alert('A nota foi gravada com os dados oficiais, mas o banco ainda não guarda os ajustes de lançamento (UN1 + Rateio). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase e aprove a nota outra vez.');
         }
         // PDF trocado: o antigo sai do Storage só depois de a nota ser gravada.
         if(antiga && antiga.arquivo_path && arquivo) await removerNfStorage([antiga.arquivo_path]);
@@ -12844,15 +12867,18 @@ ${clipPlayerPills(n)}
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else if(stockTab === 'notas'){
         // Uma linha por produto da nota (nota sem linhas sai numa linha só): documenta o que foi aprovado.
-        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código EAN Comercial', 'Código do produto', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Tipo de arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
+        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código EAN Comercial', 'Código do produto', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Unidade de lançamento', 'Rateio', 'Quantidade lançada', 'Valor unitário lançado', 'Entradas vinculadas', 'Arquivo', 'Tipo de arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
         getFilteredNotas().forEach(n => {
           const base = [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2)];
           const fim = [nfEntradas(n.id).length, n.arquivo_nome || '', NF_TIPOS[n.tipo_arquivo] ? NF_TIPOS[n.tipo_arquivo].rot : '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '',
             n.aprovada_em ? fmtDateTimeBR(n.aprovada_em) : '', userNameOf(n.aprovada_por) || n.aprovada_por || ''];
           const linhas = (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-          if(!linhas.length) rows.push(base.concat(['', '', '', '', '', '', '', '', '', ''], fim));
+          if(!linhas.length) rows.push(base.concat(Array(14).fill(''), fim));
           linhas.forEach(it => rows.push(base.concat([it.ordem, it.ean || '', it.codigo || '', it.descricao, it.ncm || '', it.cfop || '', it.unidade || '',
-            fmtNum(it.quantidade, 4), fmtNum(it.valor_unitario, 4), fmtNum(it.valor_total, 2)], fim)));
+            fmtNum(it.quantidade, 4), fmtNum(it.valor_unitario, 4), fmtNum(it.valor_total, 2)],
+            // Ajuste de lançamento (UN1 + Rateio); sem ajuste, a linha entra como está na nota (PC1).
+            (aj => aj ? [aj.unidade || 'UN1', fmtNum(aj.rateio, 4), fmtNum(aj.quantidade, 4), fmtNum(aj.valor_unitario, 4)]
+              : ['PC1', '', fmtNum(it.quantidade, 4), fmtNum(it.valor_unitario, 4)])(nfAjusteDe(it)), fim)));
         });
         filename = 'estoque_notas_fiscais.csv';
       } else {
