@@ -2363,6 +2363,10 @@
   .wa-nf-prod select{flex:1 1 260px;min-width:0;max-width:420px;border:1px solid var(--wa-border);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12.5px;color:var(--wa-text);background:#fff;}
   .wa-nf-prod select.falta{border-color:#EF4444;box-shadow:0 0 0 2px rgba(239,68,68,.15);}
   .wa-nf-sug{font-size:10.5px;font-weight:700;color:#92400E;background:#FFFBEB;border-radius:9999px;padding:1px 7px;}
+  /* Entrada já lançada que será atualizada ao aprovar (troca PC1 ↔ UN1, rateio ou correção da linha). */
+  .wa-nf-itens tr.wa-nf-sub.wa-nf-sub-atualiza td{background:#FFFBEB;}
+  .wa-nf-atualiza{color:#92400E;font-weight:600;}
+  .wa-nf-atualiza.erro{color:#B91C1C;}
   .wa-nf-aprovar{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border:1.5px solid var(--wa-border);border-radius:10px;font-size:13px;font-weight:600;color:var(--wa-text);cursor:pointer;}
   .wa-nf-aprovar:has(input:checked){border-color:#16A34A;background:#F0FDF4;}
   .wa-nf-aprovar input{width:17px;height:17px;margin:0;accent-color:#16A34A;}
@@ -11907,13 +11911,30 @@ ${clipPlayerPills(n)}
       it.valor_unitario = it.valor_total != null && it.quantidade ? nfR4(it.valor_total / it.quantidade) : it.vuNf != null ? nfR4(it.vuNf / r) : null;
     }
     const nfRateioTxt = r => r == null ? '' : String(r).replace('.', ',');
+    // Linha com entrada já lançada: o que vai mudar na entrada vinculada se a quantidade ou o preço de lançamento da
+    // linha mudaram (troca PC1 ↔ UN1, rateio ou correção). Base: a própria entrada (ou, fora da lista carregada, os
+    // valores da linha ao abrir a nota). saldoDepois < 0 = o ajuste deixaria o estoque negativo (o banco recusa).
+    const nfMovDe = it => it.movimentacao_id ? stockMovements.find(m => m.id === it.movimentacao_id) || null : null;
+    function nfEntradaMuda(it){
+      if(!it.movimentacao_id || !(Number(it.quantidade) > 0)) return null;
+      const m = nfMovDe(it), o = it.lancOrig;
+      if(!m && !o) return null;
+      const q0 = Number(m ? m.quantidade : o.q) || 0, p0 = (m ? m.preco_unitario : o.vu) == null ? null : Number(m ? m.preco_unitario : o.vu);
+      const q1 = Number(it.quantidade), p1 = it.valor_unitario == null ? null : Number(it.valor_unitario);
+      if(Math.abs(q0 - q1) < 1e-6 && (p0 == null ? p1 == null : p1 != null && Math.abs(p0 - p1) < 1e-4)) return null;
+      return { q0, p0, q1, p1, setor: m ? m.setor : STOCK_SETORES[0], saldoDepois: m ? saldoOf(m.produto_id, m.setor) - q0 + q1 : null };
+    }
     // Linha de baixo (verde) da linha marcada: o produto do estoque e o que será lançado.
     function nfSubLinha(it, i){
       const p = stockProducts.find(x => x.id === it.produto_id);
       const destino = STOCK_SETORES[0];
       if(nfSomenteLeitura || it.movimentacao_id){
-        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
-          ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}</div></td></tr>`;
+        const mud = nfSomenteLeitura ? null : nfEntradaMuda(it), un = stockEsc(p ? p.unidade : nfUnidadeLanc(it));
+        const aviso = !mud ? '' : mud.saldoDepois != null && mud.saldoDepois < -1e-9
+          ? `<span class="wa-nf-atualiza erro" data-resumo>Não dá para atualizar a entrada: o saldo do ${stockEsc(mud.setor)} ficaria negativo (${fmtQty(mud.saldoDepois)} ${un}) — parte já saiu do estoque. Ajuste a saída antes ou volte a referência.</span>`
+          : `<span class="wa-nf-atualiza" data-resumo title="A entrada lançada por esta linha é atualizada ao aprovar a nota">⟳ A entrada lançada será atualizada ao aprovar: ${fmtQty(mud.q0)} → <b>${fmtQty(mud.q1)} ${un}</b> a ${fmtValorNf(mud.p1)}${mud.p0 != null && Math.abs(mud.p0 - (mud.p1 || 0)) >= 1e-4 ? ` (antes ${fmtValorNf(mud.p0)})` : ''}</span>`;
+        return `<tr class="wa-nf-sub${mud ? ' wa-nf-sub-atualiza' : ''}" data-i="${i}"><td></td><td colspan="10"><div class="wa-nf-prod">
+          ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}${aviso}</div></td></tr>`;
       }
       const q = Number(it.quantidade) || 0;
       const resumo = q > 0 ? `→ entrada de ${fmtQty(q)} ${stockEsc(p ? p.unidade : nfUnidadeLanc(it))} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha';
@@ -11947,8 +11968,9 @@ ${clipPlayerPills(n)}
       const acoes = nfSomenteLeitura ? '' : `
         <button type="button" class="wa-icon-btn" data-edit="${i}" title="${ed ? 'Concluir a edição da linha' : 'Editar a linha'}">${ed ? ICON_OK : ICON_EDIT}</button>
         <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
-      // Un. e Rateio: sempre à vista (não dependem do lápis); linha já lançada no estoque fica travada.
-      const un1 = it.modo === 'UN1', travada = !!it.movimentacao_id;
+      // Un. e Rateio: sempre à vista (não dependem do lápis), inclusive na linha já lançada — a entrada vinculada é
+      // atualizada ao aprovar (aviso na linha verde abaixo).
+      const un1 = it.modo === 'UN1', travada = false;
       const naNota = it.unidadeNf ? ` · na nota: ${it.unidadeNf}` : '';
       const celUn = nfSomenteLeitura
         ? `<td class="wa-nf-txt" title="${un1 ? 'Lançada por unidade' : 'Lançada como veio na nota'}${stockEsc(naNota)}">${it.modo}</td>`
@@ -12180,6 +12202,8 @@ ${clipPlayerPills(n)}
         valor_total: it.valor_total == null ? null : Number(it.valor_total),
         produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada),
         cadastrar: false, cadastro_pela_nota: !!it.cadastro_pela_nota })) : [];
+      // Linha já lançada: guarda a quantidade e o preço de lançamento ao abrir (base do aviso de entrada atualizada).
+      nfItens.forEach(it => { nfPrepararLinha(it); if(it.movimentacao_id) it.lancOrig = { q: it.quantidade, vu: it.valor_unitario }; });
       nfEditando.clear();
       waNfLidoHint.hidden = true;
       nfLeituraMsg(null);
@@ -12248,7 +12272,11 @@ ${clipPlayerPills(n)}
       if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
       const semRateio = nfItens.findIndex(it => it.modo === 'UN1' && !it.movimentacao_id && !nfItemErro(it) && !(Number(it.rateio) > 0));
       if(semRateio >= 0){ alert(`A linha ${semRateio + 1} está em UN1: informe o Rateio (quantas unidades vêm em cada pacote) ou volte a unidade para PC1.`); return; }
-      if(supabaseReady && !nfComAjustes && nfItens.some(it => it.modo === 'UN1' && !it.movimentacao_id)){
+      // Entrada já lançada que mudaria: não pode deixar o estoque negativo (parte da entrada já saiu).
+      const negativa = nfItens.findIndex(it => { const m = nfEntradaMuda(it); return m && m.saldoDepois != null && m.saldoDepois < -1e-9; });
+      if(negativa >= 0){ alert(`A linha ${negativa + 1} já teve entrada lançada e parte dela já saiu do estoque: com a nova quantidade, o saldo ficaria negativo. Ajuste a saída antes ou volte a referência da linha.`); return; }
+      const entradasAtualizadas = nfItens.filter(it => nfEntradaMuda(it)).length;
+      if(supabaseReady && !nfComAjustes && nfItens.some(it => it.modo === 'UN1' && (!it.movimentacao_id || nfEntradaMuda(it)))){
         alert('O banco ainda não tem a tabela dos ajustes de lançamento (UN1 + Rateio). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase e recarregue a página antes de aprovar linhas em UN1.');
         return;
       }
@@ -12306,7 +12334,19 @@ ${clipPlayerPills(n)}
               }
               it = Object.assign({}, it, { produto_id: novo.id });
             }
-            if(!it.lancar_entrada || it.movimentacao_id) return it;
+            // Entrada já lançada: acompanha a quantidade e o preço de lançamento da linha (mesma regra do banco).
+            if(it.movimentacao_id){
+              const m = stockMovements.find(x => x.id === it.movimentacao_id);
+              if(m && qtdLanc > 0 && (Math.abs((Number(m.quantidade) || 0) - qtdLanc) >= 1e-6 || Math.abs((Number(m.preco_unitario) || 0) - (Number(vuLanc) || 0)) >= 1e-4)){
+                Object.assign(m, { quantidade: qtdLanc, preco_unitario: vuLanc, editado_em: agora, editado_por: currentUserEmail(),
+                  observacao: `Entrada automática · NF ${salva.numero} · linha ${it.ordem}: ${it.descricao}${aj ? ` (UN1 · rateio ${String(aj.rateio).replace('.', ',')} por pacote)` : ''}`.slice(0, 300) });
+                const pm = stockProducts.find(x => x.id === m.produto_id);
+                if(pm && vuLanc != null){ pm.preco_custo = Math.round(vuLanc * 100) / 100; pm.preco_atualizado_em = agora; }
+                if(pm && it.cadastro_pela_nota && it.unidade_cadastro) pm.unidade = it.unidade_cadastro;
+              }
+              return it;
+            }
+            if(!it.lancar_entrada) return it;
             const p = stockProducts.find(x => x.id === it.produto_id);
             const preco = vuLanc != null ? vuLanc : (p ? p.preco_custo : null);
             if(p && preco != null && Math.abs(preco - (p.preco_custo || 0)) >= 0.005){ p.preco_custo = Math.round(preco * 100) / 100; p.preco_atualizado_em = agora; }
@@ -12336,11 +12376,12 @@ ${clipPlayerPills(n)}
         nfGuardarLocal(salva);
         waCloseNfModal();
         // Entradas lançadas: recarrega saldos, preços e movimentações (a nota volta junto).
-        if(novasEntradas || novosCadastros) await loadStock(); else renderStock();
+        if(novasEntradas || novosCadastros || entradasAtualizadas) await loadStock(); else renderStock();
         if(vincular && waMovNfField && !waMovNfField.hidden) nfSelecionar(salva.id);
         showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'} com ${itens.length} linha${itens.length === 1 ? '' : 's'} de produto`
           + (novosCadastros ? ` · ${novosCadastros} produto${novosCadastros === 1 ? ' cadastrado' : 's cadastrados'}` : '')
-          + (novasEntradas ? ` · ${novasEntradas} entrada${novasEntradas === 1 ? '' : 's'} lançada${novasEntradas === 1 ? '' : 's'} no estoque` : '') + `${vincular ? ' e escolhida na entrada' : ''}.`);
+          + (novasEntradas ? ` · ${novasEntradas} entrada${novasEntradas === 1 ? '' : 's'} lançada${novasEntradas === 1 ? '' : 's'} no estoque` : '')
+          + (entradasAtualizadas ? ` · ${entradasAtualizadas} entrada${entradasAtualizadas === 1 ? '' : 's'} já lançada${entradasAtualizadas === 1 ? '' : 's'} atualizada${entradasAtualizadas === 1 ? '' : 's'}` : '') + `${vincular ? ' e escolhida na entrada' : ''}.`);
       } catch(err){
         if(arquivo) await removerNfStorage([arquivo.arquivo_path]);
         if(err){

@@ -142,8 +142,9 @@ end $$;
 -- vinculada à nota), lançada agora — na data do cadastro da nota. O preço
 -- praticado segue a regra de sempre: preço diferente do cadastro atualiza o
 -- produto e o saldo existente fica no preço anterior (gatilhos de
--- schema_estoque_precos_nf.sql). Linha já lançada mantém a entrada (não
--- duplica ao editar a nota).
+-- schema_estoque_precos_nf.sql). Linha já lançada não duplica a entrada ao
+-- editar a nota: a entrada vinculada é atualizada quando a quantidade ou o
+-- preço de lançamento da linha mudaram (troca PC1 ↔ UN1, rateio, correção).
 -- Roda com as permissões de quem chama (RLS das tabelas vale).
 -- ---------------------------------------------------------------------
 create or replace function public.estoque_nf_salvar(p_id uuid, p_nota jsonb, p_itens jsonb)
@@ -156,6 +157,9 @@ declare
   v_item uuid;
   v_qtd  numeric;   -- quantidade e preço do lançamento: os do ajuste (UN1 + Rateio) ou os da nota
   v_vu   numeric;
+  v_obs  text;
+  v_mp   uuid;      -- entrada já lançada que foi atualizada: produto e data dela
+  v_md   timestamptz;
   x      record;
 begin
   if p_id is null then
@@ -204,6 +208,8 @@ begin
     v_cad  := coalesce(x.cadastro_pela_nota, false);
     v_qtd  := case when x.lanc_rateio > 0 then x.lanc_quantidade else x.quantidade end;
     v_vu   := case when x.lanc_rateio > 0 then x.lanc_valor_unitario else x.valor_unitario end;
+    v_obs  := left(format('Entrada automática · NF %s · linha %s: %s%s', p_nota->>'numero', x.ordem, btrim(x.descricao),
+                          case when x.lanc_rateio > 0 then format(' (UN1 · rateio %s por pacote)', rtrim(rtrim(to_char(x.lanc_rateio, 'FM9999999990.9999'), '0'), '.')) else '' end), 300);
     -- Cadastro pela nota: o produto com este EAN (já existente ou cadastrado agora).
     if coalesce(x.cadastrar_produto, false) and nullif(btrim(x.ean), '') is not null then
       select id into v_prod from public.cadastro_de_produtos where codigo_barras = btrim(x.ean);
@@ -223,11 +229,38 @@ begin
         raise exception 'Linha % (%): a quantidade da entrada precisa ser maior que zero.', x.ordem, btrim(x.descricao) using errcode = 'check_violation';
       end if;
       insert into public.movimentacoes_estoque (produto_id, tipo, setor, quantidade, preco_unitario, nota_fiscal_id, observacao, usuario_email)
-      values (v_prod, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), v_qtd, v_vu, v_id,
-              left(format('Entrada automática · NF %s · linha %s: %s%s', p_nota->>'numero', x.ordem, btrim(x.descricao),
-                          case when x.lanc_rateio > 0 then format(' (UN1 · rateio %s por pacote)', rtrim(rtrim(to_char(x.lanc_rateio, 'FM9999999990.9999'), '0'), '.')) else '' end), 300),
-              auth.jwt() ->> 'email')
+      values (v_prod, 'entrada', coalesce(nullif(btrim(x.setor), ''), 'Almoxarifado'), v_qtd, v_vu, v_id, v_obs, auth.jwt() ->> 'email')
       returning id into v_mov;
+    elsif x.movimentacao_id is not null and coalesce(v_qtd, 0) > 0 then
+      -- Entrada já lançada por esta linha: acompanha a linha quando a referência (PC1 ↔ UN1), o rateio, a quantidade
+      -- ou o preço mudaram. Os gatilhos do estoque validam o saldo (não deixa negativo), carimbam quem ajustou e
+      -- recalculam o custo das saídas.
+      update public.movimentacoes_estoque m
+         set quantidade = v_qtd, preco_unitario = v_vu, observacao = v_obs
+       where m.id = x.movimentacao_id and m.tipo = 'entrada'
+         and (m.quantidade is distinct from v_qtd or m.preco_unitario is distinct from v_vu)
+      returning m.produto_id, m.created_at into v_mp, v_md;
+      if v_mp is not null then
+        -- Preço do cadastro: segue o da entrada corrigida quando ela é a entrada mais recente do produto.
+        if v_vu is not null and not exists (select 1 from public.movimentacoes_estoque o
+                                             where o.produto_id = v_mp and o.tipo = 'entrada' and not o.transferencia
+                                               and o.id <> x.movimentacao_id and o.created_at > v_md) then
+          perform set_config('cdl.preco_origem', 'entrada', true);
+          perform set_config('cdl.preco_mov', x.movimentacao_id::text, true);
+          perform set_config('cdl.preco_data', v_md::text, true);
+          update public.cadastro_de_produtos set preco_custo = round(v_vu, 2)
+           where id = v_mp and preco_custo is distinct from round(v_vu, 2);
+          perform set_config('cdl.preco_origem', '', true);
+          perform set_config('cdl.preco_mov', '', true);
+          perform set_config('cdl.preco_data', '', true);
+        end if;
+        -- Produto cadastrado por esta linha: a unidade acompanha a referência (UN em UN1).
+        if v_cad and nullif(btrim(x.unidade_cadastro), '') is not null then
+          update public.cadastro_de_produtos set unidade = btrim(x.unidade_cadastro)
+           where id = v_mp and unidade is distinct from btrim(x.unidade_cadastro);
+        end if;
+      end if;
+      v_mp := null;
     end if;
     -- Linha oficial: exatamente como está na nota.
     insert into public.notas_fiscais_itens (nota_id, ordem, codigo, ean, descricao, ncm, cfop, unidade, quantidade, valor_unitario, valor_total,
