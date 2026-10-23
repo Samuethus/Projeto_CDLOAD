@@ -2309,6 +2309,40 @@
   .wa-nf-picker-limpar[hidden]{display:none;}
   .wa-nf-op-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .wa-nf-op-txt .wa-p-name, .wa-nf-op-txt .wa-p-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* Nota fiscal em 3 etapas: leitura do PDF, campos lidos, resumo, linhas de produto e aprovação. */
+  .wa-nf-leitura{display:flex;align-items:flex-start;gap:10px;margin:2px 0 12px;padding:12px 14px;border-radius:10px;font-size:12.5px;line-height:1.5;background:var(--wa-primary-soft);color:#1e40af;}
+  .wa-nf-leitura[hidden]{display:none;}
+  .wa-nf-leitura.ok{background:#ECFDF5;color:#065F46;}
+  .wa-nf-leitura.aviso{background:#FFFBEB;color:#92400E;}
+  .wa-nf-leitura.erro{background:var(--wa-rejected-bg);color:#991b1b;}
+  .wa-nf-leitura ul{margin:4px 0 0;padding-left:18px;}
+  .wa-nf-spin{flex:0 0 auto;width:16px;height:16px;margin-top:1px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:waNfGira .8s linear infinite;}
+  @keyframes waNfGira{ to{transform:rotate(360deg);} }
+  .wa-field input.wa-nf-lido{border-color:#16A34A;background:#F0FDF4;}
+  .wa-nf-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 18px;padding:12px 14px;margin-bottom:14px;border:1px solid var(--wa-border);border-radius:12px;background:#F8FAFC;}
+  .wa-nf-resumo div{min-width:0;}
+  .wa-nf-resumo b{display:block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--wa-text-muted);margin-bottom:2px;}
+  .wa-nf-resumo span{display:block;font-size:13px;font-weight:600;color:var(--wa-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wa-nf-itens-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .wa-nf-itens-tit{font-size:13px;font-weight:700;color:var(--wa-text);}
+  .wa-nf-itens-tit span{font-weight:600;color:var(--wa-text-muted);}
+  .wa-btn.wa-btn-sm{padding:6px 12px;font-size:12px;}
+  .wa-nf-itens-wrap{max-height:340px;overflow:auto;border:1px solid var(--wa-border);border-radius:10px;}
+  .wa-nf-itens th{position:sticky;top:0;z-index:1;background:#F8FAFC;}
+  .wa-nf-itens td{padding:4px 6px;vertical-align:top;}
+  .wa-nf-itens td.wa-nf-ord{padding-top:11px;color:var(--wa-text-muted);font-size:12px;}
+  .wa-nf-itens input, .wa-nf-itens textarea{width:100%;min-width:0;border:1px solid transparent;border-radius:7px;padding:6px 7px;font-family:inherit;font-size:12.5px;color:var(--wa-text);background:transparent;}
+  .wa-nf-itens textarea{resize:vertical;min-height:32px;line-height:1.35;}
+  .wa-nf-itens input:hover, .wa-nf-itens textarea:hover{border-color:var(--wa-border);}
+  .wa-nf-itens input:focus, .wa-nf-itens textarea:focus{outline:none;border-color:var(--wa-primary);background:#fff;box-shadow:0 0 0 2px var(--wa-primary-soft);}
+  .wa-nf-itens input.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .wa-nf-itens input:disabled, .wa-nf-itens textarea:disabled{color:var(--wa-text);border-color:transparent;resize:none;}
+  .wa-nf-itens tr.wa-nf-item-erro td{background:#FEF2F2;}
+  .wa-nf-aprovar{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border:1.5px solid var(--wa-border);border-radius:10px;font-size:13px;font-weight:600;color:var(--wa-text);cursor:pointer;}
+  .wa-nf-aprovar:has(input:checked){border-color:#16A34A;background:#F0FDF4;}
+  .wa-nf-aprovar input{width:17px;height:17px;margin:0;accent-color:#16A34A;}
+  .wa-nf-aprovar[hidden]{display:none;}
+  @media (max-width:640px){ .wa-nf-itens-wrap{max-height:none;} }
   .wa-participant-option.wa-nf-op-nova{color:var(--wa-primary);font-size:13px;font-weight:600;border-top:1px solid var(--wa-border);border-radius:0 0 8px 8px;margin-top:2px;}
   .wa-nf-remover{position:absolute;top:8px;right:8px;font-size:18px;line-height:1;}
 
@@ -5195,6 +5229,7 @@
                   <th>Emissão</th>
                   <th>Nota fiscal</th>
                   <th>Fornecedor</th>
+                  <th>Produtos da nota</th>
                   <th style="text-align:right;">Valor total</th>
                   <th>Entradas vinculadas</th>
                   <th>Cadastrada por</th>
@@ -5241,7 +5276,7 @@
                 <div class="wa-category-card" data-acao="nf">
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
                   <h4>Nota Fiscal</h4>
-                  <p>Cadastro da NF de compra, com o arquivo.</p>
+                  <p>Anexe o PDF: dados e produtos lidos da nota.</p>
                 </div>
                 <div class="wa-category-card" data-acao="transferencia" hidden>
                   <div class="wa-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
@@ -5429,12 +5464,14 @@
           </div>
         </div>
 
-        <!-- ===== MODAL: NOTA FISCAL (cadastro / edição) =====
-             Documento da compra: identificação (número, série, chave de acesso), emitente,
-             emissão, valor e o arquivo (PDF ou XML) no bucket privado "notas_fiscais".
-             As entradas apontam para a nota (movimentacoes_estoque.nota_fiscal_id). -->
+        <!-- ===== MODAL: NOTA FISCAL (cadastro em 3 etapas / edição / consulta) =====
+             1. Anexar o PDF (DANFE): o texto é lido no navegador (pdf.js) e preenche a nota e as linhas.
+             2. Dados da nota: número, série, chave, emissão, valor, fornecedor e CNPJ — conferir e corrigir.
+             3. Conferência: as linhas de produto da nota, editáveis, e a aprovação do usuário.
+             Grava nota + linhas juntas (estoque_nf_salvar, supabase/schema_estoque_nf_itens.sql); o PDF fica no
+             bucket privado "notas_fiscais". As linhas não são ligadas a produtos: a Entrada escolhe a nota. -->
         <div class="wa-modal-overlay" id="waNfModal">
-          <div class="wa-modal wa-modal-lg" style="max-width:720px;">
+          <div class="wa-modal wa-modal-lg" style="max-width:920px;">
             <div class="wa-modal-header">
               <div class="wa-modal-header-left">
                 <div class="wa-modal-icon">
@@ -5442,73 +5479,115 @@
                 </div>
                 <div>
                   <div class="wa-modal-title" id="waNfModalTitle">Nova Nota Fiscal</div>
-                  <div class="wa-modal-sub" id="waNfModalSub">Cadastro da nota fiscal de compra, para vincular às entradas</div>
+                  <div class="wa-modal-sub" id="waNfModalSub">Anexe o PDF da nota: os dados e os produtos são lidos automaticamente</div>
                 </div>
               </div>
               <button class="wa-modal-close" onclick="waCloseNfModal()">&times;</button>
             </div>
             <div class="wa-modal-body">
-              <h3 class="wa-step-title">Identificação</h3>
-              <div class="wa-form-grid">
+
+              <!-- ETAPA 1: anexar o PDF -->
+              <div id="waNfStep1">
+                <h3 class="wa-step-title">1. Anexar a nota fiscal (PDF)</h3>
                 <div class="wa-field">
-                  <label for="waNfNumero">Número *</label>
-                  <input type="text" id="waNfNumero" placeholder="Ex: 4521" autocomplete="off" inputmode="numeric">
+                  <label class="wa-nf-drop" id="waNfDrop" for="waNfArquivo">
+                    <span class="wa-nf-drop-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                    </span>
+                    <span class="wa-nf-drop-txt">
+                      <span class="wa-nf-drop-tit" id="waNfArquivoTitulo">Clique ou arraste o PDF da nota fiscal (DANFE)</span>
+                      <span class="wa-nf-drop-sub" id="waNfArquivoSub">Somente PDF · até 10 MB</span>
+                    </span>
+                  </label>
+                  <input type="file" id="waNfArquivo" accept="application/pdf,.pdf" hidden>
                 </div>
-                <div class="wa-field">
-                  <label for="waNfSerie">Série</label>
-                  <input type="text" id="waNfSerie" placeholder="Ex: 1" autocomplete="off">
-                </div>
-              </div>
-              <div class="wa-form-grid">
-                <div class="wa-field">
-                  <label for="waNfEmissao">Data de emissão *</label>
-                  <input type="date" id="waNfEmissao">
-                </div>
-                <div class="wa-field">
-                  <label for="waNfValor">Valor total (R$)</label>
-                  <input type="number" id="waNfValor" min="0" step="0.01" placeholder="0,00">
-                </div>
-              </div>
-              <div class="wa-field">
-                <label for="waNfChave">Chave de acesso</label>
-                <input type="text" id="waNfChave" placeholder="44 dígitos da NF-e (opcional)" autocomplete="off" inputmode="numeric" spellcheck="false">
+                <div class="wa-nf-leitura" id="waNfLeitura" role="status" aria-live="polite" hidden></div>
+                <div class="wa-field-hint">O PDF precisa ter texto (o DANFE gerado pelo sistema do fornecedor). Nota escaneada como imagem não é lida: os dados são preenchidos à mão na etapa 2.</div>
               </div>
 
-              <h3 class="wa-step-title">Fornecedor</h3>
-              <div class="wa-form-grid">
-                <div class="wa-field">
-                  <label for="waNfFornecedor">Razão social / nome *</label>
-                  <input type="text" id="waNfFornecedor" placeholder="Ex: Papelaria Central Ltda" autocomplete="off">
+              <!-- ETAPA 2: dados da nota -->
+              <div id="waNfStep2" hidden>
+                <h3 class="wa-step-title">2. Dados da nota fiscal</h3>
+                <div class="wa-field-hint" id="waNfLidoHint" style="margin:-4px 0 14px;" hidden>Os campos em verde foram lidos do PDF. Confira e corrija o que for preciso.</div>
+                <div class="wa-form-grid">
+                  <div class="wa-field">
+                    <label for="waNfNumero">Número *</label>
+                    <input type="text" id="waNfNumero" placeholder="Ex: 4521" autocomplete="off" inputmode="numeric">
+                  </div>
+                  <div class="wa-field">
+                    <label for="waNfSerie">Série</label>
+                    <input type="text" id="waNfSerie" placeholder="Ex: 1" autocomplete="off">
+                  </div>
+                </div>
+                <div class="wa-form-grid">
+                  <div class="wa-field">
+                    <label for="waNfEmissao">Data de emissão *</label>
+                    <input type="date" id="waNfEmissao">
+                  </div>
+                  <div class="wa-field">
+                    <label for="waNfValor">Valor total da nota (R$)</label>
+                    <input type="number" id="waNfValor" min="0" step="0.01" placeholder="0,00">
+                  </div>
                 </div>
                 <div class="wa-field">
-                  <label for="waNfCnpj">CNPJ</label>
-                  <input type="text" id="waNfCnpj" placeholder="00.000.000/0000-00" autocomplete="off" inputmode="numeric">
+                  <label for="waNfChave">Chave de acesso</label>
+                  <input type="text" id="waNfChave" placeholder="44 dígitos da NF-e" autocomplete="off" inputmode="numeric" spellcheck="false">
+                </div>
+                <div class="wa-form-grid">
+                  <div class="wa-field">
+                    <label for="waNfFornecedor">Fornecedor (razão social) *</label>
+                    <input type="text" id="waNfFornecedor" placeholder="Ex: Papelaria Central Ltda" autocomplete="off">
+                  </div>
+                  <div class="wa-field">
+                    <label for="waNfCnpj">CNPJ do fornecedor</label>
+                    <input type="text" id="waNfCnpj" placeholder="00.000.000/0000-00" autocomplete="off" inputmode="numeric">
+                  </div>
+                </div>
+                <div class="wa-field" style="margin-bottom:0;">
+                  <label for="waNfObs">Observação</label>
+                  <textarea id="waNfObs" rows="2" placeholder="Ex: compra do mês, pedido 123"></textarea>
                 </div>
               </div>
 
-              <h3 class="wa-step-title">Arquivo e observação</h3>
-              <div class="wa-field">
-                <label for="waNfArquivo">Arquivo da nota (PDF ou XML)</label>
-                <label class="wa-nf-drop" id="waNfDrop" for="waNfArquivo">
-                  <span class="wa-nf-drop-ic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
-                  </span>
-                  <span class="wa-nf-drop-txt">
-                    <span class="wa-nf-drop-tit" id="waNfArquivoTitulo">Clique ou arraste o PDF ou o XML da nota</span>
-                    <span class="wa-nf-drop-sub" id="waNfArquivoSub">PDF ou XML · até 10 MB</span>
-                  </span>
-                  <button type="button" class="wa-icon-btn danger wa-nf-remover" id="waNfArquivoRemover" title="Remover o arquivo" hidden>&times;</button>
+              <!-- ETAPA 3: conferência das linhas de produto e aprovação -->
+              <div id="waNfStep3" hidden>
+                <h3 class="wa-step-title">3. Conferência e aprovação</h3>
+                <div class="wa-nf-resumo" id="waNfResumo"></div>
+                <div class="wa-nf-itens-topo">
+                  <div class="wa-nf-itens-tit">Produtos da nota <span id="waNfItensQtd"></span></div>
+                  <button type="button" class="wa-btn wa-btn-outline wa-btn-sm" id="waNfItemAdd">+ Adicionar linha</button>
+                </div>
+                <div class="wa-table-wrap wa-nf-itens-wrap">
+                  <table class="wa-table wa-nf-itens">
+                    <thead>
+                      <tr>
+                        <th style="width:36px;">#</th>
+                        <th style="width:96px;">Código</th>
+                        <th>Descrição do produto</th>
+                        <th style="width:64px;">Un.</th>
+                        <th style="width:92px;text-align:right;">Qtd.</th>
+                        <th style="width:110px;text-align:right;">V. unitário</th>
+                        <th style="width:110px;text-align:right;">V. total</th>
+                        <th style="width:40px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="waNfItensBody"></tbody>
+                  </table>
+                </div>
+                <div class="wa-budget-summary" id="waNfItensTotal"></div>
+                <label class="wa-nf-aprovar" id="waNfAprovarBox">
+                  <input type="checkbox" id="waNfAprovar">
+                  <span>Conferi os dados da nota e as linhas dos produtos.</span>
                 </label>
-                <input type="file" id="waNfArquivo" accept="application/pdf,.pdf,application/xml,text/xml,.xml" hidden>
               </div>
-              <div class="wa-field" style="margin-bottom:0;">
-                <label for="waNfObs">Observação</label>
-                <textarea id="waNfObs" rows="2" placeholder="Ex: compra do mês, pedido 123"></textarea>
-              </div>
+
             </div>
-            <div class="wa-modal-footer">
-              <button class="wa-btn wa-btn-outline" onclick="waCloseNfModal()">Cancelar</button>
-              <button class="wa-btn wa-btn-primary" id="waNfSaveBtn" onclick="waSaveNf()">Salvar Nota Fiscal</button>
+            <div class="wa-wizard-footer">
+              <span class="wa-wizard-steps" id="waNfStepLabel">Etapa 1 de 3</span>
+              <div style="display:flex;gap:10px;">
+                <button class="wa-btn wa-btn-outline" id="waNfBackBtn" style="visibility:hidden;" onclick="waNfVoltar()">Voltar</button>
+                <button class="wa-btn wa-btn-primary" id="waNfNextBtn" onclick="waNfAvancar()">Avançar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -5686,7 +5765,8 @@
        nota_fiscal_id uuid references notas_fiscais(id)  -- só entrada de compra
      );
      -- notas_fiscais: número, série, chave de acesso, fornecedor + CNPJ, emissão, valor e o
-     --   arquivo (PDF/XML) no bucket privado "notas_fiscais" (botão "+ Nota Fiscal").
+     --   PDF no bucket privado "notas_fiscais" (botão "+ Nota Fiscal": anexar → dados → conferência),
+     --   + notas_fiscais_itens: linhas de produto lidas do PDF e aprovadas (schema_estoque_nf_itens.sql).
      -- estoque_precos: histórico de preços — a cada mudança, o saldo que ficou no preço anterior.
      --   (supabase/schema_estoque_precos_nf.sql)
      -- + trigger que bloqueia saldo negativo POR CENTRAL, view `vw_estoque_saldo`
@@ -10121,9 +10201,8 @@ ${clipPlayerPills(n)}
       { id: 'p4', codigo_barras: '2000000000046', nome: 'COPO DESCARTÁVEL 180ML (PCT 100)', unidade: 'PC', estoque_minimo: 15, preco_custo: 6.9, preco_atualizado_em: '2026-09-18T11:00:00', descricao: '', ativo: true },
       { id: 'p5', codigo_barras: '2000000000053', nome: 'DETERGENTE NEUTRO 500ML', unidade: 'UN', estoque_minimo: 12, preco_custo: 2.9, preco_atualizado_em: '2026-09-01T09:00:00', descricao: '', ativo: true }
     ];
-    const FALLBACK_NOTAS = [
-      { id: 'nf1', numero: '4521', serie: '1', chave_acesso: null, fornecedor: 'Distribuidora Exemplo Ltda', fornecedor_cnpj: '12345678000190', data_emissao: '2026-09-17', valor_total: 69, observacao: 'Copos descartáveis', arquivo_nome: 'NF-4521.pdf', arquivo_path: null, arquivo_bytes: 184320, usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T10:55:00' }
-    ];
+    // Notas fiscais começam vazias: o cadastro é feito pela leitura do PDF ("+ Nota Fiscal").
+    const FALLBACK_NOTAS = [];
     const FALLBACK_MOVEMENTS = [
       { id: 'm1', produto_id: 'p1', tipo: 'origem', preco_unitario: 27.5, setor: 'Escritório', quantidade: 40, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:00:00' },
       { id: 'm2', produto_id: 'p2', tipo: 'origem', preco_unitario: 42, setor: 'Escritório', quantidade: 6, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:05:00' },
@@ -10132,7 +10211,7 @@ ${clipPlayerPills(n)}
       { id: 'm5', produto_id: 'p5', tipo: 'origem', preco_unitario: 2.9, setor: 'Almoxarifado', quantidade: 0, observacao: 'Lançamento inicial (origem)', usuario_email: ADMIN_EMAIL, created_at: '2026-09-01T09:20:00' },
       { id: 'm6', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', setor_consumo: 'Comercial', quantidade: 25, observacao: 'Retirada para o Comercial', usuario_email: ADMIN_EMAIL, created_at: '2026-09-10T14:30:00' },
       { id: 'm7', produto_id: 'p3', tipo: 'saida', setor: 'Almoxarifado', setor_consumo: 'Térreo', quantidade: 4, observacao: 'Reposição da copa', usuario_email: ADMIN_EMAIL, created_at: '2026-09-15T08:45:00' },
-      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, preco_unitario: 6.9, observacao: 'Compra do mês', nota_fiscal_id: 'nf1', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
+      { id: 'm8', produto_id: 'p4', tipo: 'entrada', setor: 'Almoxarifado', quantidade: 10, preco_unitario: 6.9, observacao: 'Compra do mês', usuario_email: ADMIN_EMAIL, created_at: '2026-09-18T11:00:00' },
       // Transferência entre as centrais: sai do Escritório e entra no Almoxarifado (não é consumo).
       { id: 'm9', produto_id: 'p1', tipo: 'saida', setor: 'Escritório', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
       { id: 'm10', produto_id: 'p1', tipo: 'entrada', setor: 'Almoxarifado', transferencia: true, quantidade: 5, observacao: 'Transferência Escritório → Almoxarifado', usuario_email: ADMIN_EMAIL, created_at: '2026-09-20T10:00:00' },
@@ -10231,6 +10310,8 @@ ${clipPlayerPills(n)}
     // (supabase/schema_estoque_precos_nf.sql). A Entrada só aponta para a nota (nota_fiscal_id).
     const NF_BUCKET = 'notas_fiscais';
     const NF_MAX_BYTES = 10 * 1024 * 1024;
+    // Nota com as linhas de produto (supabase/schema_estoque_nf_itens.sql).
+    const NF_SELECT = '*, itens:notas_fiscais_itens(*)';
     let stockNotas = [];
     let stockNotasErro = false;   // tabela ainda não criada: avisa uma vez e segue sem notas
     let movNfId = null;           // nota escolhida na Entrada (seleção única)
@@ -10409,7 +10490,9 @@ ${clipPlayerPills(n)}
         supabaseClient.from('vw_estoque_saldo').select('produto_id,setor,saldo'),
         supabaseClient.from('movimentacoes_estoque').select('*').order('created_at', { ascending: false }).limit(500),
         supabaseClient.from('usuarios').select('nome,email').order('nome', { ascending: true }),
-        supabaseClient.from('notas_fiscais').select('*').order('data_emissao', { ascending: false }).order('created_at', { ascending: false })
+        supabaseClient.from('notas_fiscais').select(NF_SELECT).order('data_emissao', { ascending: false }).order('created_at', { ascending: false })
+          // Sem a tabela das linhas (script ainda não rodado): carrega só as notas.
+          .then(r => r.error ? supabaseClient.from('notas_fiscais').select('*').order('data_emissao', { ascending: false }).order('created_at', { ascending: false }) : r)
       ]);
       if(userRes.error) console.error('Erro ao carregar colaboradores (usuarios):', userRes.error);
       stockUsers = userRes.data || [];
@@ -10646,6 +10729,7 @@ ${clipPlayerPills(n)}
     }
 
     // ---- Notas fiscais ----
+    const ICON_VER = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     const nfDigitos = s => String(s || '').replace(/\D/g, '');
     const fmtCnpj = s => { const d = nfDigitos(s); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : (s || ''); };
     const fmtDataBR = iso => iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
@@ -10664,7 +10748,8 @@ ${clipPlayerPills(n)}
         if(mes && d.slice(5, 7) !== mes) return false;
         if(produto && !nfEntradas(n.id).some(m => m.produto_id === produto)) return false;
         if(term){
-          const hay = [n.numero, n.serie, n.chave_acesso, n.fornecedor, n.fornecedor_cnpj, fmtCnpj(n.fornecedor_cnpj), n.observacao, n.arquivo_nome].join(' ').toLowerCase();
+          const hay = [n.numero, n.serie, n.chave_acesso, n.fornecedor, n.fornecedor_cnpj, fmtCnpj(n.fornecedor_cnpj), n.observacao, n.arquivo_nome,
+            ...(n.itens || []).map(it => `${it.codigo || ''} ${it.descricao}`)].join(' ').toLowerCase();
           if(!hay.includes(term)) return false;
         }
         return true;
@@ -10680,13 +10765,15 @@ ${clipPlayerPills(n)}
       const list = getFilteredNotas();
       waStockCount.textContent = `${list.length} nota${list.length === 1 ? '' : 's'} fisca${list.length === 1 ? 'l' : 'is'}`;
       if(!list.length){
-        waNfTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="7">${stockNotas.length ? 'Nenhuma nota fiscal encontrada com os filtros atuais.' : 'Nenhuma nota fiscal cadastrada. Use "+ Nota Fiscal" para cadastrar a primeira.'}</td></tr>`;
+        waNfTableBody.innerHTML = `<tr class="wa-empty-row"><td colspan="8">${stockNotas.length ? 'Nenhuma nota fiscal encontrada com os filtros atuais.' : 'Nenhuma nota fiscal cadastrada. Use "+ Nota Fiscal" e anexe o PDF da nota.'}</td></tr>`;
         return;
       }
       const byId = new Map(stockProducts.map(p => [p.id, p]));
       waNfTableBody.innerHTML = list.map(n => {
         const ents = nfEntradas(n.id);
         const prods = [...new Set(ents.map(m => (byId.get(m.produto_id) || {}).nome).filter(Boolean))];
+        // Linhas de produto da própria nota (lidas do PDF e aprovadas) — não são os produtos do estoque.
+        const linhas = (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => it.descricao);
         return `
           <tr>
             <td style="white-space:nowrap;">${fmtDataBR(n.data_emissao)}</td>
@@ -10698,11 +10785,13 @@ ${clipPlayerPills(n)}
               ${stockEsc(n.fornecedor)}
               ${n.fornecedor_cnpj ? `<div class="wa-td-sub">${stockEsc(fmtCnpj(n.fornecedor_cnpj))}</div>` : ''}
             </td>
+            <td>${linhas.length ? `${linhas.length} linha${linhas.length === 1 ? '' : 's'}<div class="wa-td-sub" title="${stockEsc(linhas.join('\n'))}">${stockEsc(linhas[0])}${linhas.length > 1 ? '…' : ''}</div>` : '<span class="wa-empty-hint">—</span>'}</td>
             <td class="wa-td-num">${n.valor_total != null ? fmtMoeda(n.valor_total) : '—'}</td>
             <td>${ents.length ? `${ents.length} entrada${ents.length === 1 ? '' : 's'}<div class="wa-td-sub" title="${stockEsc(prods.join(', '))}">${stockEsc(prods.slice(0, 2).join(', '))}${prods.length > 2 ? '…' : ''}</div>` : '<span class="wa-empty-hint">Nenhuma</span>'}</td>
-            <td>${n.usuario_email ? stockEsc(userNameOf(n.usuario_email) || n.usuario_email) : '—'}</td>
+            <td>${n.usuario_email ? stockEsc(userNameOf(n.usuario_email) || n.usuario_email) : '—'}${n.aprovada_em ? `<div class="wa-td-sub">aprovada em ${stockEsc(fmtDateTimeBR(n.aprovada_em))}</div>` : ''}</td>
             <td class="wa-table-actions">
-              ${n.arquivo_nome ? `<button class="wa-icon-btn" title="Abrir arquivo · ${stockEsc(n.arquivo_nome)}" onclick="waOpenNfArquivo('${n.id}')">${ICON_NF}</button>` : ''}
+              <button class="wa-icon-btn" title="Ver a nota e os produtos" onclick="waOpenNfModal('${n.id}', { somenteLeitura: true })">${ICON_VER}</button>
+              ${n.arquivo_nome ? `<button class="wa-icon-btn" title="Abrir o PDF · ${stockEsc(n.arquivo_nome)}" onclick="waOpenNfArquivo('${n.id}')">${ICON_NF}</button>` : ''}
               ${ents.length ? `<button class="wa-icon-btn" title="Ver as entradas desta nota" onclick="waShowNfEntradas('${n.id}')">${ICON_HISTORY}</button>` : ''}
               ${podeEditarEstoque() ? `<button class="wa-icon-btn" title="Editar" onclick="waOpenNfModal('${n.id}')">${ICON_EDIT}</button>
               <button class="wa-icon-btn danger" title="Remover" onclick="waDeleteNf('${n.id}')">${ICON_TRASH}</button>` : ''}
@@ -11268,10 +11357,14 @@ ${clipPlayerPills(n)}
     });
     waMovNfLimpar.addEventListener('click', () => { nfSelecionar(null); waMovNfBusca.focus(); });
 
-    // ---------------- CRUD: Notas fiscais ("+ Nota Fiscal") ----------------
-    // Documento da compra: número/série, chave de acesso, emitente (fornecedor + CNPJ), emissão,
-    // valor e o arquivo (PDF ou XML) no bucket privado "notas_fiscais". As entradas apontam para a
-    // nota; nota com entrada vinculada não é removida (o banco também impede).
+    // ---------------- CRUD: Notas fiscais ("+ Nota Fiscal", em 3 etapas) ----------------
+    // 1. Anexar o PDF (DANFE): o texto é lido aqui no navegador (pdf.js, o mesmo da galeria de
+    //    Relatórios) e preenche os dados da nota e as linhas de produto (nfLerDanfe).
+    // 2. Dados da nota: os campos lidos ficam em verde para conferência e correção.
+    // 3. Conferência: as linhas de produto (editáveis) e a aprovação do usuário.
+    // A aprovação grava a nota e as linhas juntas (estoque_nf_salvar, supabase/schema_estoque_nf_itens.sql).
+    // As linhas não são ligadas aos produtos do estoque: a Entrada escolhe a nota manualmente.
+    // Nota com entrada vinculada não é removida (o banco também impede).
     const waNfModal = document.getElementById('waNfModal');
     const waNfNumero = document.getElementById('waNfNumero');
     const waNfSerie = document.getElementById('waNfSerie');
@@ -11285,54 +11378,324 @@ ${clipPlayerPills(n)}
     const waNfDrop = document.getElementById('waNfDrop');
     const waNfArquivoTitulo = document.getElementById('waNfArquivoTitulo');
     const waNfArquivoSub = document.getElementById('waNfArquivoSub');
-    const waNfArquivoRemover = document.getElementById('waNfArquivoRemover');
-    const waNfSaveBtn = document.getElementById('waNfSaveBtn');
+    const waNfLeitura = document.getElementById('waNfLeitura');
+    const waNfLidoHint = document.getElementById('waNfLidoHint');
+    const waNfStepLabel = document.getElementById('waNfStepLabel');
+    const waNfBackBtn = document.getElementById('waNfBackBtn');
+    const waNfNextBtn = document.getElementById('waNfNextBtn');
+    const waNfResumo = document.getElementById('waNfResumo');
+    const waNfItensBody = document.getElementById('waNfItensBody');
+    const waNfItensQtd = document.getElementById('waNfItensQtd');
+    const waNfItensTotal = document.getElementById('waNfItensTotal');
+    const waNfItemAdd = document.getElementById('waNfItemAdd');
+    const waNfAprovar = document.getElementById('waNfAprovar');
+    const waNfAprovarBox = document.getElementById('waNfAprovarBox');
+    // Campo da nota → elemento do formulário (o que a leitura do PDF preenche).
+    const NF_CAMPOS = { numero: waNfNumero, serie: waNfSerie, data_emissao: waNfEmissao, valor_total: waNfValor,
+      chave_acesso: waNfChave, fornecedor: waNfFornecedor, fornecedor_cnpj: waNfCnpj };
+    const NF_CAMPOS_ROT = { numero: 'número', serie: 'série', data_emissao: 'data de emissão', valor_total: 'valor total',
+      chave_acesso: 'chave de acesso', fornecedor: 'fornecedor', fornecedor_cnpj: 'CNPJ' };
     let editingNfId = null;
-    let nfArquivoNovo = null;        // arquivo escolhido agora (ainda não enviado)
-    let nfArquivoRemover = false;    // edição: tirar o arquivo que já estava na nota
+    let nfEtapa = 1;
+    let nfSomenteLeitura = false;    // consulta (lupa da aba Notas fiscais): só a etapa 3, sem edição
+    let nfArquivoNovo = null;        // PDF escolhido agora (ainda não enviado)
+    let nfLendo = false;
+    let nfLidoDoPdf = false;
+    let nfItens = [];                // linhas de produto em conferência
     let nfVincularEntrada = false;   // aberto pela Entrada: a nota salva já fica escolhida nela
 
+    // ---- Leitura automática do DANFE (PDF da NF-e) ----
+    // Número no formato brasileiro ("1.234,5600") ou com ponto decimal ("10.50").
+    function nfNumBR(s){
+      if(s == null) return null;
+      let t = String(s).replace(/R\$|\s/g, '');
+      if(!/^-?[\d.,]+$/.test(t) || !/\d/.test(t)) return null;
+      if(t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+      else if((t.match(/\./g) || []).length > 1) t = t.replace(/\./g, '');
+      const v = Number(t);
+      return isFinite(v) ? v : null;
+    }
+    // Chave de acesso: 44 dígitos com o dígito verificador (módulo 11) correto.
+    function nfChaveValida(c){
+      if(!/^\d{44}$/.test(c)) return false;
+      let soma = 0, peso = 2;
+      for(let i = 42; i >= 0; i--){ soma += Number(c[i]) * peso; peso = peso === 9 ? 2 : peso + 1; }
+      const r = soma % 11;
+      return (r < 2 ? 0 : 11 - r) === Number(c[43]);
+    }
+    // Texto de uma página em linhas: junta os trechos pela altura (y) e ordena pela posição (x).
+    function nfPaginaLinhas(tc){
+      const itens = tc.items.filter(i => i.str && i.str.trim())
+        .map(i => ({ s: i.str.trim(), x: i.transform[4], y: i.transform[5], w: i.width || 0, h: Math.abs(i.transform[3]) || 8 }))
+        .sort((a, b) => b.y - a.y || a.x - b.x);
+      const linhas = [];
+      itens.forEach(it => {
+        const l = linhas.find(l => Math.abs(l.y - it.y) <= Math.max(1.5, Math.min(l.h, it.h) * 0.45));
+        if(l) l.itens.push(it); else linhas.push({ y: it.y, h: it.h, itens: [it] });
+      });
+      linhas.forEach(l => { l.itens.sort((a, b) => a.x - b.x); l.texto = l.itens.map(i => i.s).join(' '); });
+      linhas.sort((a, b) => b.y - a.y);
+      return { itens, linhas };
+    }
+    // Valor de um campo do DANFE: fica abaixo do rótulo (na mesma coluna) ou à direita dele.
+    function nfValorPerto(paginas, rotulo, padrao){
+      for(const pg of paginas){
+        for(let i = 0; i < pg.linhas.length; i++){
+          const l = pg.linhas[i];
+          const idx = l.texto.search(rotulo);
+          if(idx < 0) continue;
+          // Posição do rótulo: o trecho onde ele começa no texto da linha.
+          let rx = l.itens[0].x, rFim = rx, pos = 0;
+          for(const x of l.itens){
+            if(pos + x.s.length >= idx){ rx = x.x; rFim = x.x + x.w; break; }
+            pos += x.s.length + 1;
+          }
+          let melhor = null;
+          for(let k = i; k <= Math.min(i + 3, pg.linhas.length - 1); k++){
+            for(const x of pg.linhas[k].itens){
+              const m = x.s.match(padrao);
+              if(!m || (k === i && x.x < rFim - 1)) continue;   // na mesma linha, só à direita do rótulo
+              const nota = (k - i) * 60 + Math.abs(x.x - rx);
+              if(!melhor || nota < melhor.nota) melhor = { nota, v: m[1] || m[0] };
+            }
+          }
+          if(melhor) return melhor.v;
+        }
+      }
+      return null;
+    }
+    function nfLerCampos(paginas){
+      const linhas = paginas.flatMap(p => p.linhas.map(l => l.texto));
+      const corrido = linhas.join(' ');
+      const c = {};
+      // Chave de acesso: grupos de 4 dígitos em ordem de leitura (a chave pode quebrar em duas linhas);
+      // vale a sequência de 44 dígitos de modelo 55/65 com o dígito verificador correto.
+      const grupos = paginas.flatMap(p => p.linhas.flatMap(l => l.itens.map(i => i.s))).filter(s => /^\d{4}(?:[ .]?\d{4})*$/.test(s)).join('').replace(/\D/g, '');
+      const fontes = [grupos].concat([...corrido.matchAll(/\d{4}(?:[ .]?\d{4}){10}/g)].map(m => m[0].replace(/\D/g, '')));
+      for(const d of fontes){
+        for(let i = 0; i + 44 <= d.length && !c.chave_acesso; i++){
+          const k = d.slice(i, i + 44);
+          if(/^(55|65)$/.test(k.slice(20, 22)) && nfChaveValida(k)) c.chave_acesso = k;
+        }
+        if(c.chave_acesso) break;
+      }
+      // A chave traz o CNPJ do emitente, a série e o número da nota em posições fixas.
+      if(c.chave_acesso){
+        c.fornecedor_cnpj = c.chave_acesso.slice(6, 20);
+        c.serie = String(Number(c.chave_acesso.slice(22, 25)));
+        c.numero = String(Number(c.chave_acesso.slice(25, 34)));
+      }
+      if(!c.numero){ const m = corrido.match(/\bN[º°]\s*\.?\s*:?\s*(\d{1,3}(?:\.\d{3}){1,3}|\d{1,9})\b/); if(m) c.numero = String(Number(m[1].replace(/\D/g, ''))); }
+      if(!c.serie){ const m = corrido.match(/S[ÉE]RIE\s*:?\s*(\d{1,3})\b/i); if(m) c.serie = String(Number(m[1])); }
+      if(!c.fornecedor_cnpj){ const m = corrido.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/); if(m) c.fornecedor_cnpj = m[0].replace(/\D/g, ''); }
+      // Fornecedor: o canhoto ("RECEBEMOS DE <EMITENTE> OS PRODUTOS...") ou o bloco do emitente.
+      const mRec = corrido.match(/RECEBEMOS\s+DE\s+(.{3,120}?)\s+OS\s+PRODUTOS/i);
+      if(mRec) c.fornecedor = mRec[1].replace(/\s+/g, ' ').trim();
+      if(!c.fornecedor){
+        const i = linhas.findIndex(l => /IDENTIFICA[ÇC][ÃA]O\s+DO\s+EMITENTE/i.test(l));
+        const prox = i >= 0 ? linhas.slice(i + 1, i + 4).find(l => /[A-Za-zÀ-ú]{3}/.test(l) && !/DANFE|DOCUMENTO\s+AUXILIAR/i.test(l)) : null;
+        if(prox) c.fornecedor = prox.replace(/\s+/g, ' ').trim();
+      }
+      const data = nfValorPerto(paginas, /DATA\s+D[AE]\s+EMISS/i, /(\d{2}\/\d{2}\/\d{4})/)
+        || (corrido.match(/EMISS[ÃA]O\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1];
+      if(data){ const [d, m, a] = data.split('/'); c.data_emissao = `${a}-${m}-${d}`; }
+      const total = nfValorPerto(paginas, /V(?:ALOR|\.)\s*TOTAL\s+DA\s+NOTA/i, /^(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})$/)
+        || (corrido.match(/VALOR\s+TOTAL\s+DA\s+NOTA\D{0,20}(\d{1,3}(?:\.\d{3})*,\d{2})/i) || [])[1];
+      if(total != null) c.valor_total = nfNumBR(total);
+      return c;
+    }
+
+    // Linhas de produto: acha o cabeçalho da tabela "DADOS DO PRODUTO / SERVIÇO", mapeia as colunas
+    // pela posição dos rótulos e lê cada linha da tabela; texto sem valores continua a descrição anterior.
+    const NF_FIM_ITENS = /DADOS\s+ADICIONAIS|C[ÁA]LCULO\s+DO\s+ISSQN|INFORMA[ÇC][ÕO]ES\s+COMPLEMENTARES|RESERVADO\s+AO\s+FISCO/i;
+    function nfColuna(rot){
+      const r = nfNorm(rot).toUpperCase();
+      if(/DESCRI/.test(r)) return 'descricao';
+      if(/CFOP/.test(r)) return 'cfop';
+      if(/NCM/.test(r)) return 'ncm';
+      if(/COD/.test(r)) return 'codigo';
+      if(/CST|CSOSN/.test(r)) return 'cst';
+      if(/UNIT/.test(r)) return 'valor_unitario';
+      if(/^QU?A?N?T|QTD|QTDE/.test(r)) return 'quantidade';
+      if(/^UN(ID)?\.?$|^UNID|^UN\b/.test(r)) return 'unidade';
+      if(/ICMS|IPI|DESC|ALIQ|B\.?\s*C|BASE/.test(r)) return 'outro';
+      if(/TOTAL|V\.?\s*PROD|LIQUIDO/.test(r)) return 'valor_total';
+      return 'outro';
+    }
+    const NF_VALIDA = {
+      ncm: s => /^\d{8}$|^\d{4}\.\d{2}\.\d{2}$/.test(s),
+      cst: s => /^\d{2,4}$/.test(s),
+      cfop: s => /^\d\.?\d{3}$/.test(s),
+      unidade: s => /^[A-Za-zÀ-ú]{1,6}\.?\d*$/.test(s),
+      quantidade: s => nfNumBR(s) != null,
+      valor_unitario: s => nfNumBR(s) != null,
+      valor_total: s => nfNumBR(s) != null
+    };
+    function nfLerItensPagina(pg){
+      const ih = pg.linhas.findIndex(l => /DESCRI/i.test(l.texto) && /(NCM|CFOP|QUANT|QTD|V(ALOR|\.)\s*UNIT)/i.test(l.texto));
+      if(ih < 0) return null;
+      const h0 = pg.linhas[ih];
+      // Cabeçalho em até 3 linhas ("VALOR" / "UNITÁRIO"): junta palavras próximas e rótulos empilhados.
+      // Fora da banda: o título do quadro e qualquer linha com valores (já é produto).
+      const banda = pg.linhas.filter(l => l === h0 || (Math.abs(l.y - h0.y) <= h0.h * 1.8 && !/DADOS\s+DO\s+PRODUTO/i.test(l.texto) && !/\d,\d{2}/.test(l.texto)));
+      const frases = [];
+      banda.forEach(l => l.itens.forEach(it => {
+        const f = frases.find(f => f.y === l.y && it.x - f.x1 <= it.h * 0.6);
+        if(f){ f.x1 = it.x + it.w; f.s += ' ' + it.s; } else frases.push({ y: l.y, x0: it.x, x1: it.x + it.w, s: it.s });
+      }));
+      const cols = [];
+      frases.sort((a, b) => a.x0 - b.x0).forEach(f => {
+        const c = cols.find(c => f.x0 < c.x1 + 1 && f.x1 > c.x0 - 1);
+        if(c){ c.x0 = Math.min(c.x0, f.x0); c.x1 = Math.max(c.x1, f.x1); c.partes.push(f); } else cols.push({ x0: f.x0, x1: f.x1, partes: [f] });
+      });
+      cols.sort((a, b) => a.x0 - b.x0).forEach((c, i) => {
+        c.rot = c.partes.sort((a, b) => b.y - a.y).map(p => p.s).join(' ');
+        c.chave = nfColuna(c.rot);
+        c.esq = i ? (cols[i - 1].x1 + c.x0) / 2 : -Infinity;
+      });
+      cols.forEach((c, i) => { c.dir = i < cols.length - 1 ? (c.x1 + cols[i + 1].x0) / 2 : Infinity; });
+      const chaves = cols.map(c => c.chave);
+      if(!chaves.includes('descricao') || !(chaves.includes('valor_total') || chaves.includes('valor_unitario'))) return null;
+      const iDesc = chaves.indexOf('descricao');
+      const colDe = it => { const cx = it.x + it.w / 2; return cols.findIndex(c => cx >= c.esq && cx < c.dir); };
+      const itens = [];
+      let atual = null;
+      const yFimBanda = Math.min(...banda.map(l => l.y)) - 1;
+      for(const l of pg.linhas){
+        if(l.y >= yFimBanda) continue;
+        if(NF_FIM_ITENS.test(l.texto)) break;
+        if(/DESCRI/i.test(l.texto) && /(NCM|CFOP|QUANT|QTD)/i.test(l.texto)) continue;   // cabeçalho repetido
+        const cel = {};
+        l.itens.forEach(it => {
+          let k = colDe(it);
+          if(k < 0) return;
+          let chave = cols[k].chave;
+          // Palavra da descrição que avançou na coluna vizinha (NCM, CST...): volta para a descrição.
+          if(NF_VALIDA[chave] && !NF_VALIDA[chave](it.s) && k === iDesc + 1) chave = 'descricao';
+          cel[chave] = cel[chave] ? cel[chave] + ' ' + it.s : it.s;
+        });
+        const vt = nfNumBR(cel.valor_total), vu = nfNumBR(cel.valor_unitario), q = nfNumBR(cel.quantidade);
+        const ehItem = (vt != null || vu != null) && (q != null || NF_VALIDA.ncm(cel.ncm || ''));
+        if(ehItem){
+          atual = { codigo: cel.codigo || '', descricao: cel.descricao || '', ncm: cel.ncm || '', cfop: cel.cfop || '', unidade: cel.unidade || '',
+            quantidade: q, valor_unitario: vu, valor_total: vt };
+          itens.push(atual);
+        } else if(atual && cel.descricao && Object.keys(cel).every(k => k === 'descricao' || k === 'codigo' || k === 'outro')){
+          atual.descricao = (atual.descricao + ' ' + cel.descricao).trim();
+        }
+      }
+      return itens;
+    }
+    // Reserva: linha corrida "código descrição NCM CST CFOP UN qtd v.unit v.total" (DANFE sem cabeçalho legível).
+    const NF_LINHA_ITEM = /^(\S+)\s+(.+?)\s+(\d{8})\s+(\d{2,4})\s+(\d\.?\d{3})\s+([A-Za-zÀ-ú]{1,6}\.?\d*)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/;
+    function nfLerItens(paginas){
+      let itens = [];
+      paginas.forEach(pg => { const lidos = nfLerItensPagina(pg); if(lidos) itens = itens.concat(lidos); });
+      if(!itens.length){
+        paginas.forEach(pg => pg.linhas.forEach(l => {
+          const m = l.texto.match(NF_LINHA_ITEM);
+          if(m) itens.push({ codigo: m[1], descricao: m[2], ncm: m[3], cfop: m[5], unidade: m[6], quantidade: nfNumBR(m[7]), valor_unitario: nfNumBR(m[8]), valor_total: nfNumBR(m[9]) });
+        }));
+      }
+      return itens.filter(it => it.descricao).map(it => {
+        if(it.valor_total == null && it.quantidade != null && it.valor_unitario != null) it.valor_total = Math.round(it.quantidade * it.valor_unitario * 100) / 100;
+        if(it.valor_unitario == null && it.quantidade && it.valor_total != null) it.valor_unitario = Math.round(it.valor_total / it.quantidade * 10000) / 10000;
+        it.descricao = it.descricao.replace(/\s+/g, ' ').trim();
+        return it;
+      });
+    }
+    // Lê o PDF escolhido: { temTexto, campos, itens }.
+    async function nfLerDanfe(file){
+      const pdfjs = await loadPdfJs();
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+      try {
+        const paginas = [];
+        for(let p = 1; p <= pdf.numPages; p++) paginas.push(nfPaginaLinhas(await (await pdf.getPage(p)).getTextContent()));
+        if(paginas.reduce((t, p) => t + p.itens.length, 0) < 10) return { temTexto: false, campos: {}, itens: [] };
+        return { temTexto: true, campos: nfLerCampos(paginas), itens: nfLerItens(paginas) };
+      } finally {
+        pdf.destroy();
+      }
+    }
+
+    // ---- Etapa 1: anexar e ler ----
+    function nfLeituraMsg(tipo, html){
+      waNfLeitura.hidden = !tipo;
+      waNfLeitura.className = 'wa-nf-leitura' + (tipo && tipo !== 'lendo' ? ' ' + tipo : '');
+      waNfLeitura.innerHTML = tipo === 'lendo' ? `<span class="wa-nf-spin" aria-hidden="true"></span><div>${html}</div>` : `<div>${html || ''}</div>`;
+    }
     function nfArquivoRender(){
-      const atual = editingNfId && !nfArquivoRemover ? nfDe(editingNfId) : null;
-      const temAtual = !!(atual && atual.arquivo_nome);
-      const anexado = !!nfArquivoNovo || temAtual;
+      const atual = nfDe(editingNfId);
+      const anexado = !!nfArquivoNovo || !!(atual && atual.arquivo_nome);
       waNfDrop.classList.toggle('anexado', anexado);
-      waNfArquivoRemover.hidden = !anexado;
       if(nfArquivoNovo){
         waNfArquivoTitulo.textContent = nfArquivoNovo.name;
         waNfArquivoSub.textContent = `${fmtBytes(nfArquivoNovo.size)} · clique para trocar`;
-      } else if(temAtual){
+      } else if(atual && atual.arquivo_nome){
         waNfArquivoTitulo.textContent = atual.arquivo_nome;
-        waNfArquivoSub.textContent = `${atual.arquivo_bytes ? fmtBytes(Number(atual.arquivo_bytes)) + ' · ' : ''}anexado · clique para substituir`;
+        waNfArquivoSub.textContent = `${atual.arquivo_bytes ? fmtBytes(Number(atual.arquivo_bytes)) + ' · ' : ''}anexado · clique para trocar e ler de novo`;
       } else {
-        waNfArquivoTitulo.textContent = 'Clique ou arraste o PDF ou o XML da nota';
-        waNfArquivoSub.textContent = 'PDF ou XML · até 10 MB';
+        waNfArquivoTitulo.textContent = 'Clique ou arraste o PDF da nota fiscal (DANFE)';
+        waNfArquivoSub.textContent = 'Somente PDF · até 10 MB';
       }
     }
-    const nfTipoArquivo = f => /\.xml$/i.test(f.name) || /xml/.test(f.type) ? 'application/xml'
-      : (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) ? 'application/pdf' : '';
-    function nfEscolherArquivo(file){
+    // Põe o que foi lido no formulário (só os campos encontrados) e nas linhas de produto.
+    function nfAplicarLeitura(lido){
+      Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
+      if(!lido.temTexto){
+        nfLeituraMsg('aviso', '<b>Este PDF não tem texto</b> (parece uma nota escaneada). Preencha os dados na etapa 2 e as linhas de produto na etapa 3.');
+        return;
+      }
+      const achados = [];
+      Object.entries(lido.campos).forEach(([k, v]) => {
+        if(v == null || v === '') return;
+        const el = NF_CAMPOS[k];
+        el.value = k === 'fornecedor_cnpj' ? fmtCnpj(v) : v;
+        el.classList.add('wa-nf-lido');
+        achados.push(k);
+      });
+      if(lido.itens.length || !editingNfId) nfItens = lido.itens.map(it => Object.assign({}, it));
+      nfLidoDoPdf = achados.length > 0 || lido.itens.length > 0;
+      waNfLidoHint.hidden = !achados.length;
+      const faltam = Object.keys(NF_CAMPOS).filter(k => !achados.includes(k)).map(k => NF_CAMPOS_ROT[k]);
+      const nItens = lido.itens.length;
+      nfLeituraMsg(achados.length || nItens ? (faltam.length || !nItens ? 'aviso' : 'ok') : 'aviso',
+        `<b>Leitura concluída:</b> ${achados.length} de ${Object.keys(NF_CAMPOS).length} dados da nota e ${nItens} linha${nItens === 1 ? '' : 's'} de produto.`
+        + (faltam.length ? `<ul><li>Não encontrado no PDF: ${stockEsc(faltam.join(', '))} — preencha na etapa 2.</li></ul>` : '')
+        + (nItens ? '' : '<ul><li>Nenhuma linha de produto reconhecida — inclua os produtos na etapa 3.</li></ul>'));
+    }
+    async function nfEscolherArquivo(file){
       if(!file) return;
-      if(!nfTipoArquivo(file)){ alert('O arquivo da nota fiscal precisa ser PDF ou XML.'); return; }
-      if(file.size > NF_MAX_BYTES){ alert(`O arquivo tem ${fmtBytes(file.size)} — o limite é 10 MB.`); return; }
+      if(!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))){ alert('A nota fiscal precisa ser um arquivo PDF.'); return; }
+      if(file.size > NF_MAX_BYTES){ alert(`O PDF tem ${fmtBytes(file.size)} — o limite é 10 MB.`); return; }
       nfArquivoNovo = file;
       nfArquivoRender();
+      nfLendo = true;
+      nfLeituraMsg('lendo', 'Lendo o PDF da nota fiscal…');
+      nfEtapaRender();
+      try {
+        const lido = await nfLerDanfe(file);
+        if(nfArquivoNovo === file) nfAplicarLeitura(lido);
+      } catch(e){
+        console.warn('Leitura do PDF da nota fiscal:', e);
+        if(nfArquivoNovo === file) nfLeituraMsg('erro', 'Não foi possível ler este PDF. Você pode seguir e preencher os dados à mão nas próximas etapas.');
+      } finally {
+        if(nfArquivoNovo === file){ nfLendo = false; nfEtapaRender(); }
+      }
     }
     waNfArquivo.addEventListener('change', () => { nfEscolherArquivo(waNfArquivo.files && waNfArquivo.files[0]); waNfArquivo.value = ''; });
     ['dragenter', 'dragover'].forEach(ev => waNfDrop.addEventListener(ev, e => { e.preventDefault(); waNfDrop.classList.add('arrastando'); }));
     ['dragleave', 'drop'].forEach(ev => waNfDrop.addEventListener(ev, () => waNfDrop.classList.remove('arrastando')));
     waNfDrop.addEventListener('drop', e => { e.preventDefault(); nfEscolherArquivo(e.dataTransfer.files && e.dataTransfer.files[0]); });
-    waNfArquivoRemover.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();   // não reabre o seletor de arquivo
-      if(nfArquivoNovo) nfArquivoNovo = null; else nfArquivoRemover = true;
-      nfArquivoRender();
-    });
-    // CNPJ e chave: só dígitos, com a máscara do CNPJ enquanto digita.
+
+    // ---- Etapa 2: dados da nota ----
+    // CNPJ e chave: só dígitos, com a máscara do CNPJ enquanto digita. Campo mexido deixa de ser "lido".
     waNfCnpj.addEventListener('input', () => {
       const d = nfDigitos(waNfCnpj.value).slice(0, 14);
       waNfCnpj.value = d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
     });
     waNfChave.addEventListener('input', () => { waNfChave.value = nfDigitos(waNfChave.value).slice(0, 44); });
+    Object.values(NF_CAMPOS).forEach(el => el.addEventListener('input', e => { if(e.isTrusted) el.classList.remove('wa-nf-lido'); }));
     // Chave da NF-e completa: preenche CNPJ do emitente, série e número (posições fixas da chave).
     waNfChave.addEventListener('change', () => {
       const c = nfDigitos(waNfChave.value);
@@ -11341,44 +11704,187 @@ ${clipPlayerPills(n)}
       if(!waNfSerie.value.trim()) waNfSerie.value = String(Number(c.slice(22, 25)));
       if(!waNfNumero.value.trim()) waNfNumero.value = String(Number(c.slice(25, 34)));
     });
+    // Confere os dados da nota; devolve os campos prontos para gravar, ou null (e avisa o que falta).
+    function nfValidarDados(perguntarParecida){
+      const numero = waNfNumero.value.trim();
+      const serie = waNfSerie.value.trim() || null;
+      const fornecedor = waNfFornecedor.value.trim();
+      const data_emissao = waNfEmissao.value;
+      const cnpj = nfDigitos(waNfCnpj.value) || null;
+      const chave = nfDigitos(waNfChave.value) || null;
+      const valor = waNfValor.value === '' ? null : Number(waNfValor.value);
+      if(!numero || !fornecedor || !data_emissao){ alert('Preencha o número, a data de emissão e o fornecedor da nota fiscal.'); return null; }
+      if(cnpj && cnpj.length !== 14){ alert('O CNPJ do fornecedor precisa ter 14 dígitos.'); waNfCnpj.focus(); return null; }
+      if(chave && chave.length !== 44){ alert('A chave de acesso da NF-e tem 44 dígitos.'); waNfChave.focus(); return null; }
+      if(valor !== null && !(valor >= 0)){ alert('O valor total não pode ser negativo.'); waNfValor.focus(); return null; }
+      // Mesma nota já cadastrada: pela chave, pelo CNPJ + série + número ou (sem CNPJ) pelo fornecedor + série + número.
+      const outras = stockNotas.filter(n => n.id !== editingNfId);
+      const mesma = n => n.numero === numero && (n.serie || '') === (serie || '');
+      const dup = outras.find(n => chave && n.chave_acesso === chave) || outras.find(n => cnpj && n.fornecedor_cnpj === cnpj && mesma(n));
+      if(dup){ alert(`Esta nota já está cadastrada: ${nfRotulo(dup)} · ${dup.fornecedor} (emissão ${fmtDataBR(dup.data_emissao)}).`); return null; }
+      const parecida = outras.find(n => !cnpj && nfNorm(n.fornecedor) === nfNorm(fornecedor) && mesma(n));
+      if(perguntarParecida && parecida && !confirm(`Já existe ${nfRotulo(parecida)} de ${parecida.fornecedor}. Cadastrar mesmo assim?`)) return null;
+      return { numero, serie, chave_acesso: chave, fornecedor, fornecedor_cnpj: cnpj, data_emissao, valor_total: valor, observacao: waNfObs.value.trim() || null };
+    }
 
-    // Preenche o formulário de nota sem abrir o modal (reusado pela central de operações).
+    // ---- Etapa 3: conferência das linhas de produto e aprovação ----
+    const nfNumIn = (v, casas) => v == null || v === '' ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: casas, useGrouping: false });
+    const nfItemErro = it => !String(it.descricao || '').trim();
+    function nfResumoRender(){
+      const n = nfDe(editingNfId);
+      const d = nfSomenteLeitura && n ? n : { numero: waNfNumero.value.trim(), serie: waNfSerie.value.trim(), fornecedor: waNfFornecedor.value.trim(),
+        fornecedor_cnpj: nfDigitos(waNfCnpj.value), data_emissao: waNfEmissao.value, valor_total: waNfValor.value === '' ? null : Number(waNfValor.value),
+        chave_acesso: nfDigitos(waNfChave.value) };
+      const arq = nfArquivoNovo ? nfArquivoNovo.name : (n && n.arquivo_nome) || '—';
+      const cel = (rot, val, titulo) => `<div><b>${rot}</b><span title="${stockEsc(titulo || val)}">${stockEsc(val)}</span></div>`;
+      waNfResumo.innerHTML = cel('Nota fiscal', nfRotulo(d) || '—') + cel('Emissão', fmtDataBR(d.data_emissao))
+        + cel('Fornecedor', d.fornecedor || '—') + cel('CNPJ', d.fornecedor_cnpj ? fmtCnpj(d.fornecedor_cnpj) : '—')
+        + cel('Valor total', d.valor_total != null ? fmtMoeda(d.valor_total) : '—') + cel('Arquivo', arq)
+        + (d.chave_acesso ? cel('Chave de acesso', d.chave_acesso.replace(/(\d{4})(?=\d)/g, '$1 ')) : '');
+    }
+    function nfTotaisRender(){
+      const soma = nfItens.reduce((t, it) => t + (Number(it.valor_total) || 0), 0);
+      const n = nfDe(editingNfId);
+      const totalNota = nfSomenteLeitura ? (n && n.valor_total != null ? Number(n.valor_total) : null) : (waNfValor.value === '' ? null : Number(waNfValor.value));
+      const dif = totalNota == null ? 0 : Math.round((totalNota - soma) * 100) / 100;
+      waNfItensTotal.textContent = `Soma das linhas: ${fmtMoeda(soma)}` + (totalNota == null ? '' : ` · Valor total da nota: ${fmtMoeda(totalNota)}`)
+        + (Math.abs(dif) >= 0.05 ? ` · diferença de ${fmtMoeda(dif)} (frete, impostos ou descontos podem explicar — confira as linhas)` : totalNota == null ? '' : ' · confere');
+      waNfItensTotal.classList.toggle('over', Math.abs(dif) >= 0.05);
+      waNfItensQtd.textContent = `(${nfItens.length} linha${nfItens.length === 1 ? '' : 's'})`;
+    }
+    function nfItensRender(){
+      const ro = nfSomenteLeitura ? 'disabled' : '';
+      waNfItemAdd.hidden = nfSomenteLeitura;
+      waNfItensBody.innerHTML = nfItens.length ? nfItens.map((it, i) => `
+        <tr data-i="${i}" class="${!nfSomenteLeitura && nfItemErro(it) ? 'wa-nf-item-erro' : ''}">
+          <td class="wa-nf-ord">${i + 1}</td>
+          <td><input data-k="codigo" value="${stockEsc(it.codigo || '')}" aria-label="Código da linha ${i + 1}" ${ro}></td>
+          <td><textarea data-k="descricao" rows="1" aria-label="Descrição da linha ${i + 1}" ${ro}>${stockEsc(it.descricao || '')}</textarea></td>
+          <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}" ${ro}></td>
+          <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}" ${ro}></td>
+          <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}" ${ro}></td>
+          <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}" ${ro}></td>
+          <td>${nfSomenteLeitura ? '' : `<button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`}</td>
+        </tr>`).join('')
+        : `<tr class="wa-empty-row"><td colspan="8">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
+      // A descrição longa abre na altura do texto.
+      waNfItensBody.querySelectorAll('textarea').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
+      nfTotaisRender();
+    }
+    waNfItensBody.addEventListener('input', e => {
+      const el = e.target.closest('[data-k]'), tr = e.target.closest('tr[data-i]');
+      if(!el || !tr) return;
+      const it = nfItens[Number(tr.dataset.i)], k = el.dataset.k;
+      if(['quantidade', 'valor_unitario', 'valor_total'].includes(k)){
+        it[k] = el.value.trim() === '' ? null : nfNumBR(el.value);
+        // Quantidade ou valor unitário mudou: o total da linha acompanha.
+        if(k !== 'valor_total' && it.quantidade != null && it.valor_unitario != null){
+          it.valor_total = Math.round(it.quantidade * it.valor_unitario * 100) / 100;
+          tr.querySelector('[data-k="valor_total"]').value = nfNumIn(it.valor_total, 2);
+        }
+      } else {
+        it[k] = el.value;
+      }
+      if(el.tagName === 'TEXTAREA'){ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+      tr.classList.toggle('wa-nf-item-erro', nfItemErro(it));
+      nfTotaisRender();
+    });
+    waNfItensBody.addEventListener('click', e => {
+      const b = e.target.closest('[data-rm]');
+      if(!b) return;
+      nfItens.splice(Number(b.dataset.rm), 1);
+      nfItensRender();
+    });
+    waNfItemAdd.addEventListener('click', () => {
+      nfItens.push({ codigo: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null });
+      nfItensRender();
+      const ult = waNfItensBody.querySelector('tr:last-child textarea');
+      if(ult) ult.focus();
+    });
+    waNfAprovar.addEventListener('change', () => nfEtapaRender());
+
+    // ---- Navegação entre as etapas ----
+    function nfEtapaRender(){
+      [1, 2, 3].forEach(k => { document.getElementById('waNfStep' + k).hidden = nfEtapa !== k; });
+      waNfStepLabel.textContent = nfSomenteLeitura ? 'Consulta da nota fiscal' : `Etapa ${nfEtapa} de 3`;
+      waNfBackBtn.style.visibility = nfEtapa > 1 && !nfSomenteLeitura ? 'visible' : 'hidden';
+      waNfNextBtn.textContent = nfSomenteLeitura ? 'Fechar' : nfEtapa < 3 ? 'Avançar' : editingNfId ? 'Aprovar alterações' : 'Aprovar e salvar';
+      // Nota nova só avança com o PDF anexado e lido.
+      waNfNextBtn.disabled = !nfSomenteLeitura && ((nfEtapa === 1 && (nfLendo || (!editingNfId && !nfArquivoNovo))) || (nfEtapa === 3 && !waNfAprovar.checked));
+    }
+    window.waNfAvancar = function(){
+      if(nfSomenteLeitura) return waCloseNfModal();
+      if(waNfNextBtn.disabled) return;   // lendo o PDF, sem PDF ou sem a conferência marcada
+      if(nfEtapa === 1){
+        nfEtapa = 2;
+        nfEtapaRender();
+        setTimeout(() => waNfNumero.focus(), 50);
+      } else if(nfEtapa === 2){
+        if(!nfValidarDados(true)) return;
+        nfEtapa = 3;
+        waNfAprovar.checked = false;
+        nfResumoRender();
+        nfItensRender();
+        nfEtapaRender();
+      } else {
+        waSaveNf();
+      }
+    };
+    window.waNfVoltar = function(){
+      if(nfEtapa > 1 && !nfSomenteLeitura){ nfEtapa--; nfEtapaRender(); }
+    };
+
+    // Prepara o modal: nota nova (etapa 1), edição (etapa 2) ou consulta (etapa 3, só leitura).
     function fillNfForm(id, opcoes){
       const o = opcoes || {};
       editingNfId = id || null;
+      nfSomenteLeitura = !!o.somenteLeitura && !!editingNfId;
       nfVincularEntrada = !!o.vincularEntrada;
       nfArquivoNovo = null;
-      nfArquivoRemover = false;
+      nfLendo = false;
+      nfLidoDoPdf = false;
       waNfArquivo.value = '';
       const n = nfDe(editingNfId);
-      document.getElementById('waNfModalTitle').textContent = n ? 'Editar Nota Fiscal' : 'Nova Nota Fiscal';
+      const quem = email => email ? ' por ' + (userNameOf(email) || email) : '';
+      document.getElementById('waNfModalTitle').textContent = n ? (nfSomenteLeitura ? `${nfRotulo(n)} · ${n.fornecedor}` : 'Editar Nota Fiscal') : 'Nova Nota Fiscal';
       document.getElementById('waNfModalSub').textContent = n
-        ? `Cadastrada ${n.usuario_email ? 'por ' + (userNameOf(n.usuario_email) || n.usuario_email) + ' ' : ''}em ${fmtDateTimeBR(n.created_at)}`
-        : 'Cadastro da nota fiscal de compra, para vincular às entradas';
-      waNfSaveBtn.textContent = n ? 'Salvar Alterações' : 'Salvar Nota Fiscal';
+        ? `Cadastrada${quem(n.usuario_email)} em ${fmtDateTimeBR(n.created_at)}${n.aprovada_em ? ` · aprovada${quem(n.aprovada_por)} em ${fmtDateTimeBR(n.aprovada_em)}` : ''}${n.lida_do_pdf ? ' · lida do PDF' : ''}`
+        : 'Anexe o PDF da nota: os dados e os produtos são lidos automaticamente';
       waNfNumero.value = n ? n.numero : (o.numero || '');
       waNfSerie.value = n ? (n.serie || '') : '';
-      waNfEmissao.value = n ? String(n.data_emissao || '').slice(0, 10) : stockDia(new Date().toISOString());
+      waNfEmissao.value = n ? String(n.data_emissao || '').slice(0, 10) : '';
       waNfValor.value = n && n.valor_total != null ? n.valor_total : '';
       waNfChave.value = n ? (n.chave_acesso || '') : '';
       waNfFornecedor.value = n ? n.fornecedor : '';
       waNfCnpj.value = n && n.fornecedor_cnpj ? fmtCnpj(n.fornecedor_cnpj) : '';
       waNfObs.value = n ? (n.observacao || '') : '';
+      Object.values(NF_CAMPOS).forEach(el => el.classList.remove('wa-nf-lido'));
+      nfItens = n ? (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => ({
+        codigo: it.codigo || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
+        quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
+        valor_total: it.valor_total == null ? null : Number(it.valor_total) })) : [];
+      waNfLidoHint.hidden = true;
+      nfLeituraMsg(null);
+      waNfAprovar.checked = false;
+      waNfAprovarBox.hidden = nfSomenteLeitura;
       nfArquivoRender();
+      nfEtapa = nfSomenteLeitura ? 3 : n ? 2 : 1;
+      if(nfEtapa === 3){ nfResumoRender(); nfItensRender(); }
+      nfEtapaRender();
     }
 
     window.waOpenNfModal = function(id, opcoes){
       if(window.__isRestrito()) return;
-      if(id && !window.__exigirEdicao('estoque', 'editar notas fiscais')) return;
+      if(id && !(opcoes && opcoes.somenteLeitura) && !window.__exigirEdicao('estoque', 'editar notas fiscais')) return;
       fillNfForm(id, opcoes);
       waNfModal.classList.add('open');
-      setTimeout(() => (waNfNumero.value ? waNfFornecedor : waNfNumero).focus(), 50);
+      if(nfEtapa === 2) setTimeout(() => waNfNumero.focus(), 50);
     };
 
     window.waCloseNfModal = function(){
       waNfModal.classList.remove('open');
       nfVincularEntrada = false;
-      if(waStockHubModal.classList.contains('open') && hubAcao === 'nf') waCloseStockHub();
+      nfArquivoNovo = null;   // uma leitura ainda em andamento é descartada
     };
 
     // Caminho no bucket: nf/ano-mês + nome único (sem acentos/espaços).
@@ -11386,15 +11892,15 @@ ${clipPlayerPills(n)}
       const safe = String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9.\-]+/g, '_');
       return `nf/${new Date().toISOString().slice(0, 7)}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
     }
-    // Envia o arquivo escolhido e devolve as colunas arquivo_* (null se não há arquivo novo).
+    // Envia o PDF escolhido e devolve as colunas arquivo_* (null se não há PDF novo).
     // Sem Supabase (demonstração), guarda só o nome.
     async function enviarArquivoNf(){
       if(!nfArquivoNovo) return null;
       const f = nfArquivoNovo;
       if(!supabaseReady) return { arquivo_nome: f.name, arquivo_path: null, arquivo_bytes: f.size };
       const path = nfStoragePath(f.name);
-      const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: nfTipoArquivo(f) });
-      if(error) throw new Error('Erro ao enviar o arquivo da nota fiscal: ' + error.message + '\n\nConfira se supabase/schema_estoque_precos_nf.sql já foi executado.');
+      const { error } = await supabaseClient.storage.from(NF_BUCKET).upload(path, f, { upsert: false, contentType: 'application/pdf' });
+      if(error) throw new Error('Erro ao enviar o PDF da nota fiscal: ' + error.message + '\n\nConfira se supabase/schema_estoque_precos_nf.sql já foi executado.');
       return { arquivo_nome: f.name, arquivo_path: path, arquivo_bytes: f.size };
     }
     async function removerNfStorage(paths){
@@ -11409,70 +11915,63 @@ ${clipPlayerPills(n)}
         .sort((a, b) => String(b.data_emissao).localeCompare(String(a.data_emissao)) || String(b.created_at).localeCompare(String(a.created_at)));
     }
 
+    // Aprovação (etapa 3): grava a nota e as linhas de produto juntas.
     window.waSaveNf = async function(){
-      const numero = waNfNumero.value.trim();
-      const serie = waNfSerie.value.trim() || null;
-      const fornecedor = waNfFornecedor.value.trim();
-      const data_emissao = waNfEmissao.value;
-      const cnpj = nfDigitos(waNfCnpj.value) || null;
-      const chave = nfDigitos(waNfChave.value) || null;
-      const valor = waNfValor.value === '' ? null : Number(waNfValor.value);
-      if(!numero || !fornecedor || !data_emissao){ alert('Preencha o número, a data de emissão e o fornecedor da nota fiscal.'); return; }
-      if(cnpj && cnpj.length !== 14){ alert('O CNPJ do fornecedor precisa ter 14 dígitos.'); waNfCnpj.focus(); return; }
-      if(chave && chave.length !== 44){ alert('A chave de acesso da NF-e tem 44 dígitos.'); waNfChave.focus(); return; }
-      if(valor !== null && !(valor >= 0)){ alert('O valor total não pode ser negativo.'); waNfValor.focus(); return; }
-      // Mesma nota já cadastrada: pela chave, pelo CNPJ + série + número ou (sem CNPJ) pelo fornecedor + série + número.
-      const outras = stockNotas.filter(n => n.id !== editingNfId);
-      const mesma = n => n.numero === numero && (n.serie || '') === (serie || '');
-      const dup = outras.find(n => chave && n.chave_acesso === chave) || outras.find(n => cnpj && n.fornecedor_cnpj === cnpj && mesma(n));
-      if(dup){ alert(`Esta nota já está cadastrada: ${nfRotulo(dup)} · ${dup.fornecedor} (emissão ${fmtDataBR(dup.data_emissao)}).`); return; }
-      const parecida = outras.find(n => !cnpj && nfNorm(n.fornecedor) === nfNorm(fornecedor) && mesma(n));
-      if(parecida && !confirm(`Já existe ${nfRotulo(parecida)} de ${parecida.fornecedor}. Cadastrar mesmo assim?`)) return;
+      const dados = nfValidarDados(false);
+      if(!dados){ nfEtapa = 2; nfEtapaRender(); return; }
+      if(!waNfAprovar.checked){ alert('Marque "Conferi os dados da nota e as linhas dos produtos" para aprovar.'); return; }
+      const semDescricao = nfItens.findIndex(it => nfItemErro(it) && (it.quantidade != null || it.valor_total != null || String(it.codigo || '').trim()));
+      if(semDescricao >= 0){ alert(`A linha ${semDescricao + 1} está sem descrição do produto. Preencha ou remova a linha.`); return; }
+      const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => ({
+        ordem: i + 1, codigo: String(it.codigo || '').trim() || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
+        ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidade || '').trim() || null,
+        quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total }));
+      if(itens.some(it => [it.quantidade, it.valor_unitario, it.valor_total].some(v => v != null && !(v >= 0)))){ alert('Quantidade e valores das linhas não podem ser negativos.'); return; }
+      if(!itens.length && !confirm('A nota está sem linhas de produto. Aprovar mesmo assim?')) return;
 
-      const payload = { numero, serie, chave_acesso: chave, fornecedor, fornecedor_cnpj: cnpj, data_emissao, valor_total: valor, observacao: waNfObs.value.trim() || null };
       const antiga = nfDe(editingNfId);
       const vincular = nfVincularEntrada;
+      const payload = Object.assign({}, dados, { lida_do_pdf: nfLidoDoPdf || !!(antiga && antiga.lida_do_pdf) });
       let arquivo = null;
-      waNfSaveBtn.disabled = true;
+      waNfNextBtn.disabled = true;
       try {
         if(nfArquivoNovo){
-          waNfSaveBtn.textContent = 'Enviando arquivo...';
+          waNfNextBtn.textContent = 'Enviando o PDF...';
           arquivo = await enviarArquivoNf();
           Object.assign(payload, arquivo);
-        } else if(antiga && nfArquivoRemover){
-          Object.assign(payload, { arquivo_nome: null, arquivo_path: null, arquivo_bytes: null });
         }
+        waNfNextBtn.textContent = 'Salvando...';
         let salva;
         if(!supabaseReady){
-          salva = Object.assign({}, antiga || { id: 'nf' + Date.now(), created_at: new Date().toISOString(), usuario_email: currentUserEmail() }, payload);
-        } else if(antiga){
-          if(!window.__exigirEdicao('estoque', 'editar notas fiscais')) throw null;
-          const { data, error } = await supabaseClient.from('notas_fiscais').update(payload).eq('id', antiga.id).select('*');
-          if(error) throw error;
-          if(!data || !data.length) throw new Error('A nota não foi alterada: este usuário não tem permissão de Edição no Estoque.');
-          salva = data[0];
+          const agora = new Date().toISOString();
+          salva = Object.assign({}, antiga || { id: 'nf' + Date.now(), created_at: agora, usuario_email: currentUserEmail() }, payload,
+            { itens, aprovada_em: agora, aprovada_por: currentUserEmail() });
         } else {
-          const { data, error } = await supabaseClient.from('notas_fiscais').insert(Object.assign({ usuario_email: currentUserEmail() }, payload)).select('*').single();
+          if(antiga && !window.__exigirEdicao('estoque', 'editar notas fiscais')) throw null;
+          const { data: id, error } = await supabaseClient.rpc('estoque_nf_salvar', {
+            p_id: antiga ? antiga.id : null, p_nota: Object.assign({ usuario_email: currentUserEmail() }, payload), p_itens: itens });
           if(error) throw error;
-          salva = data;
+          const lida = await supabaseClient.from('notas_fiscais').select(NF_SELECT).eq('id', id).single();
+          if(lida.error) throw lida.error;
+          salva = lida.data;
         }
-        // Arquivo trocado ou removido: o antigo sai do Storage só depois de a nota ser gravada.
-        if(antiga && antiga.arquivo_path && (arquivo || nfArquivoRemover)) await removerNfStorage([antiga.arquivo_path]);
+        // PDF trocado: o antigo sai do Storage só depois de a nota ser gravada.
+        if(antiga && antiga.arquivo_path && arquivo) await removerNfStorage([antiga.arquivo_path]);
         nfGuardarLocal(salva);
         waCloseNfModal();
         renderStock();
         if(vincular && waMovNfField && !waMovNfField.hidden) nfSelecionar(salva.id);
-        showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'}${vincular ? ' e escolhida na entrada' : ''}.`);
+        showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'} com ${itens.length} linha${itens.length === 1 ? '' : 's'} de produto${vincular ? ' e escolhida na entrada' : ''}.`);
       } catch(err){
         if(arquivo) await removerNfStorage([arquivo.arquivo_path]);
         if(err){
           console.error('Erro ao salvar nota fiscal:', err);
           alert(err.code === '23505' ? 'Esta nota fiscal já está cadastrada (mesma chave de acesso ou mesmo CNPJ, série e número).'
+            : err.code === 'PGRST202' || err.code === '42883' ? 'O banco ainda não tem a gravação das notas com as linhas de produto. Rode supabase/schema_estoque_nf_itens.sql no Supabase.'
             : 'Erro ao salvar a nota fiscal: ' + (err.message || err));
         }
       } finally {
-        waNfSaveBtn.disabled = false;
-        waNfSaveBtn.textContent = editingNfId ? 'Salvar Alterações' : 'Salvar Nota Fiscal';
+        nfEtapaRender();
       }
     };
 
@@ -11838,18 +12337,15 @@ ${clipPlayerPills(n)}
     // Corpos emprestados e onde devolvê-los (antes do rodapé do modal de origem).
     const hubForms = {
       mov: waMovModal.querySelector('.wa-modal-body'),
-      produto: waProductModal.querySelector('.wa-modal-body'),
-      nf: waNfModal.querySelector('.wa-modal-body')
+      produto: waProductModal.querySelector('.wa-modal-body')
     };
     const hubFormHome = {
       mov: { parent: hubForms.mov.parentNode, next: hubForms.mov.nextElementSibling },
-      produto: { parent: hubForms.produto.parentNode, next: hubForms.produto.nextElementSibling },
-      nf: { parent: hubForms.nf.parentNode, next: hubForms.nf.nextElementSibling }
+      produto: { parent: hubForms.produto.parentNode, next: hubForms.produto.nextElementSibling }
     };
     const HUB_ACOES = {
       entrada:       { titulo: '2. Dados da Entrada',       botao: 'Registrar Entrada' },
       saida:         { titulo: '2. Dados da Saída',         botao: 'Registrar Saída' },
-      nf:            { titulo: '2. Dados da Nota Fiscal',   botao: 'Salvar Nota Fiscal' },
       transferencia: { titulo: '2. Dados da Transferência', botao: 'Registrar Transferência' },
       produto:       { titulo: '2. Dados do Produto',       botao: 'Salvar Produto' }
     };
@@ -11862,6 +12358,8 @@ ${clipPlayerPills(n)}
     }
 
     function hubSelecionar(acao){
+      // Nota fiscal tem etapas próprias (anexar, dados, conferência): abre o modal dela no lugar da central.
+      if(acao === 'nf'){ waCloseStockHub(); waOpenNfModal(); return; }
       hubAcao = acao;
       waStockHubGrid.querySelectorAll('.wa-category-card').forEach(c => c.classList.toggle('selected', c.dataset.acao === acao));
       hubDevolverFormularios();
@@ -11869,9 +12367,6 @@ ${clipPlayerPills(n)}
       if(acao === 'produto'){
         fillProductForm(null);
         waStockHubPanel.appendChild(hubForms.produto);
-      } else if(acao === 'nf'){
-        fillNfForm(null);
-        waStockHubPanel.appendChild(hubForms.nf);
       } else {
         ok = fillMovForm(null, acao);
         if(ok) waStockHubPanel.appendChild(hubForms.mov);
@@ -11885,7 +12380,7 @@ ${clipPlayerPills(n)}
       waStockHubStep.classList.remove('wa-fade-in');
       void waStockHubStep.offsetWidth;
       waStockHubStep.classList.add('wa-fade-in');
-      if(ok) setTimeout(() => (acao === 'produto' ? waProdCodigo : acao === 'nf' ? waNfNumero : waMovProduto).focus(), 50);
+      if(ok) setTimeout(() => (acao === 'produto' ? waProdCodigo : waMovProduto).focus(), 50);
     }
 
     waStockHubGrid.querySelectorAll('.wa-category-card').forEach(card => {
@@ -11913,13 +12408,13 @@ ${clipPlayerPills(n)}
     // em caso de sucesso elas chamam waClose*Modal, que também fecha a central.
     window.waStockHubSave = function(){
       if(!hubAcao) return;
-      if(hubAcao === 'produto') waSaveProduct(); else if(hubAcao === 'nf') waSaveNf(); else waSaveMovement();
+      if(hubAcao === 'produto') waSaveProduct(); else waSaveMovement();
     };
 
     // Os produtos carregam depois que a central já abriu: se o usuário escolheu
     // uma movimentação antes disso, refaz a seleção com a lista completa.
     function hubAposCarregarEstoque(){
-      if(waStockHubModal.classList.contains('open') && hubAcao && hubAcao !== 'produto' && hubAcao !== 'nf' && hubForms.mov.parentNode !== waStockHubPanel){
+      if(waStockHubModal.classList.contains('open') && hubAcao && hubAcao !== 'produto' && hubForms.mov.parentNode !== waStockHubPanel){
         hubSelecionar(hubAcao);
       }
     }
@@ -12091,8 +12586,17 @@ ${clipPlayerPills(n)}
           .concat(getFilteredProducts().map(p => [p.codigo_barras, p.nome, p.unidade, fmtQty(saldoOf(p.id, currentSetor)), fmtQty(p.estoque_minimo), fmtNum(p.preco_custo, 2), stockPrecoData(p), SITUACAO[situacaoOf(p)].label]));
         filename = `estoque_produtos_${currentSetor}.csv`;
       } else if(stockTab === 'notas'){
-        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total', 'Entradas vinculadas', 'Arquivo', 'Observação', 'Cadastrada por', 'Cadastrada em']]
-          .concat(getFilteredNotas().map(n => [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2), nfEntradas(n.id).length, n.arquivo_nome || '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '', fmtDateTimeBR(n.created_at)]));
+        // Uma linha por produto da nota (nota sem linhas sai numa linha só): documenta o que foi aprovado.
+        rows = [['Emissão', 'Número', 'Série', 'Chave de acesso', 'Fornecedor', 'CNPJ', 'Valor total da nota', 'Linha', 'Código', 'Descrição do produto', 'NCM', 'CFOP', 'Unidade', 'Quantidade', 'Valor unitário', 'Valor total da linha', 'Entradas vinculadas', 'Arquivo', 'Observação', 'Cadastrada por', 'Aprovada em', 'Aprovada por']];
+        getFilteredNotas().forEach(n => {
+          const base = [fmtDataBR(n.data_emissao), n.numero, n.serie || '', n.chave_acesso || '', n.fornecedor, fmtCnpj(n.fornecedor_cnpj), fmtNum(n.valor_total, 2)];
+          const fim = [nfEntradas(n.id).length, n.arquivo_nome || '', n.observacao || '', userNameOf(n.usuario_email) || n.usuario_email || '',
+            n.aprovada_em ? fmtDateTimeBR(n.aprovada_em) : '', userNameOf(n.aprovada_por) || n.aprovada_por || ''];
+          const linhas = (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+          if(!linhas.length) rows.push(base.concat(['', '', '', '', '', '', '', '', ''], fim));
+          linhas.forEach(it => rows.push(base.concat([it.ordem, it.codigo || '', it.descricao, it.ncm || '', it.cfop || '', it.unidade || '',
+            fmtNum(it.quantidade, 4), fmtNum(it.valor_unitario, 4), fmtNum(it.valor_total, 2)], fim)));
+        });
         filename = 'estoque_notas_fiscais.csv';
       } else {
         const byId = new Map(stockProducts.map(p => [p.id, p]));
