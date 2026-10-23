@@ -2338,6 +2338,23 @@
   .wa-nf-itens input.num{text-align:right;font-variant-numeric:tabular-nums;}
   .wa-nf-itens input:disabled, .wa-nf-itens textarea:disabled{color:var(--wa-text);border-color:transparent;resize:none;}
   .wa-nf-itens tr.wa-nf-item-erro td{background:#FEF2F2;}
+  /* Linha em leitura (texto) e em edição (campos); coluna Entrada e a escolha do produto do estoque. */
+  .wa-nf-itens td.wa-nf-txt{padding:9px 7px;font-size:12.5px;color:var(--wa-text);line-height:1.35;}
+  .wa-nf-itens td.wa-nf-txt.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .wa-nf-itens tr.wa-nf-editando td{background:#F8FBFF;}
+  .wa-nf-itens tr.wa-nf-editando input, .wa-nf-itens tr.wa-nf-editando textarea{border-color:var(--wa-border);background:#fff;}
+  .wa-nf-itens td.wa-nf-ent{text-align:center;padding-top:9px;}
+  .wa-nf-itens td.wa-nf-ent input{width:17px;height:17px;margin:0;accent-color:#16A34A;cursor:pointer;}
+  .wa-nf-itens td.wa-nf-acoes{white-space:nowrap;padding-top:5px;}
+  .wa-nf-ent-todos{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+  .wa-nf-ent-todos input{width:14px;height:14px;margin:0;accent-color:#16A34A;}
+  .wa-nf-lancada{display:inline-block;padding:2px 7px;border-radius:9999px;background:#ECFDF5;color:#065F46;font-size:11px;font-weight:700;white-space:nowrap;}
+  .wa-nf-itens tr.wa-nf-sub td{background:#F0FDF4;padding:6px 8px 9px;border-top:none;}
+  .wa-nf-prod{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#065F46;}
+  .wa-nf-prod b{font-weight:700;}
+  .wa-nf-prod select{flex:1 1 260px;min-width:0;max-width:420px;border:1px solid var(--wa-border);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12.5px;color:var(--wa-text);background:#fff;}
+  .wa-nf-prod select.falta{border-color:#EF4444;box-shadow:0 0 0 2px rgba(239,68,68,.15);}
+  .wa-nf-sug{font-size:10.5px;font-weight:700;color:#92400E;background:#FFFBEB;border-radius:9999px;padding:1px 7px;}
   .wa-nf-aprovar{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border:1.5px solid var(--wa-border);border-radius:10px;font-size:13px;font-weight:600;color:var(--wa-text);cursor:pointer;}
   .wa-nf-aprovar:has(input:checked){border-color:#16A34A;background:#F0FDF4;}
   .wa-nf-aprovar input{width:17px;height:17px;margin:0;accent-color:#16A34A;}
@@ -5577,7 +5594,10 @@
                         <th style="width:92px;text-align:right;">Qtd.</th>
                         <th style="width:110px;text-align:right;">V. unitário</th>
                         <th style="width:110px;text-align:right;">V. total</th>
-                        <th style="width:40px;"></th>
+                        <th style="width:78px;text-align:center;" title="Marque as linhas que entram no estoque automaticamente ao aprovar a nota">
+                          <label class="wa-nf-ent-todos"><input type="checkbox" id="waNfLancarTodos" aria-label="Marcar todas as linhas para entrada"> Entrada</label>
+                        </th>
+                        <th style="width:76px;"></th>
                       </tr>
                     </thead>
                     <tbody id="waNfItensBody"></tbody>
@@ -5586,7 +5606,7 @@
                 <div class="wa-budget-summary" id="waNfItensTotal"></div>
                 <label class="wa-nf-aprovar" id="waNfAprovarBox">
                   <input type="checkbox" id="waNfAprovar">
-                  <span>Conferi os dados da nota e as linhas dos produtos.</span>
+                  <span id="waNfAprovarTxt">Conferi os dados da nota e as linhas dos produtos.</span>
                 </label>
               </div>
 
@@ -10738,6 +10758,7 @@ ${clipPlayerPills(n)}
     }
 
     // ---- Notas fiscais ----
+    const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2.4;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
     const ICON_VER = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     const nfDigitos = s => String(s || '').replace(/\D/g, '');
     const fmtCnpj = s => { const d = nfDigitos(s); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : (s || ''); };
@@ -11733,7 +11754,11 @@ ${clipPlayerPills(n)}
         el.classList.add('wa-nf-lido');
         achados.push(k);
       });
-      if(lido.itens.length || !editingNfId) nfItens = lido.itens.map(it => Object.assign({}, it));
+      // Leitura nova: linhas sem produto nem entrada marcada (a linha já lançada de uma nota editada não é relida).
+      if(lido.itens.length || !editingNfId){
+        nfItens = nfItens.filter(it => it.movimentacao_id).concat(lido.itens.map(it => Object.assign({}, it, { produto_id: '', lancar: false, movimentacao_id: null })));
+        nfEditando.clear();
+      }
       nfLidoDoPdf = achados.length > 0 || lido.itens.length > 0;
       waNfLidoHint.hidden = !achados.length;
       const faltam = Object.keys(NF_CAMPOS).filter(k => !achados.includes(k)).map(k => NF_CAMPOS_ROT[k]);
@@ -11836,29 +11861,107 @@ ${clipPlayerPills(n)}
       waNfItensTotal.classList.toggle('over', Math.abs(dif) >= 0.05);
       waNfItensQtd.textContent = `(${nfItens.length} linha${nfItens.length === 1 ? '' : 's'})`;
     }
+    // Linhas da etapa 3: em leitura (texto) por padrão; o lápis abre a edição da linha. A coluna Entrada marca
+    // as linhas que viram entrada no estoque ao aprovar a nota (lançamento automático); para isso cada linha
+    // marcada escolhe o produto do estoque (sugerido pelo código ou pela descrição). A entrada manual continua.
+    // O preço da entrada é o valor unitário da linha, gravado na data do cadastro da nota; se for diferente do
+    // cadastro do produto, atualiza o preço como numa entrada manual (preço praticado).
+    const waNfLancarTodos = document.getElementById('waNfLancarTodos');
+    const waNfAprovarTxt = document.getElementById('waNfAprovarTxt');
+    const nfEditando = new Set();   // índices das linhas abertas para edição
+    const fmtValorNf = v => v == null || v === '' ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    const nfLancaveis = () => nfItens.filter(it => !it.movimentacao_id);
+    const nfNovasEntradas = () => nfItens.filter(it => it.lancar && !it.movimentacao_id);
+    // Produto do estoque para a linha: mesmo código de barras ou, sem ele, o nome com mais palavras em comum.
+    function nfSugerirProduto(it){
+      const ativos = stockProducts.filter(p => p.ativo);
+      const cod = String(it.codigo || '').trim();
+      const porCodigo = cod && ativos.find(p => p.codigo_barras === cod);
+      if(porCodigo) return porCodigo.id;
+      const palavras = s => new Set(nfNorm(s).split(/[^a-z0-9]+/).filter(w => w.length >= 3));
+      const alvo = palavras(it.descricao);
+      let melhor = null;
+      ativos.forEach(p => {
+        const pp = palavras(p.nome);
+        let comum = 0;
+        pp.forEach(w => { if(alvo.has(w)) comum++; });
+        const nota = comum / Math.max(1, Math.min(pp.size, alvo.size));
+        if(comum >= 2 && nota >= 0.5 && (!melhor || nota > melhor.nota)) melhor = { id: p.id, nota };
+      });
+      return melhor ? melhor.id : '';
+    }
+    function nfMarcarLancar(it, sim){
+      it.lancar = sim;
+      if(sim && !it.produto_id){ it.produto_id = nfSugerirProduto(it); it.produtoSugerido = !!it.produto_id; }
+    }
+    // Linha de baixo (verde) da linha marcada: o produto do estoque e o que será lançado.
+    function nfSubLinha(it, i){
+      const p = stockProducts.find(x => x.id === it.produto_id);
+      const destino = STOCK_SETORES[0];
+      if(nfSomenteLeitura || it.movimentacao_id){
+        return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="8"><div class="wa-nf-prod">
+          ${it.movimentacao_id ? 'Entrada lançada' : 'Marcada para entrada'} em <b>${stockEsc(p ? p.nome : 'produto removido')}</b>${p ? ` (${stockEsc(p.codigo_barras)})` : ''}</div></td></tr>`;
+      }
+      const opcoes = stockProducts.filter(x => x.ativo || x.id === it.produto_id).slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .map(x => `<option value="${x.id}" ${x.id === it.produto_id ? 'selected' : ''}>${stockEsc(x.nome)} · ${stockEsc(x.codigo_barras)} · ${stockEsc(x.unidade)}</option>`).join('');
+      const q = Number(it.quantidade) || 0;
+      return `<tr class="wa-nf-sub" data-i="${i}"><td></td><td colspan="8"><div class="wa-nf-prod">
+        <b>Produto do estoque:</b>
+        <select data-prod aria-label="Produto do estoque da linha ${i + 1}" class="${it.produto_id ? '' : 'falta'}"><option value="">Escolha o produto…</option>${opcoes}</select>
+        ${it.produtoSugerido && it.produto_id ? '<span class="wa-nf-sug" title="Escolhido pelo código ou pela descrição da linha; confira">sugerido</span>' : ''}
+        <span data-resumo>${q > 0 ? `→ entrada de ${fmtQty(q)}${p ? ' ' + stockEsc(p.unidade) : ''} a ${fmtValorNf(it.valor_unitario)} no ${stockEsc(destino)}` : '→ informe a quantidade da linha'}</span>
+      </div></td></tr>`;
+    }
+    function nfLinha(it, i){
+      const ed = !nfSomenteLeitura && nfEditando.has(i);
+      const erro = !nfSomenteLeitura && nfItemErro(it) ? ' wa-nf-item-erro' : '';
+      const ent = it.movimentacao_id ? '<span class="wa-nf-lancada" title="A entrada desta linha já foi lançada no estoque">Lançada</span>'
+        : nfSomenteLeitura ? (it.lancar ? '<span class="wa-nf-lancada">Sim</span>' : '—')
+        : `<input type="checkbox" data-lancar ${it.lancar ? 'checked' : ''} aria-label="Lançar a linha ${i + 1} como entrada no estoque">`;
+      const acoes = nfSomenteLeitura ? '' : `
+        <button type="button" class="wa-icon-btn" data-edit="${i}" title="${ed ? 'Concluir a edição da linha' : 'Editar a linha'}">${ed ? ICON_OK : ICON_EDIT}</button>
+        <button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`;
+      const celulas = ed ? `
+          <td><input data-k="codigo" value="${stockEsc(it.codigo || '')}" aria-label="Código da linha ${i + 1}"></td>
+          <td><textarea data-k="descricao" rows="1" aria-label="Descrição da linha ${i + 1}">${stockEsc(it.descricao || '')}</textarea></td>
+          <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}"></td>
+          <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}"></td>
+          <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}"></td>
+          <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}"></td>` : `
+          <td class="wa-nf-txt">${stockEsc(it.codigo || '—')}</td>
+          <td class="wa-nf-txt">${stockEsc(it.descricao || '(sem descrição)')}</td>
+          <td class="wa-nf-txt">${stockEsc(it.unidade || '—')}</td>
+          <td class="wa-nf-txt num">${it.quantidade == null ? '—' : fmtQty(it.quantidade)}</td>
+          <td class="wa-nf-txt num">${fmtValorNf(it.valor_unitario)}</td>
+          <td class="wa-nf-txt num">${fmtValorNf(it.valor_total)}</td>`;
+      return `<tr data-i="${i}" class="${ed ? 'wa-nf-editando' : ''}${erro}">
+          <td class="wa-nf-ord">${i + 1}</td>${celulas}
+          <td class="wa-nf-ent">${ent}</td>
+          <td class="wa-nf-acoes">${acoes}</td>
+        </tr>` + (it.lancar || it.movimentacao_id ? nfSubLinha(it, i) : '');
+    }
+    function nfAprovarTexto(){
+      const n = nfNovasEntradas().length;
+      waNfAprovarTxt.textContent = 'Conferi os dados da nota e as linhas dos produtos.'
+        + (n ? ` Ao aprovar, ${n} linha${n === 1 ? ' entra' : 's entram'} no estoque automaticamente.` : '');
+      const livres = nfLancaveis();
+      waNfLancarTodos.disabled = nfSomenteLeitura || !livres.length;
+      waNfLancarTodos.checked = livres.length > 0 && livres.every(it => it.lancar);
+      waNfLancarTodos.indeterminate = !waNfLancarTodos.checked && livres.some(it => it.lancar);
+    }
     function nfItensRender(){
-      const ro = nfSomenteLeitura ? 'disabled' : '';
       waNfItemAdd.hidden = nfSomenteLeitura;
-      waNfItensBody.innerHTML = nfItens.length ? nfItens.map((it, i) => `
-        <tr data-i="${i}" class="${!nfSomenteLeitura && nfItemErro(it) ? 'wa-nf-item-erro' : ''}">
-          <td class="wa-nf-ord">${i + 1}</td>
-          <td><input data-k="codigo" value="${stockEsc(it.codigo || '')}" aria-label="Código da linha ${i + 1}" ${ro}></td>
-          <td><textarea data-k="descricao" rows="1" aria-label="Descrição da linha ${i + 1}" ${ro}>${stockEsc(it.descricao || '')}</textarea></td>
-          <td><input data-k="unidade" value="${stockEsc(it.unidade || '')}" aria-label="Unidade da linha ${i + 1}" ${ro}></td>
-          <td><input class="num" data-k="quantidade" inputmode="decimal" value="${nfNumIn(it.quantidade, 4)}" aria-label="Quantidade da linha ${i + 1}" ${ro}></td>
-          <td><input class="num" data-k="valor_unitario" inputmode="decimal" value="${nfNumIn(it.valor_unitario, 4)}" aria-label="Valor unitário da linha ${i + 1}" ${ro}></td>
-          <td><input class="num" data-k="valor_total" inputmode="decimal" value="${nfNumIn(it.valor_total, 2)}" aria-label="Valor total da linha ${i + 1}" ${ro}></td>
-          <td>${nfSomenteLeitura ? '' : `<button type="button" class="wa-icon-btn danger" data-rm="${i}" title="Remover linha">${ICON_TRASH}</button>`}</td>
-        </tr>`).join('')
-        : `<tr class="wa-empty-row"><td colspan="8">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
+      waNfItensBody.innerHTML = nfItens.length ? nfItens.map(nfLinha).join('')
+        : `<tr class="wa-empty-row"><td colspan="9">${nfSomenteLeitura ? 'Nota sem linhas de produto.' : 'Nenhuma linha de produto. Use "+ Adicionar linha" para incluir os produtos da nota.'}</td></tr>`;
       // A descrição longa abre na altura do texto.
       waNfItensBody.querySelectorAll('textarea').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
       nfTotaisRender();
+      nfAprovarTexto();
     }
     waNfItensBody.addEventListener('input', e => {
       const el = e.target.closest('[data-k]'), tr = e.target.closest('tr[data-i]');
       if(!el || !tr) return;
-      const it = nfItens[Number(tr.dataset.i)], k = el.dataset.k;
+      const i = Number(tr.dataset.i), it = nfItens[i], k = el.dataset.k;
       if(['quantidade', 'valor_unitario', 'valor_total'].includes(k)){
         it[k] = el.value.trim() === '' ? null : nfNumBR(el.value);
         // Quantidade ou valor unitário mudou: o total da linha acompanha.
@@ -11866,6 +11969,9 @@ ${clipPlayerPills(n)}
           it.valor_total = Math.round(it.quantidade * it.valor_unitario * 100) / 100;
           tr.querySelector('[data-k="valor_total"]').value = nfNumIn(it.valor_total, 2);
         }
+        // A linha verde (o que será lançado) acompanha a quantidade e o preço.
+        const sub = waNfItensBody.querySelector(`tr.wa-nf-sub[data-i="${i}"]`);
+        if(sub) sub.outerHTML = nfSubLinha(it, i);
       } else {
         it[k] = el.value;
       }
@@ -11873,16 +11979,48 @@ ${clipPlayerPills(n)}
       tr.classList.toggle('wa-nf-item-erro', nfItemErro(it));
       nfTotaisRender();
     });
+    waNfItensBody.addEventListener('change', e => {
+      const tr = e.target.closest('tr[data-i]');
+      if(!tr) return;
+      const it = nfItens[Number(tr.dataset.i)];
+      if(e.target.matches('[data-lancar]')){
+        nfMarcarLancar(it, e.target.checked);
+        nfItensRender();
+      } else if(e.target.matches('[data-prod]')){
+        it.produto_id = e.target.value;
+        it.produtoSugerido = false;
+        nfItensRender();
+      }
+    });
     waNfItensBody.addEventListener('click', e => {
+      const ed = e.target.closest('[data-edit]');
+      if(ed){
+        const i = Number(ed.dataset.edit);
+        if(nfEditando.has(i)) nfEditando.delete(i); else nfEditando.add(i);
+        nfItensRender();
+        if(nfEditando.has(i)){ const f = waNfItensBody.querySelector(`tr[data-i="${i}"] textarea`); if(f) f.focus(); }
+        return;
+      }
       const b = e.target.closest('[data-rm]');
       if(!b) return;
+      const it = nfItens[Number(b.dataset.rm)];
+      if(it.movimentacao_id){
+        alert('A entrada desta linha já foi lançada no estoque. Para tirar a linha, remova antes a entrada na aba Movimentações.');
+        return;
+      }
       nfItens.splice(Number(b.dataset.rm), 1);
+      nfEditando.clear();
+      nfItensRender();
+    });
+    waNfLancarTodos.addEventListener('change', () => {
+      nfLancaveis().forEach(it => nfMarcarLancar(it, waNfLancarTodos.checked));
       nfItensRender();
     });
     waNfItemAdd.addEventListener('click', () => {
-      nfItens.push({ codigo: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null });
+      nfItens.push({ codigo: '', descricao: '', ncm: '', cfop: '', unidade: '', quantidade: null, valor_unitario: null, valor_total: null, produto_id: '', lancar: false, movimentacao_id: null });
+      nfEditando.add(nfItens.length - 1);   // linha nova já abre em edição
       nfItensRender();
-      const ult = waNfItensBody.querySelector('tr:last-child textarea');
+      const ult = waNfItensBody.querySelector(`tr[data-i="${nfItens.length - 1}"] textarea`);
       if(ult) ult.focus();
     });
     waNfAprovar.addEventListener('change', () => nfEtapaRender());
@@ -11948,7 +12086,9 @@ ${clipPlayerPills(n)}
       nfItens = n ? (n.itens || []).slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(it => ({
         codigo: it.codigo || '', descricao: it.descricao || '', ncm: it.ncm || '', cfop: it.cfop || '', unidade: it.unidade || '',
         quantidade: it.quantidade == null ? null : Number(it.quantidade), valor_unitario: it.valor_unitario == null ? null : Number(it.valor_unitario),
-        valor_total: it.valor_total == null ? null : Number(it.valor_total) })) : [];
+        valor_total: it.valor_total == null ? null : Number(it.valor_total),
+        produto_id: it.produto_id || '', movimentacao_id: it.movimentacao_id || null, lancar: !!(it.movimentacao_id || it.entrada_aprovada) })) : [];
+      nfEditando.clear();
       waNfLidoHint.hidden = true;
       nfLeituraMsg(null);
       waNfAprovar.checked = false;
@@ -12008,12 +12148,19 @@ ${clipPlayerPills(n)}
       if(!waNfAprovar.checked){ alert('Marque "Conferi os dados da nota e as linhas dos produtos" para aprovar.'); return; }
       const semDescricao = nfItens.findIndex(it => nfItemErro(it) && (it.quantidade != null || it.valor_total != null || String(it.codigo || '').trim()));
       if(semDescricao >= 0){ alert(`A linha ${semDescricao + 1} está sem descrição do produto. Preencha ou remova a linha.`); return; }
+      // Entrada automática: cada linha marcada (e ainda não lançada) precisa do produto do estoque e de quantidade.
+      const semProduto = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !it.produto_id);
+      if(semProduto >= 0){ alert(`A linha ${semProduto + 1} está marcada para entrada: escolha o produto do estoque (ou desmarque a coluna Entrada).`); nfItensRender(); return; }
+      const semQtd = nfItens.findIndex(it => it.lancar && !it.movimentacao_id && !(Number(it.quantidade) > 0));
+      if(semQtd >= 0){ alert(`A linha ${semQtd + 1} está marcada para entrada: a quantidade precisa ser maior que zero.`); return; }
       const itens = nfItens.filter(it => !nfItemErro(it)).map((it, i) => ({
         ordem: i + 1, codigo: String(it.codigo || '').trim() || null, descricao: String(it.descricao).replace(/\s+/g, ' ').trim(),
         ncm: String(it.ncm || '').trim() || null, cfop: String(it.cfop || '').trim() || null, unidade: String(it.unidade || '').trim() || null,
-        quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total }));
+        quantidade: it.quantidade, valor_unitario: it.valor_unitario, valor_total: it.valor_total,
+        produto_id: it.produto_id || null, lancar_entrada: !!it.lancar, movimentacao_id: it.movimentacao_id || null, setor: STOCK_SETORES[0] }));
       if(itens.some(it => [it.quantidade, it.valor_unitario, it.valor_total].some(v => v != null && !(v >= 0)))){ alert('Quantidade e valores das linhas não podem ser negativos.'); return; }
       if(!itens.length && !confirm('A nota está sem linhas de produto. Aprovar mesmo assim?')) return;
+      const novasEntradas = itens.filter(it => it.lancar_entrada && !it.movimentacao_id).length;
 
       const antiga = nfDe(editingNfId);
       const vincular = nfVincularEntrada;
@@ -12031,7 +12178,19 @@ ${clipPlayerPills(n)}
         if(!supabaseReady){
           const agora = new Date().toISOString();
           salva = Object.assign({}, antiga || { id: 'nf' + Date.now(), created_at: agora, usuario_email: currentUserEmail() }, payload,
-            { itens, aprovada_em: agora, aprovada_por: currentUserEmail() });
+            { aprovada_em: agora, aprovada_por: currentUserEmail() });
+          // Mesma regra do banco (estoque_nf_salvar): a linha marcada vira entrada com o preço da linha.
+          salva.itens = itens.map((it, k) => {
+            if(!it.lancar_entrada || it.movimentacao_id) return it;
+            const p = stockProducts.find(x => x.id === it.produto_id);
+            const preco = it.valor_unitario != null ? it.valor_unitario : (p ? p.preco_custo : null);
+            if(p && preco != null && Math.abs(preco - (p.preco_custo || 0)) >= 0.005){ p.preco_custo = Math.round(preco * 100) / 100; p.preco_atualizado_em = agora; }
+            const mov = { id: 'm' + Date.now() + '-' + k, produto_id: it.produto_id, tipo: 'entrada', setor: it.setor, quantidade: it.quantidade, preco_unitario: preco,
+              nota_fiscal_id: salva.id, observacao: `Entrada automática · NF ${salva.numero} · linha ${it.ordem}: ${it.descricao}`.slice(0, 300),
+              usuario_email: currentUserEmail(), created_at: agora };
+            stockMovements.unshift(normalizeMovement(mov));
+            return Object.assign({}, it, { movimentacao_id: mov.id, entrada_aprovada: true });
+          });
         } else {
           if(antiga && !window.__exigirEdicao('estoque', 'editar notas fiscais')) throw null;
           const { data: id, error } = await supabaseClient.rpc('estoque_nf_salvar', {
@@ -12045,9 +12204,11 @@ ${clipPlayerPills(n)}
         if(antiga && antiga.arquivo_path && arquivo) await removerNfStorage([antiga.arquivo_path]);
         nfGuardarLocal(salva);
         waCloseNfModal();
-        renderStock();
+        // Entradas lançadas: recarrega saldos, preços e movimentações (a nota volta junto).
+        if(novasEntradas) await loadStock(); else renderStock();
         if(vincular && waMovNfField && !waMovNfField.hidden) nfSelecionar(salva.id);
-        showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'} com ${itens.length} linha${itens.length === 1 ? '' : 's'} de produto${vincular ? ' e escolhida na entrada' : ''}.`);
+        showScanFeedback('ok', `${nfRotulo(salva)} · ${salva.fornecedor} ${antiga ? 'atualizada' : 'cadastrada'} com ${itens.length} linha${itens.length === 1 ? '' : 's'} de produto`
+          + (novasEntradas ? ` · ${novasEntradas} entrada${novasEntradas === 1 ? '' : 's'} lançada${novasEntradas === 1 ? '' : 's'} no estoque` : '') + `${vincular ? ' e escolhida na entrada' : ''}.`);
       } catch(err){
         if(arquivo) await removerNfStorage([arquivo.arquivo_path]);
         if(err){
