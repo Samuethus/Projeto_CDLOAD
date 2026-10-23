@@ -3077,6 +3077,7 @@
             <option value="intencao">Painel · Intenção de Compra</option>
             <option value="panorama">Painel · Panorama Econômico</option>
             <option value="spcmt">Painel · SPC Mato Grosso</option>
+            <option value="uso">Painel · Usuários Ativos</option>
             <option value="viabilidades">Painel · Viabilidade</option>
           </select>
           <select class="filter-select" id="stkLeadsFiltro" title="Simulação Leads: quantidade de leads (planos) captados pelo projeto" hidden>
@@ -9141,10 +9142,13 @@
     };
 
     // Lista gravada: Administrador = null (todos). Cadastro que já era "todos" continua null se nada foi desmarcado.
+    // "Todos" (null) dos dashboards não inclui Usuários Ativos (uso dos colegas): ele só vale marcado na lista.
+    const UA_FORA_DO_TODOS = { dashboards: ['uso'] };
     function uaValor(k){
       if(uaAdmin() || (k === 'formularios' && uaFormsTodos)) return null;
-      const itens = uaGrupo(k).itens().map(i => i.id);
-      if(uaOrig[k] === null && itens.length && itens.every(id => uaSel[k].has(id))) return null;
+      const fora = UA_FORA_DO_TODOS[k] || [];
+      const itens = uaGrupo(k).itens().map(i => i.id).filter(id => !fora.includes(id));
+      if(uaOrig[k] === null && itens.length && itens.every(id => uaSel[k].has(id)) && !fora.some(id => uaSel[k].has(id))) return null;
       return [...uaSel[k]];
     }
 
@@ -9253,7 +9257,7 @@
       uaOrig.formularios = editing ? lista(editing.survey_formularios_permitidos) : [];
       uaSel.secoes = new Set(uaOrig.secoes);
       uaSel.paineis = new Set(uaOrig.paineis === null ? paineisLiberaveis().map(p => p.id) : uaOrig.paineis);
-      uaSel.dashboards = new Set(uaOrig.dashboards === null ? dashboardsLiberaveis().map(d => d.id) : uaOrig.dashboards);
+      uaSel.dashboards = new Set(uaOrig.dashboards === null ? dashboardsLiberaveis().map(d => d.id).filter(id => !UA_FORA_DO_TODOS.dashboards.includes(id)) : uaOrig.dashboards);
       uaSel.formularios = new Set(uaOrig.formularios || []);
       uaFormsTodos = uaOrig.formularios === null;
       uaForms = null; uaFormBusca = ''; uaFormPasta = '';
@@ -9393,8 +9397,48 @@
       return result;
     }
 
+    // ---------------- Uso da plataforma (Dashboard › Painel · Usuários Ativos) ----------------
+    // Grava em public.uso_eventos (supabase/schema_uso_eventos.sql): acesso (login ou retorno com a sessão aberta),
+    // seção aberta no menu, painel do Dashboard consultado e ação (botões de salvar/registrar/aprovar/exportar).
+    // Em lotes, a cada 15 s e ao sair da aba; sem a tabela no banco, para de tentar até recarregar a página.
+    const usoFila = [];
+    let usoDesligado = false, usoTimer = null, usoUltSecao = null;
+    function usoRegistrar(tipo, secao, detalhe){
+      const cu = window.__getCurrentUser && window.__getCurrentUser();
+      if(!cu || !cu.email || usoDesligado || !supabaseReady) return;
+      usoFila.push({ usuario_email: cu.email.toLowerCase(), tipo, secao: secao ? String(secao).slice(0, 40) : null,
+        detalhe: detalhe ? String(detalhe).replace(/\s+/g, ' ').trim().slice(0, 120) : null });
+      if(!usoTimer) usoTimer = setTimeout(usoEnviar, 15000);
+    }
+    async function usoEnviar(){
+      clearTimeout(usoTimer); usoTimer = null;
+      if(!usoFila.length || usoDesligado || !supabaseReady) return;
+      const lote = usoFila.splice(0, usoFila.length);
+      const { error } = await supabaseClient.from('uso_eventos').insert(lote);
+      if(!error) return;
+      if(/uso_eventos|42P01|PGRST205/.test((error.message || '') + (error.code || ''))) usoDesligado = true;   // tabela ainda não criada
+      else if(usoFila.length < 500) usoFila.unshift(...lote);
+      console.warn('Uso da plataforma não registrado:', error.message);
+    }
+    window.__usoRegistrar = usoRegistrar;
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') usoEnviar(); });
+    document.addEventListener('cdload:pagechange', e => {
+      const p = e.detail && e.detail.page;
+      if(p && p !== usoUltSecao){ usoUltSecao = p; usoRegistrar('secao', p); }
+    });
+    // Ações: botões principais (Salvar, Registrar, Aprovar…) e Exportar, com a seção em que foram usados.
+    document.addEventListener('click', e => {
+      const b = e.target.closest('.wa-btn-primary, .btn-export, [data-uso-acao]');
+      if(!b || b.disabled) return;
+      const rot = b.dataset.usoAcao || b.getAttribute('aria-label') || b.textContent;
+      const pag = document.querySelector('.page.active');
+      if(rot && rot.trim() && !/^\s*(Avançar|Voltar|Voltar ao resumo|Cancelar|Fechar|Concluir)\s*$/i.test(rot)) usoRegistrar('acao', pag ? pag.id.replace(/^page-/, '') : null, rot);
+    }, true);
+
     function enterApp(user){
       window.__setCurrentUser(user);
+      usoUltSecao = null;
+      usoRegistrar('login', null);
       waIdentifyOverlay.hidden = true;
       waIdentifyPassword.value = '';
       window.applySectionPermissions();
@@ -13654,7 +13698,7 @@ ${clipPlayerPills(n)}
     let stkTabelaAba = 'produtos';
     const stkBuscaContagem = document.getElementById('stkBuscaContagem');
     // Seleção múltipla da busca, independente por painel; vazia = sem filtro.
-    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set(), inadimplencia: new Set(), intencao: new Set(), spcmt: new Set() };
+    const stkSelecao = { estoque: new Set(), clipping: new Set(), panorama: new Set(), sefaz: new Set(), ipca15: new Set(), pmc: new Set(), ivs: new Set(), icva: new Set(), pnad: new Set(), empresas: new Set(), viabilidades: new Set(), inadimplencia: new Set(), intencao: new Set(), spcmt: new Set(), uso: new Set() };
     const stkSelAtual = () => stkSelecao[stkPainel()];
     const stkProdOk = id => !stkSelecao.estoque.size || stkSelecao.estoque.has(id);
     const stkNewsOk = n => !stkSelecao.clipping.size || stkSelecao.clipping.has(n.id);
@@ -13875,6 +13919,7 @@ ${clipPlayerPills(n)}
       const inad = stkPainel() === 'inadimplencia';
       const ic = stkPainel() === 'intencao';
       const sp = stkPainel() === 'spcmt';
+      const uso = stkPainel() === 'uso';   // Usuários Ativos: busca (usuário, setor ou seção), Mês e Ano — como o CAGED
       document.getElementById('stkIcDatasFiltro').hidden = !ic;
       // SPC Mato Grosso: busca + switch dos 7 indicadores + Entidade, Mês e Ano (os que não cabem vão para o menu).
       document.getElementById('stkSpAbas').hidden = !sp;
@@ -13883,12 +13928,12 @@ ${clipPlayerPills(n)}
       document.getElementById('stkSpRefFiltro').hidden = !sp;
       if(!sp) [...stkMesEl.options].forEach(o => { o.hidden = o.disabled = false; });   // SPC limita aos meses com dados
       if(!ic) document.getElementById('stkIcDatasLista').hidden = true;
-      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp;
+      stkSetorEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp || uso;
       stkPlayerEl.hidden = !clipping;
       // Clipping compara Ano vs Ano (YoY) com o próprio filtro de Período (lista suspensa).
       // Panorama, Sefaz e IBGE: dados mensais — só Mês/Ano (sem período em dias).
       // Viabilidade: valores anuais fixos da planilha — busca (ferramenta ou módulo), Simulação Leads e Simulação Power BI.
-      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp;
+      stkPeriodoEstEl.hidden = clipping || panorama || sefaz || ibge || viab || emp || inad || ic || sp || uso;
       stkMesEl.hidden = viab || (inad && inadVisao === 'graf');   // Gráfico da Inadimplência: jan–dez de cada ano, sem Mês
       stkAnoEl.hidden = viab;
       stkLeadsEl.hidden = !viab;
@@ -13926,7 +13971,7 @@ ${clipPlayerPills(n)}
       document.getElementById('empMapa').hidden = !mapa;
       stkRegiaoEl.hidden = !sefaz;
       stkMunicipioEl.hidden = !sefaz;
-      stkBuscaInput.placeholder = sp ? 'Buscar entidade ou produto (ex.: Sinop, SPC Mix)...' : ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
+      stkBuscaInput.placeholder = sp ? 'Buscar entidade ou produto (ex.: Sinop, SPC Mix)...' : uso ? 'Buscar usuário, setor ou seção (ex.: Marketing, Estoque)...' : ic ? 'Buscar data, produto ou meio de pagamento (ex.: Natal, Pix)...' : inad ?(inadVisao === 'graf' ? 'Buscar região (ex.: Centro-Oeste, Sul)...' : 'Buscar setor credor, faixa ou região (ex.: bancos)...') : viab ? 'Buscar ferramenta ou módulo (ex.: Canva, Clipping)...' : clipping ? 'Buscar notícia por título, resumo ou fonte...' : sefaz ? 'Buscar setor ou segmento (CNAE)...'
         : stkPainel() === 'ipca15' ? 'Buscar grupo ou item (ex.: alimentação)...' : stkPainel() === 'pmc' ? 'Buscar atividade (ex.: supermercados)...' : stkPainel() === 'ivs' ? 'Buscar setor (ex.: supermercados, vestuário)...' : stkPainel() === 'icva' ? 'Buscar região (ex.: Centro-Oeste)...' : stkPainel() === 'pnad' ? 'Buscar atividade (ex.: comércio)...' : stkPainel() === 'empresas' ? 'Buscar atividade (CNAE), rua, bairro ou CEP...' : panorama ? (stkIndicadorEl.value === 'caged' ? 'Buscar atividade econômica (CNAE)...' : 'Buscar fabricante ou modelo...') : 'Buscar produto por nome ou código...';
       // SPC MT: o encaixe é medido de novo no fim, com todos os filtros do painel já mostrados/escondidos.
       if(sp){ stkFiltrosBtn.hidden = !spAjustarBarra(true); stkFiltrosAtualizar(); }
@@ -13935,6 +13980,7 @@ ${clipPlayerPills(n)}
     function stkPreencherFiltros(){
       const curAno = stkAnoEl.value;
       if(stkPainel() === 'spcmt') return;   // SPC Mato Grosso: Ano e Entidade em spPreencherFiltros
+      if(stkPainel() === 'uso') return;     // Usuários Ativos: Ano em usoRender (anos com registro de uso)
       if(stkPainel() === 'intencao'){
         // Intenção de Compra: anos com pesquisa (2025 = histórico de comparação).
         const anosIc = [...new Set((window.INTENCAO_COMPRA ? window.INTENCAO_COMPRA.edicoes : []).map(e => String(e.ano)))].sort().reverse();
@@ -14491,9 +14537,11 @@ ${clipPlayerPills(n)}
     // Dashboards liberados ao usuário (Usuários › Acessos): só eles ficam no filtro Painel; null = todos.
     function stkAplicarDashboards(){
       const cu = window.__getCurrentUser && window.__getCurrentUser();
-      const lib = !cu || cu.cargo === 'Administrador' || !Array.isArray(cu.dashboards) ? null : new Set(cu.dashboards);
+      const admin = !cu || cu.cargo === 'Administrador';
+      const lib = admin || !Array.isArray(cu.dashboards) ? null : new Set(cu.dashboards);
       let primeiro = null;
-      [...stkPainelEl.options].forEach(o => { const ok = !lib || lib.has(o.value); o.hidden = o.disabled = !ok; if(ok && !primeiro) primeiro = o.value; });
+      // Usuários Ativos (uso dos colegas): só Administrador ou quem tem o painel marcado — "todos" (null) não o inclui.
+      [...stkPainelEl.options].forEach(o => { const ok = o.value === 'uso' ? admin || (!!lib && lib.has('uso')) : !lib || lib.has(o.value); o.hidden = o.disabled = !ok; if(ok && !primeiro) primeiro = o.value; });
       return { algum: !!primeiro, trocar: primeiro && stkPainelEl.selectedOptions[0] && stkPainelEl.selectedOptions[0].disabled ? primeiro : null };
     }
     document.addEventListener('cdload:dashacesso', () => { if(document.getElementById('page-dashboard').classList.contains('active')) stkAbrir(); });
@@ -14506,11 +14554,12 @@ ${clipPlayerPills(n)}
       }
       // Painel aberto deixou de ser liberado: vai para o primeiro liberado, com os filtros zerados.
       if(perm.trocar){ stkPainelEl.value = perm.trocar; return stkResetarPainel('abve'); }
+      if(window.__usoRegistrar) window.__usoRegistrar('painel', 'dashboard', stkPainelEl.value);   // Usuários Ativos: painéis consultados
       const painel = stkPainel();
       const carregar = painel === 'clipping'
         ? (clippingNews.length ? Promise.resolve() : loadClippingNews())
         : painel === 'panorama' ? panCarregar().catch(() => {})
-        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' || painel === 'inadimplencia' || painel === 'intencao' || painel === 'spcmt' ? Promise.resolve()   // carregam os dados sob demanda
+        : painel === 'sefaz' || painel === 'ipca15' || painel === 'pmc' || painel === 'ivs' || painel === 'icva' || painel === 'pnad' || painel === 'empresas' || painel === 'viabilidades' || painel === 'inadimplencia' || painel === 'intencao' || painel === 'spcmt' || painel === 'uso' ? Promise.resolve()   // carregam os dados sob demanda
         : loadStock();   // Estoque: sempre do banco — reflete na hora o que foi lançado (por qualquer pessoa) desde a última abertura
       Promise.resolve(carregar).then(stkRender);
     }
@@ -14529,6 +14578,7 @@ ${clipPlayerPills(n)}
       if(stkPainel() === 'inadimplencia') return inadPainelRender();
       if(stkPainel() === 'intencao') return icRender();
       if(stkPainel() === 'spcmt') return spRender();
+      if(stkPainel() === 'uso') return usoRender();
       return stkRenderEstoque();
     }
 
@@ -15540,6 +15590,227 @@ ${clipPlayerPills(n)}
       if(!btn || btn.disabled || btn.dataset.visao === cagRoscaVisao) return;
       cagRoscaVisao = btn.dataset.visao;
       if(cagUltimo && cagAtivo()) cagDesenhar(cagUltimo); else stkRender();
+    });
+
+    // ===== Painel · Usuários Ativos — uso da plataforma, mesma estrutura do CAGED =====
+    // Dados: totais mensais da função uso_resumo() (supabase/schema_uso_eventos.sql), a partir dos eventos que o próprio
+    // app grava (acesso, seção aberta, painel do Dashboard e ação). Cadastro: tabela usuarios (setor, perfil, criação).
+    // Filtros: Mês e Ano (padrão: o ano até o mês atual), comparados com o mesmo período do ano anterior; a busca filtra
+    // por usuário (nome, e-mail ou setor) ou seção, e todos os gráficos acompanham. Sem Supabase: dados de demonstração.
+    const USO_TTL = 5 * 60000;
+    let usoDados = null, usoEm = 0, usoProm = null, usoErro = '', usoRoscaVisao = 'setor', usoUltimo = null, usoPainelUltimo = null;
+    const usoSecaoNome = k => (ALL_SECTIONS.find(s => s.key === k) || { label: k || '—' }).label;
+    const usoPainelNome = k => { const o = [...stkPainelEl.options].find(x => x.value === k); return o ? o.textContent.replace(/^Painel\s*·\s*/, '') : (k || '—'); };
+    const usoPerfil = u => !u ? 'Sem cadastro' : u.cargo === 'Administrador' ? 'Administrador' : u.restrito ? 'Restrito' : u.edicao ? 'Edição' : 'Usuário';
+    const usoMesTxt = m => `${PAN_MES_CURTO[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
+
+    // Demonstração (sem Supabase): uso sintético e estável de 2025 até o mês atual, só para ver o painel montado.
+    function usoDemo(){
+      const nomes = ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Prado', 'Fábio Nunes', 'Gabriela Reis', 'Heitor Alves', 'Isabela Melo', 'João Pires', 'Karen Lopes', 'Lucas Moura'];
+      const setores = ['Marketing', 'Comercial', 'Financeiro', 'Núcleo Inteligência', 'CESPC', 'RH'];
+      const usuarios = nomes.map((n, i) => ({ nome: n, email: n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@cdlcuiaba.com.br',
+        setor: setores[i % setores.length], cargo: i === 0 ? 'Administrador' : 'Usuário', status: i === 11 ? 'Inativo' : 'Ativo', edicao: i % 4 === 1, restrito: i === 7,
+        created_at: i < 9 ? '2025-01-10' : '2026-0' + (i - 7) + '-05', ultimo_acesso: null }));
+      let semente = 7; const rnd = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
+      const secoes = ['home', 'dashboard', 'estoque', 'campanhas', 'clipping', 'surveymonkey', 'relatorios', 'usuarios'];
+      const paineis = ['panorama', 'spcmt', 'estoque', 'intencao', 'clipping'], acoes = ['Exportar', 'Salvar', 'Registrar', 'Aprovar alterações'];
+      const hoje = new Date(), linhas = [];
+      for(let a = hoje.getFullYear() - 1; a <= hoje.getFullYear(); a++) for(let mm = 1; mm <= (a === hoje.getFullYear() ? hoje.getMonth() + 1 : 12); mm++){
+        const mes = `${a}-${String(mm).padStart(2, '0')}`;
+        usuarios.forEach((u, i) => {
+          if(u.created_at.slice(0, 7) > mes || rnd() < 0.18 + (i % 5) * 0.05) return;
+          const dias = 2 + Math.floor(rnd() * (a === hoje.getFullYear() ? 16 : 12));
+          linhas.push([mes, u.email, 'login', null, null, dias + Math.floor(rnd() * 4), dias]);
+          secoes.forEach((s, k) => { const q = Math.floor(rnd() * (k < 3 ? 30 : 10)); if(q) linhas.push([mes, u.email, 'secao', s, null, q, dias]); });
+          paineis.forEach(p => { const q = Math.floor(rnd() * 8); if(q) linhas.push([mes, u.email, 'painel', 'dashboard', p, q, dias]); });
+          acoes.forEach(x => { const q = Math.floor(rnd() * 6); if(q) linhas.push([mes, u.email, 'acao', secoes[Math.floor(rnd() * 4)], x, q, dias]); });
+        });
+      }
+      return { linhas: linhas.map(([mes, email, tipo, secao, detalhe, qtd, dias]) => ({ mes, email, tipo, secao, detalhe, qtd, dias })), usuarios, demo: true };
+    }
+    async function usoCarregar(){
+      if(!supabaseReady) return usoDemo();
+      const hoje = new Date(), ini = `${hoje.getFullYear() - 2}-01-01`, fim = hoje.toISOString().slice(0, 10), linhas = [];
+      for(let de = 0; ; de += 1000){
+        const { data, error } = await supabaseClient.rpc('uso_resumo', { p_ini: ini, p_fim: fim }).range(de, de + 999);
+        if(error) throw error;
+        (data || []).forEach(r => linhas.push({ mes: r.mes, email: String(r.usuario_email || '').toLowerCase(), tipo: r.tipo, secao: r.secao, detalhe: r.detalhe, qtd: Number(r.qtd) || 0, dias: Number(r.dias) || 0 }));
+        if(!data || data.length < 1000) break;
+      }
+      const { data: us } = await supabaseClient.from('usuarios').select('nome,email,setor,cargo,status,restrito,edicao,created_at,ultimo_acesso');
+      return { linhas, usuarios: (us || []).map(u => ({ ...u, email: String(u.email || '').toLowerCase() })), demo: false };
+    }
+    function usoRender(){
+      if(!usoDados || Date.now() - usoEm > USO_TTL){
+        if(!usoProm){
+          stkGrid.classList.add('cd-carregando');
+          usoProm = usoCarregar().then(d => { usoDados = d; usoEm = Date.now(); usoErro = ''; })
+            .catch(e => {
+              usoErro = e && e.code === '42501' ? 'Seu usuário não tem acesso aos dados do painel Usuários Ativos. Peça a liberação a um Administrador (Usuários › Acessos › Dashboards para consulta).'
+                : /uso_resumo|PGRST202|42883|uso_eventos|42P01/.test(((e && e.message) || '') + ((e && e.code) || '')) ? 'Falta o registro de uso no banco: rode supabase/schema_uso_eventos.sql no SQL Editor do Supabase.'
+                : 'Não foi possível carregar o uso da plataforma: ' + ((e && e.message) || e);
+            })
+            .finally(() => { usoProm = null; if(stkPainel() === 'uso') usoDesenharOuErro(); });
+        }
+        if(!usoDados) return;
+      }
+      usoDesenharOuErro();
+    }
+    function usoDesenharOuErro(){
+      stkGrid.classList.remove('cd-carregando');
+      if(!usoDados){
+        stkGrid.classList.remove('cd-fit');
+        stkGrid.innerHTML = `<div class="stk-card stk-span-4"><div class="stk-vazio">${esc(usoErro || 'Sem dados de uso.')}</div></div>`;
+        return;
+      }
+      // Anos: os que têm registro de uso (e sempre o atual).
+      const anos = [...new Set(usoDados.linhas.map(l => l.mes.slice(0, 4)).concat(String(new Date().getFullYear())))].sort().reverse(), curAno = stkAnoEl.value;
+      stkAnoEl.innerHTML = '<option value="">Ano</option>' + anos.map(a => `<option value="${a}">${a}</option>`).join('');
+      if(anos.includes(curAno)) stkAnoEl.value = curAno;
+      usoDesenhar(usoModelo());
+    }
+
+    // Janela do período (Mês/Ano) e o mesmo período do ano anterior, em meses "AAAA-MM".
+    function usoJanela(){
+      const hoje = new Date(), anoHoje = hoje.getFullYear(), mesHoje = hoje.getMonth() + 1;
+      const ano = Number(stkAnoEl.value) || anoHoje, mes = Number(stkMesEl.value) || 0;
+      const mIni = mes || 1, mFim = mes || (ano === anoHoje ? mesHoje : 12);
+      const meses = a => { const s = new Set(); for(let m = mIni; m <= mFim; m++) s.add(`${a}-${String(m).padStart(2, '0')}`); return s; };
+      const rotulo = mes ? `${STK_MESES[mes - 1]} de ${ano}` : mFim === 12 ? `ano de ${ano}` : `${PAN_MES_CURTO[0]}–${PAN_MES_CURTO[mFim - 1]} de ${ano}`;
+      return { ano, anoAnt: ano - 1, atual: meses(ano), anterior: meses(ano - 1), rotulo, nMeses: ano === anoHoje ? mesHoje : 12,
+        fim: `${ano}-${String(mFim).padStart(2, '0')}-31`, fimAnt: `${ano - 1}-${String(mFim).padStart(2, '0')}-31` };
+    }
+    function usoModelo(){
+      const D = usoDados, J = usoJanela();
+      const porEmail = new Map(D.usuarios.map(u => [u.email, u]));
+      const termos = ibgeTermo();
+      const casaU = u => !termos.length || ibgeCasa(`${u ? u.nome : ''} ${u ? u.email : ''} ${u ? u.setor || '' : ''}`, termos);
+      const casaL = l => !termos.length || casaU(porEmail.get(l.email) || { email: l.email }) || ibgeCasa(usoSecaoNome(l.secao), termos) || (l.tipo === 'painel' && ibgeCasa(usoPainelNome(l.detalhe), termos));
+      const linhas = D.linhas.filter(casaL);
+      const periodo = meses => {
+        const L = linhas.filter(l => meses.has(l.mes)), ativos = new Set(L.map(l => l.email));
+        const soma = t => L.filter(l => l.tipo === t).reduce((s, l) => s + l.qtd, 0);
+        const por = (t, chave) => L.filter(l => l.tipo === t).reduce((m, l) => m.set(chave(l), (m.get(chave(l)) || 0) + l.qtd), new Map());
+        const dias = new Map(); L.forEach(l => { const k = l.email + '|' + l.mes; if(!dias.has(k)) dias.set(k, [l.email, l.dias]); });
+        const diasU = new Map(); dias.forEach(([e, n]) => diasU.set(e, (diasU.get(e) || 0) + n));
+        const evU = L.reduce((m, l) => m.set(l.email, (m.get(l.email) || 0) + l.qtd), new Map());
+        return { L, ativos, logins: soma('login'), nav: soma('secao'), acoes: soma('acao'), painel: soma('painel'),
+          secoes: por('secao', l => l.secao), paineis: por('painel', l => l.detalhe), acoesPor: por('acao', l => l.detalhe), diasU, evU };
+      };
+      const A = periodo(J.atual), B = periodo(J.anterior);
+      // Base da adoção: usuários ativos no cadastro, criados até o fim de cada período (e que casam com a busca).
+      const base = fim => D.usuarios.filter(u => u.status === 'Ativo' && String(u.created_at || '').slice(0, 10) <= fim && casaU(u));
+      const mensal = a => Array.from({ length: 12 }, (_, i) => new Set(linhas.filter(l => l.mes === `${a}-${String(i + 1).padStart(2, '0')}`).map(l => l.email)).size);
+      return { J, D, A, B, porEmail, base: base(J.fim), baseAnt: base(J.fimAnt), mensal: { [J.ano]: mensal(J.ano), [J.anoAnt]: mensal(J.anoAnt) },
+        local: termos.length ? `“${stkBuscaInput.value.trim()}”` : 'Plataforma', filtrado: !!termos.length };
+    }
+
+    function usoDesenhar(M){
+      const { J, A, B } = M, anoAnt = J.anoAnt, N = v => stkNum(Math.round(v));
+      const vs = v => `vs. ${anoAnt} (${v})`;
+      const nomeDe = e => { const u = M.porEmail.get(e); return u && u.nome ? u.nome : e; };
+      // ---- KPIs (mesmo período do ano anterior) ----
+      // Adoção: dos usuários com cadastro ativo (a base), quantos usaram — quem já foi inativado não entra na conta.
+      const usaram = (base, P) => base.filter(u => P.ativos.has(u.email)).length;
+      const ad = M.base.length ? usaram(M.base, A) / M.base.length : 0, adAnt = M.baseAnt.length ? usaram(M.baseAnt, B) / M.baseAnt.length : 0;
+      const kAtivos = cdKpiCard('pessoas', 'azul', 'Usuários ativos', N(A.ativos.size), cdDelta(A.ativos.size, B.ativos.size), vs(N(B.ativos.size)),
+        `Usuários com ao menos um uso da plataforma · ${M.local} · ${J.rotulo}`);
+      const kAcessos = cdKpiCard('raio', 'verde', 'Acessos', N(A.logins), cdDelta(A.logins, B.logins), vs(N(B.logins)), `Entradas na plataforma (login ou retorno com a sessão aberta) · ${J.rotulo}`);
+      const kNav = cdKpiCard('layers', 'azul', 'Seções abertas', N(A.nav), cdDelta(A.nav, B.nav), vs(N(B.nav)), `Vezes que uma seção do menu foi aberta · ${J.rotulo}`);
+      const kAcoes = cdKpiCard('documento', 'amarelo', 'Ações registradas', N(A.acoes), cdDelta(A.acoes, B.acoes), vs(N(B.acoes)), `Botões de salvar, registrar, aprovar e exportar · ${J.rotulo}`);
+      const kAdocao = cdKpiCard('percent', 'verde', 'Adoção', stkPct(ad, 1), cdDelta(ad, adAnt, true, !M.baseAnt.length), vs(M.baseAnt.length ? stkPct(adAnt, 1) : '—'),
+        `Usuários ativos ÷ usuários com cadastro ativo (${N(M.base.length)}) · ${J.rotulo}`);
+
+      // ---- Evolução de usuários ativos (por mês, ano vs. ano anterior) ----
+      const V = { categorias: PAN_MES_CURTO.slice(0, J.nMeses), series: [
+        { nome: String(J.ano), cor: CD_COR.azul, valores: M.mensal[J.ano].slice(0, J.nMeses) },
+        { nome: String(anoAnt), cor: CD_COR.azulClaro, valores: M.mensal[anoAnt].slice(0, J.nMeses) }
+      ] };
+      const legendaDots = series => `<div class="cd-legenda">${series.map(s => `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+      const wEvol = cdCard('Evolução de usuários ativos', M.filtrado ? `${M.local} · usuários por mês` : 'Usuários com uso da plataforma por mês', '<div id="stkFluxoGraf"></div>', legendaDots(V.series));
+
+      // ---- Navegação por seção ----
+      const secs = [...A.secoes.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      const totNav = A.nav || 1;
+      const wSecoes = cdCard('Navegação por seção', `Seções abertas no menu · ${J.rotulo}`,
+        cdBarras(secs.map(([k, v], i) => ({ nome: usoSecaoNome(k), valor: v, rotulo: N(v), pct: stkPct(v / totNav), dica: `${N(v)} aberturas · ${stkPct(v / totNav)} da navegação`,
+          cor: stkMisturarCor(CD_COR.azul, '#C9DDF8', secs.length > 1 ? i / (secs.length - 1) : 0) })), 'Navegação por seção', 'Sem navegação registrada no período.')
+          .replace('<div class="cd-barras">', '<div class="cd-barras sp-pct">'));
+
+      // ---- Usuários ativos por setor | por perfil (rosca com switch, como a do CAGED) ----
+      const ROSCA = [CD_COR.azul, CD_COR.verde, '#E3AE1F', '#7C3AED', '#EA580C', CD_COR.cinza];
+      const grupo = e => { const u = M.porEmail.get(e); return usoRoscaVisao === 'perfil' ? usoPerfil(u) : (u && u.setor) || 'Sem setor'; };
+      const contG = [...A.ativos].reduce((m, e) => m.set(grupo(e), (m.get(grupo(e)) || 0) + 1), new Map());
+      const ordG = [...contG.entries()].sort((a, b) => b[1] - a[1]);
+      const dadosG = ordG.slice(0, 5).map(([k, v], i) => ({ nome: k, sigla: k, valor: v, cor: ROSCA[i] }));
+      const restoG = ordG.slice(5).reduce((s, [, v]) => s + v, 0);
+      if(restoG) dadosG.push({ nome: 'Outros', sigla: 'Outros', valor: restoG, cor: ROSCA[5] });
+      const totG = A.ativos.size;
+      const switchRosca = `<div class="cd-head-acoes"><div class="stk-segmented" id="usoRoscaVisao" role="tablist" aria-label="Visão do gráfico">
+          ${[['setor', 'Setor'], ['perfil', 'Perfil']].map(([k, rot]) => `<button type="button" class="stk-seg-btn${usoRoscaVisao === k ? ' active' : ''}" data-visao="${k}" role="tab" aria-selected="${usoRoscaVisao === k}">${rot}</button>`).join('')}
+        </div></div>`;
+      const wRosca = cdCard(usoRoscaVisao === 'perfil' ? 'Usuários ativos por perfil' : 'Usuários ativos por setor', usoRoscaVisao === 'perfil' ? 'Administrador, Edição, Restrito e Usuário' : 'Setor do cadastro do usuário',
+        dadosG.length ? `<div class="cd-rosca-wrap">
+          <div class="cd-rosca"><div id="stkDistribGraf"></div><div class="cd-rosca-centro"><strong>${N(totG)}</strong><span>${totG === 1 ? 'usuário ativo' : 'usuários ativos'}</span></div></div>
+          <ul class="cd-rosca-legenda cd-rosca-legenda-pan">${dadosG.map(d => `<li title="${esc(d.nome)}: ${N(d.valor)} usuário(s)"><i style="background:${d.cor}"></i><span>${esc(d.nome)}</span><strong>${stkPct(totG ? d.valor / totG : 0)}</strong></li>`).join('')}</ul>
+        </div>` : '<div class="stk-vazio">Sem usuários ativos no período.</div>', switchRosca);
+
+      // ---- Dashboards mais consultados ----
+      const pns = [...A.paineis.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 6), totP = A.painel || 1;
+      const wPaineis = cdCard('Dashboards mais consultados', `Painéis abertos na seção Dashboard · ${J.rotulo}`,
+        cdBarras(pns.map(([k, v]) => ({ nome: usoPainelNome(k), valor: v, rotulo: N(v), pct: stkPct(v / totP), dica: `${N(v)} consultas · ${stkPct(v / totP)}`, cor: CD_COR.verde })), 'Dashboards mais consultados', 'Nenhum painel consultado no período.')
+          .replace('<div class="cd-barras">', '<div class="cd-barras sp-pct">'));
+
+      // ---- Ranking: usuários mais ativos (dias com uso; empate pelas interações) ----
+      const rank = [...A.diasU.entries()].sort((a, b) => b[1] - a[1] || (A.evU.get(b[0]) || 0) - (A.evU.get(a[0]) || 0)).slice(0, 5);
+      const totEv = [...A.evU.values()].reduce((s, v) => s + v, 0) || 1;
+      const wRank = cdCard('Usuários mais ativos', `Dias com uso no período · ${J.rotulo}`, rank.length ? `<ol class="cd-rank">${rank.map(([e, d], i) => {
+          const u = M.porEmail.get(e), ev = A.evU.get(e) || 0;
+          return `<li title="${esc(nomeDe(e))}${u && u.setor ? ' · ' + esc(u.setor) : ''} · ${N(d)} dias com uso · ${N(ev)} interações (${stkPct(ev / totEv)})"><span class="cd-rank-pos">${i + 1}</span><span class="cd-rank-nome">${esc(nomeDe(e))}</span><strong>${N(d)} ${d === 1 ? 'dia' : 'dias'}</strong><span class="cd-rank-pct">${stkPct(ev / totEv)}</span></li>`;
+        }).join('')}</ol>` : '<div class="stk-vazio">Sem uso registrado no período.</div>');
+
+      // ---- Destaques ----
+      const dest = [];
+      const semUso = M.base.filter(u => !A.ativos.has(u.email));
+      dest.push(semUso.length
+        ? { ic: 'alerta', tom: 'vermelho', tit: `${N(semUso.length)} ${semUso.length === 1 ? 'usuário sem uso' : 'usuários sem uso'} no período`, meta: semUso.slice(0, 4).map(u => u.nome || u.email).join(', ') + (semUso.length > 4 ? ` e mais ${semUso.length - 4}` : '') }
+        : { ic: 'pessoas', tom: 'verde', tit: 'Todos os usuários ativos usaram a plataforma', meta: `${N(M.base.length)} usuários com cadastro ativo · ${J.rotulo}` });
+      const cres = [...new Set([...A.secoes.keys(), ...B.secoes.keys()])].map(k => [k, (A.secoes.get(k) || 0) - (B.secoes.get(k) || 0)]).sort((a, b) => b[1] - a[1]);
+      if(cres.length && cres[0][1] > 0) dest.push({ ic: 'trendUp', tom: 'verde', tit: `Seção que mais cresceu: ${usoSecaoNome(cres[0][0])}`, meta: `+${N(cres[0][1])} aberturas vs. ${anoAnt} (${N(B.secoes.get(cres[0][0]) || 0)} → ${N(A.secoes.get(cres[0][0]) || 0)})` });
+      const queda = cres.filter(([, d]) => d < 0).pop();
+      if(queda) dest.push({ ic: 'trendDown', tom: 'vermelho', tit: `Maior queda: ${usoSecaoNome(queda[0])}`, meta: `${N(queda[1]).replace('-', '−')} aberturas vs. ${anoAnt} (${N(B.secoes.get(queda[0]) || 0)} → ${N(A.secoes.get(queda[0]) || 0)})` });
+      const acaoTop = [...A.acoesPor.entries()].sort((a, b) => b[1] - a[1])[0];
+      if(acaoTop) dest.push({ ic: 'documento', tom: 'amarelo', tit: `Ação mais realizada: ${acaoTop[0]}`, meta: `${N(acaoTop[1])} vezes · ${stkPct(A.acoes ? acaoTop[1] / A.acoes : 0)} das ações` });
+      const novos = M.D.usuarios.filter(u => J.atual.has(String(u.created_at || '').slice(0, 7)) && u.status === 'Ativo' && (!M.filtrado || A.ativos.has(u.email)));
+      dest.push({ ic: 'pessoas', tom: 'azul', tit: `${N(novos.length)} ${novos.length === 1 ? 'usuário cadastrado' : 'usuários cadastrados'} no período`, meta: novos.length ? novos.slice(0, 4).map(u => u.nome || u.email).join(', ') : `Nenhum cadastro novo · ${J.rotulo}` });
+      const wDest = cdCard('Destaques', `${M.local} · ${J.rotulo} contra ${anoAnt}`, `<ul class="cd-dest">${dest.slice(0, 5).map(d => `<li><div title="${esc(d.tit)} · ${esc(d.meta)}">
+          <span class="cd-dest-ic ${d.tom}">${stkIcone(d.ic)}</span>
+          <span class="cd-dest-txt"><span class="cd-dest-tit">${esc(d.tit)}</span><span class="cd-dest-meta">${esc(d.meta)}</span></span></div></li>`).join('')}</ul>`);
+
+      const aviso = M.D.demo ? '<div class="wa-empty-hint" style="margin:-6px 0 10px;">Dados de demonstração (sem conexão com o banco).</div>'
+        : !M.D.linhas.length ? '<div class="wa-empty-hint" style="margin:-6px 0 10px;">Ainda não há registros de uso: a plataforma passa a registrar acessos, seções, painéis e ações a partir de agora.</div>' : '';
+      stkGrid.classList.add('cd-fit');
+      stkGrid.classList.remove('cd-carregando');
+      stkGrid.innerHTML = `${aviso}<div class="cd-tela"><div class="cd-kpis">${kAtivos}${kAcessos}${kNav}${kAcoes}${kAdocao}</div>`
+        + `<div class="cd-row cd-row-a">${wEvol}${wSecoes}${wRosca}</div>`
+        + `<div class="cd-row cd-row-b">${wPaineis}${wRank}${wDest}</div></div>`;
+      if(dadosG.length) stkDesenharRoscaCd(dadosG, usoRoscaVisao === 'perfil' ? 'Usuários ativos por perfil' : 'Usuários ativos por setor', 196);
+      const graf = document.getElementById('stkFluxoGraf');
+      if(graf) stkDesenharLinhasFluxo(graf, V.categorias, V.series, cdAlturaLivre(graf, 200), v => stkNum(Math.round(v)));
+      cdAjustarListas();
+      usoUltimo = M;
+      // Exportar: totais do período por mês, usuário, tipo e seção.
+      usoPainelUltimo = { arquivo: `usuarios_ativos_${J.ano}${stkMesEl.value ? '-' + stkMesEl.value : ''}.csv`,
+        linhas: [['Mês', 'Usuário', 'E-mail', 'Setor', 'Perfil', 'Tipo', 'Seção', 'Detalhe', 'Quantidade', 'Dias com uso no mês']]
+          .concat(A.L.slice().sort((a, b) => a.mes.localeCompare(b.mes) || a.email.localeCompare(b.email)).map(l => { const u = M.porEmail.get(l.email);
+            return [usoMesTxt(l.mes), u ? u.nome : '', l.email, u ? u.setor || '' : '', usoPerfil(u), { login: 'Acesso', secao: 'Seção', painel: 'Painel', acao: 'Ação' }[l.tipo] || l.tipo,
+              l.secao ? usoSecaoNome(l.secao) : '', l.tipo === 'painel' ? usoPainelNome(l.detalhe) : l.detalhe || '', l.qtd, l.dias]; })) };
+    }
+    stkGrid.addEventListener('click', ev => {
+      const btn = ev.target.closest('#usoRoscaVisao .stk-seg-btn');
+      if(!btn || btn.dataset.visao === usoRoscaVisao) return;
+      usoRoscaVisao = btn.dataset.visao;
+      if(usoUltimo && stkPainel() === 'uso') usoDesenhar(usoUltimo); else stkRender();
     });
 
 
@@ -19587,7 +19858,7 @@ ${clipPlayerPills(n)}
     function stkMostrarBusca(){
       if(stkPainel() === 'empresas') return empSugerirRegiao();
       stkBuscaLista.classList.remove('emp-sug'); stkBuscaLista.style.cssText = '';
-      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao', 'spcmt'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
+      if(['panorama', 'sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao', 'spcmt', 'uso'].includes(stkPainel())){ stkBuscaLista.hidden = true; return; }
       const termo = stkBuscaInput.value.trim().toLowerCase();
       const sel = stkSelAtual();
       if(!termo && !sel.size){ stkBuscaLista.hidden = true; stkBuscaLista.innerHTML = ''; return; }
@@ -19618,7 +19889,7 @@ ${clipPlayerPills(n)}
       // Panorama: fabricante/modelo consultado na ABVE (espera a digitação parar).
       if(stkPainel() === 'panorama'){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 450); }
       // Sefaz: setor/segmento filtrado nos dados já carregados.
-      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao', 'spcmt'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
+      if(['sefaz', 'ipca15', 'pmc', 'ivs', 'icva', 'pnad', 'empresas', 'viabilidades', 'inadimplencia', 'intencao', 'spcmt', 'uso'].includes(stkPainel())){ clearTimeout(stkTemaTimer); stkTemaTimer = setTimeout(stkRender, 250); }
     });
     stkBuscaInput.addEventListener('focus', stkMostrarBusca);
     stkBuscaLista.addEventListener('change', ev => {
@@ -19696,12 +19967,13 @@ ${clipPlayerPills(n)}
     }));
     document.getElementById('stkExportar').addEventListener('click', () => {
       // SPC Mato Grosso: números do indicador do switch (mês × entidade, ou entidade × faixa nos retratos).
-      if(stkPainel() === 'spcmt'){
-        if(!spPainelUltimo) return;
+      if(stkPainel() === 'spcmt' || stkPainel() === 'uso'){
+        const P = stkPainel() === 'uso' ? usoPainelUltimo : spPainelUltimo;   // Usu\u00e1rios Ativos: totais do per\u00edodo por m\u00eas, usu\u00e1rio, tipo e se\u00e7\u00e3o
+        if(!P) return;
         const cel = v => { const t = String(v == null ? '' : v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-        const url = URL.createObjectURL(new Blob(['\ufeff' + spPainelUltimo.linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+        const url = URL.createObjectURL(new Blob(['\ufeff' + P.linhas.map(r => r.map(cel).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
-        a.href = url; a.download = spPainelUltimo.arquivo;
+        a.href = url; a.download = P.arquivo;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return;
