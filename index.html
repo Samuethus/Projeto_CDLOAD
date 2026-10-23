@@ -11650,8 +11650,9 @@ ${clipPlayerPills(n)}
         const m = mk.m, vu = nfNumBR(nfValorPerto(bloco, /VALOR\s+UNIT[ÁA]RIO\s+DE\s+COMERCIALIZA/i, /^(\d{1,3}(?:\.\d{3})*,\d+)$/, true));
         return {
           codigo: nfValorPerto(bloco, /C[ÓO]DIGO\s+DO\s+PRODUTO/i, /^([\w.\-\/]{1,30})$/, true) || '',
-          // Código de barras do produto (GTIN); "SEM GTIN" fica vazio.
-          ean: nfValorPerto(bloco, /C[ÓO]DIGO\s+EAN\s+COMERCIAL/i, /^(\d{8,14})$/, true) || '',
+          // Código de barras do produto (GTIN): o EAN Comercial ou, sem ele ("SEM GTIN"), o EAN Tributável.
+          ean: nfValorPerto(bloco, /C[ÓO]DIGO\s+EAN\s+COMERCIAL/i, /^(\d{8,14})$/, true)
+            || nfValorPerto(bloco, /C[ÓO]DIGO\s+EAN\s+TRIBUT[ÁA]VEL/i, /^(\d{8,14})$/, true) || '',
           descricao: m[2],
           ncm: nfValorPerto(bloco, /C[ÓO]DIGO\s+NCM/i, /^(\d{8})$/, true) || '',
           cfop: nfValorPerto(bloco, /\bCFOP\b/i, /^(\d{4})$/, true) || '',
@@ -11760,17 +11761,31 @@ ${clipPlayerPills(n)}
         achados.push(k);
       });
       // Leitura nova: linhas sem produto nem entrada marcada (a linha já lançada de uma nota editada não é relida).
-      if(lido.itens.length || !editingNfId){
-        nfItens = nfItens.filter(it => it.movimentacao_id).concat(lido.itens.map(it => Object.assign({}, it, { produto_id: '', lancar: false, movimentacao_id: null })));
+      // Edição de nota já gravada: o PDF lido de novo completa as linhas existentes (mesma descrição) com EAN,
+      // código, NCM e CFOP, sem mexer em produto, cadastro e entrada; linhas que não existiam entram no fim.
+      if(editingNfId && nfItens.length && lido.itens.length){
+        const chave = it => nfNorm(it.descricao).replace(/[^a-z0-9]/g, '');
+        const livres = lido.itens.slice();
+        nfItens.forEach(it => {
+          const k = livres.findIndex(l => chave(l) === chave(it));
+          if(k < 0) return;
+          const l = livres.splice(k, 1)[0];
+          ['ean', 'codigo', 'ncm', 'cfop'].forEach(c => { if(!it[c] && l[c]) it[c] = l[c]; });
+        });
+        nfItens = nfItens.concat(livres.map(it => Object.assign({}, it, { produto_id: '', lancar: false, movimentacao_id: null })));
+        nfEditando.clear();
+      } else if(lido.itens.length || !editingNfId){
+        nfItens = lido.itens.map(it => Object.assign({}, it, { produto_id: '', lancar: false, movimentacao_id: null }));
         nfEditando.clear();
       }
       nfLidoDoPdf = achados.length > 0 || lido.itens.length > 0;
       waNfLidoHint.hidden = !achados.length;
       const faltam = Object.keys(NF_CAMPOS).filter(k => !achados.includes(k)).map(k => NF_CAMPOS_ROT[k]);
-      const nItens = lido.itens.length;
+      const nItens = lido.itens.length, nEan = lido.itens.filter(it => it.ean).length;
       const outro = NF_TIPOS[nfTipoArq === 'nfe' ? 'danfe' : 'nfe'].rot;
       nfLeituraMsg(achados.length || nItens ? (faltam.length || !nItens ? 'aviso' : 'ok') : 'aviso',
-        `<b>Leitura concluída (${NF_TIPOS[nfTipoArq].rot}):</b> ${achados.length} de ${Object.keys(NF_CAMPOS).length} dados da nota e ${nItens} linha${nItens === 1 ? '' : 's'} de produto.`
+        `<b>Leitura concluída (${NF_TIPOS[nfTipoArq].rot}):</b> ${achados.length} de ${Object.keys(NF_CAMPOS).length} dados da nota e ${nItens} linha${nItens === 1 ? '' : 's'} de produto`
+        + (nItens ? `, ${nEan} com código EAN${nEan < nItens ? ` (${nItens - nEan} sem GTIN na nota)` : ''}.` : '.')
         + (faltam.length ? `<ul><li>Não encontrado no PDF: ${stockEsc(faltam.join(', '))} — preencha na etapa 2.</li></ul>` : '')
         + (nItens ? '' : lido.outroTipo
           ? `<ul><li>Nenhum produto no formato ${NF_TIPOS[nfTipoArq].rot}, mas o arquivo parece ser <b>${outro}</b> (${lido.outroTipo} produto${lido.outroTipo === 1 ? '' : 's'} nesse formato). Escolha <b>${outro}</b> em "Tipo de arquivo" para ler os produtos.</li></ul>`
@@ -12269,6 +12284,9 @@ ${clipPlayerPills(n)}
           const lida = await supabaseClient.from('notas_fiscais').select(NF_SELECT).eq('id', id).single();
           if(lida.error) throw lida.error;
           salva = lida.data;
+          // Banco sem a coluna do EAN (passo 24 ainda não rodado de novo): a nota é gravada, mas sem os códigos.
+          const enviados = itens.filter(it => it.ean).length, gravados = (salva.itens || []).filter(it => it.ean).length;
+          if(enviados && !gravados) alert('A nota foi gravada, mas o banco ainda não guarda o Código EAN Comercial das linhas (nem o cadastro de produtos pela nota). Rode de novo supabase/schema_estoque_nf_itens.sql no Supabase; depois edite a nota, anexe o PDF de novo na etapa 1 e aprove para gravar os códigos.');
         }
         // PDF trocado: o antigo sai do Storage só depois de a nota ser gravada.
         if(antiga && antiga.arquivo_path && arquivo) await removerNfStorage([antiga.arquivo_path]);
