@@ -10128,6 +10128,8 @@ ${clipPlayerPills(n)}
     document.getElementById('waStockTransferBtn').hidden = !stockTemTransferencia();
     // "Por enquanto" — para incluir/renomear, basta editar esta lista (o banco não trava os nomes).
     const STOCK_SETORES_CONSUMO = ['Térreo', '1º Piso', '2º Piso', 'Espaço CDL', 'Administrativo', 'Financeiro', 'Certificado', 'Comercial', 'Diretoria', 'Recepção', 'RH', 'Jurídico'];
+    // Usuário com Restrição (saída pela leitura do produto): só estes setores de consumo aparecem para ele.
+    const STOCK_SETORES_CONSUMO_RESTRITO = ['Térreo', '1º Piso', '2º Piso', 'Diretoria'];
     // Saídas antigas (antes do setor de consumo) aparecem com este rótulo nas análises.
     const STOCK_CONSUMO_SEM = 'Não informado';
     const STOCK_SETOR_TODOS = 'Todos';
@@ -12531,6 +12533,9 @@ ${clipPlayerPills(n)}
         return;
       }
       waMovModal.classList.toggle('wa-mov-restrito', restrito);
+      // Setor de consumo: o restrito vê só Térreo, 1º Piso, 2º Piso e Diretoria; os demais perfis, todos.
+      [...waMovConsumo.options].forEach(o => { o.hidden = o.disabled = restrito && !!o.value && !STOCK_SETORES_CONSUMO_RESTRITO.includes(o.value); });
+      if(restrito && waMovConsumo.value && !STOCK_SETORES_CONSUMO_RESTRITO.includes(waMovConsumo.value)) waMovConsumo.value = '';
       if(restrito){
         waMovTitle.textContent = 'Saída de produto';
         waMovSub.textContent = 'Confira o produto, escolha o setor e a quantidade.';
@@ -12750,7 +12755,7 @@ ${clipPlayerPills(n)}
       const setor = waMovSetor.value;
       const consumo = movTipo === 'saida' ? waMovConsumo.value : '';
       if(!STOCK_SETORES.includes(setor)){ alert('Selecione o estoque central (Almoxarifado).'); return; }
-      if(movTipo === 'saida' && !STOCK_SETORES_CONSUMO.includes(consumo)){
+      if(movTipo === 'saida' && !(window.__isRestrito() ? STOCK_SETORES_CONSUMO_RESTRITO : STOCK_SETORES_CONSUMO).includes(consumo)){
         alert('Informe o setor que vai consumir o produto.');
         waMovConsumo.focus();
         return;
