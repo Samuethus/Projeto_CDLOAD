@@ -13913,7 +13913,7 @@ ${clipPlayerPills(n)}
       // EMPRESAS: barra com Busca + 5 filtros (Painel, Indicador, Mês, Ano, Cidade) + switch + filtro + Limpar + Exportar;
       // Regime, SIMEI, Situação, Subclasse e Ramo ficam só no menu flutuante (selo "+5").
       [stkEmpRegimeEl, stkEmpSimeiEl, stkEmpSituacaoEl, stkEmpSubclasseEl, stkEmpRamoEl].forEach(el => el.classList.toggle('stk-so-menu', emp));
-      // SPC Mato Grosso: os filtros ocupam a barra toda; sem espaço, saem um a um para o menu flutuante (selo "+N").
+      // SPC Mato Grosso: Entidade, Referência, Mês e Ano ficam só no menu flutuante (selo "+N").
       const spMenu = spAjustarBarra(sp);
       stkFiltrosBtn.hidden = !emp && !spMenu;
       stkFiltrosAtualizar();
@@ -17567,19 +17567,17 @@ ${clipPlayerPills(n)}
     stkSpEntEl.addEventListener('change', () => spRender());
     stkSpRefEl.addEventListener('change', () => spRender());
     function spFiltrosLimpar(){ stkSpEntEl.value = ''; stkSpRefEl.value = 'ano'; }
-    // Barra do SPC MT: tudo na barra enquanto couber (largura mínima confortável, sem "En…"); se não couber, Ano, Mês,
-    // Entidade, a busca e, em tela bem estreita, o Painel passam para o menu flutuante, nessa ordem. Recalculado a cada desenho (e no resize).
+    // Barra do SPC MT: os filtros à direita do switch (Entidade, Referência, Mês e Ano) ficam sempre só no menu flutuante.
+    // Se ainda não couber, a busca e, em tela bem estreita, o Painel também vão para o menu. Recalculado a cada desenho.
     function spAjustarBarra(sp){
       const busca = stkBuscaInput.closest('.wa-clip-search'), bar = busca.parentElement;
-      const fila = [stkAnoEl, stkMesEl, stkSpRefEl, document.getElementById('stkSpEntFiltro'), busca, stkPainelEl];   // Painel: último recurso (telas estreitas)
-      fila.forEach(el => el.classList.remove('stk-so-menu'));
-      if(!sp || !bar.offsetParent) return false;
-      const cabe = () => bar.scrollWidth <= bar.clientWidth + 1;
-      stkFiltrosBtn.hidden = true;
-      if(cabe()) return false;
-      stkFiltrosBtn.hidden = false;
+      const sempre = [document.getElementById('stkSpEntFiltro'), document.getElementById('stkSpRefFiltro'), stkMesEl, stkAnoEl], fila = [busca, stkPainelEl];   // Painel: último recurso (telas estreitas)
+      sempre.concat(fila).forEach(el => el.classList.remove('stk-so-menu'));
+      if(!sp) return false;
+      sempre.forEach(el => el.classList.add('stk-so-menu'));
+      if(!bar.offsetParent) return true;
       let n = 0;
-      while(n < fila.length && !cabe()) fila[n++].classList.add('stk-so-menu');
+      while(n < fila.length && bar.scrollWidth > bar.clientWidth + 1) fila[n++].classList.add('stk-so-menu');
       return true;
     }
 
